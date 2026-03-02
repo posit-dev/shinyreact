@@ -1,0 +1,31 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "pkg-r/**"
+      - ".github/workflows/R-CMD-check.yaml"
+  pull_request:
+    paths:
+      - "pkg-r/**"
+      - ".github/workflows/R-CMD-check.yaml"
+
+name: R-CMD-check.yaml
+
+permissions: read-all
+
+jobs:
+  routine:
+    uses: rstudio/shiny-workflows/.github/workflows/routine.yaml@v1
+    permissions:
+      contents: write
+    with:
+      working-directory: pkg-r
+      format-r-code: true
+      check-js: false
+  R-CMD-check:
+    uses: rstudio/shiny-workflows/.github/workflows/R-CMD-check.yaml@v1
+    with:
+      working-directory: pkg-r
+      extra-check-build-args: '"--compact-vignettes=gs+qpdf"'

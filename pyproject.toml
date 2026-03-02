@@ -1,0 +1,168 @@
+[project]
+name = "shinyjson"
+description = "Shiny UI using vercel-labs/json-render."
+readme = "pkg-py/README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "htmltools>=0.6.0",
+    "shiny>=1.4.0",
+]
+dynamic = ["version"]
+authors = [
+  {name = "Joe Cheng", email = "joe@posit.co"},
+  {name = "Carson Sievert", email = "carson@posit.co"},
+  {name = "Garrick Aden-Buie", email = "garrick@posit.co"}
+]
+
+[project.urls]
+Homepage = "https://posit-dev.github.io/shinyjson/"
+Documentation = "https://posit-dev.github.io/shinyjson/py/"
+Repository = "https://github.com/posit-dev/shinyjson"
+Issues = "https://github.com/posit-dev/shinyjson/issues/"
+Changelog = "https://github.com/posit-dev/shinyjson/blob/main/pkg-py/CHANGELOG.md"
+
+[project.optional-dependencies]
+providers = [
+    "anthropic;python_version>='3.11'",
+    "chatlas[mcp]>=0.12.0",
+    "pydantic",
+    "google-generativeai",
+    "langchain-core>=1.0.0",
+    "ollama>=0.4.0",
+    "openai",
+    "tokenizers",
+]
+
+[dependency-groups]
+test = [
+    "coverage>=7.8.2",
+    "faicons",
+    "ipyleaflet",
+    "pandas",
+    "plotly",
+    "pyright>=1.1.398",
+    "pytest>=6.2.4",
+    "playwright>=1.43.0",
+    "pytest-playwright>=0.3.0",
+    "shinylive",
+    "shinywidgets",
+    "tox-uv>=1",
+]
+dev = [
+    "quartodoc>=0.10.0",
+    "ruff>=0.6.5",
+    {include-group = "test"},
+]
+
+[tool.uv]
+upgrade-package = ["shinyjson"]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+skip-excluded-dirs = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["pkg-py/src/shinyjson"]
+include = ["py.typed"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/pkg-py/src/shinyjson"]
+
+[tool.hatch.version]
+source = "vcs"
+tag-pattern = "^py/(?:[\\w-]+-)?(?P<version>[vV]?\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
+
+[tool.hatch.version.raw-options]
+git_describe_command = "git describe --dirty --tags --long --match 'py/v*'"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "pkg-py/src/shinyjson/__version.py"
+
+[tool.pyright]
+include = ["pkg-py"]
+exclude = ["pkg-py/_dev"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+env_list = type-py3{10,11,12,13,14}, py3{10,11,12,13,14}
+isolated_build = True
+
+[testenv]
+package = wheel
+wheel_build_env = .pkg
+commands = pytest
+
+[testenv:type]
+deps =
+  pyright
+  pytest
+commands = pyright
+"""
+
+[tool.ruff]
+src = ["pkg-py"]
+exclude = [
+    "__version.py",
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "_dev",
+]
+
+line-length = 80
+indent-width = 4
+
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ['E', 'F', 'W', 'A', 'PLC', 'PLE', 'PLW', 'I']
+ignore = [
+    "A001", # Variable shadowing Python builtin, e.g. `input`
+    "A002", # Argument shadowing Python builtin, e.g. `id`
+    "A004", # Import shadowing Python builtin, e.g. `input`
+    "E501",
+    "PLC0415", # Import outside top-level
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"

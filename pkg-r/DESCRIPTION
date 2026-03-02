@@ -1,0 +1,26 @@
+Package: shinyjson
+Title: Shiny UI using vercel-labs/json-render
+Version: 0.1.0.9000
+Authors@R: c(
+    person("Joe", "Cheng", , "joe@posit.co", role = "aut"),
+    person("Carson", "Sievert", , "carson@posit.co", role = "aut"),
+    person("Garrick", "Aden-Buie", , "garrick@adenbuie.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-7111-0077")),
+    person("Barret", "Schloerke", , "barret@posit.co", role = "aut",
+           comment = c(ORCID = "0000-0001-9986-114X")),
+    person("Posit Software, PBC", role = c("cph", "fnd"),
+           comment = c(ROR = "03wc8by49"))
+  )
+Description: Provides a Shiny UI using vercel-labs/json-render.
+License: MIT + file LICENSE
+URL: https://posit-dev.github.io/shinyjson/r/,
+    https://github.com/posit-dev/shinyjson
+BugReports: https://github.com/posit-dev/shinyjson/issues
+Imports:
+    htmltools
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3

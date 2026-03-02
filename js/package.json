@@ -1,0 +1,46 @@
+{
+  "name": "shinyjson",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Shiny UI using vercel-labs/json-render",
+  "homepage": "https://posit-dev.github.io/shinyjson/",
+  "bugs": {
+    "url": "https://github.com/posit-dev/shinyjson/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/posit-dev/shinyjson.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "lint": "tsc -noEmit && eslint .",
+    "bundle": "tsx build.ts",
+    "build": "npm run lint && npm run bundle",
+    "watch": "npx nodemon --exec 'npm run build' --ext '*' --ignore dist/ --ignore esbuild-metadata.json",
+    "build-fast": "tsx build.ts --minify=false",
+    "watch-fast": "npx nodemon --exec 'npm run build-fast' --ext '*' --ignore dist/ --ignore esbuild-metadata.json"
+  },
+  "dependencies": {
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.2.9",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.27.0",
+    "@types/node": "^22.15.21",
+    "@types/rstudio-shiny": "git+https://git@github.com/rstudio/shiny.git#v1.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "esbuild": "^0.25.4",
+    "esbuild-sass-plugin": "^3.3.1",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.1.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
