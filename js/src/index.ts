@@ -35,7 +35,14 @@ class ShinyjsonOutputBinding extends Shiny.OutputBinding {
   }
 
   renderValue(el: Element, data: Spec | null): void {
-    if (!data) return;
+    if (!data) {
+      const existing = roots.get(el);
+      if (existing) {
+        existing.unmount();
+        roots.delete(el);
+      }
+      return;
+    }
     const root = getOrCreateRoot(el as HTMLElement);
     root.render(React.createElement(ShinyjsonRenderer, { spec: data }));
   }

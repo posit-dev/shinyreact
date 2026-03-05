@@ -15,6 +15,14 @@ function registerComponents(
   _catalog: unknown,
   registry: ComponentRegistry,
 ): void {
+  for (const key of Object.keys(registry)) {
+    if (key in _registry) {
+      console.warn(
+        `[shinyjson] Component "${key}" is being re-registered. ` +
+          `The previous registration will be overwritten.`,
+      );
+    }
+  }
   Object.assign(_registry, registry);
 }
 

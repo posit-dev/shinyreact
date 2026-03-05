@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Any, Sequence
 
-from htmltools import Tag
+from htmltools import HTMLDependency, Tag
 from shiny.render.renderer import Renderer
 
 from ._output import ui
@@ -28,16 +28,22 @@ class render(Renderer[Spec]):
                 },
             )
 
-    Downstream packages subclass this to accept their own return types::
+    Downstream packages subclass this to accept their own return types and
+    inject their own HTML dependencies::
 
         class render(shinyjson.render):
+            extra_deps = [my_html_dependency()]
+
             async def transform(self, value: MyComponent) -> Any:
                 return value.to_spec().to_dict()
     """
+
+    extra_deps: Sequence[HTMLDependency] | None = None
 
     async def transform(self, value: Spec) -> Any:
         return value.to_dict()
 
     def auto_output_ui(self) -> Tag:
-        # Express mode: auto-generate the output container
-        return ui(self.output_id)
+        # Express mode: auto-generate the output container.
+        # extra_deps allows downstream subclasses to inject their JS/CSS.
+        return ui(self.output_id, extra_deps=self.extra_deps)
