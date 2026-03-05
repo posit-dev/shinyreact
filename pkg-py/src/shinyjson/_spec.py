@@ -20,7 +20,5 @@ class Spec:
     def to_dict(self) -> dict[str, Any]:
         return {
             "root": self.root,
-            "elements": {
-                key: elem.to_dict() for key, elem in self.elements.items()
-            },
+            "elements": {key: elem.to_dict() for key, elem in self.elements.items()},
         }

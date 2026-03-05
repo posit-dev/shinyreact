@@ -21,7 +21,11 @@ class render(Renderer[Spec]):
         def my_output() -> shinyjson.Spec:
             return shinyjson.Spec(
                 root="card",
-                elements={"card": shinyjson.Element(type="Card", props={"title": "Hi"})},
+                elements={
+                    "card": shinyjson.Element(
+                        type="Card", props={"title": "Hi"}
+                    ),
+                },
             )
 
     Downstream packages subclass this to accept their own return types::
