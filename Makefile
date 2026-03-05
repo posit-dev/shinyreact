@@ -8,8 +8,8 @@ PATH_PKG_JS := js
 .PHONY: install-quarto
 install-quarto:
 	@echo "🔵 Installing quarto"
-	@if ! [ -z $(command -v qvm)]; then \
-		@echo "Error: qvm is not installed. Please visit https://github.com/dpastoor/qvm/releases/ to install it." >&2 \
+	@if [ -z "$$(command -v qvm)" ]; then \
+		echo "Error: qvm is not installed. Please visit https://github.com/dpastoor/qvm/releases/ to install it." >&2; \
 		exit 1; \
 	fi
 	qvm install v${QUARTO_VERSION}
@@ -141,7 +141,7 @@ py-check-types:  ## [py] Run python type checks
 	uv run pyright
 
 .PHONY: py-check-format
-py-check-format:
+py-check-format:  ## [py] Check python formatting
 	@echo ""
 	@echo "📐 Checking format with ruff"
 	uv run ruff check pkg-py --config pyproject.toml
