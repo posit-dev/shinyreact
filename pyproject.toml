@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "shinyjson"
 version = "0.1.0"
 description = "Shiny UI infrastructure for JSON-based component rendering"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "shiny>=1.2.0",
     "htmltools>=0.6.0",
@@ -21,11 +21,13 @@ dev = [
     "pyright>=1.1.0",
     "ruff>=0.6.0",
     "pytest-cov>=5.0.0",
+    "tox>=4.0.0",
+    "tox-uv>=1.0.0",
 ]
 
 [tool.pyright]
 include = ["pkg-py/src/shinyjson"]
-pythonVersion = "3.11"
+pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
 [tool.ruff]
@@ -33,3 +35,21 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+env_list = type-py3{10,11,12,13,14}, py3{10,11,12,13,14}
+isolated_build = True
+
+[testenv]
+package = wheel
+wheel_build_env = .pkg
+commands = pytest
+
+[testenv:type]
+deps =
+  pyright
+  pytest
+commands = pyright
+"""

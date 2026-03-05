@@ -1,5 +1,4 @@
 from htmltools import HTMLDependency, Tag
-
 from shinyjson._output import ui
 
 
@@ -20,7 +19,9 @@ def test_ui_has_shinyjson_class():
 
 
 def test_ui_accepts_extra_deps():
-    dep = HTMLDependency("test", "1.0.0", source={"subdir": "/tmp"}, script={"src": "t.js"})
+    dep = HTMLDependency(
+        "test", "1.0.0", source={"subdir": "/tmp"}, script={"src": "t.js"}
+    )
     result = ui("my-output", extra_deps=[dep])
     assert isinstance(result, Tag)
 
