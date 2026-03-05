@@ -11,12 +11,13 @@ declare global {
   interface Window {
     shinyjson: {
       registerComponents: (catalog: unknown, registry: ComponentRegistry) => void;
+      React: typeof React;
     };
   }
 }
 
 // Expose global API — called by downstream packages at page load
-window.shinyjson = { registerComponents };
+window.shinyjson = { registerComponents, React };
 
 // React root cache: one React root per output DOM element
 const roots = new WeakMap<Element, Root>();
