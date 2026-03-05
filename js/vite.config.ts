@@ -11,9 +11,11 @@ export default defineConfig({
       fileName: () => "shinyjson.js",
     },
     outDir: "dist",
-    cssFileName: "shinyjson",
     rollupOptions: {
       // Bundle everything including React — no externals
+      output: {
+        assetFileNames: "shinyjson.[ext]",
+      },
     },
   },
 });
