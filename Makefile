@@ -125,7 +125,7 @@ py-check:  py-check-format py-check-types py-check-tests ## [py] Run python chec
 .PHONY: py-check-tox
 py-check-tox:  ## [py] Run python checks across versions with tox
 	@echo ""
-	@echo "🔄 Running tests and type checking with tox for Python 3.11--3.14"
+	@echo "🔄 Running tests and type checking with tox for Python 3.10--3.14"
 	uv run tox run-parallel
 
 .PHONY: py-check-tests

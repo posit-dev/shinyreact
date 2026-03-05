@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "shinyjson"
 version = "0.1.0"
 description = "Shiny UI infrastructure for JSON-based component rendering"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "shiny>=1.2.0",
     "htmltools>=0.6.0",
@@ -27,7 +27,7 @@ dev = [
 
 [tool.pyright]
 include = ["pkg-py/src/shinyjson"]
-pythonVersion = "3.11"
+pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
 [tool.ruff]
@@ -39,7 +39,7 @@ select = ["E", "F", "I"]
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-env_list = type-py3{11,12,13,14}, py3{11,12,13,14}
+env_list = type-py3{10,11,12,13,14}, py3{10,11,12,13,14}
 isolated_build = True
 
 [testenv]
