@@ -132,7 +132,6 @@ py-check-tox:  ## [py] Run python checks across versions with tox
 py-check-tests:  ## [py] Run python tests
 	@echo ""
 	@echo "🧪 Running tests with pytest"
-	uv run playwright install
 	uv run pytest
 
 .PHONY: py-check-types
