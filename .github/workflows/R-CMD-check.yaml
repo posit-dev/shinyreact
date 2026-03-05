@@ -1,0 +1,34 @@
+# TODO: Enable when R package is implemented (has DESCRIPTION file).
+# Uncomment the on: block below and remove the workflow_dispatch-only trigger.
+#
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - "pkg-r/**"
+#       - ".github/workflows/R-CMD-check.yaml"
+#   pull_request:
+#     paths:
+#       - "pkg-r/**"
+#       - ".github/workflows/R-CMD-check.yaml"
+
+name: R-CMD-check.yaml
+
+on:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  routine:
+    uses: rstudio/shiny-workflows/.github/workflows/routine.yaml@v1
+    permissions:
+      contents: write
+    with:
+      working-directory: pkg-r
+      format-r-code: true
+      check-js: false
+  R-CMD-check:
+    uses: rstudio/shiny-workflows/.github/workflows/R-CMD-check.yaml@v1
+    with:
+      working-directory: pkg-r
