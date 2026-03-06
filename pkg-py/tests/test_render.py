@@ -1,5 +1,4 @@
 import pytest
-
 from shinyjson._render import render
 from shinyjson._spec import Element, Spec
 
