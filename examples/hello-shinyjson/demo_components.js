@@ -56,7 +56,7 @@
     );
   }
 
-  // Button: styled button with label prop (visual only, no Shiny input binding)
+  // Button: styled button that sends clicks to Shiny via Shiny.setInputValue
   function Button(args) {
     var props = args.element.props;
     return h(
@@ -72,6 +72,12 @@
           fontWeight: "500",
           cursor: "pointer",
           marginRight: "6px",
+        },
+        onClick: function () {
+          if (props.input_id && window.Shiny) {
+            var prev = window.Shiny.shinyapp.$inputValues[props.input_id] || 0;
+            window.Shiny.setInputValue(props.input_id, prev + 1);
+          }
         },
       },
       props.label || "Button"

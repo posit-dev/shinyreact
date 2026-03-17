@@ -31,8 +31,8 @@ function getOrCreateRoot(el: HTMLElement): Root {
 
 // Shiny output binding for .shinyjson-output elements
 class ShinyjsonOutputBinding extends Shiny.OutputBinding {
-  find(scope: Element): NodeListOf<Element> {
-    return scope.querySelectorAll(".shinyjson-output");
+  find(scope: Element): ArrayLike<Element> {
+    return $(scope).find(".shinyjson-output");
   }
 
   renderValue(el: Element, data: Spec | null): void {
