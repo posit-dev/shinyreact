@@ -1,0 +1,4 @@
+{
+  "recommendations": ["charliermarsh.ruff"],
+  "unwantedRecommendations": ["ms-python.black-formatter", "ms-python.isort", "ms-python.flake8"]
+}

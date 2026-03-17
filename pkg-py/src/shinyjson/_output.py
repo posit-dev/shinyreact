@@ -9,7 +9,7 @@ def _dep() -> HTMLDependency:
         name="shinyjson",
         version="0.1.0",
         source={"subdir": str(Path(__file__).parent / "www")},
-        script={"src": "shinyjson.js"},
+        script={"src": "shinyjson.js", "defer": ""},
         stylesheet={"href": "shinyjson.css"},
     )
 
