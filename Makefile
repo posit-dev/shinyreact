@@ -1,5 +1,5 @@
 # Use qvm to manage quarto
-QUARTO_VERSION ?= 1.7.31
+QUARTO_VERSION ?= 1.8.27
 QUARTO_PATH = ~/.local/share/qvm/versions/v${QUARTO_VERSION}/bin/quarto
 PATH_PKG_R := pkg-r
 PATH_PKG_PY := pkg-py
