@@ -1,4 +1,5 @@
 import React from "react";
+import * as ReactDOM from "react-dom/client";
 import { createRoot, type Root } from "react-dom/client";
 import type { Spec } from "@json-render/core";
 import type { ComponentRegistry } from "@json-render/react";
@@ -6,18 +7,50 @@ import { registerComponents } from "./registry";
 import { ShinyjsonRenderer } from "./renderer";
 import "./shinyjson.css";
 
+// Re-export @posit/shiny-react hooks and components.
+//
+// We bundle @posit/shiny-react and React into this single IIFE so that:
+// 1. All code shares a single React instance (React hooks break with multiple Reacts)
+// 2. Downstream component authors get hooks via window.shinyjson.*
+// 3. Downstream ESM builds can externalize React to window.shinyjson.React/ReactDOM
+import {
+  useShinyInput,
+  useShinyOutput,
+  useShinyMessageHandler,
+  useShinyInitialized,
+  ImageOutput,
+} from "@posit/shiny-react";
+
 // Extend window with shinyjson's public global API
 declare global {
   interface Window {
     shinyjson: {
-      registerComponents: (catalog: unknown, registry: ComponentRegistry) => void;
+      registerComponents: (
+        catalog: unknown,
+        registry: ComponentRegistry,
+      ) => void;
+      useShinyInput: typeof useShinyInput;
+      useShinyOutput: typeof useShinyOutput;
+      useShinyMessageHandler: typeof useShinyMessageHandler;
+      useShinyInitialized: typeof useShinyInitialized;
+      ImageOutput: typeof ImageOutput;
       React: typeof React;
+      ReactDOM: typeof ReactDOM;
     };
   }
 }
 
 // Expose global API — called by downstream packages at page load
-window.shinyjson = { registerComponents, React };
+window.shinyjson = {
+  registerComponents,
+  useShinyInput,
+  useShinyOutput,
+  useShinyMessageHandler,
+  useShinyInitialized,
+  ImageOutput,
+  React,
+  ReactDOM,
+};
 
 // React root cache: one React root per output DOM element
 const roots = new WeakMap<Element, Root>();

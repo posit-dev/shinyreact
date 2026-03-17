@@ -7,15 +7,19 @@ from ._output import ui
 from ._spec import Spec
 
 
-class render(Renderer[Spec]):
-    """Render a :class:`~shinyjson.Spec` as a reactive Shiny JSON output.
+class render(Renderer[Any]):
+    """Render a :class:`~shinyjson.Spec` or raw JSON data as a reactive Shiny output.
 
     Use this decorator on a server function that returns a
-    :class:`~shinyjson.Spec` instance. The spec is serialized and sent to the
-    browser, where the ``shinyjson`` Shiny output binding renders it using all
-    registered downstream components.
+    :class:`~shinyjson.Spec` instance **or** any JSON-serializable value
+    (``dict``, ``list``, ``str``, ``int``, ``float``, ``None``).
 
-    Example::
+    When the return value is a :class:`~shinyjson.Spec`, it is serialized via
+    :meth:`Spec.to_dict` before being sent to the browser.  Any other
+    JSON-serializable value is passed through unchanged, which is useful for
+    ``useShinyOutput()`` hooks on the React side that consume arbitrary data.
+
+    Example -- Spec-based rendering::
 
         @shinyjson.render
         def my_output() -> shinyjson.Spec:
@@ -27,6 +31,12 @@ class render(Renderer[Spec]):
                     ),
                 },
             )
+
+    Example -- raw JSON for ``useShinyOutput()``::
+
+        @shinyjson.render
+        def my_data():
+            return {"key": "value", "count": 42}
 
     Downstream packages subclass this to accept their own return types and
     inject their own HTML dependencies::
@@ -40,8 +50,11 @@ class render(Renderer[Spec]):
 
     extra_deps: Sequence[HTMLDependency] | None = None
 
-    async def transform(self, value: Spec) -> Any:
-        return value.to_dict()
+    async def transform(self, value: Any) -> Any:
+        if isinstance(value, Spec):
+            return value.to_dict()
+        # Raw JSON-serializable data -- pass through for useShinyOutput() consumption
+        return value
 
     def auto_output_ui(self) -> Tag:
         # Express mode: auto-generate the output container.
