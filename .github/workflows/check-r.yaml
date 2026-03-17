@@ -6,13 +6,13 @@
 #     branches: [main]
 #     paths:
 #       - "pkg-r/**"
-#       - ".github/workflows/R-CMD-check.yaml"
+#       - ".github/workflows/check-r.yaml"
 #   pull_request:
 #     paths:
 #       - "pkg-r/**"
-#       - ".github/workflows/R-CMD-check.yaml"
+#       - ".github/workflows/check-r.yaml"
 
-name: R-CMD-check.yaml
+name: check-r
 
 on:
   workflow_dispatch:

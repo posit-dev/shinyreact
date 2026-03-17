@@ -8,18 +8,18 @@
 #       - "pkg-r/man/**/*"
 #       - "pkg-r/vignettes/**/*"
 #       - "pkg-r/pkgdown/**/*"
-#       - ".github/workflows/pkgdown.yaml"
+#       - ".github/workflows/website-r.yaml"
 #   pull_request:
 #     paths:
 #       - "pkg-r/man/**/*"
 #       - "pkg-r/vignettes/**/*"
 #       - "pkg-r/pkgdown/**/*"
-#       - ".github/workflows/pkgdown.yaml"
+#       - ".github/workflows/website-r.yaml"
 #   release:
 #     types: [published]
 #   workflow_dispatch:
 
-name: pkgdown.yaml
+name: website-r
 
 on:
   workflow_dispatch:

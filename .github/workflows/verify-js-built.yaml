@@ -1,4 +1,4 @@
-name: verify-js-built.yaml
+name: verify-js-built
 
 on:
   push:

@@ -8,10 +8,10 @@
 #     paths:
 #       - "docs/**/*"
 #       - "pkg-py/**/*"
-#       - ".github/workflows/quartodoc.yaml"
+#       - ".github/workflows/website-py.yaml"
 #   workflow_dispatch:
 
-name: quartodoc.yaml
+name: website-py
 
 on:
   workflow_dispatch:

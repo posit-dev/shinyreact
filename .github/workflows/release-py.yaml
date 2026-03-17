@@ -6,14 +6,13 @@
 #   release:
 #     types: [published]
 
-name: py-release.yaml
+name: release-py
 
 on:
   workflow_dispatch:
 
 env:
   UV_VERSION: "0.9.x"
-  PYTHON_VERSION: 3.13
 
 jobs:
   py-release:
@@ -37,21 +36,6 @@ jobs:
         uses: astral-sh/setup-uv@v6.1.0
         with:
           version: ${{ env.UV_VERSION }}
-
-      - name: 🐍 Set up Python ${{ env.PYTHON_VERSION }}
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: 📦 Install the project
-        run: uv sync --python ${{ env.PYTHON_VERSION }} --all-extras --all-groups
-
-      - name: 📝 Check types
-        run: make py-check-types
-
-      - name: 📐 Check formatting
-        run: make py-check-format
-
-      - name: 🧪 Check tests
-        run: make py-check-tests
 
       - name: 🧳 Build package
         run: uv build
