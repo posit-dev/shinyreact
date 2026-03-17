@@ -1,4 +1,4 @@
-import { Renderer } from "@json-render/react";
+import { Renderer, JSONUIProvider } from "@json-render/react";
 import type { Spec } from "@json-render/core";
 import { getRegistry } from "./registry";
 
@@ -12,7 +12,12 @@ interface ShinyjsonRendererProps {
  * window.shinyjson.registerComponents() before this render was triggered.
  */
 function ShinyjsonRenderer({ spec }: ShinyjsonRendererProps) {
-  return <Renderer spec={spec} registry={getRegistry()} />;
+  const registry = getRegistry();
+  return (
+    <JSONUIProvider registry={registry}>
+      <Renderer spec={spec} registry={registry} />
+    </JSONUIProvider>
+  );
 }
 
 export { ShinyjsonRenderer };
