@@ -22,7 +22,7 @@ permissions:
 env:
   UV_VERSION: "0.9.x"
   PYTHON_VERSION: 3.13
-  QUARTO_VERSION: 1.7.31
+  QUARTO_VERSION: 1.8.27
 
 jobs:
   docs-publish:
