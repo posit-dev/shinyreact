@@ -3,6 +3,14 @@
  * Shiny is loaded by the browser before shinyjson.js runs.
  */
 declare global {
+  function $(selector: string | Element | JQuery): JQuery;
+
+  interface JQuery {
+    find(selector: string): JQuery;
+    [index: number]: Element;
+    length: number;
+  }
+
   const Shiny: {
     OutputBinding: {
       new (): ShinyOutputBinding;
