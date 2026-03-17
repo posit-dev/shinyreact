@@ -19,7 +19,7 @@ import {
   useShinyMessageHandler,
   useShinyInitialized,
   ImageOutput,
-} from "@posit/shiny-react";
+} from "./shiny-react";
 
 // Extend window with shinyjson's public global API
 declare global {
