@@ -1,0 +1,41 @@
+name: check-py
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pkg-py/**/*"
+      - "pyproject.toml"
+      - ".github/workflows/check-py.yaml"
+  pull_request:
+    paths:
+      - "pkg-py/**/*"
+      - "pyproject.toml"
+      - ".github/workflows/check-py.yaml"
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.9.x"
+
+jobs:
+  py-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🚀 Install uv
+        uses: astral-sh/setup-uv@v6.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: 📦 Install the project
+        run: uv sync --all-extras --all-groups
+
+      - name: 📐 Check formatting
+        run: make py-check-format
+
+      - name: 🧪 Check tests and types (Python 3.10–3.14)
+        run: make py-check-tox

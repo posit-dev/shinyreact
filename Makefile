@@ -15,8 +15,8 @@ install-quarto:
 	qvm install v${QUARTO_VERSION}
 	@echo "🔹 Updating .vscode/settings.json"
 	@awk -v path="${QUARTO_PATH}" '/"quarto.path":/ {gsub(/"quarto.path": ".*"/, "\"quarto.path\": \"" path "\"")} 1' .vscode/settings.json > .vscode/settings.json.tmp && mv .vscode/settings.json.tmp .vscode/settings.json
-	@echo "🔹 Updating .github/workflows/quartodoc.yaml"
-	@awk -v ver="${QUARTO_VERSION}" '/QUARTO_VERSION:/ {gsub(/QUARTO_VERSION: .*/, "QUARTO_VERSION: " ver)} 1' .github/workflows/quartodoc.yaml > .github/workflows/quartodoc.yaml.tmp && mv .github/workflows/quartodoc.yaml.tmp .github/workflows/quartodoc.yaml
+	@echo "🔹 Updating .github/workflows/website-py.yaml"
+	@awk -v ver="${QUARTO_VERSION}" '/QUARTO_VERSION:/ {gsub(/QUARTO_VERSION: .*/, "QUARTO_VERSION: " ver)} 1' .github/workflows/website-py.yaml > .github/workflows/website-py.yaml.tmp && mv .github/workflows/website-py.yaml.tmp .github/workflows/website-py.yaml
 
 
 .PHONY: docs
@@ -221,6 +221,13 @@ py-update-dist: ## [py] Update shinyjson web assets
 	cp $(PATH_PKG_JS)/dist/shinyjson.css $(PATH_PKG_PY)/src/shinyjson/www/
 	(git rev-parse HEAD) > "$(PATH_PKG_PY)/src/shinyjson/www/GIT_VERSION"
 
+
+.PHONY: pre-commit-setup
+pre-commit-setup:  ## Setup pre-commit hooks
+	uv run pre-commit install
+
+.PHONY: ai-setup
+ai-setup: py-setup js-setup pre-commit-setup  ## Setup environment for AI agents
 
 .PHONY: help
 help:  ## Show help messages for make targets

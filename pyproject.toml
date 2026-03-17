@@ -24,6 +24,7 @@ dev = [
     "pytest-cov>=5.0.0",
     "tox>=4.0.0",
     "tox-uv>=1.0.0",
+    "pre-commit>=4.0.0",
 ]
 
 [tool.pyright]
