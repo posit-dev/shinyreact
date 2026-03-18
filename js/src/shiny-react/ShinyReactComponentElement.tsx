@@ -59,9 +59,9 @@ export class ShinyReactComponentElement extends HTMLElement {
    * Captures children with [data-slot] attribute, storing their contents
    * keyed by slot name. Called automatically in connectedCallback.
    *
-   * If no [data-slot] elements are found and the element has child nodes,
-   * all children are captured under the reserved slot name "__children__".
-   * This provides a default slot for components that don't use named slots.
+   * Named slots are captured by their `data-slot` attribute value.
+   * All remaining direct children (without a `data-slot` attribute) are
+   * captured under the reserved slot name "__children__".
    *
    * @param selector CSS selector for slot containers (default: '[data-slot]')
    * @returns Map of slot names to their child nodes
@@ -69,21 +69,24 @@ export class ShinyReactComponentElement extends HTMLElement {
   protected captureSlots(
     selector: string = "[data-slot]",
   ): Map<string, Node[]> {
-    const elements = this.querySelectorAll(selector);
-    if (elements.length === 0) {
-      // No named slots - capture all children as default slot
-      if (this.childNodes.length > 0) {
-        this.slotContents.set("__children__", Array.from(this.childNodes));
+    // Capture named slots
+    const slotElements = this.querySelectorAll(`:scope > ${selector}`);
+    const slotSet = new Set<Node>(slotElements);
+    slotElements.forEach((el) => {
+      const slotName = el.getAttribute("data-slot");
+      if (slotName) {
+        this.slotContents.set(slotName, Array.from(el.childNodes));
       }
-    } else {
-      // Named slots found - capture each one
-      elements.forEach((el) => {
-        const slotName = el.getAttribute("data-slot");
-        if (slotName) {
-          this.slotContents.set(slotName, Array.from(el.childNodes));
-        }
-      });
+    });
+
+    // Capture remaining direct children as default slot
+    const defaultChildren = Array.from(this.childNodes).filter(
+      (node) => !slotSet.has(node),
+    );
+    if (defaultChildren.length > 0) {
+      this.slotContents.set("__children__", defaultChildren);
     }
+
     return this.slotContents;
   }
 

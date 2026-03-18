@@ -82,7 +82,33 @@ describe("ShinyReactComponentElement", () => {
       const slots = (el as any).captureSlots();
       expect(slots.has("sidebar")).toBe(true);
       expect(slots.has("main")).toBe(true);
+      // No non-slotted children, so __children__ should be absent
       expect(slots.has("__children__")).toBe(false);
+    });
+
+    it("captures both named slots and remaining children as __children__", () => {
+      const el = new ShinyReactComponentElement();
+
+      const sidebar = document.createElement("div");
+      sidebar.setAttribute("data-slot", "sidebar");
+      sidebar.innerHTML = "<p>Sidebar</p>";
+      el.appendChild(sidebar);
+
+      const loose = document.createElement("p");
+      loose.textContent = "Non-slotted content";
+      el.appendChild(loose);
+
+      const main = document.createElement("div");
+      main.setAttribute("data-slot", "main");
+      main.innerHTML = "<p>Main</p>";
+      el.appendChild(main);
+
+      const slots = (el as any).captureSlots();
+      expect(slots.has("sidebar")).toBe(true);
+      expect(slots.has("main")).toBe(true);
+      expect(slots.has("__children__")).toBe(true);
+      expect(slots.get("__children__")).toHaveLength(1);
+      expect(slots.get("__children__")[0]).toBe(loose);
     });
 
     it("returns empty map when element has no children", () => {
