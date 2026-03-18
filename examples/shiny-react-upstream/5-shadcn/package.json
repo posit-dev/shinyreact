@@ -1,8 +1,9 @@
 {
-  "name": "shiny-react-dashboard",
+  "name": "shiny-react-shadcn",
+  "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Interactive dashboard example using shiny-react and shadcn/ui",
+  "description": "shadcn/ui components example using shiny-react",
   "scripts": {
     "build": "concurrently -c auto \"tsc --noEmit\" \"tsx build.ts\"",
     "watch": "concurrently -c auto \"tsc --noEmit --watch --preserveWatchOutput\" \"tsx build.ts --watch\"",

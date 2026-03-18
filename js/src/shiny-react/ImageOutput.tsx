@@ -72,6 +72,10 @@ export type ImageData = {
  *    dimension change detection (default: 400ms). Controls how long to wait
  *    after a resize event before sending updated dimensions to Shiny. Higher
  *    values reduce server load but may delay updates.
+ * @param props.namespace - Optional namespace override for Shiny module
+ *    support. If provided, overrides the namespace from ShinyModuleProvider
+ *    context. Pass `null` to explicitly disable namespacing even when inside
+ *    a provider.
  * @param props.onRecalculating - Optional callback function that gets called
  *    whenever the recalculation status changes. Receives a boolean indicating
  *    whether the image is currently recalculating.

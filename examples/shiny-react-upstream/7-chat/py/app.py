@@ -9,7 +9,6 @@ from shinyreact import page_react
 # Load .env file in this directory for OPENAI_API_KEY
 app_dir = Path(__file__).parent
 env_file = app_dir / ".env"
-print(env_file)
 dotenv.load_dotenv(env_file)
 
 # Initialize chat with OpenAI GPT-4o-mini by default
