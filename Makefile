@@ -52,6 +52,11 @@ js-build-watch:  ## [js] Build JS code in watch mode
 	@echo "🧳 Building JS code in watch mode"
 	cd $(PATH_PKG_JS) && npm run watch
 
+.PHONY: js-test
+js-test:  ## [js] Run JS tests
+	@echo "🧪 Running JS tests"
+	cd $(PATH_PKG_JS) && npm test
+
 
 .PHONY: update-dist
 update-dist: js-build r-update-dist py-update-dist  ## Update shinyjson web assets in all packages

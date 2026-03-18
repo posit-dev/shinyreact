@@ -19,6 +19,8 @@ import {
   useShinyMessageHandler,
   useShinyInitialized,
   ImageOutput,
+  ShinyModuleProvider,
+  ShinyReactComponentElement,
 } from "./shiny-react";
 
 // Extend window with shinyjson's public global API
@@ -34,6 +36,8 @@ declare global {
       useShinyMessageHandler: typeof useShinyMessageHandler;
       useShinyInitialized: typeof useShinyInitialized;
       ImageOutput: typeof ImageOutput;
+      ShinyModuleProvider: typeof ShinyModuleProvider;
+      ShinyReactComponentElement: typeof ShinyReactComponentElement;
       React: typeof React;
       ReactDOM: typeof ReactDOM;
     };
@@ -48,6 +52,8 @@ window.shinyjson = {
   useShinyMessageHandler,
   useShinyInitialized,
   ImageOutput,
+  ShinyModuleProvider,
+  ShinyReactComponentElement,
   React,
   ReactDOM,
 };

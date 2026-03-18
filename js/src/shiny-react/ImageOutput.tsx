@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useShinyInput, useShinyOutput } from "./use-shiny";
 import { createDebouncedFn } from "./utils";
+import {
+  applyNamespace,
+  useShinyModuleNamespace,
+} from "./ShinyModuleContext";
 
 export type ImageData = {
   src: string;
@@ -135,6 +139,7 @@ export function ImageOutput({
   height,
   debounceMs = 400,
   onRecalculating,
+  namespace: explicitNamespace,
 }: {
   id: string;
   className?: string;
@@ -142,22 +147,32 @@ export function ImageOutput({
   height?: string;
   debounceMs?: number;
   onRecalculating?: (isRecalculating: boolean) => void;
+  namespace?: string | null;
 }) {
+  // Apply namespace from context or explicit option
+  const contextNamespace = useShinyModuleNamespace();
+  const namespace = explicitNamespace ?? contextNamespace;
+  const namespacedId = applyNamespace(id, namespace);
+
+  // IDs below already have the namespace embedded (via namespacedId), so we
+  // suppress the hooks' own context-based namespacing to avoid double-prefixing.
+  const skipNs = { namespace: null };
   const [imgWidth, setImgWidth] = useShinyInput<number | null>(
-    ".clientdata_output_" + id + "_width",
+    `.clientdata_output_${namespacedId}_width`,
     null,
+    skipNs,
   );
   const [imgHeight, setImgHeight] = useShinyInput<number | null>(
-    ".clientdata_output_" + id + "_height",
+    `.clientdata_output_${namespacedId}_height`,
     null,
+    skipNs,
   );
-
-  // Track if the image is hidden
   const [imgHidden] = useShinyInput<boolean>(
-    ".clientdata_output_" + id + "_hidden",
+    `.clientdata_output_${namespacedId}_hidden`,
     false,
+    skipNs,
   );
-  const [imgData, imgRecalculating] = useShinyOutput<ImageData>(id, undefined);
+  const [imgData, imgRecalculating] = useShinyOutput<ImageData>(namespacedId, undefined, skipNs);
 
   // Create a reference to the img element to access its properties
   const imgRef = useRef<HTMLImageElement>(null);

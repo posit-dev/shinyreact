@@ -211,3 +211,6 @@ __marimo__/
 
 # Node
 node_modules/
+
+# Built assets in shiny-react upstream examples
+examples/shiny-react-upstream/*/www/

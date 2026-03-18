@@ -1,3 +1,4 @@
+import unittest.mock
 from unittest.mock import AsyncMock
 
 import pytest
@@ -36,4 +37,21 @@ class TestPostMessage:
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",
             {"type": "update", "data": [1, 2, 3]},
+        )
+
+    @pytest.mark.asyncio
+    async def test_namespaces_type_with_resolve_id(self):
+        """post_message uses resolve_id to namespace the message type."""
+        session = AsyncMock()
+
+        # Simulate being inside a Shiny module with namespace "mymod"
+        with unittest.mock.patch(
+            "shinyjson._post_message.resolve_id",
+            side_effect=lambda x: f"mymod-{x}",
+        ):
+            await post_message(session, "logEvent", {"text": "hello"})
+
+        session.send_custom_message.assert_called_once_with(
+            "shinyReactMessage",
+            {"type": "mymod-logEvent", "data": {"text": "hello"}},
         )
