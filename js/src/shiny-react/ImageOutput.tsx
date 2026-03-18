@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useShinyInput, useShinyOutput } from "./use-shiny";
 import { createDebouncedFn } from "./utils";
+import {
+  applyNamespace,
+  useShinyModuleNamespace,
+} from "./ShinyModuleContext";
 
 export type ImageData = {
   src: string;
@@ -135,6 +139,7 @@ export function ImageOutput({
   height,
   debounceMs = 400,
   onRecalculating,
+  namespace: explicitNamespace,
 }: {
   id: string;
   className?: string;
@@ -142,22 +147,28 @@ export function ImageOutput({
   height?: string;
   debounceMs?: number;
   onRecalculating?: (isRecalculating: boolean) => void;
+  namespace?: string;
 }) {
+  // Apply namespace from context or explicit option
+  const contextNamespace = useShinyModuleNamespace();
+  const namespace = explicitNamespace ?? contextNamespace;
+  const namespacedId = applyNamespace(id, namespace);
+
   const [imgWidth, setImgWidth] = useShinyInput<number | null>(
-    ".clientdata_output_" + id + "_width",
+    `.clientdata_output_${namespacedId}_width`,
     null,
   );
   const [imgHeight, setImgHeight] = useShinyInput<number | null>(
-    ".clientdata_output_" + id + "_height",
+    `.clientdata_output_${namespacedId}_height`,
     null,
   );
 
   // Track if the image is hidden
   const [imgHidden] = useShinyInput<boolean>(
-    ".clientdata_output_" + id + "_hidden",
+    `.clientdata_output_${namespacedId}_hidden`,
     false,
   );
-  const [imgData, imgRecalculating] = useShinyOutput<ImageData>(id, undefined);
+  const [imgData, imgRecalculating] = useShinyOutput<ImageData>(namespacedId, undefined);
 
   // Create a reference to the img element to access its properties
   const imgRef = useRef<HTMLImageElement>(null);
