@@ -34,6 +34,7 @@ typeCheckingMode = "basic"
 
 [tool.ruff]
 line-length = 88
+extend-exclude = ["examples/shiny-react-upstream"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]

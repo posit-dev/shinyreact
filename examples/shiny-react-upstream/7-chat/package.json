@@ -1,0 +1,47 @@
+{
+  "name": "shiny-react-chat",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AI chat application using shiny-react, ellmer (R), chatlas (Python), and shadcn/ui",
+  "scripts": {
+    "build": "concurrently -c auto \"tsc --noEmit\" \"tsx build.ts\"",
+    "watch": "concurrently -c auto \"tsc --noEmit --watch --preserveWatchOutput\" \"tsx build.ts --watch\"",
+    "build-prod": "tsc --noEmit && tsx build.ts --production",
+    "clean": "rm -rf r/www py/www build"
+  },
+  "author": "Winston Chang",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/react": "^19.1.1",
+    "@types/react-dom": "^19.1.1",
+    "autoprefixer": "^10.4.16",
+    "chokidar": "^4.0.3",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.25.9",
+    "esbuild-plugin-tailwindcss": "^2.1.0",
+    "prettier": "^3.6.2",
+    "prettier-plugin-organize-imports": "^4.2.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^4.1.12",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@posit/shiny-react": "file:../..",
+    "@radix-ui/react-avatar": "^1.0.4",
+    "@radix-ui/react-scroll-area": "^1.0.5",
+    "@radix-ui/react-separator": "^1.0.3",
+    "@radix-ui/react-slot": "^1.0.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.542.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "exampleMetadata": {
+    "title": "AI Chat",
+    "description": "AI chat application with LLM integration",
+    "deployToShinylive": false,
+    "comment": "Not available to run in Shinylive because it requires packages that don't work in webR/Pyodide, and it needs an API key for LLM"
+  }
+}
