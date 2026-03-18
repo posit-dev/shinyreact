@@ -7,5 +7,5 @@ class CounterWidgetElement extends ShinyReactComponentElement {
 }
 
 if (!customElements.get("counter-widget")) {
-    customElements.define("counter-widget", CounterWidgetElement);
+  customElements.define("counter-widget", CounterWidgetElement);
 }

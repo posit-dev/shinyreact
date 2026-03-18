@@ -14,11 +14,11 @@ def counter_module_server(input, output, session):
         return 0
 
     @reactive.effect
-    def _():
+    async def _():
         """Send notification message every 5 counts"""
         count = input.count()
         if count is not None and count > 0 and count % 5 == 0:
-            shinyreact.post_message(
+            await shinyreact.post_message(
                 session,
                 "notification",
                 {"message": f"Milestone reached: {count}"},

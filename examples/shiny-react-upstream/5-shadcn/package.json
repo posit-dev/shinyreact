@@ -1,5 +1,6 @@
 {
-  "name": "shiny-react-dashboard",
+  "name": "shiny-react-shadcn",
+  "private": true,
   "version": "1.0.0",
   "type": "module",
   "description": "Interactive dashboard example using shiny-react and shadcn/ui",
