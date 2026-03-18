@@ -231,8 +231,11 @@ py-update-dist: ## [py] Update shinyjson web assets
 pre-commit-setup:  ## Setup pre-commit hooks
 	uv run pre-commit install
 
+.PHONY: setup
+setup: py-setup js-setup pre-commit-setup  ## Setup development environment
+
 .PHONY: ai-setup
-ai-setup: py-setup js-setup pre-commit-setup  ## Setup environment for AI agents
+ai-setup: setup  ## Setup environment for AI agents
 
 .PHONY: help
 help:  ## Show help messages for make targets
