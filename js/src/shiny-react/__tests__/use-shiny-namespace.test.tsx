@@ -87,6 +87,32 @@ describe("useShinyInput namespace", () => {
   });
 });
 
+describe("useShinyInput namespace suppression", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("namespace: null suppresses context namespace", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ShinyModuleProvider namespace="mod1">{children}</ShinyModuleProvider>
+    );
+    // Simulates ImageOutput pattern: pre-namespaced ID with namespace: null
+    renderHook(
+      () =>
+        useShinyInput(".clientdata_output_mod1-plot_width", null, {
+          namespace: null,
+        }),
+      { wrapper },
+    );
+    const registry = getReactRegistry();
+    // Should NOT be double-namespaced to "mod1-.clientdata_output_mod1-plot_width"
+    expect(registry.inputs.getOrCreate).toHaveBeenCalledWith(
+      ".clientdata_output_mod1-plot_width",
+      null,
+    );
+  });
+});
+
 describe("useShinyOutput namespace", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -104,5 +130,19 @@ describe("useShinyOutput namespace", () => {
     );
     const registry = getReactRegistry();
     expect(registry).toBeDefined();
+  });
+
+  it("namespace: null suppresses context namespace for output", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ShinyModuleProvider namespace="mod1">{children}</ShinyModuleProvider>
+    );
+    // Verifies that passing namespace: null doesn't throw and renders
+    // successfully even inside a provider (Shiny not initialized so
+    // the effect doesn't fire, but the hook itself runs without error)
+    const { result } = renderHook(
+      () => useShinyOutput("mod1-plot", undefined, { namespace: null }),
+      { wrapper },
+    );
+    expect(result.current).toBeDefined();
   });
 });

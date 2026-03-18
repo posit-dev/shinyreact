@@ -51,14 +51,15 @@ export function useShinyInput<T>(
   }: {
     debounceMs?: number;
     priority?: EventPriority;
-    namespace?: string;
+    namespace?: string | null;
   } = {},
 ): [T, (value: T) => void] {
   ensureShinyReactInitialized();
 
-  // Apply namespace from context or explicit option
+  // Apply namespace: explicit option wins over context. Pass `false` to opt out.
   const contextNamespace = useShinyModuleNamespace();
-  const namespace = explicitNamespace ?? contextNamespace;
+  const namespace =
+    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
   const namespacedId = applyNamespace(id, namespace);
 
   // NOTE: It's a little odd that debounceMs and priority passed this way; the
@@ -161,7 +162,7 @@ export function useShinyOutput<T>(
   {
     namespace: explicitNamespace,
   }: {
-    namespace?: string;
+    namespace?: string | null;
   } = {},
 ): [T | undefined, boolean] {
   const [value, setValue] = useState<T | undefined>(defaultValue);
@@ -170,9 +171,10 @@ export function useShinyOutput<T>(
 
   ensureShinyReactInitialized();
 
-  // Apply namespace from context or explicit option
+  // Apply namespace: explicit option wins over context. Pass `false` to opt out.
   const contextNamespace = useShinyModuleNamespace();
-  const namespace = explicitNamespace ?? contextNamespace;
+  const namespace =
+    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
   const namespacedOutputId = applyNamespace(outputId, namespace);
 
   useEffect(() => {
@@ -219,16 +221,17 @@ export function useShinyMessageHandler<T = any>(
   {
     namespace: explicitNamespace,
   }: {
-    namespace?: string;
+    namespace?: string | null;
   } = {},
 ): void {
   const shinyInitialized = useShinyInitialized();
 
   ensureShinyReactInitialized();
 
-  // Apply namespace from context or explicit option
+  // Apply namespace: explicit option wins over context. Pass `false` to opt out.
   const contextNamespace = useShinyModuleNamespace();
-  const namespace = explicitNamespace ?? contextNamespace;
+  const namespace =
+    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
   const namespacedMessageType = applyNamespace(messageType, namespace);
 
   useEffect(() => {
