@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { type EventPriority } from "@posit/shiny/srcts/types/src/inputPolicies";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getShiny } from "./get-shiny";
 import { type InputRegistryEntry } from "./input-registry";
 import { initializeMessageRegistry } from "./message-registry";
@@ -32,7 +32,11 @@ import {
  * be required.
  *
  * @param id The ID that will be used for the Shiny input (`input$<id>`).
- * @param defaultValue The initial value for the input.
+ * @param defaultValue The initial value for the input, used only on first
+ * mount (same semantics as `React.useState`'s initial value). Subsequent
+ * renders may pass a different value, but it will be ignored. This means
+ * inline object/array literals like `{}` or `[]` are safe to pass — they
+ * won't cause unnecessary re-renders.
  * @param options Optional configuration object.
  * @param options.debounceMs Debounce delay in milliseconds for input updates
  * (default: 100).
@@ -69,7 +73,16 @@ export function useShinyInput<T>(
   // multiple calls to useShinyInput("foo"), then the priority will be from the
   // most recent call. This all should be straightened out in the future.
 
-  let startValue: T = defaultValue;
+  // Stabilize defaultValue across renders. Callers often pass inline literals
+  // like `{}` or `[]` which create a new reference every render. Since
+  // defaultValue is in the useEffect dependency array, an unstable reference
+  // would cause the effect to re-run every render — and with priority:"event"
+  // that creates an infinite render→send→update→render loop. Capturing the
+  // first value in a ref makes this safe regardless of how it's called.
+  const stableDefaultRef = useRef<T>(defaultValue);
+  const stableDefault = stableDefaultRef.current;
+
+  let startValue: T = stableDefault;
   const reactRegistry = getReactRegistry();
   const inputRegistryEntry = reactRegistry.inputs.get(
     namespacedId,
@@ -90,15 +103,15 @@ export function useShinyInput<T>(
   const shinyInitialized = useShinyInitialized();
 
   useEffect(() => {
-    // if (!shinyInitialized) {
-    //   return;
-    // }
+    if (!shinyInitialized) {
+      return;
+    }
 
     // Make sure the input registry entry exists for this Shiny input ID
     const reactRegistry = getReactRegistry();
     const inputRegistryEntry = reactRegistry.inputs.getOrCreate<T>(
       namespacedId,
-      defaultValue,
+      stableDefault,
     );
 
     if (debounceMs !== undefined) {
@@ -121,13 +134,13 @@ export function useShinyInput<T>(
       // useEffect will be called again. If someone wants to really get rid of
       // the registry entry, they will have to do so manually.
     };
-  }, [namespacedId, shinyInitialized, debounceMs, priority, defaultValue]);
+  }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault]);
 
   const setValueWrapped = useCallback(
     (value: T) => {
-      // if (!shinyInitialized) {
-      //   return;
-      // }
+      if (!shinyInitialized) {
+        return;
+      }
 
       const reactRegistry = getReactRegistry();
       const inputRegistryEntry = reactRegistry.inputs.get(namespacedId);
@@ -137,7 +150,7 @@ export function useShinyInput<T>(
       }
       inputRegistryEntry.setValue(value);
     },
-    [namespacedId, id],
+    [namespacedId, shinyInitialized],
   );
 
   return [value, setValueWrapped];
@@ -213,7 +226,10 @@ export function useShinyOutput<T>(
  *
  * @param messageType The type/name of the custom message to listen for.
  * @param handler The function to call when a message of this type is received.
- * The handler receives the message data as its parameter.
+ * The handler receives the message data as its parameter. Inline arrow
+ * functions are safe to pass — the handler is stored in a ref internally,
+ * so a new function reference on each render won't cause the message
+ * handler to be deregistered and re-registered.
  */
 export function useShinyMessageHandler<T = any>(
   messageType: string,
@@ -234,8 +250,15 @@ export function useShinyMessageHandler<T = any>(
     explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
   const namespacedMessageType = applyNamespace(messageType, namespace);
 
+  // Stabilize handler reference: callers often pass inline arrow functions
+  // which create a new reference every render, causing unnecessary
+  // deregister/re-register cycles. Use a ref so the effect only re-runs
+  // when the message type changes, not on every render.
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+
   useEffect(() => {
-    if (!shinyInitialized || !namespacedMessageType || !handler) {
+    if (!shinyInitialized || !namespacedMessageType) {
       return;
     }
     const shiny = getShiny();
@@ -243,19 +266,28 @@ export function useShinyMessageHandler<T = any>(
       return;
     }
 
+    // Wrap in a stable function that delegates to the latest handler ref
+    const stableHandler = (data: T) => handlerRef.current(data);
+
     // Register the message handler with our dedicated message registry
-    shiny.messageRegistry.addHandler(namespacedMessageType, handler);
+    shiny.messageRegistry.addHandler(namespacedMessageType, stableHandler);
 
     // Cleanup function that removes the handler when component unmounts
-    // or when messageType/handler changes
+    // or when messageType changes
     return () => {
-      shiny.messageRegistry.removeHandler(namespacedMessageType, handler);
+      shiny.messageRegistry.removeHandler(namespacedMessageType, stableHandler);
     };
-  }, [shinyInitialized, namespacedMessageType, handler]);
+  }, [shinyInitialized, namespacedMessageType]);
 }
 
 /**
  * A React hook that tracks whether Shiny has been initialized.
+ *
+ * Checks for `window.Shiny` on mount and waits for its
+ * `initializedPromise` to resolve. If Shiny is not yet on the page
+ * (e.g., in a full React page where scripts load asynchronously),
+ * falls back to listening for the `"shiny:connected"` DOM event so
+ * the hook will resolve even if Shiny loads after the component mounts.
  *
  * @returns A boolean indicating whether Shiny has been initialized.
  */
@@ -263,14 +295,36 @@ export function useShinyInitialized(): boolean {
   const [shinyInitialized, setShinyInitialized] = useState<boolean>(false);
 
   useEffect(() => {
-    const shiny = getShiny();
-    if (!shiny) {
-      return;
+    let cancelled = false;
+
+    function waitForInitialized(shiny: NonNullable<ReturnType<typeof getShiny>>) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      shiny.initializedPromise.then(() => {
+        if (!cancelled) {
+          setShinyInitialized(true);
+        }
+      });
     }
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    shiny.initializedPromise.then(() => {
-      setShinyInitialized(true);
-    });
+
+    const shiny = getShiny();
+    if (shiny) {
+      waitForInitialized(shiny);
+      return () => { cancelled = true; };
+    }
+
+    // Shiny not yet available — listen for the DOM event it fires on connect.
+    function onShinyConnected() {
+      const shiny = getShiny();
+      if (shiny) {
+        waitForInitialized(shiny);
+      }
+    }
+    document.addEventListener("shiny:connected", onShinyConnected, { once: true });
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("shiny:connected", onShinyConnected);
+    };
   }, []);
 
   return shinyInitialized;

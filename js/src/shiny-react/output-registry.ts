@@ -154,7 +154,11 @@ export function createReactOutputBinding() {
     }
 
     override renderError(el: HTMLElement, err: ErrorsMessageValue): void {
-      console.log(`Error for ${el.id}: ${err}`);
+      console.error(`Error for ${el.id}:`, err);
+      const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
+      if (outputEntry) {
+        outputEntry.setValue({ __error: err.message });
+      }
     }
 
     override showProgress(el: HTMLElement, show: boolean): void {

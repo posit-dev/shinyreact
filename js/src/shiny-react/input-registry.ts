@@ -27,7 +27,7 @@ export class InputRegistryEntry<T> {
   }
 
   private setShinyInputValue(value: T) {
-    getShiny()?.setInputValue!(this.id, value, this.opts);
+    getShiny()?.setInputValue?.(this.id, value, this.opts);
   }
 
   updateDebounceDelay(debounceMs: number) {
@@ -105,6 +105,10 @@ export class InputRegistry {
    * Remove an input registry entry
    */
   remove(inputId: string): boolean {
+    const entry = this.inputs.get(inputId);
+    if (entry) {
+      entry.shinySetInputValueDebounced.cancel();
+    }
     return this.inputs.delete(inputId);
   }
 

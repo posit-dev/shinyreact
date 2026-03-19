@@ -17,6 +17,11 @@ class Spec:
     root: str
     elements: dict[str, Element]
 
+    def __post_init__(self) -> None:
+        if self.root not in self.elements:
+            keys = list(self.elements.keys())
+            raise ValueError(f"root '{self.root}' not found in elements keys: {keys}")
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "root": self.root,

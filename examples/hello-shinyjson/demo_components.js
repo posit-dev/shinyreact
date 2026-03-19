@@ -73,6 +73,9 @@
           cursor: "pointer",
           marginRight: "6px",
         },
+        // TODO: Migrate to useShinyInput hook instead of accessing private
+        // Shiny internals ($inputValues). This pattern is fragile and may break
+        // with future Shiny updates.
         onClick: function () {
           if (props.input_id && window.Shiny) {
             var prev = window.Shiny.shinyapp.$inputValues[props.input_id] || 0;

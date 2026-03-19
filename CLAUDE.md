@@ -74,7 +74,7 @@ The JS output (`js/dist/shinyjson.js`) is a self-contained IIFE that bundles Rea
 ### Python package
 
 - `shinyjson.ui(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyjson-output">` with the shinyjson HTMLDependency
-- `@shinyjson.render` — `Renderer[Any]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutput()` hooks
+- `@shinyjson.render` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutput()` hooks
 - `shinyjson.Spec(root, elements)` / `shinyjson.Element(type, props, children)` — the data model sent to the browser
 - `shinyjson.post_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
 
@@ -99,6 +99,52 @@ Downstream packages (e.g. `shinyshadcn`) extend shinyjson by:
 ### Build backend
 
 `pyproject.toml` uses hatchling (not uv_build) because the package source lives at `pkg-py/src/shinyjson/` — a non-standard path that requires explicit hatchling configuration.
+
+## Common patterns
+
+### Action buttons
+
+Use the Shiny action button pattern — start at `0`, increment on click:
+
+**JS:**
+```js
+var [count, setCount] = useShinyInput("my_button", 0);
+function handleClick() { setCount(count + 1); }
+```
+
+**Python:**
+```python
+@shinyjson.render
+@reactive.event(input.my_button, ignore_init=True)
+def button_response():
+    return f"Clicked {input.my_button()} times"
+```
+
+`ignore_init=True` prevents firing on page load when `useShinyInput` registers the initial `0` value.
+
+### useShinyInput defaultValue
+
+`defaultValue` is captured on first mount only (same as `React.useState`). Inline literals like `{}` and `[]` are safe — the value is stabilized internally via `useRef`.
+
+### useShinyMessageHandler
+
+Inline arrow functions are safe to pass as the handler — the function is stored in a ref internally, avoiding unnecessary deregister/re-register cycles.
+
+## Testing policy
+
+When fixing a bug, add or update unit tests to cover the fix whenever possible. The test should fail without the fix and pass with it. If the fix is purely a type annotation or comment change with no runtime behavior difference, tests are not required.
+
+- **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
+- **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
+
+## STATUS.md
+
+`STATUS.md` tracks known issues (TODOs), feature inventory, and recent fixes. Keep it up to date:
+
+- **When you find a bug or known issue**: add it under `## TODOs` with a descriptive heading and explanation.
+- **When you fix a TODO**: remove it from the TODOs section and add a bullet under `## Recent fixes`.
+- **When you add a feature or example**: update the relevant table under `## Features`.
+- Keep entries concise. TODOs should describe the problem and any known constraints. Fixes should summarize what changed.
 
 ## Key decisions
 

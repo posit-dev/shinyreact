@@ -11,6 +11,9 @@ on:
       - "js/**/*"
       - ".github/workflows/verify-js-built.yaml"
 
+permissions:
+  contents: read
+
 jobs:
   verify_js_built:
     runs-on: ubuntu-latest
@@ -48,4 +51,3 @@ jobs:
           else
             echo "No uncommitted changes found."
           fi
-        working-directory: js
