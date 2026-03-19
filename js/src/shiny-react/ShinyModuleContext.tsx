@@ -14,8 +14,9 @@ export interface ShinyModuleProviderProps {
  * useShinyMessageHandler will automatically have their IDs prefixed
  * with the provided namespace.
  *
- * Note: This provider does NOT support nesting. If you need nested modules,
- * pass the full namespace string (e.g., "outer-inner") directly.
+ * Note: Nesting providers is supported — an inner provider overrides the
+ * outer one (it does not concatenate namespaces). If you need a combined
+ * namespace, pass the full string (e.g., "outer-inner") directly.
  *
  * @param namespace The complete namespace string to apply to child hooks.
  * @param children React children that will receive the namespace context.
@@ -48,8 +49,8 @@ export function useShinyModuleNamespace(): string | null {
 
 /**
  * Utility function to apply namespace to an ID.
- * If namespace is provided, returns `${namespace}-${id}`.
- * Otherwise returns the original id.
+ * If namespace is a non-empty string, returns `${namespace}-${id}`.
+ * If namespace is null, undefined, or empty string, returns the original id.
  */
 export function applyNamespace(
   id: string,
