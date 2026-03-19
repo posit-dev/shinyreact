@@ -1,13 +1,14 @@
-from typing import Any, Sequence
+from typing import Sequence
 
 from htmltools import HTMLDependency, Tag
 from shiny.render.renderer import Renderer
+from shiny.types import Jsonifiable
 
 from ._output import ui
 from ._spec import Spec
 
 
-class render(Renderer[Any]):
+class render(Renderer[Spec | Jsonifiable]):
     """Render a :class:`~shinyjson.Spec` or raw JSON data as a reactive Shiny output.
 
     Use this decorator on a server function that returns a
@@ -44,13 +45,13 @@ class render(Renderer[Any]):
         class render(shinyjson.render):
             extra_deps = [my_html_dependency()]
 
-            async def transform(self, value: MyComponent) -> Any:
+            async def transform(self, value: MyComponent) -> Jsonifiable:
                 return value.to_spec().to_dict()
     """
 
     extra_deps: Sequence[HTMLDependency] | None = None
 
-    async def transform(self, value: Any) -> Any:
+    async def transform(self, value: Spec | Jsonifiable) -> Jsonifiable:
         if isinstance(value, Spec):
             return value.to_dict()
         # Raw JSON-serializable data -- pass through for useShinyOutput() consumption
