@@ -5,6 +5,7 @@
   var React = window.shinyjson.React;
   var h = React.createElement;
   var useShinyInput = window.shinyjson.useShinyInput;
+  var useShinyMessageHandler = window.shinyjson.useShinyMessageHandler;
 
   var useState = React.useState;
   var useEffect = React.useEffect;
@@ -420,41 +421,30 @@
     var fileInputRef = useRef(null);
 
     // Handle streaming messages from Shiny server
-    useEffect(function () {
-      function handleStreamingMessage(msg) {
-        if (msg.done) {
-          setIsLoading(false);
-        } else {
-          setMessages(function (prev) {
-            var newMessages = prev.slice();
-            var last = newMessages[newMessages.length - 1];
-            if (last && last.role === "assistant") {
-              // Clone and append chunk
-              newMessages[newMessages.length - 1] = Object.assign({}, last, {
-                content: last.content + msg.chunk,
-              });
-            } else {
-              newMessages.push({
-                id: Date.now().toString(),
-                role: "assistant",
-                content: msg.chunk,
-                timestamp: new Date(),
-              });
-            }
-            return newMessages;
-          });
-        }
+    useShinyMessageHandler("chat_stream", function (msg) {
+      if (msg.done) {
+        setIsLoading(false);
+      } else {
+        setMessages(function (prev) {
+          var newMessages = prev.slice();
+          var last = newMessages[newMessages.length - 1];
+          if (last && last.role === "assistant") {
+            // Clone and append chunk
+            newMessages[newMessages.length - 1] = Object.assign({}, last, {
+              content: last.content + msg.chunk,
+            });
+          } else {
+            newMessages.push({
+              id: Date.now().toString(),
+              role: "assistant",
+              content: msg.chunk,
+              timestamp: new Date(),
+            });
+          }
+          return newMessages;
+        });
       }
-
-      function registerHandler() {
-        if (window.Shiny && window.Shiny.addCustomMessageHandler) {
-          window.Shiny.addCustomMessageHandler("chat_stream", handleStreamingMessage);
-        } else {
-          setTimeout(registerHandler, 100);
-        }
-      }
-      registerHandler();
-    }, []);
+    });
 
     // Auto-scroll to bottom
     useEffect(function () {
@@ -727,7 +717,7 @@
                 className: "chat-text-input",
                 value: inputValue,
                 onChange: function (e) { setInputValue(e.target.value); },
-                onKeyPress: handleKeyPress,
+                onKeyDown: handleKeyPress,
                 placeholder: isDragOver ? "Drop images here..." : "Type your message here...",
                 disabled: isLoading,
               }),

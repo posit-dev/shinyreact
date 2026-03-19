@@ -1,3 +1,4 @@
+import pytest
 from shinyjson._spec import Element, Spec
 
 
@@ -49,3 +50,11 @@ def test_spec_to_dict_nested():
     assert result["root"] == "page"
     assert result["elements"]["page"]["children"] == ["card"]
     assert result["elements"]["card"]["type"] == "Card"
+
+
+def test_spec_invalid_root_raises():
+    with pytest.raises(ValueError, match="root 'missing' not found in elements"):
+        Spec(
+            root="missing",
+            elements={"card": Element(type="Card", props={"title": "Hi"})},
+        )

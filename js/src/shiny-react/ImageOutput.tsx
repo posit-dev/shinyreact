@@ -237,6 +237,7 @@ export function ImageOutput({
     return () => {
       img.removeEventListener("load", handleImageLoad);
       resizeObserver.disconnect();
+      debouncedHandleResize.cancel();
     };
   }, [
     imgRef,

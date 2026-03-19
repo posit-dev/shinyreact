@@ -1,11 +1,10 @@
 from pathlib import Path
 
 import dotenv
+import shinyjson
 from chatlas import ChatOpenAI, content_image_url
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive
-
-import shinyjson
 
 # Load .env file in this directory for OPENAI_API_KEY
 app_dir = Path(__file__).parent
@@ -15,7 +14,9 @@ dotenv.load_dotenv(env_file)
 # Initialize chat with OpenAI GPT-4o-mini by default
 chat = ChatOpenAI(
     model="gpt-4o-mini",
-    system_prompt="You are a helpful AI assistant. Be concise but informative in your responses.",
+    system_prompt=(
+        "You are a helpful AI assistant. Be concise but informative in your responses."
+    ),
 )
 
 _chat_dep = HTMLDependency(
@@ -86,13 +87,13 @@ def server(input: Inputs, output: Outputs, session: Session):
         except Exception as e:
             print(f"Error getting AI response: {e}")
             await send_chunk(
-                "Sorry, I encountered an error processing your request. Please try again.",
+                "Sorry, I encountered an error. Please try again.",
                 done=True,
             )
 
     async def send_chunk(chunk: str, done: bool = False):
-        await session.send_custom_message(
-            "chat_stream", {"chunk": chunk, "done": done}
+        await shinyjson.post_message(
+            session, "chat_stream", {"chunk": chunk, "done": done}
         )
 
 

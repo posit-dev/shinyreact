@@ -103,9 +103,9 @@ export function useShinyInput<T>(
   const shinyInitialized = useShinyInitialized();
 
   useEffect(() => {
-    // if (!shinyInitialized) {
-    //   return;
-    // }
+    if (!shinyInitialized) {
+      return;
+    }
 
     // Make sure the input registry entry exists for this Shiny input ID
     const reactRegistry = getReactRegistry();
@@ -138,9 +138,9 @@ export function useShinyInput<T>(
 
   const setValueWrapped = useCallback(
     (value: T) => {
-      // if (!shinyInitialized) {
-      //   return;
-      // }
+      if (!shinyInitialized) {
+        return;
+      }
 
       const reactRegistry = getReactRegistry();
       const inputRegistryEntry = reactRegistry.inputs.get(namespacedId);
@@ -150,7 +150,7 @@ export function useShinyInput<T>(
       }
       inputRegistryEntry.setValue(value);
     },
-    [namespacedId, id],
+    [namespacedId, shinyInitialized],
   );
 
   return [value, setValueWrapped];

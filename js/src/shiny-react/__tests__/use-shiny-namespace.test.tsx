@@ -1,12 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { ShinyModuleProvider } from "../ShinyModuleContext";
 
-// Mock the registries and Shiny initialization so hooks can run
-// without a real Shiny environment
+// Mock getShiny to return a minimal Shiny-like object with an
+// initializedPromise that resolves immediately. This allows
+// useShinyInitialized to resolve to true so the useShinyInput
+// effect (which gates on shinyInitialized) can run.
 vi.mock("../get-shiny", () => ({
-  getShiny: () => undefined,
+  getShiny: () => ({
+    initializedPromise: Promise.resolve(),
+  }),
 }));
 
 vi.mock("../react-registry", () => {
@@ -44,41 +48,54 @@ vi.mock("../message-registry", () => ({
 import { useShinyInput, useShinyOutput } from "../use-shiny";
 import { getReactRegistry } from "../react-registry";
 
+// Helper: flush microtasks so useShinyInitialized resolves via
+// initializedPromise.then(). Without this, the shinyInitialized
+// state stays false and the useShinyInput effect never runs.
+async function flushPromises() {
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0));
+  });
+}
+
 describe("useShinyInput namespace", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("uses plain id when no namespace is provided", () => {
+  it("uses plain id when no namespace is provided", async () => {
     renderHook(() => useShinyInput("count", 0));
+    await flushPromises();
     const registry = getReactRegistry();
     expect(registry.inputs.getOrCreate).toHaveBeenCalledWith("count", 0);
   });
 
-  it("uses explicit namespace option", () => {
+  it("uses explicit namespace option", async () => {
     renderHook(() =>
       useShinyInput("count", 0, { namespace: "mod1" }),
     );
+    await flushPromises();
     const registry = getReactRegistry();
     expect(registry.inputs.getOrCreate).toHaveBeenCalledWith("mod1-count", 0);
   });
 
-  it("uses namespace from ShinyModuleProvider context", () => {
+  it("uses namespace from ShinyModuleProvider context", async () => {
     const wrapper = ({ children }: { children: ReactNode }) => (
       <ShinyModuleProvider namespace="ctxMod">{children}</ShinyModuleProvider>
     );
     renderHook(() => useShinyInput("count", 0), { wrapper });
+    await flushPromises();
     const registry = getReactRegistry();
     expect(registry.inputs.getOrCreate).toHaveBeenCalledWith("ctxMod-count", 0);
   });
 
-  it("explicit namespace overrides context namespace", () => {
+  it("explicit namespace overrides context namespace", async () => {
     const wrapper = ({ children }: { children: ReactNode }) => (
       <ShinyModuleProvider namespace="ctxMod">{children}</ShinyModuleProvider>
     );
     renderHook(() => useShinyInput("count", 0, { namespace: "explicit" }), {
       wrapper,
     });
+    await flushPromises();
     const registry = getReactRegistry();
     expect(registry.inputs.getOrCreate).toHaveBeenCalledWith(
       "explicit-count",
@@ -92,7 +109,7 @@ describe("useShinyInput namespace suppression", () => {
     vi.clearAllMocks();
   });
 
-  it("namespace: null suppresses context namespace", () => {
+  it("namespace: null suppresses context namespace", async () => {
     const wrapper = ({ children }: { children: ReactNode }) => (
       <ShinyModuleProvider namespace="mod1">{children}</ShinyModuleProvider>
     );
@@ -104,6 +121,7 @@ describe("useShinyInput namespace suppression", () => {
         }),
       { wrapper },
     );
+    await flushPromises();
     const registry = getReactRegistry();
     // Should NOT be double-namespaced to "mod1-.clientdata_output_mod1-plot_width"
     expect(registry.inputs.getOrCreate).toHaveBeenCalledWith(

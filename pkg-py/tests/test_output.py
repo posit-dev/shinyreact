@@ -29,3 +29,15 @@ def test_ui_accepts_extra_deps():
 def test_ui_no_extra_deps_by_default():
     result = ui("my-output")
     assert isinstance(result, Tag)
+
+
+def test_ui_script_has_defer():
+    result = ui("my-output")
+    deps = result.get_dependencies()
+    shinyjson_dep = next(d for d in deps if d.name == "shinyjson")
+    # The script dict should include defer=""
+    assert shinyjson_dep.script is not None
+    script = shinyjson_dep.script
+    if isinstance(script, list):
+        script = script[0]
+    assert script.get("defer") == ""

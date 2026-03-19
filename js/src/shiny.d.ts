@@ -1,6 +1,13 @@
 /**
- * Type declarations for Shiny's global JavaScript API.
- * Shiny is loaded by the browser before shinyjson.js runs.
+ * Minimal type declarations for Shiny's global JavaScript API.
+ * Used only by the output binding in index.ts.
+ *
+ * Note: shiny-react/index.ts separately declares `Window.Shiny?` as the
+ * richer `ShinyClassExtended` type (from @posit/shiny). That declaration
+ * covers the hooks' usage via `getShiny()`. The two type scopes are
+ * intentionally separate — this ambient `const Shiny` assumes Shiny is
+ * always present (true for the output binding), while the Window extension
+ * marks it optional (safe for hooks that may run before Shiny loads).
  */
 declare global {
   function $(selector: string | Element | JQuery): JQuery;
