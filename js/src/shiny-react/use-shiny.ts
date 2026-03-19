@@ -283,20 +283,48 @@ export function useShinyMessageHandler<T = any>(
 /**
  * A React hook that tracks whether Shiny has been initialized.
  *
+ * Checks for `window.Shiny` on mount and waits for its
+ * `initializedPromise` to resolve. If Shiny is not yet on the page
+ * (e.g., in a full React page where scripts load asynchronously),
+ * falls back to listening for the `"shiny:connected"` DOM event so
+ * the hook will resolve even if Shiny loads after the component mounts.
+ *
  * @returns A boolean indicating whether Shiny has been initialized.
  */
 export function useShinyInitialized(): boolean {
   const [shinyInitialized, setShinyInitialized] = useState<boolean>(false);
 
   useEffect(() => {
-    const shiny = getShiny();
-    if (!shiny) {
-      return;
+    let cancelled = false;
+
+    function waitForInitialized(shiny: NonNullable<ReturnType<typeof getShiny>>) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      shiny.initializedPromise.then(() => {
+        if (!cancelled) {
+          setShinyInitialized(true);
+        }
+      });
     }
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    shiny.initializedPromise.then(() => {
-      setShinyInitialized(true);
-    });
+
+    const shiny = getShiny();
+    if (shiny) {
+      waitForInitialized(shiny);
+      return () => { cancelled = true; };
+    }
+
+    // Shiny not yet available — listen for the DOM event it fires on connect.
+    function onShinyConnected() {
+      const shiny = getShiny();
+      if (shiny) {
+        waitForInitialized(shiny);
+      }
+    }
+    document.addEventListener("shiny:connected", onShinyConnected, { once: true });
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("shiny:connected", onShinyConnected);
+    };
   }, []);
 
   return shinyInitialized;
