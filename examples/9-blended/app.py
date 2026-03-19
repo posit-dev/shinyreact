@@ -79,9 +79,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             markersize=8,
             markerfacecolor="#2563eb",
         )
-        ax.set_title(
-            f"Sales Trend - {input.region()}", fontsize=14, fontweight="bold"
-        )
+        ax.set_title(f"Sales Trend - {input.region()}", fontsize=14, fontweight="bold")
         ax.set_xlabel("Month", fontsize=11)
         ax.set_ylabel("Cumulative Sales ($1000s)", fontsize=11)
         ax.grid(True, color="#e5e7eb", linestyle="-", linewidth=0.5)
@@ -117,7 +115,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def currentSettings():
         username = input.username() if len(input.username()) > 0 else "(not set)"
-        return f"username: {username}\ndarkMode: {input.darkMode()}\nnotifications: {input.notifications()}"
+        dark = input.darkMode()
+        notif = input.notifications()
+        return f"username: {username}\ndarkMode: {dark}\nnotifications: {notif}"
 
 
 app = App(app_ui, server)
