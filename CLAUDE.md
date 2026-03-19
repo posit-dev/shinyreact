@@ -100,6 +100,45 @@ Downstream packages (e.g. `shinyshadcn`) extend shinyjson by:
 
 `pyproject.toml` uses hatchling (not uv_build) because the package source lives at `pkg-py/src/shinyjson/` — a non-standard path that requires explicit hatchling configuration.
 
+## Common patterns
+
+### Action buttons
+
+Use the Shiny action button pattern — start at `0`, increment on click:
+
+**JS:**
+```js
+var [count, setCount] = useShinyInput("my_button", 0);
+function handleClick() { setCount(count + 1); }
+```
+
+**Python:**
+```python
+@shinyjson.render
+@reactive.event(input.my_button, ignore_init=True)
+def button_response():
+    return f"Clicked {input.my_button()} times"
+```
+
+`ignore_init=True` prevents firing on page load when `useShinyInput` registers the initial `0` value. Do not use `priority: "event"` with object defaults like `{}` — use a numeric counter instead.
+
+### useShinyInput defaultValue
+
+`defaultValue` is captured on first mount only (same as `React.useState`). Inline literals like `{}` and `[]` are safe — the value is stabilized internally via `useRef`.
+
+### useShinyMessageHandler
+
+Inline arrow functions are safe to pass as the handler — the function is stored in a ref internally, avoiding unnecessary deregister/re-register cycles.
+
+## STATUS.md
+
+`STATUS.md` tracks known issues (TODOs), feature inventory, and recent fixes. Keep it up to date:
+
+- **When you find a bug or known issue**: add it under `## TODOs` with a descriptive heading and explanation.
+- **When you fix a TODO**: remove it from the TODOs section and add a bullet under `## Recent fixes`.
+- **When you add a feature or example**: update the relevant table under `## Features`.
+- Keep entries concise. TODOs should describe the problem and any known constraints. Fixes should summarize what changed.
+
 ## Key decisions
 
 - `decisions/` contains architecture decision records. `decisions/2026-03-17-playwright-testing-architecture.md` documents the recommended approach (code-gen from TypeScript) for future browser testing — not yet implemented.
