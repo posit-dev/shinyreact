@@ -74,7 +74,7 @@ The JS output (`js/dist/shinyjson.js`) is a self-contained IIFE that bundles Rea
 ### Python package
 
 - `shinyjson.ui(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyjson-output">` with the shinyjson HTMLDependency
-- `@shinyjson.render` — `Renderer[Any]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutput()` hooks
+- `@shinyjson.render` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutput()` hooks
 - `shinyjson.Spec(root, elements)` / `shinyjson.Element(type, props, children)` — the data model sent to the browser
 - `shinyjson.post_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
 
@@ -129,6 +129,13 @@ def button_response():
 ### useShinyMessageHandler
 
 Inline arrow functions are safe to pass as the handler — the function is stored in a ref internally, avoiding unnecessary deregister/re-register cycles.
+
+## Testing policy
+
+When fixing a bug, add or update unit tests to cover the fix whenever possible. The test should fail without the fix and pass with it. If the fix is purely a type annotation or comment change with no runtime behavior difference, tests are not required.
+
+- **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
+- **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
 
 ## STATUS.md
 
