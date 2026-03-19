@@ -213,6 +213,13 @@
   // ---------------------------------------------------------------------------
   // Simple markdown-to-HTML (basic formatting, no external lib)
   // ---------------------------------------------------------------------------
+  // TODO: XSS risk — only code blocks are escaped via escapeHtml(). Text
+  // outside code blocks (inline code, bold, italic, plain text) is inserted
+  // as raw HTML via dangerouslySetInnerHTML. If the AI model returns markup
+  // like <img src=x onerror=...>, it will execute. A proper fix needs to
+  // escape text while preserving rendered markdown formatting (e.g., use a
+  // sanitization library like DOMPurify, or build a React element tree
+  // instead of an HTML string).
   function renderMarkdown(text) {
     if (!text) return "";
     var html = text
