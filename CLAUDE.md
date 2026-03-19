@@ -120,7 +120,7 @@ def button_response():
     return f"Clicked {input.my_button()} times"
 ```
 
-`ignore_init=True` prevents firing on page load when `useShinyInput` registers the initial `0` value. Do not use `priority: "event"` with object defaults like `{}` — use a numeric counter instead.
+`ignore_init=True` prevents firing on page load when `useShinyInput` registers the initial `0` value.
 
 ### useShinyInput defaultValue
 

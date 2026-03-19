@@ -3,7 +3,7 @@ from pathlib import Path
 
 import shinyjson
 from htmltools import HTMLDependency
-from shiny import App, Inputs, Outputs, Session
+from shiny import App, Inputs, Outputs, Session, reactive
 
 _inputs_dep = HTMLDependency(
     name="inputs-example",
@@ -68,7 +68,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         summaries = []
         for f in files:
             size_kb = round(f["size"] / 1024, 1)
-            summaries.append(f"📄 {f['name']} ({size_kb} KB, {f['type'] or 'unknown type'})")
+            summaries.append(
+                f"📄 {f['name']} ({size_kb} KB, {f['type'] or 'unknown type'})"
+            )
         return "\n".join(summaries)
 
     @shinyjson.render
