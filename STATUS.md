@@ -63,7 +63,7 @@ All example JS files use `React.createElement` directly (no JSX, no bundler). Th
 
 | Example | Port | Status | Description |
 |---------|------|--------|-------------|
-| 1-hello-world | 8761 | Working | Text input/output with useShinyInput/useShinyOutput |
+| 1-hello-world | 8761 | Working | Decomposed components (Card, TextInput, Divider, OutputDisplay) composed from Python via Spec |
 | 2-inputs | 8762 | Working | 10 input types (text, number, checkbox, radio, select, slider, date, button, file, batch form) |
 | 3-outputs | 8763 | Working | Data table, statistics, matplotlib plot via ImageOutput |
 | 4-messages | 8764 | Working | Server-to-client messaging with post_message, auto-dismissing toasts |
@@ -80,3 +80,5 @@ All example JS files use `React.createElement` directly (no JSX, no bundler). Th
 - **ImageOutput prop**: Correct prop is `id`, not `outputId` (fixed in 5-shadcn).
 - **File input (2-inputs)**: Uses `useShinyInput` to send file metadata (name, size, type) to the server instead of relying on Shiny's native file input binding.
 - **Button pattern**: Buttons use `useShinyInput("id", 0)` + increment (Shiny action button pattern) with `ignore_init=True` on the server. See CLAUDE.md "Common patterns" for details.
+- **Hello world decomposition**: Replaced monolithic `HelloWorldComponent` with five small registered components (`Card`, `Heading`, `TextInput`, `Divider`, `OutputDisplay`). Python now composes the full UI tree via `Spec` instead of delegating to a single JS component.
+- **Button hook migration (hello-shinyjson)**: Migrated `Button` component from private Shiny internals (`window.Shiny.shinyapp.$inputValues`) to `useShinyInput` hook.
