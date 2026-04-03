@@ -28,6 +28,22 @@ The `renderMarkdown()` function in `examples/7-chat/chat.js` escapes code blocks
 
 All example JS files use `React.createElement` directly (no JSX, no bundler). This works but is verbose. A lightweight build step (e.g., esbuild with JSX) could improve readability without adding heavy tooling.
 
+### What is the general shape of a UI component?
+
+Define what a well-formed shinyjson UI component looks like from the downstream package author's perspective. What props should it accept? How should it compose with other components? What conventions should the JS catalog entry follow (e.g., naming, prop types, children handling)? Establishing a clear "component contract" will help downstream packages like shinyshadcn build consistent, interoperable components.
+
+### What render methods are useful?
+
+Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyjson.render` returns `Spec` or raw JSON for `useShinyOutput`. Are there other render shapes that would be useful — e.g., rendering a single element without a full Spec, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
+
+### Nested bullet structure of every feature or benefit
+
+Create a comprehensive nested bullet list cataloging every feature and benefit shinyjson provides. This serves as a documentation source-of-truth that can later be expanded into user-facing docs, README sections, or marketing material without forgetting anything. Should cover: JS hooks and APIs, Python public API, the extension/downstream pattern, built-in examples, and architectural benefits (e.g., shared React instance, zero-component philosophy, IIFE bundling). Organizing as nested bullets makes it easy to promote sections into full doc pages later.
+
+### Can dynamic UI be supported? Can any render output be supported, or should it always be components?
+
+Investigate whether shinyjson can support dynamic UI patterns where the server controls what gets rendered (not just data updates to fixed components). For example: can a render function return arbitrary Shiny UI (like `ui.tags`, `ui.input_slider`, etc.) mixed with shinyjson components? Should render output always be a component tree, or could it include raw HTML, plain text, or other Shiny outputs? This has implications for how flexible the framework is versus how predictable the rendering contract remains.
+
 ## Features
 
 ### Core infrastructure (js/src/shiny-react/)
