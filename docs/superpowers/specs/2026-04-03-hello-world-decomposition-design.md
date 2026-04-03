@@ -139,4 +139,6 @@ This flat dictionary with children as ID references (not nested objects) is exac
 
 ## Future Work (deferred)
 
-- **Python convenience helpers (Approach C):** `Element.text_input(input_id, ...)` and similar factory methods. Deferred until component patterns stabilize across downstream packages.
+See STATUS.md TODOs for:
+- Python convenience helpers (Approach C)
+- Pretty helper methods for Spec construction

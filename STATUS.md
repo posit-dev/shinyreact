@@ -24,6 +24,14 @@ The `renderMarkdown()` function in `examples/7-chat/chat.js` escapes code blocks
 
 `useShinyInitialized` now falls back to the `shiny:connected` DOM event when `window.Shiny` is not yet available at mount time. This unblocks a future "full React page" mode where the entire page is a React app and Shiny scripts load asynchronously. Remaining work includes a dedicated page layout function (e.g. `page_react()`), ensuring all hooks and the output binding gracefully handle late Shiny arrival end-to-end, and adding an example app that demonstrates the pattern.
 
+### Python convenience helpers for Element construction
+
+`Element.text_input(input_id, ...)` and similar factory methods would reduce boilerplate when building specs. Deferred until component patterns stabilize across downstream packages (Approach C from the hello world decomposition design).
+
+### Pretty helper methods to hide Spec construction
+
+The raw `Spec(root=..., elements={...})` / `Element(type=..., props={...}, children=[...])` calls are verbose and expose internal structure. Downstream packages (and examples) should offer higher-level helpers that build the spec behind the scenes, so app authors write something closer to a component tree rather than manually assembling flat dictionaries and element IDs.
+
 ### No build step for example JS
 
 All example JS files use `React.createElement` directly (no JSX, no bundler). This works but is verbose. A lightweight build step (e.g., esbuild with JSX) could improve readability without adding heavy tooling.
