@@ -19,9 +19,30 @@ def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def hello():
         return shinyjson.Spec(
-            root="hw",
+            root="card",
             elements={
-                "hw": shinyjson.Element(type="HelloWorldComponent", props={}),
+                "card": shinyjson.Element(
+                    type="Card",
+                    props={"title": "Hello Shiny React!"},
+                    children=["input1", "hr", "display1"],
+                ),
+                "input1": shinyjson.Element(
+                    type="TextInput",
+                    props={
+                        "input_id": "txtin",
+                        "default_value": "Hello, world!",
+                        "placeholder": "Enter your message here...",
+                        "label": "Type something to send to Shiny server:",
+                    },
+                ),
+                "hr": shinyjson.Element(type="Divider", props={}),
+                "display1": shinyjson.Element(
+                    type="OutputDisplay",
+                    props={
+                        "output_id": "txtout",
+                        "label": "Response from Shiny server:",
+                    },
+                ),
             },
         )
 
