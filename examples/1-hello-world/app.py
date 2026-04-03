@@ -15,34 +15,60 @@ _hello_dep = HTMLDependency(
 app_ui = shinyjson.ui("hello", extra_deps=[_hello_dep])
 
 
+# ---------------------------------------------------------------------------
+# Component helpers — thin wrappers around shinyjson.Element that mirror the
+# registered JS components in hello_world.js.
+# ---------------------------------------------------------------------------
+def Card(title: str, children: list[str]) -> shinyjson.Element:
+    return shinyjson.Element(type="Card", props={"title": title}, children=children)
+
+
+def TextInput(
+    input_id: str,
+    default_value: str = "",
+    *,
+    placeholder: str = "",
+    label: str = "",
+) -> shinyjson.Element:
+    return shinyjson.Element(
+        type="TextInput",
+        props={
+            "input_id": input_id,
+            "default_value": default_value,
+            "placeholder": placeholder,
+            "label": label,
+        },
+    )
+
+
+def Divider() -> shinyjson.Element:
+    return shinyjson.Element(type="Divider", props={})
+
+
+def OutputDisplay(output_id: str, *, label: str = "") -> shinyjson.Element:
+    return shinyjson.Element(
+        type="OutputDisplay", props={"output_id": output_id, "label": label}
+    )
+
+
+# ---------------------------------------------------------------------------
+
+
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def hello():
         return shinyjson.Spec(
             root="card",
             elements={
-                "card": shinyjson.Element(
-                    type="Card",
-                    props={"title": "Hello Shiny React!"},
-                    children=["input1", "hr", "display1"],
+                "card": Card("Hello Shiny React!", children=["input1", "hr", "out1"]),
+                "input1": TextInput(
+                    "txtin",
+                    "Hello, world!",
+                    placeholder="Enter your message here...",
+                    label="Type something to send to Shiny server:",
                 ),
-                "input1": shinyjson.Element(
-                    type="TextInput",
-                    props={
-                        "input_id": "txtin",
-                        "default_value": "Hello, world!",
-                        "placeholder": "Enter your message here...",
-                        "label": "Type something to send to Shiny server:",
-                    },
-                ),
-                "hr": shinyjson.Element(type="Divider", props={}),
-                "display1": shinyjson.Element(
-                    type="OutputDisplay",
-                    props={
-                        "output_id": "txtout",
-                        "label": "Response from Shiny server:",
-                    },
-                ),
+                "hr": Divider(),
+                "out1": OutputDisplay("txtout", label="Response from Shiny server:"),
             },
         )
 
