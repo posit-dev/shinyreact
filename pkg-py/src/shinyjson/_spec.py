@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -27,3 +29,35 @@ class Spec:
             "root": self.root,
             "elements": {key: elem.to_dict() for key, elem in self.elements.items()},
         }
+
+
+@dataclass
+class Node:
+    """A nested component node that can be flattened into a :class:`Spec`.
+
+    Unlike :class:`Element`, children are nested ``Node`` objects rather than
+    string IDs.  Call :meth:`to_spec` to walk the tree, assign auto-generated
+    element keys, and produce a flat :class:`Spec`.
+    """
+
+    type: str
+    props: dict[str, Any] = field(default_factory=dict)
+    children: list[Node] = field(default_factory=list)
+
+    def to_spec(self) -> Spec:
+        """Flatten this node tree into a :class:`Spec` with auto-generated keys."""
+        elements: dict[str, Element] = {}
+        counter = 0
+
+        def _walk(node: Node) -> str:
+            nonlocal counter
+            counter += 1
+            key = f"auto_{counter:03d}"
+            child_keys = [_walk(child) for child in node.children]
+            elements[key] = Element(
+                type=node.type, props=node.props, children=child_keys
+            )
+            return key
+
+        root_key = _walk(self)
+        return Spec(root=root_key, elements=elements)

@@ -73,6 +73,10 @@ All example JS files use `React.createElement` directly (no JSX, no bundler). Th
 | 8-modules | 8768 | Working | Three counter widgets using ShinyModuleProvider namespacing |
 | 9-blended | 8770 | Working | Tabbed sidebar layout, matplotlib plot, data table, settings panel |
 
+### Design decisions
+
+- **Element keys are always auto-generated.** The element key in `@json-render/react`'s flat `elements` map (e.g., `"auto_001"`) is internal plumbing — it has no relationship to DOM IDs or Shiny input/output IDs. Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server needs to know about. Exposing element keys to users would conflate two unrelated identity systems and add API surface for no benefit.
+
 ### Recent fixes
 
 - **useShinyInput defaultValue stabilization**: Inline `{}` / `[]` defaults no longer cause infinite re-renders. The first value is captured in a `useRef` and used for the `useEffect` dependency array.
