@@ -4,10 +4,11 @@ import shinyjson
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session
 
+_src_dir = Path(__file__).parent
 _hello_dep = HTMLDependency(
     name="hello-world",
-    version="0.1.0",
-    source={"subdir": str(Path(__file__).parent)},
+    version=str(int((_src_dir / "hello_world.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
     script={"src": "hello_world.js", "defer": ""},
     stylesheet={"href": "styles.css"},
 )
@@ -29,20 +30,30 @@ def text_input(
     *,
     placeholder: str = "",
     label: str = "",
+    debounce_ms: int | None = None,
 ) -> shinyjson.Node:
-    return shinyjson.Node(
-        type="TextInput",
-        props={
-            "input_id": input_id,
-            "default_value": default_value,
-            "placeholder": placeholder,
-            "label": label,
-        },
-    )
+    props: dict[str, object] = {
+        "input_id": input_id,
+        "default_value": default_value,
+        "placeholder": placeholder,
+        "label": label,
+    }
+    if debounce_ms is not None:
+        props["debounce_ms"] = debounce_ms
+    return shinyjson.Node(type="TextInput", props=props)
 
 
 def hr() -> shinyjson.Node:
     return shinyjson.Node(type="Divider")
+
+
+def input_display(
+    input_id: str, *, default_value: str = "", label: str = ""
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="InputDisplay",
+        props={"input_id": input_id, "default_value": default_value, "label": label},
+    )
 
 
 def output_display(output_id: str, *, label: str = "") -> shinyjson.Node:
@@ -66,6 +77,9 @@ def server(input: Inputs, output: Outputs, session: Session):
                 label="Type something to send to Shiny server:",
             ),
             hr(),
+            input_display(
+                "txtin", default_value="Hello, world!", label="Client-side value:"
+            ),
             output_display("txtout", label="Response from Shiny server:"),
         )
 

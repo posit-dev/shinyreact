@@ -18,6 +18,7 @@
     );
   }
 
+
   // Heading: renders h1–h6 based on level prop (default: 1)
   function Heading(args) {
     var props = args.element.props;
@@ -28,7 +29,9 @@
   // TextInput: labeled text input wired to Shiny via useShinyInput
   function TextInput(args) {
     var props = args.element.props;
-    var result = useShinyInput(props.input_id, props.default_value || "");
+    var opts = {};
+    if (props.debounce_ms !== undefined) { opts.debounceMs = props.debounce_ms; }
+    var result = useShinyInput(props.input_id, props.default_value || "", opts);
     var value = result[0];
     var setValue = result[1];
 
@@ -48,6 +51,22 @@
   // Divider: horizontal rule
   function Divider() {
     return h("hr");
+  }
+
+  // InputDisplay: shows a Shiny input value client-side (no server round-trip)
+  function InputDisplay(args) {
+    var props = args.element.props;
+    var result = useShinyInput(props.input_id, props.default_value || "");
+    var value = result[0];
+
+    return h(
+      "div",
+      { className: "output-section" },
+      props.label
+        ? h("label", { className: "output-label" }, props.label)
+        : null,
+      h("div", { className: "output-content" }, value)
+    );
   }
 
   // OutputDisplay: labeled display area wired to Shiny via useShinyOutput
@@ -71,6 +90,7 @@
     Heading: Heading,
     TextInput: TextInput,
     Divider: Divider,
+    InputDisplay: InputDisplay,
     OutputDisplay: OutputDisplay,
   });
 })();
