@@ -18,7 +18,7 @@ pkg-py/                     # Python package
     www/                    # Built JS assets (copied from js/dist/)
   tests/                    # pytest tests
 pkg-r/                      # R package (placeholder — not yet implemented)
-docs/plans/                 # Design docs
+docs/                       # STATUS.md, timeline.md, plans/
 decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
@@ -153,9 +153,9 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 - **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
 - **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
 
-## STATUS.md
+## docs/STATUS.md
 
-`STATUS.md` tracks known issues (TODOs), feature inventory, and recent fixes. Keep it up to date:
+`docs/STATUS.md` tracks known issues (TODOs), feature inventory, and recent fixes. Keep it up to date:
 
 - **When you find a bug or known issue**: add it under `## TODOs` with a descriptive heading and explanation.
 - **When you fix a TODO**: remove it from the TODOs section and add a bullet under `## Recent fixes`.
