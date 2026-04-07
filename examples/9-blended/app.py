@@ -41,10 +41,11 @@ mtcars.index = [
     "Merc 280",
 ]
 
+_src_dir = Path(__file__).parent
 _blended_dep = HTMLDependency(
     name="blended-example",
-    version="0.1.0",
-    source={"subdir": str(Path(__file__).parent)},
+    version=str(int((_src_dir / "blended.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
     script={"src": "blended.js", "defer": ""},
     stylesheet={"href": "styles.css"},
 )
@@ -52,14 +53,56 @@ _blended_dep = HTMLDependency(
 app_ui = shinyjson.ui("main", extra_deps=[_blended_dep])
 
 
+# ---------------------------------------------------------------------------
+# Component helpers
+# ---------------------------------------------------------------------------
+def sidebar_app(
+    title: str,
+    *,
+    months_id: str,
+    region_id: str,
+    sales_plot_id: str,
+    data_table_id: str,
+    refresh_id: str,
+    refresh_count_id: str,
+    username_id: str,
+    dark_mode_id: str,
+    notifications_id: str,
+    settings_output_id: str,
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="SidebarApp",
+        props={
+            "title": title,
+            "months_id": months_id,
+            "region_id": region_id,
+            "sales_plot_id": sales_plot_id,
+            "data_table_id": data_table_id,
+            "refresh_id": refresh_id,
+            "refresh_count_id": refresh_count_id,
+            "username_id": username_id,
+            "dark_mode_id": dark_mode_id,
+            "notifications_id": notifications_id,
+            "settings_output_id": settings_output_id,
+        },
+    )
+
+
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def main():
-        return shinyjson.Spec(
-            root="app",
-            elements={
-                "app": shinyjson.Element(type="App", props={}),
-            },
+        return sidebar_app(
+            "Blended Demo",
+            months_id="months",
+            region_id="region",
+            sales_plot_id="salesPlot",
+            data_table_id="dataTable",
+            refresh_id="refresh",
+            refresh_count_id="refreshCount",
+            username_id="username",
+            dark_mode_id="darkMode",
+            notifications_id="notifications",
+            settings_output_id="currentSettings",
         )
 
     # Sales Plot - reactive to months and region

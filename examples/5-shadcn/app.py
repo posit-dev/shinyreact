@@ -23,10 +23,11 @@ sample_data = pd.DataFrame(
     }
 )
 
+_src_dir = Path(__file__).parent
 _shadcn_dep = HTMLDependency(
     name="shadcn-example",
-    version="0.1.0",
-    source={"subdir": str(Path(__file__).parent)},
+    version=str(int((_src_dir / "shadcn.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
     script={"src": "shadcn.js", "defer": ""},
     stylesheet={"href": "styles.css"},
 )
@@ -34,14 +35,56 @@ _shadcn_dep = HTMLDependency(
 app_ui = shinyjson.ui("main", extra_deps=[_shadcn_dep])
 
 
+# ---------------------------------------------------------------------------
+# Component helpers
+# ---------------------------------------------------------------------------
+def page_layout(title: str, subtitle: str, *children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="PageLayout",
+        props={"title": title, "subtitle": subtitle},
+        children=list(children),
+    )
+
+
+def grid(*children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(type="Grid", children=list(children))
+
+
+def text_input_card(
+    input_id: str, processed_output_id: str, length_output_id: str
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="TextInputCard",
+        props={
+            "input_id": input_id,
+            "processed_output_id": processed_output_id,
+            "length_output_id": length_output_id,
+        },
+    )
+
+
+def button_event_card(input_id: str, output_id: str) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="ButtonEventCard",
+        props={"input_id": input_id, "output_id": output_id},
+    )
+
+
+def plot_card(plot_id: str) -> shinyjson.Node:
+    return shinyjson.Node(type="PlotCard", props={"plot_id": plot_id})
+
+
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def main():
-        return shinyjson.Spec(
-            root="app",
-            elements={
-                "app": shinyjson.Element(type="App", props={}),
-            },
+        return page_layout(
+            "Shiny + React + shadcn/ui",
+            "Demonstrating shadcn/ui components with various shiny-react output types",
+            grid(
+                text_input_card("user_text", "processed_text", "text_length"),
+                button_event_card("button_trigger", "button_response"),
+            ),
+            grid(plot_card("plot1")),
         )
 
     @shinyjson.render
@@ -61,7 +104,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.button_trigger, ignore_init=True)
     def button_response():
         now = datetime.now()
-        return f"Event received at: {now.strftime('%Y-%m-%d %H:%M:%S')}.{now.microsecond // 10000:02d}"
+        ts = now.strftime("%Y-%m-%d %H:%M:%S")
+        ms = now.microsecond // 10000
+        return f"Event received at: {ts}.{ms:02d}"
 
     @render.plot()
     def plot1():

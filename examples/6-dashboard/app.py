@@ -1,23 +1,47 @@
 from pathlib import Path
 
 import shinyjson
+from data import calculate_metrics, filter_data, generate_sample_data
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive
-
-from data import generate_sample_data, filter_data, calculate_metrics
 
 # Generate sample data once when app starts
 sample_data = generate_sample_data()
 
+_src_dir = Path(__file__).parent
 _dashboard_dep = HTMLDependency(
     name="dashboard",
-    version="0.1.0",
-    source={"subdir": str(Path(__file__).parent)},
+    version=str(int((_src_dir / "dashboard.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
     script={"src": "dashboard.js", "defer": ""},
     stylesheet={"href": "styles.css"},
 )
 
 app_ui = shinyjson.ui("main", extra_deps=[_dashboard_dep])
+
+
+# ---------------------------------------------------------------------------
+# Component helpers
+# ---------------------------------------------------------------------------
+def dashboard_app(
+    date_range_id: str,
+    search_id: str,
+    categories_id: str,
+    metrics_id: str,
+    chart_id: str,
+    table_id: str,
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="DashboardApp",
+        props={
+            "date_range_id": date_range_id,
+            "search_id": search_id,
+            "categories_id": categories_id,
+            "metrics_id": metrics_id,
+            "chart_id": chart_id,
+            "table_id": table_id,
+        },
+    )
 
 
 def server(input: Inputs, output: Outputs, session: Session):
@@ -44,11 +68,13 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @shinyjson.render
     def main():
-        return shinyjson.Spec(
-            root="app",
-            elements={
-                "app": shinyjson.Element(type="App", props={}),
-            },
+        return dashboard_app(
+            date_range_id="date_range",
+            search_id="search_term",
+            categories_id="selected_categories",
+            metrics_id="metrics_data",
+            chart_id="chart_data",
+            table_id="table_data",
         )
 
     @shinyjson.render

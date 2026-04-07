@@ -29,16 +29,16 @@
   // FilterPanel
   // ---------------------------------------------------------------------------
 
-  function FilterPanel() {
-    var dateRangeResult = useShinyInput("date_range", "last_30_days");
+  function FilterPanel(props) {
+    var dateRangeResult = useShinyInput(props.date_range_id, "last_30_days");
     var dateRange = dateRangeResult[0];
     var setDateRange = dateRangeResult[1];
 
-    var searchResult = useShinyInput("search_term", "");
+    var searchResult = useShinyInput(props.search_id, "");
     var searchTerm = searchResult[0];
     var setSearchTerm = searchResult[1];
 
-    var catResult = useShinyInput("selected_categories", []);
+    var catResult = useShinyInput(props.categories_id, []);
     var selectedCategories = catResult[0];
     var setSelectedCategories = catResult[1];
 
@@ -139,6 +139,7 @@
   function Sidebar(props) {
     var activePage = props.activePage;
     var onNavigate = props.onNavigate;
+    // Filter IDs are threaded through to FilterPanel
 
     return h("aside", { className: "sidebar" },
       h("div", { className: "sidebar-header" },
@@ -166,7 +167,7 @@
         })
       ),
       h("hr", { className: "sidebar-divider" }),
-      h(FilterPanel, null)
+      h(FilterPanel, { date_range_id: props.date_range_id, search_id: props.search_id, categories_id: props.categories_id })
     );
   }
 
@@ -174,8 +175,8 @@
   // MetricsCards
   // ---------------------------------------------------------------------------
 
-  function MetricsCards() {
-    var result = useShinyOutput("metrics_data", undefined);
+  function MetricsCards(props) {
+    var result = useShinyOutput(props.output_id, undefined);
     var metricsData = result[0];
     var isLoading = result[1];
 
@@ -223,8 +224,8 @@
   // Charts (CSS bar charts — no recharts available)
   // ---------------------------------------------------------------------------
 
-  function Charts() {
-    var result = useShinyOutput("chart_data", undefined);
+  function Charts(props) {
+    var result = useShinyOutput(props.output_id, undefined);
     var chartColumnsData = result[0];
     var isLoading = result[1];
 
@@ -308,8 +309,8 @@
   // DataTable
   // ---------------------------------------------------------------------------
 
-  function DataTable() {
-    var result = useShinyOutput("table_data", undefined);
+  function DataTable(props) {
+    var result = useShinyOutput(props.output_id, undefined);
     var tableData = result[0];
     var isLoading = result[1];
 
@@ -402,35 +403,36 @@
     );
   }
 
-  function DashboardPage() {
+  function DashboardPage(props) {
     return h("main", { className: "main-content" },
       h("div", { className: "page-header" },
         h("h1", null, "Dashboard"),
         h("p", null, "Welcome to your analytics dashboard. Monitor your key metrics and performance.")
       ),
       h("hr", { className: "separator" }),
-      h(MetricsCards, null),
+      h(MetricsCards, { output_id: props.metrics_id }),
       h("div", { className: "content-grid" },
-        h(Charts, null),
-        h(DataTable, null)
+        h(Charts, { output_id: props.chart_id }),
+        h(DataTable, { output_id: props.table_id })
       )
     );
   }
 
-  function App() {
+  function DashboardApp(args) {
+    var props = args.element.props;
     var pageState = useState("Dashboard");
     var activePage = pageState[0];
     var setActivePage = pageState[1];
 
     var content;
     if (activePage === "Dashboard") {
-      content = h(DashboardPage, null);
+      content = h(DashboardPage, { metrics_id: props.metrics_id, chart_id: props.chart_id, table_id: props.table_id });
     } else {
       content = h(PlaceholderPage, { title: activePage });
     }
 
     return h("div", { className: "dashboard-layout" },
-      h(Sidebar, { activePage: activePage, onNavigate: setActivePage }),
+      h(Sidebar, { activePage: activePage, onNavigate: setActivePage, date_range_id: props.date_range_id, search_id: props.search_id, categories_id: props.categories_id }),
       content
     );
   }
@@ -440,8 +442,7 @@
   // ---------------------------------------------------------------------------
 
   window.shinyjson.registerComponents(null, {
-    App: App,
-    Sidebar: Sidebar,
+    DashboardApp: DashboardApp,
     FilterPanel: FilterPanel,
     MetricsCards: MetricsCards,
     Charts: Charts,

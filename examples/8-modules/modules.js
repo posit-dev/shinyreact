@@ -9,6 +9,36 @@
   var useShinyMessageHandler = window.shinyjson.useShinyMessageHandler;
   var ShinyModuleProvider = window.shinyjson.ShinyModuleProvider;
 
+  // ---------------------------------------------------------------------------
+  // AppLayout — registered, invoked from spec
+  // ---------------------------------------------------------------------------
+  function AppLayout(args) {
+    var props = args.element.props;
+    return h(
+      "div",
+      { className: "app-container" },
+      h(
+        "header",
+        { className: "app-header" },
+        h("h1", null, props.title),
+        props.subtitle
+          ? h("p", { className: "subtitle" }, props.subtitle)
+          : null
+      ),
+      args.children
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // WidgetsGrid — registered, grid wrapper for children
+  // ---------------------------------------------------------------------------
+  function WidgetsGrid(args) {
+    return h("div", { className: "widgets-grid" }, args.children);
+  }
+
+  // ---------------------------------------------------------------------------
+  // CounterWidget — internal component (not registered directly)
+  // ---------------------------------------------------------------------------
   function CounterWidget(props) {
     var label = props.label;
 
@@ -82,85 +112,70 @@
     );
   }
 
-  function App() {
+  // ---------------------------------------------------------------------------
+  // ModuleCounter — registered, wraps CounterWidget in ShinyModuleProvider
+  // ---------------------------------------------------------------------------
+  function ModuleCounter(args) {
+    var props = args.element.props;
+    return h(
+      ShinyModuleProvider,
+      { namespace: props.namespace },
+      h(CounterWidget, { label: props.label })
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // InfoSection — registered, static "How It Works" content
+  // ---------------------------------------------------------------------------
+  function InfoSection(args) {
     return h(
       "div",
-      { className: "app-container" },
+      { className: "info-section" },
+      h("h2", null, "How It Works"),
       h(
-        "header",
-        { className: "app-header" },
-        h("h1", null, "Shiny Module Namespace Demo"),
+        "p",
+        null,
+        "Each counter widget is wrapped in a ",
+        h("code", null, "ShinyModuleProvider"),
+        " with a unique namespace. This allows multiple instances of the same component to operate independently without ID conflicts."
+      ),
+      h(
+        "ul",
+        null,
         h(
-          "p",
-          { className: "subtitle" },
-          "Three independent counter widgets, each in its own namespace"
+          "li",
+          null,
+          h("strong", null, "Counter 1"),
+          " uses namespace ",
+          h("code", null, "counter1")
+        ),
+        h(
+          "li",
+          null,
+          h("strong", null, "Counter 2"),
+          " uses namespace ",
+          h("code", null, "counter2")
+        ),
+        h(
+          "li",
+          null,
+          h("strong", null, "Counter 3"),
+          " uses namespace ",
+          h("code", null, "counter3")
         )
       ),
       h(
-        "div",
-        { className: "widgets-grid" },
-        h(
-          ShinyModuleProvider,
-          { namespace: "counter1" },
-          h(CounterWidget, { label: "Counter 1" })
-        ),
-        h(
-          ShinyModuleProvider,
-          { namespace: "counter2" },
-          h(CounterWidget, { label: "Counter 2" })
-        ),
-        h(
-          ShinyModuleProvider,
-          { namespace: "counter3" },
-          h(CounterWidget, { label: "Counter 3" })
-        )
-      ),
-      h(
-        "div",
-        { className: "info-section" },
-        h("h2", null, "How It Works"),
-        h(
-          "p",
-          null,
-          "Each counter widget is wrapped in a ",
-          h("code", null, "ShinyModuleProvider"),
-          " with a unique namespace. This allows multiple instances of the same component to operate independently without ID conflicts."
-        ),
-        h(
-          "ul",
-          null,
-          h(
-            "li",
-            null,
-            h("strong", null, "Counter 1"),
-            " uses namespace ",
-            h("code", null, "counter1")
-          ),
-          h(
-            "li",
-            null,
-            h("strong", null, "Counter 2"),
-            " uses namespace ",
-            h("code", null, "counter2")
-          ),
-          h(
-            "li",
-            null,
-            h("strong", null, "Counter 3"),
-            " uses namespace ",
-            h("code", null, "counter3")
-          )
-        ),
-        h(
-          "p",
-          null,
-          "On the server side, Shiny modules automatically namespace the outputs and messages, keeping each widget's state completely separate."
-        )
+        "p",
+        null,
+        "On the server side, Shiny modules automatically namespace the outputs and messages, keeping each widget's state completely separate."
       )
     );
   }
 
   window.shinyjson.registerComponents(null, {
-    App: App,
+    AppLayout: AppLayout,
+    WidgetsGrid: WidgetsGrid,
+    ModuleCounter: ModuleCounter,
+    InfoSection: InfoSection,
   });
 })();

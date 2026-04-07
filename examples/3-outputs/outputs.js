@@ -7,7 +7,20 @@
   var ImageOutput = window.shinyjson.ImageOutput;
 
   // ---------------------------------------------------------------------------
-  // Card — generic wrapper
+  // PageLayout — registered, invoked from spec
+  // ---------------------------------------------------------------------------
+  function PageLayout(args) {
+    var props = args.element.props;
+    return h(
+      "div",
+      { className: "app-container" },
+      h("h1", null, props.title),
+      h("div", { className: "cards-wrap" }, args.children)
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Card — internal wrapper (not registered)
   // ---------------------------------------------------------------------------
   function Card(props) {
     return h(
@@ -21,8 +34,9 @@
   // ---------------------------------------------------------------------------
   // SliderCard — input control for row count
   // ---------------------------------------------------------------------------
-  function SliderCard() {
-    var result = useShinyInput("table_rows", 4);
+  function SliderCard(args) {
+    var props = args.element.props;
+    var result = useShinyInput(props.input_id, props.default_value != null ? props.default_value : 4);
     var rowCount = result[0];
     var setRowCount = result[1];
 
@@ -55,8 +69,9 @@
   // ---------------------------------------------------------------------------
   // StatisticsCard — displays stats from useShinyOutput
   // ---------------------------------------------------------------------------
-  function StatisticsCard() {
-    var result = useShinyOutput("table_stats", undefined);
+  function StatisticsCard(args) {
+    var props = args.element.props;
+    var result = useShinyOutput(props.output_id, undefined);
     var tableStats = result[0];
 
     if (!tableStats) {
@@ -155,8 +170,9 @@
   // ---------------------------------------------------------------------------
   // DataTableCard — renders table data from useShinyOutput
   // ---------------------------------------------------------------------------
-  function DataTableCard() {
-    var result = useShinyOutput("table_data", undefined);
+  function DataTableCard(args) {
+    var props = args.element.props;
+    var result = useShinyOutput(props.output_id, undefined);
     var tableData = result[0];
 
     var columnNames = tableData ? Object.keys(tableData) : [];
@@ -210,41 +226,22 @@
   // ---------------------------------------------------------------------------
   // PlotCard — renders matplotlib plot via ImageOutput
   // ---------------------------------------------------------------------------
-  function PlotCard() {
+  function PlotCard(args) {
+    var props = args.element.props;
     return h(
       Card,
       { title: "Plot output" },
       h(
         "div",
         { className: "plot-container" },
-        h(ImageOutput, { id: "plot1", className: "data-plot" })
-      )
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // App — top-level layout
-  // ---------------------------------------------------------------------------
-  function App() {
-    return h(
-      "div",
-      { className: "app-container" },
-      h("h1", null, "Shiny React Output Examples"),
-      h(
-        "div",
-        { className: "cards-wrap" },
-        h(SliderCard),
-        h(StatisticsCard),
-        h(DataTableCard),
-        h(PlotCard)
+        h(ImageOutput, { id: props.plot_id, className: "data-plot" })
       )
     );
   }
 
   // Register all components
   window.shinyjson.registerComponents(null, {
-    App: App,
-    Card: Card,
+    PageLayout: PageLayout,
     SliderCard: SliderCard,
     StatisticsCard: StatisticsCard,
     DataTableCard: DataTableCard,

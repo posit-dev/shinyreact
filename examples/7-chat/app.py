@@ -21,7 +21,7 @@ chat = ChatOpenAI(
 
 _chat_dep = HTMLDependency(
     name="chat-example",
-    version="0.1.0",
+    version=str(int((app_dir / "chat.js").stat().st_mtime)),
     source={"subdir": str(app_dir)},
     script={"src": "chat.js", "defer": ""},
     stylesheet={"href": "styles.css"},
@@ -30,15 +30,17 @@ _chat_dep = HTMLDependency(
 app_ui = shinyjson.ui("main", extra_deps=[_chat_dep])
 
 
+# ---------------------------------------------------------------------------
+# Component helpers
+# ---------------------------------------------------------------------------
+def chat_app(input_id: str) -> shinyjson.Node:
+    return shinyjson.Node(type="ChatApp", props={"input_id": input_id})
+
+
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def main():
-        return shinyjson.Spec(
-            root="app",
-            elements={
-                "app": shinyjson.Element(type="App", props={}),
-            },
-        )
+        return chat_app("chat_input")
 
     @reactive.effect
     @reactive.event(input.chat_input)

@@ -394,12 +394,12 @@
   // ---------------------------------------------------------------------------
   // ChatInterface component
   // ---------------------------------------------------------------------------
-  function ChatInterface() {
+  function ChatInterface(props) {
     var theme = useTheme();
     var currentTheme = theme.currentTheme;
 
     // Shiny input for sending chat messages
-    var _input = useShinyInput("chat_input", { text: "", attachments: [] }, { debounceMs: 0, priority: "event" });
+    var _input = useShinyInput(props.input_id, { text: "", attachments: [] }, { debounceMs: 0, priority: "event" });
     var setCurrentMessage = _input[1];
 
     var _msgs = useState([]);
@@ -754,14 +754,15 @@
   // ---------------------------------------------------------------------------
   // App wrapper (provides theme context)
   // ---------------------------------------------------------------------------
-  function App() {
-    return h(ThemeProvider, null, h(ChatInterface, null));
+  function ChatApp(args) {
+    var props = args.element.props;
+    return h(ThemeProvider, null, h(ChatInterface, { input_id: props.input_id }));
   }
 
   // ---------------------------------------------------------------------------
   // Register with shinyjson
   // ---------------------------------------------------------------------------
   window.shinyjson.registerComponents(null, {
-    App: App,
+    ChatApp: ChatApp,
   });
 })();

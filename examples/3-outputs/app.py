@@ -14,10 +14,11 @@ matplotlib.use("Agg")
 
 mtcars = pd.read_csv(Path(__file__).parent / "mtcars.csv")
 
+_src_dir = Path(__file__).parent
 _outputs_dep = HTMLDependency(
     name="outputs-example",
-    version="0.1.0",
-    source={"subdir": str(Path(__file__).parent)},
+    version=str(int((_src_dir / "outputs.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
     script={"src": "outputs.js", "defer": ""},
     stylesheet={"href": "styles.css"},
 )
@@ -25,14 +26,43 @@ _outputs_dep = HTMLDependency(
 app_ui = shinyjson.ui("main", extra_deps=[_outputs_dep])
 
 
+# ---------------------------------------------------------------------------
+# Component helpers
+# ---------------------------------------------------------------------------
+def page_layout(title: str, *children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="PageLayout", props={"title": title}, children=list(children)
+    )
+
+
+def slider_card(input_id: str, default_value: int = 4) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="SliderCard",
+        props={"input_id": input_id, "default_value": default_value},
+    )
+
+
+def statistics_card(output_id: str) -> shinyjson.Node:
+    return shinyjson.Node(type="StatisticsCard", props={"output_id": output_id})
+
+
+def data_table_card(output_id: str) -> shinyjson.Node:
+    return shinyjson.Node(type="DataTableCard", props={"output_id": output_id})
+
+
+def plot_card(plot_id: str) -> shinyjson.Node:
+    return shinyjson.Node(type="PlotCard", props={"plot_id": plot_id})
+
+
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def main():
-        return shinyjson.Spec(
-            root="app",
-            elements={
-                "app": shinyjson.Element(type="App", props={}),
-            },
+        return page_layout(
+            "Shiny React Output Examples",
+            slider_card("table_rows"),
+            statistics_card("table_stats"),
+            data_table_card("table_data"),
+            plot_card("plot1"),
         )
 
     @shinyjson.render
