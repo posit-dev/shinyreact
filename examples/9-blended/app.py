@@ -56,30 +56,47 @@ app_ui = shinyjson.ui("main", extra_deps=[_blended_dep])
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def sidebar_app(
-    title: str,
-    *,
-    months_id: str,
-    region_id: str,
-    sales_plot_id: str,
-    data_table_id: str,
-    refresh_id: str,
-    refresh_count_id: str,
+def sidebar_app(title: str, *children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="SidebarApp", props={"title": title}, children=list(children)
+    )
+
+
+def dashboard_panel(
+    months_id: str, region_id: str, sales_plot_id: str
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="DashboardPanel",
+        props={
+            "months_id": months_id,
+            "region_id": region_id,
+            "sales_plot_id": sales_plot_id,
+        },
+    )
+
+
+def data_panel(
+    data_table_id: str, refresh_id: str, refresh_count_id: str
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="DataPanel",
+        props={
+            "data_table_id": data_table_id,
+            "refresh_id": refresh_id,
+            "refresh_count_id": refresh_count_id,
+        },
+    )
+
+
+def settings_panel(
     username_id: str,
     dark_mode_id: str,
     notifications_id: str,
     settings_output_id: str,
 ) -> shinyjson.Node:
     return shinyjson.Node(
-        type="SidebarApp",
+        type="SettingsPanel",
         props={
-            "title": title,
-            "months_id": months_id,
-            "region_id": region_id,
-            "sales_plot_id": sales_plot_id,
-            "data_table_id": data_table_id,
-            "refresh_id": refresh_id,
-            "refresh_count_id": refresh_count_id,
             "username_id": username_id,
             "dark_mode_id": dark_mode_id,
             "notifications_id": notifications_id,
@@ -93,16 +110,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     def main():
         return sidebar_app(
             "Blended Demo",
-            months_id="months",
-            region_id="region",
-            sales_plot_id="salesPlot",
-            data_table_id="dataTable",
-            refresh_id="refresh",
-            refresh_count_id="refreshCount",
-            username_id="username",
-            dark_mode_id="darkMode",
-            notifications_id="notifications",
-            settings_output_id="currentSettings",
+            dashboard_panel("months", "region", "salesPlot"),
+            data_panel("dataTable", "refresh", "refreshCount"),
+            settings_panel("username", "darkMode", "notifications", "currentSettings"),
         )
 
     # Sales Plot - reactive to months and region

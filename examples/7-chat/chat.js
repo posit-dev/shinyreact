@@ -428,7 +428,7 @@
     var fileInputRef = useRef(null);
 
     // Handle streaming messages from Shiny server
-    useShinyMessageHandler("chat_stream", function (msg) {
+    useShinyMessageHandler(props.stream_handler, function (msg) {
       if (msg.done) {
         setIsLoading(false);
       } else {
@@ -756,7 +756,10 @@
   // ---------------------------------------------------------------------------
   function ChatApp(args) {
     var props = args.element.props;
-    return h(ThemeProvider, null, h(ChatInterface, { input_id: props.input_id }));
+    return h(ThemeProvider, null, h(ChatInterface, {
+      input_id: props.input_id,
+      stream_handler: props.stream_handler,
+    }));
   }
 
   // ---------------------------------------------------------------------------

@@ -33,14 +33,17 @@ app_ui = shinyjson.ui("main", extra_deps=[_chat_dep])
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def chat_app(input_id: str) -> shinyjson.Node:
-    return shinyjson.Node(type="ChatApp", props={"input_id": input_id})
+def chat_app(input_id: str, stream_handler: str) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="ChatApp",
+        props={"input_id": input_id, "stream_handler": stream_handler},
+    )
 
 
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def main():
-        return chat_app("chat_input")
+        return chat_app("chat_input", "chat_stream")
 
     @reactive.effect
     @reactive.event(input.chat_input)

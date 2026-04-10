@@ -23,25 +23,33 @@ app_ui = shinyjson.ui("main", extra_deps=[_dashboard_dep])
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def dashboard_app(
-    date_range_id: str,
-    search_id: str,
-    categories_id: str,
-    metrics_id: str,
-    chart_id: str,
-    table_id: str,
+def dashboard_app(*children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(type="DashboardApp", children=list(children))
+
+
+def filter_panel(
+    date_range_id: str, search_id: str, categories_id: str
 ) -> shinyjson.Node:
     return shinyjson.Node(
-        type="DashboardApp",
+        type="FilterPanel",
         props={
             "date_range_id": date_range_id,
             "search_id": search_id,
             "categories_id": categories_id,
-            "metrics_id": metrics_id,
-            "chart_id": chart_id,
-            "table_id": table_id,
         },
     )
+
+
+def metrics_cards(output_id: str) -> shinyjson.Node:
+    return shinyjson.Node(type="MetricsCards", props={"output_id": output_id})
+
+
+def charts(output_id: str) -> shinyjson.Node:
+    return shinyjson.Node(type="Charts", props={"output_id": output_id})
+
+
+def data_table(output_id: str) -> shinyjson.Node:
+    return shinyjson.Node(type="DataTable", props={"output_id": output_id})
 
 
 def server(input: Inputs, output: Outputs, session: Session):
@@ -69,12 +77,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def main():
         return dashboard_app(
-            date_range_id="date_range",
-            search_id="search_term",
-            categories_id="selected_categories",
-            metrics_id="metrics_data",
-            chart_id="chart_data",
-            table_id="table_data",
+            filter_panel("date_range", "search_term", "selected_categories"),
+            metrics_cards("metrics_data"),
+            charts("chart_data"),
+            data_table("table_data"),
         )
 
     @shinyjson.render

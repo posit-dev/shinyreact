@@ -29,7 +29,8 @@
   // FilterPanel
   // ---------------------------------------------------------------------------
 
-  function FilterPanel(props) {
+  function FilterPanel(args) {
+    var props = args.element.props;
     var dateRangeResult = useShinyInput(props.date_range_id, "last_30_days");
     var dateRange = dateRangeResult[0];
     var setDateRange = dateRangeResult[1];
@@ -139,7 +140,6 @@
   function Sidebar(props) {
     var activePage = props.activePage;
     var onNavigate = props.onNavigate;
-    // Filter IDs are threaded through to FilterPanel
 
     return h("aside", { className: "sidebar" },
       h("div", { className: "sidebar-header" },
@@ -167,7 +167,7 @@
         })
       ),
       h("hr", { className: "sidebar-divider" }),
-      h(FilterPanel, { date_range_id: props.date_range_id, search_id: props.search_id, categories_id: props.categories_id })
+      props.filterPanel
     );
   }
 
@@ -175,8 +175,8 @@
   // MetricsCards
   // ---------------------------------------------------------------------------
 
-  function MetricsCards(props) {
-    var result = useShinyOutput(props.output_id, undefined);
+  function MetricsCards(args) {
+    var result = useShinyOutput(args.element.props.output_id, undefined);
     var metricsData = result[0];
     var isLoading = result[1];
 
@@ -224,8 +224,8 @@
   // Charts (CSS bar charts — no recharts available)
   // ---------------------------------------------------------------------------
 
-  function Charts(props) {
-    var result = useShinyOutput(props.output_id, undefined);
+  function Charts(args) {
+    var result = useShinyOutput(args.element.props.output_id, undefined);
     var chartColumnsData = result[0];
     var isLoading = result[1];
 
@@ -309,8 +309,8 @@
   // DataTable
   // ---------------------------------------------------------------------------
 
-  function DataTable(props) {
-    var result = useShinyOutput(props.output_id, undefined);
+  function DataTable(args) {
+    var result = useShinyOutput(args.element.props.output_id, undefined);
     var tableData = result[0];
     var isLoading = result[1];
 
@@ -404,35 +404,42 @@
   }
 
   function DashboardPage(props) {
+    // props.metricsCards, props.charts, props.dataTable are rendered children
     return h("main", { className: "main-content" },
       h("div", { className: "page-header" },
         h("h1", null, "Dashboard"),
         h("p", null, "Welcome to your analytics dashboard. Monitor your key metrics and performance.")
       ),
       h("hr", { className: "separator" }),
-      h(MetricsCards, { output_id: props.metrics_id }),
+      props.metricsCards,
       h("div", { className: "content-grid" },
-        h(Charts, { output_id: props.chart_id }),
-        h(DataTable, { output_id: props.table_id })
+        props.charts,
+        props.dataTable
       )
     );
   }
 
   function DashboardApp(args) {
-    var props = args.element.props;
     var pageState = useState("Dashboard");
     var activePage = pageState[0];
     var setActivePage = pageState[1];
 
+    // Children order: FilterPanel, MetricsCards, Charts, DataTable
+    var childArray = React.Children.toArray(args.children);
+    var filterPanel = childArray[0];
+    var metricsCards = childArray[1];
+    var charts = childArray[2];
+    var dataTable = childArray[3];
+
     var content;
     if (activePage === "Dashboard") {
-      content = h(DashboardPage, { metrics_id: props.metrics_id, chart_id: props.chart_id, table_id: props.table_id });
+      content = h(DashboardPage, { metricsCards: metricsCards, charts: charts, dataTable: dataTable });
     } else {
       content = h(PlaceholderPage, { title: activePage });
     }
 
     return h("div", { className: "dashboard-layout" },
-      h(Sidebar, { activePage: activePage, onNavigate: setActivePage, date_range_id: props.date_range_id, search_id: props.search_id, categories_id: props.categories_id }),
+      h(Sidebar, { activePage: activePage, onNavigate: setActivePage, filterPanel: filterPanel }),
       content
     );
   }

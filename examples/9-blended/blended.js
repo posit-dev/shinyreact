@@ -38,8 +38,9 @@
     { id: "settings", title: "Settings", icon: gearIcon },
   ];
 
-  // ── Dashboard Panel ────────────────────────────────────────────────────
-  function DashboardPanel(props) {
+  // ── Dashboard Panel (registered) ───────────────────────────────────────
+  function DashboardPanel(args) {
+    var props = args.element.props;
     var monthsResult = useShinyInput(props.months_id, 6);
     var months = monthsResult[0];
     var setMonths = monthsResult[1];
@@ -119,8 +120,9 @@
     );
   }
 
-  // ── Data Panel ─────────────────────────────────────────────────────────
-  function DataPanel(props) {
+  // ── Data Panel (registered) ────────────────────────────────────────────
+  function DataPanel(args) {
+    var props = args.element.props;
     var tableResult = useShinyOutput(props.data_table_id, undefined);
     var tableData = tableResult[0];
 
@@ -191,8 +193,9 @@
     );
   }
 
-  // ── Settings Panel ─────────────────────────────────────────────────────
-  function SettingsPanel(props) {
+  // ── Settings Panel (registered) ────────────────────────────────────────
+  function SettingsPanel(args) {
+    var props = args.element.props;
     var usernameResult = useShinyInput(props.username_id, "");
     var username = usernameResult[0];
     var setUsername = usernameResult[1];
@@ -341,15 +344,10 @@
       );
     });
 
-    // Render the active panel
-    var panelContent;
-    if (activePanel === "dashboard") {
-      panelContent = h(DashboardPanel, { months_id: appProps.months_id, region_id: appProps.region_id, sales_plot_id: appProps.sales_plot_id });
-    } else if (activePanel === "data") {
-      panelContent = h(DataPanel, { data_table_id: appProps.data_table_id, refresh_id: appProps.refresh_id, refresh_count_id: appProps.refresh_count_id });
-    } else {
-      panelContent = h(SettingsPanel, { username_id: appProps.username_id, dark_mode_id: appProps.dark_mode_id, notifications_id: appProps.notifications_id, settings_output_id: appProps.settings_output_id });
-    }
+    // Render the active panel — children are spec-driven panel components
+    var childArray = React.Children.toArray(args.children);
+    var activeIndex = panels.findIndex(function (p) { return p.id === activePanel; });
+    var panelContent = childArray[activeIndex] || null;
 
     return h(
       "div",
@@ -391,5 +389,8 @@
 
   window.shinyjson.registerComponents(null, {
     SidebarApp: SidebarApp,
+    DashboardPanel: DashboardPanel,
+    DataPanel: DataPanel,
+    SettingsPanel: SettingsPanel,
   });
 })();
