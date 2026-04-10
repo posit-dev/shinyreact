@@ -29,16 +29,17 @@
   // FilterPanel
   // ---------------------------------------------------------------------------
 
-  function FilterPanel() {
-    var dateRangeResult = useShinyInput("date_range", "last_30_days");
+  function FilterPanel(args) {
+    var props = args.element.props;
+    var dateRangeResult = useShinyInput(props.date_range_id, "last_30_days");
     var dateRange = dateRangeResult[0];
     var setDateRange = dateRangeResult[1];
 
-    var searchResult = useShinyInput("search_term", "");
+    var searchResult = useShinyInput(props.search_id, "");
     var searchTerm = searchResult[0];
     var setSearchTerm = searchResult[1];
 
-    var catResult = useShinyInput("selected_categories", []);
+    var catResult = useShinyInput(props.categories_id, []);
     var selectedCategories = catResult[0];
     var setSelectedCategories = catResult[1];
 
@@ -166,7 +167,7 @@
         })
       ),
       h("hr", { className: "sidebar-divider" }),
-      h(FilterPanel, null)
+      props.filterPanel
     );
   }
 
@@ -174,8 +175,8 @@
   // MetricsCards
   // ---------------------------------------------------------------------------
 
-  function MetricsCards() {
-    var result = useShinyOutput("metrics_data", undefined);
+  function MetricsCards(args) {
+    var result = useShinyOutput(args.element.props.output_id, undefined);
     var metricsData = result[0];
     var isLoading = result[1];
 
@@ -223,8 +224,8 @@
   // Charts (CSS bar charts — no recharts available)
   // ---------------------------------------------------------------------------
 
-  function Charts() {
-    var result = useShinyOutput("chart_data", undefined);
+  function Charts(args) {
+    var result = useShinyOutput(args.element.props.output_id, undefined);
     var chartColumnsData = result[0];
     var isLoading = result[1];
 
@@ -308,8 +309,8 @@
   // DataTable
   // ---------------------------------------------------------------------------
 
-  function DataTable() {
-    var result = useShinyOutput("table_data", undefined);
+  function DataTable(args) {
+    var result = useShinyOutput(args.element.props.output_id, undefined);
     var tableData = result[0];
     var isLoading = result[1];
 
@@ -402,36 +403,44 @@
     );
   }
 
-  function DashboardPage() {
+  function DashboardPage(props) {
+    // props.metricsCards, props.charts, props.dataTable are rendered children
     return h("main", { className: "main-content" },
       h("div", { className: "page-header" },
         h("h1", null, "Dashboard"),
         h("p", null, "Welcome to your analytics dashboard. Monitor your key metrics and performance.")
       ),
       h("hr", { className: "separator" }),
-      h(MetricsCards, null),
+      props.metricsCards,
       h("div", { className: "content-grid" },
-        h(Charts, null),
-        h(DataTable, null)
+        props.charts,
+        props.dataTable
       )
     );
   }
 
-  function App() {
+  function DashboardApp(args) {
     var pageState = useState("Dashboard");
     var activePage = pageState[0];
     var setActivePage = pageState[1];
 
-    var content;
-    if (activePage === "Dashboard") {
-      content = h(DashboardPage, null);
-    } else {
-      content = h(PlaceholderPage, { title: activePage });
-    }
+    // Children order: FilterPanel, MetricsCards, Charts, DataTable
+    var childArray = React.Children.toArray(args.children);
+    var filterPanel = childArray[0];
+    var metricsCards = childArray[1];
+    var charts = childArray[2];
+    var dataTable = childArray[3];
+
+    // Always render DashboardPage to keep output hooks registered — hiding
+    // inactive pages avoids duplicate-output-ID errors from unmount/remount.
+    var isDashboard = activePage === "Dashboard";
 
     return h("div", { className: "dashboard-layout" },
-      h(Sidebar, { activePage: activePage, onNavigate: setActivePage }),
-      content
+      h(Sidebar, { activePage: activePage, onNavigate: setActivePage, filterPanel: filterPanel }),
+      h("div", { style: { display: isDashboard ? "block" : "none" } },
+        h(DashboardPage, { metricsCards: metricsCards, charts: charts, dataTable: dataTable })
+      ),
+      !isDashboard ? h(PlaceholderPage, { title: activePage }) : null
     );
   }
 
@@ -440,8 +449,7 @@
   // ---------------------------------------------------------------------------
 
   window.shinyjson.registerComponents(null, {
-    App: App,
-    Sidebar: Sidebar,
+    DashboardApp: DashboardApp,
     FilterPanel: FilterPanel,
     MetricsCards: MetricsCards,
     Charts: Charts,

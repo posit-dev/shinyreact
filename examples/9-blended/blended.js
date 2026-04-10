@@ -38,13 +38,14 @@
     { id: "settings", title: "Settings", icon: gearIcon },
   ];
 
-  // ── Dashboard Panel ────────────────────────────────────────────────────
-  function DashboardPanel() {
-    var monthsResult = useShinyInput("months", 6);
+  // ── Dashboard Panel (registered) ───────────────────────────────────────
+  function DashboardPanel(args) {
+    var props = args.element.props;
+    var monthsResult = useShinyInput(props.months_id, 6);
     var months = monthsResult[0];
     var setMonths = monthsResult[1];
 
-    var regionResult = useShinyInput("region", "North");
+    var regionResult = useShinyInput(props.region_id, "North");
     var region = regionResult[0];
     var setRegion = regionResult[1];
 
@@ -61,7 +62,7 @@
         h(
           "div",
           { className: "card-body" },
-          h(ImageOutput, { id: "salesPlot", width: "100%", height: "300px" })
+          h(ImageOutput, { id: props.sales_plot_id, width: "100%", height: "300px" })
         )
       ),
       // Controls Card
@@ -119,16 +120,17 @@
     );
   }
 
-  // ── Data Panel ─────────────────────────────────────────────────────────
-  function DataPanel() {
-    var tableResult = useShinyOutput("dataTable", undefined);
+  // ── Data Panel (registered) ────────────────────────────────────────────
+  function DataPanel(args) {
+    var props = args.element.props;
+    var tableResult = useShinyOutput(props.data_table_id, undefined);
     var tableData = tableResult[0];
 
-    var refreshResult = useShinyInput("refresh", 0);
+    var refreshResult = useShinyInput(props.refresh_id, 0, { debounceMs: 0, priority: "event" });
     var refreshCount = refreshResult[0];
     var setRefreshCount = refreshResult[1];
 
-    var refreshCountResult = useShinyOutput("refreshCount", undefined);
+    var refreshCountResult = useShinyOutput(props.refresh_count_id, undefined);
     var refreshText = refreshCountResult[0];
 
     function handleRefresh() {
@@ -191,21 +193,22 @@
     );
   }
 
-  // ── Settings Panel ─────────────────────────────────────────────────────
-  function SettingsPanel() {
-    var usernameResult = useShinyInput("username", "");
+  // ── Settings Panel (registered) ────────────────────────────────────────
+  function SettingsPanel(args) {
+    var props = args.element.props;
+    var usernameResult = useShinyInput(props.username_id, "");
     var username = usernameResult[0];
     var setUsername = usernameResult[1];
 
-    var darkModeResult = useShinyInput("darkMode", false);
+    var darkModeResult = useShinyInput(props.dark_mode_id, false);
     var darkMode = darkModeResult[0];
     var setDarkMode = darkModeResult[1];
 
-    var notificationsResult = useShinyInput("notifications", true);
+    var notificationsResult = useShinyInput(props.notifications_id, true);
     var notifications = notificationsResult[0];
     var setNotifications = notificationsResult[1];
 
-    var settingsResult = useShinyOutput("currentSettings", undefined);
+    var settingsResult = useShinyOutput(props.settings_output_id, undefined);
     var settingsText = settingsResult[0];
 
     return h(
@@ -297,7 +300,8 @@
   }
 
   // ── Main App Component ─────────────────────────────────────────────────
-  function App() {
+  function SidebarApp(args) {
+    var appProps = args.element.props;
     var activePanelState = useState("dashboard");
     var activePanel = activePanelState[0];
     var setActivePanel = activePanelState[1];
@@ -340,15 +344,16 @@
       );
     });
 
-    // Render the active panel
-    var panelContent;
-    if (activePanel === "dashboard") {
-      panelContent = h(DashboardPanel, null);
-    } else if (activePanel === "data") {
-      panelContent = h(DataPanel, null);
-    } else {
-      panelContent = h(SettingsPanel, null);
-    }
+    // Render all panels but hide inactive ones — keeps hooks registered and
+    // avoids duplicate-output-ID errors from unmount/remount races.
+    var childArray = React.Children.toArray(args.children);
+    var activeIndex = panels.findIndex(function (p) { return p.id === activePanel; });
+    var panelContent = childArray.map(function (child, i) {
+      return h("div", {
+        key: i,
+        style: { display: i === activeIndex ? "block" : "none" },
+      }, child);
+    });
 
     return h(
       "div",
@@ -367,7 +372,7 @@
         h(
           "div",
           { className: "sidebar-header" },
-          isOpen ? h("span", { className: "sidebar-title" }, "Blended Demo") : null,
+          isOpen ? h("span", { className: "sidebar-title" }, appProps.title) : null,
           h(
             "button",
             {
@@ -389,6 +394,9 @@
   }
 
   window.shinyjson.registerComponents(null, {
-    App: App,
+    SidebarApp: SidebarApp,
+    DashboardPanel: DashboardPanel,
+    DataPanel: DataPanel,
+    SettingsPanel: SettingsPanel,
   });
 })();

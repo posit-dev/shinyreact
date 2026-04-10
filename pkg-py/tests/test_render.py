@@ -1,6 +1,6 @@
 import pytest
 from shinyjson._render import render
-from shinyjson._spec import Element, Spec
+from shinyjson._spec import Element, Node, Spec
 
 
 class TestRenderTransform:
@@ -15,6 +15,19 @@ class TestRenderTransform:
             pass
 
         return dummy
+
+    @pytest.mark.asyncio
+    async def test_transform_node(self, renderer):
+        """Node values are flattened to Spec then serialized."""
+        node = Node(
+            type="Card",
+            props={"title": "Hi"},
+            children=[Node(type="Divider")],
+        )
+        result = await renderer.transform(node)
+        assert "root" in result
+        assert "elements" in result
+        assert result["elements"][result["root"]]["type"] == "Card"
 
     @pytest.mark.asyncio
     async def test_transform_spec(self, renderer):

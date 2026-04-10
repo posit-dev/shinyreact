@@ -4,6 +4,7 @@
 (function () {
   var React = window.shinyjson.React;
   var h = React.createElement;
+  var useShinyInput = window.shinyjson.useShinyInput;
 
   // Card: styled container with title prop and children slot
   function Card(args) {
@@ -56,9 +57,13 @@
     );
   }
 
-  // Button: styled button that sends clicks to Shiny via Shiny.setInputValue
+  // Button: styled button that sends clicks to Shiny via useShinyInput
   function Button(args) {
     var props = args.element.props;
+    var result = useShinyInput(props.input_id, 0, { debounceMs: 0, priority: "event" });
+    var count = result[0];
+    var setCount = result[1];
+
     return h(
       "button",
       {
@@ -73,14 +78,8 @@
           cursor: "pointer",
           marginRight: "6px",
         },
-        // TODO: Migrate to useShinyInput hook instead of accessing private
-        // Shiny internals ($inputValues). This pattern is fragile and may break
-        // with future Shiny updates.
         onClick: function () {
-          if (props.input_id && window.Shiny) {
-            var prev = window.Shiny.shinyapp.$inputValues[props.input_id] || 0;
-            window.Shiny.setInputValue(props.input_id, prev + 1);
-          }
+          setCount(count + 1);
         },
       },
       props.label || "Button"

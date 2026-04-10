@@ -8,17 +8,50 @@
   var ImageOutput = window.shinyjson.ImageOutput;
 
   // ---------------------------------------------------------------------------
+  // PageLayout — registered, invoked from spec
+  // ---------------------------------------------------------------------------
+  function PageLayout(args) {
+    var props = args.element.props;
+    return h(
+      "div",
+      { className: "app-container" },
+      h(
+        "div",
+        { className: "app-inner" },
+        h(
+          "div",
+          { className: "app-header" },
+          h("h1", { className: "app-title" }, props.title),
+          props.subtitle
+            ? h("p", { className: "app-subtitle" }, props.subtitle)
+            : null
+        ),
+        h("hr", { className: "separator" }),
+        args.children
+      )
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Grid — 2-column grid wrapper
+  // ---------------------------------------------------------------------------
+  function Grid(args) {
+    return h("div", { className: "grid-2col" }, args.children);
+  }
+
+  // ---------------------------------------------------------------------------
   // TextInputCard
   // ---------------------------------------------------------------------------
-  function TextInputCard() {
-    var inputResult = useShinyInput("user_text", "");
+  function TextInputCard(args) {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, "");
     var inputText = inputResult[0];
     var setInputText = inputResult[1];
 
-    var processedResult = useShinyOutput("processed_text", "");
+    var processedResult = useShinyOutput(props.processed_output_id, "");
     var processedText = processedResult[0];
 
-    var lengthResult = useShinyOutput("text_length", "0");
+    var lengthResult = useShinyOutput(props.length_output_id, "0");
     var textLength = lengthResult[0];
 
     function handleInputChange(event) {
@@ -83,12 +116,13 @@
   // ---------------------------------------------------------------------------
   // ButtonEventCard
   // ---------------------------------------------------------------------------
-  function ButtonEventCard() {
-    var triggerResult = useShinyInput("button_trigger", 0);
+  function ButtonEventCard(args) {
+    var props = args.element.props;
+    var triggerResult = useShinyInput(props.input_id, 0, { debounceMs: 0, priority: "event" });
     var triggerCount = triggerResult[0];
     var setButtonTrigger = triggerResult[1];
 
-    var responseResult = useShinyOutput("button_response", "");
+    var responseResult = useShinyOutput(props.output_id, "");
     var buttonResponse = responseResult[0];
 
     function handleClick() {
@@ -145,7 +179,8 @@
   // ---------------------------------------------------------------------------
   // PlotCard
   // ---------------------------------------------------------------------------
-  function PlotCard() {
+  function PlotCard(args) {
+    var props = args.element.props;
     return h(
       "div",
       { className: "card" },
@@ -160,50 +195,18 @@
         h(
           "div",
           { className: "plot-container" },
-          h(ImageOutput, { id: "plot1", className: "plot-image" })
+          h(ImageOutput, { id: props.plot_id, className: "plot-image" })
         )
       )
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // App (top-level layout)
-  // ---------------------------------------------------------------------------
-  function App() {
-    return h(
-      "div",
-      { className: "app-container" },
-      h(
-        "div",
-        { className: "app-inner" },
-        h(
-          "div",
-          { className: "app-header" },
-          h("h1", { className: "app-title" }, "Shiny + React + shadcn/ui"),
-          h(
-            "p",
-            { className: "app-subtitle" },
-            "Demonstrating shadcn/ui components with various shiny-react output types"
-          )
-        ),
-        h("hr", { className: "separator" }),
-        h(
-          "div",
-          { className: "grid-2col" },
-          h(TextInputCard),
-          h(ButtonEventCard)
-        ),
-        h(
-          "div",
-          { className: "grid-2col" },
-          h(PlotCard)
-        )
-      )
-    );
-  }
-
-  // Register the top-level App component with shinyjson
+  // Register all components with shinyjson
   window.shinyjson.registerComponents(null, {
-    App: App,
+    PageLayout: PageLayout,
+    Grid: Grid,
+    TextInputCard: TextInputCard,
+    ButtonEventCard: ButtonEventCard,
+    PlotCard: PlotCard,
   });
 })();

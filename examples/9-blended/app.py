@@ -41,10 +41,11 @@ mtcars.index = [
     "Merc 280",
 ]
 
+_src_dir = Path(__file__).parent
 _blended_dep = HTMLDependency(
     name="blended-example",
-    version="0.1.0",
-    source={"subdir": str(Path(__file__).parent)},
+    version=str(int((_src_dir / "blended.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
     script={"src": "blended.js", "defer": ""},
     stylesheet={"href": "styles.css"},
 )
@@ -52,14 +53,66 @@ _blended_dep = HTMLDependency(
 app_ui = shinyjson.ui("main", extra_deps=[_blended_dep])
 
 
+# ---------------------------------------------------------------------------
+# Component helpers
+# ---------------------------------------------------------------------------
+def sidebar_app(title: str, *children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="SidebarApp", props={"title": title}, children=list(children)
+    )
+
+
+def dashboard_panel(
+    months_id: str, region_id: str, sales_plot_id: str
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="DashboardPanel",
+        props={
+            "months_id": months_id,
+            "region_id": region_id,
+            "sales_plot_id": sales_plot_id,
+        },
+    )
+
+
+def data_panel(
+    data_table_id: str, refresh_id: str, refresh_count_id: str
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="DataPanel",
+        props={
+            "data_table_id": data_table_id,
+            "refresh_id": refresh_id,
+            "refresh_count_id": refresh_count_id,
+        },
+    )
+
+
+def settings_panel(
+    username_id: str,
+    dark_mode_id: str,
+    notifications_id: str,
+    settings_output_id: str,
+) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="SettingsPanel",
+        props={
+            "username_id": username_id,
+            "dark_mode_id": dark_mode_id,
+            "notifications_id": notifications_id,
+            "settings_output_id": settings_output_id,
+        },
+    )
+
+
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def main():
-        return shinyjson.Spec(
-            root="app",
-            elements={
-                "app": shinyjson.Element(type="App", props={}),
-            },
+        return sidebar_app(
+            "Blended Demo",
+            dashboard_panel("months", "region", "salesPlot"),
+            data_panel("dataTable", "refresh", "refreshCount"),
+            settings_panel("username", "darkMode", "notifications", "currentSettings"),
         )
 
     # Sales Plot - reactive to months and region

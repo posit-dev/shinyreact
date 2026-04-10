@@ -1,12 +1,27 @@
-// Messages example — registers with shinyjson to demonstrate
-// useShinyMessageHandler hook for server-to-client messaging.
+// Messages example — registers decomposed components with shinyjson to
+// demonstrate useShinyMessageHandler hook for server-to-client messaging.
+// Each component receives `args` (ComponentRenderProps) and reads
+// configuration from `args.element.props`.
 (function () {
   var React = window.shinyjson.React;
   var h = React.createElement;
   var useState = React.useState;
   var useShinyMessageHandler = window.shinyjson.useShinyMessageHandler;
 
-  function App() {
+  // AppLayout: top-level container with a title and children slot
+  function AppLayout(args) {
+    var props = args.element.props;
+    return h(
+      "div",
+      { className: "app-container" },
+      h("h1", null, props.title),
+      args.children
+    );
+  }
+
+  // ToastCard: card that listens for logEvent messages and displays toasts
+  function ToastCard(args) {
+    var props = args.element.props;
     var stateResult = useState([]);
     var toasts = stateResult[0];
     var setToasts = stateResult[1];
@@ -37,28 +52,24 @@
 
     return h(
       "div",
-      { className: "app-container" },
-      h("h1", null, "Event Message Demo"),
+      { className: "card" },
+      h("h2", null, props.title),
       h(
         "div",
-        { className: "card" },
-        h("h2", null, "Toast messages from server"),
-        h(
-          "div",
-          { className: "toast-container" },
-          toasts.map(function (toast) {
-            return h(
-              "div",
-              { key: toast.id, className: "toast toast-" + toast.type },
-              toast.message
-            );
-          })
-        )
+        { className: "toast-container" },
+        toasts.map(function (toast) {
+          return h(
+            "div",
+            { key: toast.id, className: "toast toast-" + toast.type },
+            toast.message
+          );
+        })
       )
     );
   }
 
   window.shinyjson.registerComponents(null, {
-    App: App,
+    AppLayout: AppLayout,
+    ToastCard: ToastCard,
   });
 })();

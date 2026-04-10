@@ -102,15 +102,33 @@ Downstream packages (e.g. `shinyshadcn`) extend shinyjson by:
 
 ## Common patterns
 
+### HTMLDependency cache-busting for examples
+
+Shiny serves static files from `HTMLDependency` at `/lib/{name}-{version}/`. The browser caches by URL, so if the version doesn't change, edited JS files won't be picked up. In examples, use the JS file's mtime (in seconds) as the version to auto-bust the cache during development:
+
+```python
+_src_dir = Path(__file__).parent
+HTMLDependency(
+    name="hello-world",
+    version=str(int((_src_dir / "hello_world.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
+    script={"src": "hello_world.js", "defer": ""},
+)
+```
+
+This is only for examples and development. Published packages should use a fixed version.
+
 ### Action buttons
 
 Use the Shiny action button pattern — start at `0`, increment on click:
 
 **JS:**
 ```js
-var [count, setCount] = useShinyInput("my_button", 0);
+var [count, setCount] = useShinyInput("my_button", 0, { debounceMs: 0, priority: "event" });
 function handleClick() { setCount(count + 1); }
 ```
+
+`debounceMs: 0` ensures every click is delivered immediately (the default 100ms debounce can coalesce rapid clicks). `priority: "event"` marks it as an event input.
 
 **Python:**
 ```python

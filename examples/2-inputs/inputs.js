@@ -49,14 +49,28 @@
   }
 
   // ---------------------------------------------------------------------------
+  // PageLayout — registered, invoked from spec
+  // ---------------------------------------------------------------------------
+  function PageLayout(args) {
+    var props = args.element.props;
+    return h(
+      "div",
+      { className: "app-container" },
+      h("h1", null, props.title),
+      h("div", { className: "cards-wrap" }, args.children)
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // TextInputCard
   // ---------------------------------------------------------------------------
-  function TextInputCard() {
-    var inputResult = useShinyInput("txtin", "Hello, world!");
+  function TextInputCard(args) {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, props.default_value || "");
     var txtin = inputResult[0];
     var setTxtin = inputResult[1];
 
-    var outputResult = useShinyOutput("txtout", undefined);
+    var outputResult = useShinyOutput(props.output_id, undefined);
     var txtout = outputResult[0];
 
     function handleInputChange(event) {
@@ -78,12 +92,13 @@
   // ---------------------------------------------------------------------------
   // NumberInputCard
   // ---------------------------------------------------------------------------
-  function NumberInputCard() {
-    var inputResult = useShinyInput("numberin", 42);
+  function NumberInputCard(args) {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, props.default_value != null ? props.default_value : 0);
     var numberIn = inputResult[0];
     var setNumberIn = inputResult[1];
 
-    var outputResult = useShinyOutput("numberout", undefined);
+    var outputResult = useShinyOutput(props.output_id, undefined);
     var numberOut = outputResult[0];
 
     function handleInputChange(event) {
@@ -107,12 +122,13 @@
   // ---------------------------------------------------------------------------
   // CheckboxInputCard
   // ---------------------------------------------------------------------------
-  function CheckboxInputCard() {
-    var inputResult = useShinyInput("checkboxin", false, { debounceMs: 0 });
+  function CheckboxInputCard(args) {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, props.default_value != null ? props.default_value : false, { debounceMs: 0 });
     var checkboxIn = inputResult[0];
     var setCheckboxIn = inputResult[1];
 
-    var outputResult = useShinyOutput("checkboxout", undefined);
+    var outputResult = useShinyOutput(props.output_id, undefined);
     var checkboxOut = outputResult[0];
 
     function handleInputChange(event) {
@@ -144,12 +160,13 @@
   // ---------------------------------------------------------------------------
   // RadioInputCard
   // ---------------------------------------------------------------------------
-  function RadioInputCard() {
-    var inputResult = useShinyInput("radioin", "option1", { debounceMs: 0 });
+  function RadioInputCard(args) {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, props.default_value || "option1", { debounceMs: 0 });
     var radioIn = inputResult[0];
     var setRadioIn = inputResult[1];
 
-    var outputResult = useShinyOutput("radioout", undefined);
+    var outputResult = useShinyOutput(props.output_id, undefined);
     var radioOut = outputResult[0];
 
     function handleInputChange(event) {
@@ -188,12 +205,13 @@
   // ---------------------------------------------------------------------------
   // SelectInputCard
   // ---------------------------------------------------------------------------
-  function SelectInputCard() {
-    var inputResult = useShinyInput("selectin", "apple", { debounceMs: 0 });
+  function SelectInputCard(args) {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, props.default_value || "apple", { debounceMs: 0 });
     var selectIn = inputResult[0];
     var setSelectIn = inputResult[1];
 
-    var outputResult = useShinyOutput("selectout", undefined);
+    var outputResult = useShinyOutput(props.output_id, undefined);
     var selectOut = outputResult[0];
 
     function handleInputChange(event) {
@@ -222,12 +240,13 @@
   // ---------------------------------------------------------------------------
   // SliderInputCard
   // ---------------------------------------------------------------------------
-  function SliderInputCard() {
-    var inputResult = useShinyInput("sliderin", 50, { debounceMs: 0 });
+  function SliderInputCard(args) {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, props.default_value != null ? props.default_value : 50, { debounceMs: 0 });
     var sliderIn = inputResult[0];
     var setSliderIn = inputResult[1];
 
-    var outputResult = useShinyOutput("sliderout", undefined);
+    var outputResult = useShinyOutput(props.output_id, undefined);
     var sliderOut = outputResult[0];
 
     function handleInputChange(event) {
@@ -262,14 +281,15 @@
   // ---------------------------------------------------------------------------
   // DateInputCard
   // ---------------------------------------------------------------------------
-  function DateInputCard() {
+  function DateInputCard(args) {
+    var props = args.element.props;
     var today = new Date().toISOString().split("T")[0];
 
-    var inputResult = useShinyInput("datein", today, { debounceMs: 0 });
+    var inputResult = useShinyInput(props.input_id, props.default_value || today, { debounceMs: 0 });
     var dateIn = inputResult[0];
     var setDateIn = inputResult[1];
 
-    var outputResult = useShinyOutput("dateout", undefined);
+    var outputResult = useShinyOutput(props.output_id, undefined);
     var dateOut = outputResult[0];
 
     function handleInputChange(event) {
@@ -297,12 +317,13 @@
   // ---------------------------------------------------------------------------
   // ButtonInputCard
   // ---------------------------------------------------------------------------
-  function ButtonInputCard() {
-    var inputResult = useShinyInput("buttonin", 0);
+  function ButtonInputCard(args) {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, 0, { debounceMs: 0, priority: "event" });
     var buttonIn = inputResult[0];
     var setButtonIn = inputResult[1];
 
-    var outputResult = useShinyOutput("buttonout", undefined);
+    var outputResult = useShinyOutput(props.output_id, 0);
     var buttonOut = outputResult[0];
 
     function handleButtonClick() {
@@ -334,14 +355,14 @@
           "Note: useShinyInput starts at 0 and increments on click, matching Shiny's action button pattern."
         )
       ),
-      outputValue: buttonOut ? buttonOut : "undefined",
+      outputValue: buttonOut,
     });
   }
 
   // ---------------------------------------------------------------------------
   // FileInputCard
   // ---------------------------------------------------------------------------
-  function FileInputCard() {
+  function FileInputCard(args) {
     var inputRef = useRef(null);
     var filesState = useState([]);
     var files = filesState[0];
@@ -350,9 +371,10 @@
     var isDragOver = dragState[0];
     var setIsDragOver = dragState[1];
 
-    var inputResult = useShinyInput("filein", null, { debounceMs: 0 });
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, null, { debounceMs: 0 });
     var setFilein = inputResult[1];
-    var outputResult = useShinyOutput("fileout", undefined);
+    var outputResult = useShinyOutput(props.output_id, undefined);
     var fileout = outputResult[0];
 
     function handleFileList(fileList) {
@@ -480,7 +502,7 @@
   // ---------------------------------------------------------------------------
   // BatchFormCard
   // ---------------------------------------------------------------------------
-  function BatchFormCard() {
+  function BatchFormCard(args) {
     // Local state (NOT Shiny inputs)
     var commentState = useState("");
     var comment = commentState[0];
@@ -500,13 +522,14 @@
     var setFeatures = featuresState[1];
 
     // Shiny input/output for batch submission
-    var inputResult = useShinyInput("batchdata", null, {
+    var props = args.element.props;
+    var inputResult = useShinyInput(props.input_id, null, {
       debounceMs: 0,
       priority: "event",
     });
     var setBatchData = inputResult[1];
 
-    var outputResult = useShinyOutput("batchout", "");
+    var outputResult = useShinyOutput(props.output_id, "");
     var batchOutput = outputResult[0];
 
     function handleFeatureChange(feature) {
@@ -635,33 +658,18 @@
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // App — top-level component that renders all the input cards
-  // ---------------------------------------------------------------------------
-  function App() {
-    return h(
-      "div",
-      { className: "app-container" },
-      h("h1", null, "Shiny React Input Examples"),
-      h(
-        "div",
-        { className: "cards-wrap" },
-        h(TextInputCard),
-        h(NumberInputCard),
-        h(CheckboxInputCard),
-        h(RadioInputCard),
-        h(SelectInputCard),
-        h(SliderInputCard),
-        h(DateInputCard),
-        h(ButtonInputCard),
-        h(FileInputCard),
-        h(BatchFormCard)
-      )
-    );
-  }
-
-  // Register the top-level App component with shinyjson
+  // Register all components with shinyjson
   window.shinyjson.registerComponents(null, {
-    App: App,
+    PageLayout: PageLayout,
+    TextInputCard: TextInputCard,
+    NumberInputCard: NumberInputCard,
+    CheckboxInputCard: CheckboxInputCard,
+    RadioInputCard: RadioInputCard,
+    SelectInputCard: SelectInputCard,
+    SliderInputCard: SliderInputCard,
+    DateInputCard: DateInputCard,
+    ButtonInputCard: ButtonInputCard,
+    FileInputCard: FileInputCard,
+    BatchFormCard: BatchFormCard,
   });
 })();

@@ -5,10 +5,11 @@ from htmltools import HTMLDependency
 from shiny.express import input, render, ui
 
 # HTMLDependency for our demo components JS
+_src_dir = Path(__file__).parent
 _demo_dep = HTMLDependency(
     name="demo-components",
-    version="0.1.0",
-    source={"subdir": str(Path(__file__).parent)},
+    version=str(int((_src_dir / "demo_components.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
     script={"src": "demo_components.js", "defer": ""},
 )
 
@@ -17,6 +18,26 @@ _demo_dep = HTMLDependency(
 class render_demo(shinyjson.render):
     extra_deps = [_demo_dep]
 
+
+# ---------------------------------------------------------------------------
+# Component helpers — thin wrappers around shinyjson.Node that mirror the
+# registered JS components in demo_components.js.
+# ---------------------------------------------------------------------------
+def card(title: str, *children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(type="Card", props={"title": title}, children=list(children))
+
+
+def badge(text: str, variant: str = "default") -> shinyjson.Node:
+    return shinyjson.Node(type="Badge", props={"text": text, "variant": variant})
+
+
+def button(label: str, input_id: str, color: str = "#4a90d9") -> shinyjson.Node:
+    return shinyjson.Node(
+        type="Button", props={"label": label, "input_id": input_id, "color": color}
+    )
+
+
+# ---------------------------------------------------------------------------
 
 ui.page_opts(title="Hello Shinyjson")
 
@@ -35,37 +56,13 @@ with ui.layout_sidebar():
         )
 
     @render_demo
-    def demo_output() -> shinyjson.Spec:
-        # Build a nested element tree
-        elements: dict[str, shinyjson.Element] = {}
-
-        # Create badge elements based on slider count
-        badge_keys: list[str] = []
-        for i in range(input.count()):
-            key = f"badge_{i}"
-            badge_keys.append(key)
-            elements[key] = shinyjson.Element(
-                type="Badge",
-                props={
-                    "text": f"#{i + 1}",
-                    "variant": input.variant(),
-                },
-            )
-
-        # Create a button wired to Shiny via input_id
-        elements["btn"] = shinyjson.Element(
-            type="Button",
-            props={"label": "Click me", "color": "#4a90d9", "input_id": "btn_click"},
+    def demo_output() -> shinyjson.Node:
+        badges = [badge(f"#{i + 1}", input.variant()) for i in range(input.count())]
+        return card(
+            input.title(),
+            *badges,
+            button("Click me", "btn_click"),
         )
-
-        # Create a card containing the badges and button
-        elements["card"] = shinyjson.Element(
-            type="Card",
-            props={"title": input.title()},
-            children=badge_keys + ["btn"],
-        )
-
-        return shinyjson.Spec(root="card", elements=elements)
 
     ui.h4("Input Values")
 

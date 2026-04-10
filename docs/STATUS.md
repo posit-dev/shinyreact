@@ -4,9 +4,9 @@ Project status: known issues, TODOs, and feature inventory.
 
 ## TODOs
 
-### Duplicate output IDs on tab navigation (6-dashboard)
+### Output registry `remove()` is destructive — needs reference counting
 
-Switching away from the Dashboard tab unmounts `useShinyOutput` components. Navigating back remounts them, creating duplicate output bindings for `metrics_data`, `chart_data`, and `table_data`. Shiny shows a "Duplicate output IDs were found" client error. Needs a fix in the output registry cleanup/re-registration logic, or the Dashboard page should stay mounted (hidden) rather than unmounted.
+`outputs.remove()` deletes the entire `OutputRegistryEntry` and its hidden DOM element, then schedules async `unbindAll`/`bindAll`. When React unmounts one component and mounts another in the same commit (e.g., tab switching), the new `add()` races the old `remove()`'s unbind, causing Shiny to see duplicate output bindings. The input registry already handles this correctly — `removeUseStateSetValueFn` removes one subscriber without nuking the entry. The output registry should follow the same pattern: decrement a reference count on `remove()`, only delete the DOM element and unbind when the count reaches zero. This also wouldn't help `ImageOutput`, which bypasses the registry and creates its own DOM elements. See the existing TODO in `use-shiny.ts` at line ~208.
 
 ### 7-chat requires external API key
 
@@ -29,6 +29,14 @@ The `renderMarkdown()` function in `examples/7-chat/chat.js` escapes code blocks
 Explore using RFC 6902 JSON Patch operations to send incremental spec updates from Python instead of replacing the full spec each time. `@json-render/react` has an internal (unexported) `applyPatch` function that applies patch ops (`add`, `replace`, `remove`, `move`, `copy`) to a spec's flat element map. A shinyjson implementation would need: (1) a Python-side `shinyjson.patch(session, id, ops)` function that sends patches via `post_message`, (2) JS-side patch application against the current spec, and (3) Python helpers or diffing to generate correct patch ops from spec changes.
 
 **Why not client-side diffing instead?** json-render's `ElementRenderer` receives the entire `spec` object as a prop alongside each `element`, so `React.memo` never bails out even with stabilized element references — the `spec` reference is always new. React's DOM reconciliation already handles efficient updates for typical spec sizes. The JSON Patch approach is primarily valuable for (a) reducing wire payload for large specs and (b) enabling streaming/incremental spec building (e.g., AI-generated UIs).
+
+### Python convenience helpers for Element construction
+
+`Element.text_input(input_id, ...)` and similar factory methods would reduce boilerplate when building specs. Deferred until component patterns stabilize across downstream packages (Approach C from the hello world decomposition design).
+
+### Pretty helper methods to hide Spec construction
+
+The raw `Spec(root=..., elements={...})` / `Element(type=..., props={...}, children=[...])` calls are verbose and expose internal structure. Downstream packages (and examples) should offer higher-level helpers that build the spec behind the scenes, so app authors write something closer to a component tree rather than manually assembling flat dictionaries and element IDs.
 
 ### No build step for example JS
 
@@ -77,7 +85,7 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 
 | Example | Port | Status | Description |
 |---------|------|--------|-------------|
-| 1-hello-world | 8761 | Working | Text input/output with useShinyInput/useShinyOutput |
+| 1-hello-world | 8761 | Working | Decomposed components (Card, TextInput, Divider, OutputDisplay) composed from Python via Spec |
 | 2-inputs | 8762 | Working | 10 input types (text, number, checkbox, radio, select, slider, date, button, file, batch form) |
 | 3-outputs | 8763 | Working | Data table, statistics, matplotlib plot via ImageOutput |
 | 4-messages | 8764 | Working | Server-to-client messaging with post_message, auto-dismissing toasts |
@@ -87,6 +95,12 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 | 8-modules | 8768 | Working | Three counter widgets using ShinyModuleProvider namespacing |
 | 9-blended | 8770 | Working | Tabbed sidebar layout, matplotlib plot, data table, settings panel |
 
+### Design decisions
+
+- **HTMLDependency mtime versioning for examples.** Shiny caches static files by `{name}-{version}` in the URL. During development, editing a JS file doesn't bust the cache if the version string is fixed. Examples use `version=str(int(file.stat().st_mtime))` so the version changes whenever the file is saved. This is a development convenience only — published packages should use fixed versions.
+
+- **Treat element keys as internal/opaque.** When using `Node`, element keys in the flat `elements` map (e.g., `"auto_001"`) are auto-generated internal plumbing. Callers can still manually construct `Spec(elements={...})` with arbitrary keys, so this is guidance rather than a hard API guarantee. These keys have no relationship to DOM IDs or Shiny input/output IDs: Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server needs to know about.
+
 ### Recent fixes
 
 - **useShinyInput defaultValue stabilization**: Inline `{}` / `[]` defaults no longer cause infinite re-renders. The first value is captured in a `useRef` and used for the `useEffect` dependency array.
@@ -94,3 +108,5 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 - **ImageOutput prop**: Correct prop is `id`, not `outputId` (fixed in 5-shadcn).
 - **File input (2-inputs)**: Uses `useShinyInput` to send file metadata (name, size, type) to the server instead of relying on Shiny's native file input binding.
 - **Button pattern**: Buttons use `useShinyInput("id", 0)` + increment (Shiny action button pattern) with `ignore_init=True` on the server. See CLAUDE.md "Common patterns" for details.
+- **Hello world decomposition**: Replaced monolithic `HelloWorldComponent` with five small registered components (`Card`, `Heading`, `TextInput`, `Divider`, `OutputDisplay`). Python now composes the full UI tree via `Spec` instead of delegating to a single JS component.
+- **Button hook migration (hello-shinyjson)**: Migrated `Button` component from private Shiny internals (`window.Shiny.shinyapp.$inputValues`) to `useShinyInput` hook.

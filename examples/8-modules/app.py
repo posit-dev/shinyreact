@@ -4,15 +4,42 @@ import shinyjson
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, module, reactive
 
+_src_dir = Path(__file__).parent
 _modules_dep = HTMLDependency(
     name="modules-example",
-    version="0.1.0",
-    source={"subdir": str(Path(__file__).parent)},
+    version=str(int((_src_dir / "modules.js").stat().st_mtime)),
+    source={"subdir": str(_src_dir)},
     script={"src": "modules.js", "defer": ""},
     stylesheet={"href": "styles.css"},
 )
 
 app_ui = shinyjson.ui("main", extra_deps=[_modules_dep])
+
+
+# ---------------------------------------------------------------------------
+# Component helpers
+# ---------------------------------------------------------------------------
+def app_layout(title: str, subtitle: str, *children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="AppLayout",
+        props={"title": title, "subtitle": subtitle},
+        children=list(children),
+    )
+
+
+def widgets_grid(*children: shinyjson.Node) -> shinyjson.Node:
+    return shinyjson.Node(type="WidgetsGrid", children=list(children))
+
+
+def module_counter(namespace: str, label: str) -> shinyjson.Node:
+    return shinyjson.Node(
+        type="ModuleCounter",
+        props={"namespace": namespace, "label": label},
+    )
+
+
+def info_section() -> shinyjson.Node:
+    return shinyjson.Node(type="InfoSection")
 
 
 # Module server function
@@ -47,11 +74,15 @@ def counter_module_server(input: Inputs, output: Outputs, session: Session):
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyjson.render
     def main():
-        return shinyjson.Spec(
-            root="app",
-            elements={
-                "app": shinyjson.Element(type="App", props={}),
-            },
+        return app_layout(
+            "Shiny Module Namespace Demo",
+            "Three independent counter widgets, each in its own namespace",
+            widgets_grid(
+                module_counter("counter1", "Counter 1"),
+                module_counter("counter2", "Counter 2"),
+                module_counter("counter3", "Counter 3"),
+            ),
+            info_section(),
         )
 
     # Initialize three independent module servers

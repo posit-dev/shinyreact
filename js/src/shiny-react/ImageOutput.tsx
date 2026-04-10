@@ -198,13 +198,17 @@ export function ImageOutput({
     }
   }, [imgRecalculating, onRecalculating]);
 
-  // Handle image load and dimension changes
+  // Handle image load and dimension changes.
+  // Skip 0×0 dimensions (element is hidden via display:none) to avoid
+  // triggering a server re-render that would invalidate the current image.
   const handleImageLoad = useCallback(() => {
     if (imgRef.current) {
       const width = imgRef.current.clientWidth;
       const height = imgRef.current.clientHeight;
-      setImgWidth(width);
-      setImgHeight(height);
+      if (width > 0 && height > 0) {
+        setImgWidth(width);
+        setImgHeight(height);
+      }
     }
   }, [setImgWidth, setImgHeight]);
 
@@ -248,16 +252,56 @@ export function ImageOutput({
     handleImageLoad,
   ]);
 
+  if (imgHidden) {
+    return null;
+  }
+
+  // Show a placeholder while waiting for the first image or during recalculation
+  if (!imgData) {
+    return (
+      <div
+        className={className}
+        style={{
+          width: width,
+          height: height,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#9ca3af",
+        }}
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          style={{
+            animation: "spin 1s linear infinite",
+          }}
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeDasharray="31.4 31.4"
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
+    );
+  }
+
   return (
     <img
       ref={imgRef}
-      src={imgData?.src}
+      src={imgData.src}
       alt=""
       className={className}
       style={{
         width: width,
         height: height,
-        display: imgHidden ? "none" : "block",
       }}
       onLoad={handleImageLoad}
     />
