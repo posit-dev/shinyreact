@@ -105,8 +105,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     def button_response():
         now = datetime.now()
         ts = now.strftime("%Y-%m-%d %H:%M:%S")
-        ms = now.microsecond // 10000
-        return f"Event received at: {ts}.{ms:02d}"
+        ms = now.microsecond // 1000
+        return f"Event received at: {ts}.{ms:03d}"
 
     @render.plot()
     def plot1():

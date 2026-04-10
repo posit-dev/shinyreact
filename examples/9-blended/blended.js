@@ -126,7 +126,7 @@
     var tableResult = useShinyOutput(props.data_table_id, undefined);
     var tableData = tableResult[0];
 
-    var refreshResult = useShinyInput(props.refresh_id, 0);
+    var refreshResult = useShinyInput(props.refresh_id, 0, { debounceMs: 0, priority: "event" });
     var refreshCount = refreshResult[0];
     var setRefreshCount = refreshResult[1];
 

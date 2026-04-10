@@ -99,7 +99,7 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 
 - **HTMLDependency mtime versioning for examples.** Shiny caches static files by `{name}-{version}` in the URL. During development, editing a JS file doesn't bust the cache if the version string is fixed. Examples use `version=str(int(file.stat().st_mtime))` so the version changes whenever the file is saved. This is a development convenience only — published packages should use fixed versions.
 
-- **Element keys are always auto-generated.** The element key in `@json-render/react`'s flat `elements` map (e.g., `"auto_001"`) is internal plumbing — it has no relationship to DOM IDs or Shiny input/output IDs. Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server needs to know about. Exposing element keys to users would conflate two unrelated identity systems and add API surface for no benefit.
+- **Treat element keys as internal/opaque.** When using `Node`, element keys in the flat `elements` map (e.g., `"auto_001"`) are auto-generated internal plumbing. Callers can still manually construct `Spec(elements={...})` with arbitrary keys, so this is guidance rather than a hard API guarantee. These keys have no relationship to DOM IDs or Shiny input/output IDs: Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server needs to know about.
 
 ### Recent fixes
 

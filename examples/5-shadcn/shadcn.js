@@ -118,7 +118,7 @@
   // ---------------------------------------------------------------------------
   function ButtonEventCard(args) {
     var props = args.element.props;
-    var triggerResult = useShinyInput(props.input_id, 0);
+    var triggerResult = useShinyInput(props.input_id, 0, { debounceMs: 0, priority: "event" });
     var triggerCount = triggerResult[0];
     var setButtonTrigger = triggerResult[1];
 

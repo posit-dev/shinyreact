@@ -124,9 +124,11 @@ Use the Shiny action button pattern — start at `0`, increment on click:
 
 **JS:**
 ```js
-var [count, setCount] = useShinyInput("my_button", 0);
+var [count, setCount] = useShinyInput("my_button", 0, { debounceMs: 0, priority: "event" });
 function handleClick() { setCount(count + 1); }
 ```
+
+`debounceMs: 0` ensures every click is delivered immediately (the default 100ms debounce can coalesce rapid clicks). `priority: "event"` marks it as an event input.
 
 **Python:**
 ```python

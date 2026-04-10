@@ -4,11 +4,13 @@
 
 **Goal:** Decompose the monolithic hello world example into small registered components composed from Python, and migrate the hello-shinyjson Button to use the `useShinyInput` hook.
 
-**Architecture:** Rewrite `examples/1-hello-world/hello_world.js` to register five small components (Card, Heading, TextInput, Divider, OutputDisplay). Rewrite `examples/1-hello-world/app.py` to compose the full UI tree via `Spec`. Migrate `examples/hello-shinyjson/demo_components.js` Button from private Shiny internals to `useShinyInput`. Update STATUS.md.
+**Architecture:** Rewrite `examples/1-hello-world/hello_world.js` to register five small components (Card, Heading, TextInput, Divider, OutputDisplay). Rewrite `examples/1-hello-world/app.py` to compose the full UI tree using the `Node`-based approach and Python helper functions, rather than composing `Spec` directly. Migrate `examples/hello-shinyjson/demo_components.js` Button from private Shiny internals to `useShinyInput`. Update STATUS.md.
 
 **Tech Stack:** Plain JavaScript (no JSX/bundler), Python/Shiny, `@json-render/react` component registry
 
 **Spec:** `docs/superpowers/specs/2026-04-03-hello-world-decomposition-design.md`
+
+> **Note (2026-04-10):** The referenced design spec captures the original plan using `Spec` directly. The implementation evolved to use `shinyjson.Node` (nested tree that auto-flattens to `Spec`) with Python helper functions. Where the spec differs from the code, the implemented `Node`-based approach is authoritative.
 
 ---
 

@@ -3,6 +3,8 @@
 **Date:** 2026-04-03
 **Approach:** B — Fix both examples + update documentation
 
+> **Note (2026-04-10):** This spec was the original design. The implementation evolved to use `shinyjson.Node` (nested tree API that auto-flattens to `Spec`) with Python helper functions for composing the UI tree, rather than constructing `Spec` directly. The component decomposition and prop-driven ID patterns described here remain accurate; only the Python composition API differs.
+
 ## Problem
 
 The `1-hello-world` example registers a single monolithic `HelloWorldComponent` that builds its entire UI internally with `React.createElement`. The JSON spec sent from Python is:

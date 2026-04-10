@@ -319,7 +319,7 @@
   // ---------------------------------------------------------------------------
   function ButtonInputCard(args) {
     var props = args.element.props;
-    var inputResult = useShinyInput(props.input_id, 0);
+    var inputResult = useShinyInput(props.input_id, 0, { debounceMs: 0, priority: "event" });
     var buttonIn = inputResult[0];
     var setButtonIn = inputResult[1];
 

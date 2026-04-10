@@ -60,7 +60,7 @@
   // Button: styled button that sends clicks to Shiny via useShinyInput
   function Button(args) {
     var props = args.element.props;
-    var result = useShinyInput(props.input_id, 0);
+    var result = useShinyInput(props.input_id, 0, { debounceMs: 0, priority: "event" });
     var count = result[0];
     var setCount = result[1];
 
