@@ -4,9 +4,9 @@ Project status: known issues, TODOs, and feature inventory.
 
 ## TODOs
 
-### Duplicate output IDs on tab navigation (6-dashboard)
+### Output registry `remove()` is destructive — needs reference counting
 
-Switching away from the Dashboard tab unmounts `useShinyOutput` components. Navigating back remounts them, creating duplicate output bindings for `metrics_data`, `chart_data`, and `table_data`. Shiny shows a "Duplicate output IDs were found" client error. Needs a fix in the output registry cleanup/re-registration logic, or the Dashboard page should stay mounted (hidden) rather than unmounted.
+`outputs.remove()` deletes the entire `OutputRegistryEntry` and its hidden DOM element, then schedules async `unbindAll`/`bindAll`. When React unmounts one component and mounts another in the same commit (e.g., tab switching), the new `add()` races the old `remove()`'s unbind, causing Shiny to see duplicate output bindings. The input registry already handles this correctly — `removeUseStateSetValueFn` removes one subscriber without nuking the entry. The output registry should follow the same pattern: decrement a reference count on `remove()`, only delete the DOM element and unbind when the count reaches zero. This also wouldn't help `ImageOutput`, which bypasses the registry and creates its own DOM elements. See the existing TODO in `use-shiny.ts` at line ~208.
 
 ### 7-chat requires external API key
 

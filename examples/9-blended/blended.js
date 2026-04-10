@@ -344,10 +344,16 @@
       );
     });
 
-    // Render the active panel — children are spec-driven panel components
+    // Render all panels but hide inactive ones — keeps hooks registered and
+    // avoids duplicate-output-ID errors from unmount/remount races.
     var childArray = React.Children.toArray(args.children);
     var activeIndex = panels.findIndex(function (p) { return p.id === activePanel; });
-    var panelContent = childArray[activeIndex] || null;
+    var panelContent = childArray.map(function (child, i) {
+      return h("div", {
+        key: i,
+        style: { display: i === activeIndex ? "block" : "none" },
+      }, child);
+    });
 
     return h(
       "div",

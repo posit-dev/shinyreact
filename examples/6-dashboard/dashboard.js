@@ -431,16 +431,16 @@
     var charts = childArray[2];
     var dataTable = childArray[3];
 
-    var content;
-    if (activePage === "Dashboard") {
-      content = h(DashboardPage, { metricsCards: metricsCards, charts: charts, dataTable: dataTable });
-    } else {
-      content = h(PlaceholderPage, { title: activePage });
-    }
+    // Always render DashboardPage to keep output hooks registered — hiding
+    // inactive pages avoids duplicate-output-ID errors from unmount/remount.
+    var isDashboard = activePage === "Dashboard";
 
     return h("div", { className: "dashboard-layout" },
       h(Sidebar, { activePage: activePage, onNavigate: setActivePage, filterPanel: filterPanel }),
-      content
+      h("div", { style: { display: isDashboard ? "block" : "none" } },
+        h(DashboardPage, { metricsCards: metricsCards, charts: charts, dataTable: dataTable })
+      ),
+      !isDashboard ? h(PlaceholderPage, { title: activePage }) : null
     );
   }
 
