@@ -30,14 +30,6 @@ Explore using RFC 6902 JSON Patch operations to send incremental spec updates fr
 
 **Why not client-side diffing instead?** json-render's `ElementRenderer` receives the entire `spec` object as a prop alongside each `element`, so `React.memo` never bails out even with stabilized element references — the `spec` reference is always new. React's DOM reconciliation already handles efficient updates for typical spec sizes. The JSON Patch approach is primarily valuable for (a) reducing wire payload for large specs and (b) enabling streaming/incremental spec building (e.g., AI-generated UIs).
 
-### Python convenience helpers for Element construction
-
-`Element.text_input(input_id, ...)` and similar factory methods would reduce boilerplate when building specs. Deferred until component patterns stabilize across downstream packages (Approach C from the hello world decomposition design).
-
-### Pretty helper methods to hide Spec construction
-
-The raw `Spec(root=..., elements={...})` / `Element(type=..., props={...}, children=[...])` calls are verbose and expose internal structure. Downstream packages (and examples) should offer higher-level helpers that build the spec behind the scenes, so app authors write something closer to a component tree rather than manually assembling flat dictionaries and element IDs.
-
 ### No build step for example JS
 
 All example JS files use `React.createElement` directly (no JSX, no bundler). This works but is verbose. A lightweight build step (e.g., esbuild with JSX) could improve readability without adding heavy tooling.
@@ -79,6 +71,7 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 | `shinyjson.ui()` | Working | Creates output div with HTMLDependency |
 | `@shinyjson.render` | Working | Renders Spec or passes raw JSON for useShinyOutput |
 | `shinyjson.Spec` / `Element` | Working | Data model for component trees |
+| `shinyjson.Node` | Working | Nested tree API; `.to_spec()` auto-flattens to `Spec` |
 | `shinyjson.post_message()` | Working | Server-to-client custom messages |
 
 ### Examples (examples/)
@@ -110,3 +103,5 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 - **Button pattern**: Buttons use `useShinyInput("id", 0)` + increment (Shiny action button pattern) with `ignore_init=True` on the server. See CLAUDE.md "Common patterns" for details.
 - **Hello world decomposition**: Replaced monolithic `HelloWorldComponent` with five small registered components (`Card`, `Heading`, `TextInput`, `Divider`, `OutputDisplay`). Python now composes the full UI tree via `Spec` instead of delegating to a single JS component.
 - **Button hook migration (hello-shinyjson)**: Migrated `Button` component from private Shiny internals (`window.Shiny.shinyapp.$inputValues`) to `useShinyInput` hook.
+- **Node helper for Spec construction**: Added `shinyjson.Node` — a nested tree API where children are `Node` objects instead of string IDs. `.to_spec()` auto-generates element keys and flattens to a `Spec`, replacing verbose manual `Spec(root=..., elements={...})` construction. Used across all examples.
+- **Python convenience helpers for Element construction**: Superseded by `Node` + per-app helper functions. Users never construct `Element` directly; downstream apps define thin `Node` wrappers (e.g. `def card(title, *children) -> Node`) instead.
