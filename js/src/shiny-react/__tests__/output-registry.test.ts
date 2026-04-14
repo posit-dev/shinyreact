@@ -38,12 +38,14 @@ describe("OutputRegistryEntry", () => {
   });
 });
 
-afterEach(() => {
-  // Clean up any containers added to document.body
-  document.querySelectorAll(".shiny-react-output-container").forEach((el) => el.remove());
-});
-
 describe("OutputRegistry", () => {
+  afterEach(() => {
+    // Clean up any containers added to document.body
+    document
+      .querySelectorAll(".shiny-react-output-container")
+      .forEach((el) => el.remove());
+  });
+
   it("add returns a dispose function", () => {
     const registry = new OutputRegistry();
     const dispose = registry.add("out1", vi.fn(), vi.fn());
