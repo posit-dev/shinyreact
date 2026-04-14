@@ -8,6 +8,7 @@ vi.mock("../get-shiny", () => ({
 
 import { InputRegistry, InputRegistryEntry } from "../input-registry";
 import { getShiny } from "../get-shiny";
+import { MISSING } from "../missing";
 
 describe("InputRegistryEntry", () => {
   beforeEach(() => {
@@ -74,6 +75,60 @@ describe("InputRegistryEntry", () => {
     expect(mockSetInputValue).toHaveBeenCalledWith(
       "test",
       42,
+      expect.objectContaining({ debounceMs: 100 }),
+    );
+  });
+
+  it("MISSING value updates React state but does not call setInputValue", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("test", MISSING);
+    const setStateFn = vi.fn();
+    entry.addUseStateSetValueFn(setStateFn);
+
+    entry.setValue(MISSING);
+    vi.advanceTimersByTime(200);
+
+    expect(setStateFn).toHaveBeenCalledWith(MISSING);
+    expect(mockSetInputValue).not.toHaveBeenCalled();
+  });
+
+  it("real value after MISSING calls setInputValue", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("test", MISSING);
+    const setStateFn = vi.fn();
+    entry.addUseStateSetValueFn(setStateFn);
+
+    // First set MISSING — should not send
+    entry.setValue(MISSING);
+    vi.advanceTimersByTime(200);
+    expect(mockSetInputValue).not.toHaveBeenCalled();
+
+    // Then set a real value — should send
+    entry.setValue(300 as any);
+    vi.advanceTimersByTime(200);
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "test",
+      300,
+      expect.objectContaining({ debounceMs: 100 }),
+    );
+  });
+
+  it("null value (without MISSING) still calls setInputValue", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("test", null);
+
+    entry.setValue(null);
+    vi.advanceTimersByTime(200);
+
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "test",
+      null,
       expect.objectContaining({ debounceMs: 100 }),
     );
   });

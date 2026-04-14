@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type EventPriority } from "@posit/shiny/srcts/types/src/inputPolicies";
 import { getShiny } from "./get-shiny";
+import { MISSING } from "./missing";
 import { createDebouncedFn, type DebouncedFunction } from "./utils";
 
 export class InputRegistryEntry<T> {
@@ -48,8 +49,13 @@ export class InputRegistryEntry<T> {
 
   setValue(value: T) {
     this.value = value;
-    this.shinySetInputValueDebounced(value);
     this.useStateSetValueFns.forEach((fn) => fn(value));
+    if ((value as unknown) === MISSING) {
+      // MISSING means "not yet set" — update React state only, don't send to Shiny.
+      // This keeps the server-side input in its MISSING state (raises SilentException).
+      return;
+    }
+    this.shinySetInputValueDebounced(value);
   }
 
   getValue(): T {
