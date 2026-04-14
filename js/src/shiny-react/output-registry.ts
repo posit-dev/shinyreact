@@ -42,6 +42,13 @@ export class OutputRegistryEntry<T> {
   setRecalculating(value: boolean) {
     this.useStateSetRecalculatingFns.forEach((fn) => fn(value));
   }
+
+  isEmpty(): boolean {
+    return (
+      this.useStateSetValueFns.size === 0 &&
+      this.useStateSetRecalculatingFns.size === 0
+    );
+  }
 }
 
 export class OutputRegistry {
