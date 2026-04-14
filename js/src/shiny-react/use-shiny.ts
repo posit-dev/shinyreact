@@ -209,7 +209,8 @@ export function useShinyOutput<T>(
 
 // TODO: Also get error value?
 
-// TODO: (possible) Implement useShinyOutputValue and useShinyOutputRecalculating
+// Note: useShinyOutputValue and useShinyOutputRecalculating are already supported
+// via destructuring: `let [value, recalculating] = useShinyOutput(outputId, defaultValue)`
 
 /**
  * A React hook for handling messages from the Shiny server.
