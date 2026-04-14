@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MISSING, type MISSING as MISSINGType } from "./missing";
 import { useShinyInput, useShinyOutput } from "./use-shiny";
 import { createDebouncedFn } from "./utils";
 import {
@@ -161,14 +162,14 @@ export function ImageOutput({
   // IDs below already have the namespace embedded (via namespacedId), so we
   // suppress the hooks' own context-based namespacing to avoid double-prefixing.
   const skipNs = { namespace: null };
-  const [imgWidth, setImgWidth] = useShinyInput<number | null>(
+  const [imgWidth, setImgWidth] = useShinyInput<number | MISSINGType>(
     `.clientdata_output_${namespacedId}_width`,
-    null,
+    MISSING,
     skipNs,
   );
-  const [imgHeight, setImgHeight] = useShinyInput<number | null>(
+  const [imgHeight, setImgHeight] = useShinyInput<number | MISSINGType>(
     `.clientdata_output_${namespacedId}_height`,
-    null,
+    MISSING,
     skipNs,
   );
   const [imgHidden] = useShinyInput<boolean>(
