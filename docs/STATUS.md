@@ -86,7 +86,7 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 | 3-outputs | 8763 | Working | Data table, statistics, matplotlib plot via ImageOutput |
 | 4-messages | 8764 | Working | Server-to-client messaging with post_message, auto-dismissing toasts |
 | 5-shadcn | 8765 | Working | Text processing, button events, matplotlib plot; shadcn look via plain CSS |
-| 6-dashboard | 8766 | Working | Sidebar nav with tab switching, metrics cards, CSS bar charts, data table, filters; duplicate output ID warning on tab switch |
+| 6-dashboard | 8766 | Working | Sidebar nav with tab switching, metrics cards, CSS bar charts, data table, filters |
 | 7-chat | 8767 | Needs API key | AI chat with streaming, themes, image upload; requires OPENAI_API_KEY |
 | 8-modules | 8768 | Working | Three counter widgets using ShinyModuleProvider namespacing |
 | 9-blended | 8770 | Working | Tabbed sidebar layout, matplotlib plot, data table, settings panel |

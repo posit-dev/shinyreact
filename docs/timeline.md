@@ -38,7 +38,6 @@ The plumbing just works. Downstream packages can build on it confidently.
 - Stable API surface for JS hooks and Python public API
 - Clear documentation and examples
 - Known issues resolved:
-  - **Duplicate output IDs on tab navigation** — switching tabs unmounts/remounts useShinyOutput components, creating duplicate bindings. Fix output registry cleanup/re-registration or keep pages mounted.
   - **Python-side input handlers** — useShinyInput values arrive raw with no server-side interception. Need to support registering Python input handlers for validation/transformation (like Shiny's built-in action button handler).
   - **XSS in chat example** — renderMarkdown passes non-code-block text as raw HTML via dangerouslySetInnerHTML. Needs sanitization (DOMPurify or React element tree).
   - **Component contract definition** — define what a well-formed shinyjson component looks like from a downstream author's perspective (props, composition, catalog conventions).
