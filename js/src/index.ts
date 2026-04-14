@@ -19,6 +19,7 @@ import {
   useShinyMessageHandler,
   useShinyInitialized,
   ImageOutput,
+  MISSING,
   ShinyModuleProvider,
   ShinyReactComponentElement,
 } from "./shiny-react";
@@ -36,6 +37,7 @@ declare global {
       useShinyMessageHandler: typeof useShinyMessageHandler;
       useShinyInitialized: typeof useShinyInitialized;
       ImageOutput: typeof ImageOutput;
+      MISSING: typeof MISSING;
       ShinyModuleProvider: typeof ShinyModuleProvider;
       ShinyReactComponentElement: typeof ShinyReactComponentElement;
       React: typeof React;
@@ -52,6 +54,7 @@ window.shinyjson = {
   useShinyMessageHandler,
   useShinyInitialized,
   ImageOutput,
+  MISSING,
   ShinyModuleProvider,
   ShinyReactComponentElement,
   React,
