@@ -196,20 +196,18 @@ export function useShinyOutput<T>(
     }
 
     const reactRegistry = getReactRegistry();
-    reactRegistry.outputs.add(namespacedOutputId, setValue, setRecalculating);
-    return () => {
-      reactRegistry.outputs.remove(namespacedOutputId);
-    };
+    const dispose = reactRegistry.outputs.add(
+      namespacedOutputId,
+      setValue,
+      setRecalculating,
+    );
+    return dispose;
   }, [namespacedOutputId, shinyInitialized]);
 
   return [value, recalculating];
 }
 
 // TODO: Also get error value?
-//
-// TODO: Use reference counter; when last reference to a particular output is
-// removed, disable the output and/or remove the DOM element. And maybe remove
-// from registry?
 
 // TODO: (possible) Implement useShinyOutputValue and useShinyOutputRecalculating
 
