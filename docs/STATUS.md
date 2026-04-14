@@ -4,10 +4,6 @@ Project status: known issues, TODOs, and feature inventory.
 
 ## TODOs
 
-### Output registry `remove()` is destructive — needs reference counting
-
-`outputs.remove()` deletes the entire `OutputRegistryEntry` and its hidden DOM element, then schedules async `unbindAll`/`bindAll`. When React unmounts one component and mounts another in the same commit (e.g., tab switching), the new `add()` races the old `remove()`'s unbind, causing Shiny to see duplicate output bindings. The input registry already handles this correctly — `removeUseStateSetValueFn` removes one subscriber without nuking the entry. The output registry should follow the same pattern: decrement a reference count on `remove()`, only delete the DOM element and unbind when the count reaches zero. This also wouldn't help `ImageOutput`, which bypasses the registry and creates its own DOM elements. See the existing TODO in `use-shiny.ts` at line ~208.
-
 ### 7-chat requires external API key
 
 The chat example requires `OPENAI_API_KEY` and the `chatlas` package. It cannot be smoke-tested without credentials. Consider adding a mock/echo mode for demo purposes.
@@ -103,6 +99,7 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 
 ### Recent fixes
 
+- **Output registry reference-counted cleanup**: `OutputRegistry.add()` now returns a dispose function that removes only the caller's subscribers. Deferred RAF cleanup deletes the entry and DOM element only when no subscribers remain, fixing the race condition where tab switching caused duplicate output bindings.
 - **useShinyInput defaultValue stabilization**: Inline `{}` / `[]` defaults no longer cause infinite re-renders. The first value is captured in a `useRef` and used for the `useEffect` dependency array.
 - **useShinyMessageHandler handler stabilization**: Inline arrow functions no longer cause unnecessary handler deregister/re-register cycles. Handler stored in a ref with stable wrapper.
 - **ImageOutput prop**: Correct prop is `id`, not `outputId` (fixed in 5-shadcn).
