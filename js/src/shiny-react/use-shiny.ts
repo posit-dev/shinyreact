@@ -329,6 +329,38 @@ export function useShinyInitialized(): boolean {
   return shinyInitialized;
 }
 
+/**
+ * A React hook that tracks whether the Shiny server is currently busy.
+ *
+ * Listens for `shiny:busy` and `shiny:idle` DOM events on `document`.
+ * Returns `false` initially, flips to `true` when a `shiny:busy` event
+ * fires, and back to `false` on `shiny:idle`.
+ *
+ * @returns A boolean indicating whether the Shiny server is currently busy.
+ */
+export function useShinyBusy(): boolean {
+  const [busy, setBusy] = useState<boolean>(false);
+
+  useEffect(() => {
+    function onBusy() {
+      setBusy(true);
+    }
+    function onIdle() {
+      setBusy(false);
+    }
+
+    document.addEventListener("shiny:busy", onBusy);
+    document.addEventListener("shiny:idle", onIdle);
+
+    return () => {
+      document.removeEventListener("shiny:busy", onBusy);
+      document.removeEventListener("shiny:idle", onIdle);
+    };
+  }, []);
+
+  return busy;
+}
+
 let shinyReactInitialized = false;
 function ensureShinyReactInitialized() {
   if (shinyReactInitialized) {

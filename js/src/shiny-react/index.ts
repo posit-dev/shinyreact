@@ -8,6 +8,7 @@ export { MISSING } from "./missing";
 export type { MISSING as MISSINGType } from "./missing";
 export { ShinyReactComponentElement } from "./ShinyReactComponentElement";
 export {
+  useShinyBusy,
   useShinyInitialized,
   useShinyInput,
   useShinyMessageHandler,
