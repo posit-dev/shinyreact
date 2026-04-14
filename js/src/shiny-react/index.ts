@@ -4,6 +4,8 @@ import { type ShinyMessageRegistry } from "./message-registry";
 import { type ShinyReactRegistry } from "./react-registry";
 
 export { ImageOutput } from "./ImageOutput";
+export { MISSING } from "./missing";
+export type { MISSING as MISSINGType } from "./missing";
 export { ShinyReactComponentElement } from "./ShinyReactComponentElement";
 export {
   useShinyInitialized,
