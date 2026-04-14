@@ -42,6 +42,13 @@ export class OutputRegistryEntry<T> {
   setRecalculating(value: boolean) {
     this.useStateSetRecalculatingFns.forEach((fn) => fn(value));
   }
+
+  isEmpty(): boolean {
+    return (
+      this.useStateSetValueFns.size === 0 &&
+      this.useStateSetRecalculatingFns.size === 0
+    );
+  }
 }
 
 export class OutputRegistry {
@@ -61,7 +68,7 @@ export class OutputRegistry {
     outputId: string,
     setValue: (value: T) => void,
     setRecalculating: (value: boolean) => void,
-  ) {
+  ): () => void {
     let outputEntry = this.get(outputId);
     if (!outputEntry) {
       // Need to create a dummy div element with the ID, so that we have
@@ -80,6 +87,12 @@ export class OutputRegistry {
 
     outputEntry.addUseStateSetValueFn(setValue);
     outputEntry.addUseStateSetRecalculatingFn(setRecalculating);
+
+    return () => {
+      outputEntry.removeUseStateSetValueFn(setValue);
+      outputEntry.removeUseStateSetRecalculatingFn(setRecalculating);
+      this.scheduleCleanup(outputId);
+    };
   }
 
   has(outputId: string) {
@@ -90,13 +103,20 @@ export class OutputRegistry {
     return this.outputs.get(outputId);
   }
 
-  remove(outputId: string) {
-    this.outputs.delete(outputId);
-    const outputDiv = document.getElementById(outputId);
-    if (outputDiv) {
-      outputDiv.remove();
-    }
-    this.scheduleBindAll();
+  private scheduleCleanup(outputId: string) {
+    requestAnimationFrame(() => {
+      const entry = this.outputs.get(outputId);
+      if (!entry || !entry.isEmpty()) {
+        return;
+      }
+
+      this.outputs.delete(outputId);
+      const outputDiv = document.getElementById(outputId);
+      if (outputDiv) {
+        outputDiv.remove();
+      }
+      this.scheduleBindAll();
+    });
   }
 
   /**

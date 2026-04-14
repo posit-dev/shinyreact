@@ -209,6 +209,9 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# Playwright MCP
+.playwright-mcp/
+
 # Node
 node_modules/
 
