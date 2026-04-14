@@ -1,4 +1,4 @@
-# Skip null dimensions in useShinyInput
+# MISSING sentinel for useShinyInput
 
 ## Problem
 
@@ -10,42 +10,32 @@ With React `ImageOutput`, sending `null` explicitly means the reactive input **h
 
 ## Solution
 
-Add a `skipNull` option to `useShinyInput` that prevents `null`/`undefined` values from being sent to Shiny. The value still updates React state locally, but `Shiny.setInputValue()` is not called until a real (non-nullish) value is set. This keeps the server-side clientdata in `MISSING` state until the `ResizeObserver` measures actual pixel dimensions.
+Introduce a `MISSING` sentinel symbol that mirrors Shiny Python's `MISSING` type. When `useShinyInput` holds a `MISSING` value, it updates React state locally but does **not** call `Shiny.setInputValue()`. This keeps the server-side clientdata in `MISSING` state until the `ResizeObserver` measures actual pixel dimensions.
+
+This is better than a `skipNull` boolean flag because:
+- **Semantic**: "not yet set" is a distinct concept from "null." A `skipNull` flag would prevent ever intentionally sending `null` to Shiny. With a sentinel, `null` remains a valid sendable value.
+- **Mirrors Shiny Python**: The server already has a `MISSING` type that raises `SilentException`. A TS-side `MISSING` sentinel is the natural counterpart.
+- **No configuration**: The hook just checks `value === MISSING` before sending. No option flag needed.
 
 ## Changes
 
-### 1. `useShinyInput` option — `js/src/shiny-react/use-shiny.ts`
-
-Add `skipNull?: boolean` to the options object:
+### 1. `MISSING` sentinel — new export from `js/src/shiny-react/`
 
 ```ts
-export function useShinyInput<T>(
-  id: string,
-  defaultValue: T,
-  {
-    debounceMs = 100,
-    priority,
-    namespace: explicitNamespace,
-    skipNull,          // <-- new
-  }: {
-    debounceMs?: number;
-    priority?: EventPriority;
-    namespace?: string | null;
-    skipNull?: boolean; // <-- new
-  } = {},
-): [T, (value: T) => void]
+export const MISSING: unique symbol = Symbol("MISSING");
+export type MISSING = typeof MISSING;
 ```
 
-Pass `skipNull` through to `InputRegistryEntry` via `getOrCreate` or an update method.
+Export from `shiny-react/index.ts` and from `window.shinyjson` so downstream component authors can use it.
 
 ### 2. `InputRegistryEntry` — `js/src/shiny-react/input-registry.ts`
 
-Store `skipNull` on the entry. In `setValue()`, gate the Shiny send:
+In `setValue()`, gate the Shiny send when the value is `MISSING`:
 
 ```ts
 setValue(value: T) {
   this.value = value;
-  if (this.opts.skipNull && (value === null || value === undefined)) {
+  if (value === MISSING) {
     // Update React state only — don't send to Shiny
     this.useStateSetValueFns.forEach((fn) => fn(value));
     return;
@@ -55,30 +45,45 @@ setValue(value: T) {
 }
 ```
 
+Import `MISSING` from the new module.
+
 ### 3. `ImageOutput` — `js/src/shiny-react/ImageOutput.tsx`
 
-Add `skipNull: true` to both dimension inputs:
+Use `MISSING` as the default value for dimension inputs:
 
 ```ts
-const [imgWidth, setImgWidth] = useShinyInput<number | null>(
+const [imgWidth, setImgWidth] = useShinyInput<number | MISSING>(
   `.clientdata_output_${namespacedId}_width`,
-  null,
-  { namespace: null, skipNull: true },
+  MISSING,
+  { namespace: null },
 );
-const [imgHeight, setImgHeight] = useShinyInput<number | null>(
+const [imgHeight, setImgHeight] = useShinyInput<number | MISSING>(
   `.clientdata_output_${namespacedId}_height`,
-  null,
-  { namespace: null, skipNull: true },
+  MISSING,
+  { namespace: null },
 );
 ```
 
-### 4. Tests — `js/src/shiny-react/__tests__/`
+No changes to `useShinyInput` signature needed — `MISSING` is just a valid value.
+
+### 4. `window.shinyjson` — `js/src/index.ts`
+
+Export `MISSING` on the global API so downstream packages can use it:
+
+```ts
+window.shinyjson = {
+  // ...existing exports...
+  MISSING,
+};
+```
+
+### 5. Tests — `js/src/shiny-react/__tests__/`
 
 Add a test verifying:
-- With `skipNull: true`, setting a `null` value does **not** call `Shiny.setInputValue()`
-- With `skipNull: true`, setting a real number **does** call `Shiny.setInputValue()`
-- Without `skipNull`, `null` values are sent normally (existing behavior preserved)
+- With `MISSING` as the value, `Shiny.setInputValue()` is **not** called
+- When a real number replaces `MISSING`, `Shiny.setInputValue()` **is** called
+- `null` values are still sent normally (existing behavior preserved)
 
 ## Scope
 
-This is a focused change — four files touched, no API-breaking changes. Existing callers of `useShinyInput` are unaffected (option defaults to `undefined`/falsy).
+Four files touched, no API-breaking changes. Existing callers of `useShinyInput` are unaffected — `MISSING` is opt-in by passing it as the default value.
