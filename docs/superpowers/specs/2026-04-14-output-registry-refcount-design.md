@@ -40,9 +40,9 @@ Schedules a `requestAnimationFrame` callback that:
 
 Multiple cleanup requests for the same ID within one frame are harmless — the second RAF finds nothing to do or finds the entry re-populated.
 
-#### 4. `OutputRegistry.remove(outputId)` deprecated
+#### 4. Remove `OutputRegistry.remove(outputId)`
 
-Add a JSDoc comment marking `remove()` as deprecated, directing callers to use the dispose function returned by `add()` instead. Keep the method functional for backward compatibility but make the preferred pattern clear in the docs.
+Delete the method entirely. All cleanup goes through the dispose function returned by `add()`.
 
 #### 5. `useShinyOutput` cleanup
 
@@ -72,7 +72,6 @@ New file: `js/src/shiny-react/__tests__/output-registry.test.ts`
 - Dispose removes only its own subscribers (two subscribers, dispose one, other remains)
 - `scheduleCleanup` removes entry and DOM element when empty after RAF
 - `scheduleCleanup` preserves entry when new subscriber added before RAF fires (the core race condition)
-- Force `remove()` still deletes immediately
 
 ### Documentation updates
 
