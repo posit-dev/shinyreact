@@ -40,9 +40,9 @@ Schedules a `requestAnimationFrame` callback that:
 
 Multiple cleanup requests for the same ID within one frame are harmless — the second RAF finds nothing to do or finds the entry re-populated.
 
-#### 4. `OutputRegistry.remove(outputId)` unchanged
+#### 4. `OutputRegistry.remove(outputId)` deprecated
 
-Stays as a force-remove escape hatch for imperative use. `useShinyOutput` will no longer call it.
+Add a JSDoc comment marking `remove()` as deprecated, directing callers to use the dispose function returned by `add()` instead. Keep the method functional for backward compatibility but make the preferred pattern clear in the docs.
 
 #### 5. `useShinyOutput` cleanup
 
