@@ -4,7 +4,7 @@ from htmltools import HTMLDependency, Tag
 from shiny.render.renderer import Renderer
 from shiny.types import Jsonifiable
 
-from ._output import ui
+from ._output import ui_output
 from ._spec import Node, Spec
 
 
@@ -76,4 +76,4 @@ class render(Renderer[Spec | Node | Jsonifiable]):
     def auto_output_ui(self) -> Tag:
         # Express mode: auto-generate the output container.
         # extra_deps allows downstream subclasses to inject their JS/CSS.
-        return ui(self.output_id, extra_deps=self.extra_deps)
+        return ui_output(self.output_id, extra_deps=self.extra_deps)
