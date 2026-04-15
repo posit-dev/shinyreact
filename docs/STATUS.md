@@ -18,7 +18,9 @@ The `renderMarkdown()` function in `examples/7-chat/chat.js` escapes code blocks
 
 ### Full React page support
 
-`useShinyInitialized` now falls back to the `shiny:connected` DOM event when `window.Shiny` is not yet available at mount time. This unblocks a future "full React page" mode where the entire page is a React app and Shiny scripts load asynchronously. Remaining work includes a dedicated page layout function (e.g. `page_react()`), ensuring all hooks and the output binding gracefully handle late Shiny arrival end-to-end, and adding an example app that demonstrates the pattern.
+`page_react()` and `page_bare()` are now exported. `page_react()` creates a full-page React app with a `#root` div and the shinyjson HTMLDependency. Remaining work:
+- End-to-end example app demonstrating the full React SPA pattern.
+- Ensure all hooks and the output binding gracefully handle late Shiny arrival.
 
 ### JSON Patch for partial/dynamic UI updates
 
@@ -45,6 +47,18 @@ Create a comprehensive nested bullet list cataloging every feature and benefit s
 ### Can dynamic UI be supported? Can any render output be supported, or should it always be components?
 
 Investigate whether shinyjson can support dynamic UI patterns where the server controls what gets rendered (not just data updates to fixed components). For example: can a render function return arbitrary Shiny UI (like `ui.tags`, `ui.input_slider`, etc.) mixed with shinyjson components? Should render output always be a component tree, or could it include raw HTML, plain text, or other Shiny outputs? This has implications for how flexible the framework is versus how predictable the rendering contract remains.
+
+### Nest UI functions into `shinyjson.ui.*` submodule
+
+Currently `ui_output`, `page_react`, and `page_bare` are flat top-level exports. Later, restructure into a `shinyjson.ui` submodule: `ui.output()`, `ui.page_react()`, `ui.page_bare()`.
+
+### `HTMLDependency` support for `page_react()`
+
+`page_react()` currently accepts `js_file`/`css_file` string paths. Consider accepting `extra_deps: list[HTMLDependency]` instead of or in addition to string paths, for consistency with the rest of the API.
+
+### Evaluate `extra_deps` on `ui_output()`
+
+Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `ui_output()` to simplify the API.
 
 ## Features
 
@@ -92,6 +106,7 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 
 ### Recent fixes
 
+- **Flat UI namespace**: Renamed `shinyjson.ui()` to `shinyjson.ui_output()`. Exported `page_react()` and `page_bare()` as public API. `page_react()` includes the shinyjson HTMLDependency automatically.
 - **Output registry reference-counted cleanup**: `OutputRegistry.add()` now returns a dispose function that removes only the caller's subscribers. Deferred RAF cleanup deletes the entry and DOM element only when no subscribers remain, fixing the race condition where tab switching caused duplicate output bindings.
 - **useShinyInput defaultValue stabilization**: Inline `{}` / `[]` defaults no longer cause infinite re-renders. The first value is captured in a `useRef` and used for the `useEffect` dependency array.
 - **useShinyMessageHandler handler stabilization**: Inline arrow functions no longer cause unnecessary handler deregister/re-register cycles. Handler stored in a ref with stable wrapper.

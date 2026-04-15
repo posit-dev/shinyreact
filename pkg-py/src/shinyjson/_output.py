@@ -14,7 +14,7 @@ def _dep() -> HTMLDependency:
     )
 
 
-def ui(id: str, extra_deps: Sequence[HTMLDependency] | None = None) -> Tag:
+def ui_output(id: str, extra_deps: Sequence[HTMLDependency] | None = None) -> Tag:
     """Create a Shiny output placeholder for a shinyjson renderer.
 
     Args:

@@ -1,19 +1,26 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from htmltools import Tag, TagChild, TagList, tags
 
-from htmltools import Tag, TagList, tags
-
-if TYPE_CHECKING:
-    pass
+from ._output import _dep
 
 
-def _page_bare(
-    *args: Tag | TagList | str,
+def page_bare(
+    *args: TagChild,
     title: str | None = None,
     lang: str = "en",
 ) -> Tag:
-    """Create a bare HTML page with only Shiny dependencies."""
+    """Create a bare HTML page with only Shiny dependencies.
+
+    This is the escape hatch for fully custom setups that don't need the
+    shinyjson JS/CSS. It wraps ``shiny.ui.page_bootstrap()`` with minimal
+    defaults.
+
+    Args:
+        *args: Child tags to include in the page body.
+        title: Page title.
+        lang: HTML ``lang`` attribute.
+    """
     from shiny.ui import page_bootstrap
 
     head_content = TagList()
@@ -28,8 +35,8 @@ def _page_bare(
     )
 
 
-def _page_react(
-    *args: Tag | TagList | str,
+def page_react(
+    *args: TagChild,
     title: str | None = None,
     js_file: str = "main.js",
     css_file: str = "main.css",
@@ -37,16 +44,21 @@ def _page_react(
 ) -> Tag:
     """Create a full-page React app served by Shiny.
 
-    Internal function — not part of the public API. Creates an HTML page
-    with a ``#root`` div, the specified JS/CSS files, and Shiny dependencies.
+    Creates an HTML page with the shinyjson dependency, a ``#root`` div for
+    mounting a React app, and ``<script>``/``<link>`` tags for the provided
+    JS/CSS files. Shiny runs in the background for reactivity.
 
     Args:
+        *args: Additional child tags to include in the page body.
         title: Page title.
-        js_file: Path to the main JS bundle (served from static_assets).
-        css_file: Path to the main CSS file (served from static_assets).
-        lang: HTML lang attribute.
+        js_file: Path to the main JS bundle.
+        css_file: Path to the main CSS file.
+        lang: HTML ``lang`` attribute.
     """
-    return _page_bare(
+    # TODO: Accept extra_deps: list[HTMLDependency] instead of / in addition
+    # to js_file/css_file string paths.
+    return page_bare(
+        _dep(),
         tags.link(rel="stylesheet", href=css_file),
         tags.div(id="root"),
         *args,

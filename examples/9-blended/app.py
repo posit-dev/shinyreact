@@ -50,7 +50,7 @@ _blended_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui("main", extra_deps=[_blended_dep])
+app_ui = shinyjson.ui_output("main", extra_deps=[_blended_dep])
 
 
 # ---------------------------------------------------------------------------
