@@ -32,7 +32,3 @@ def ui_output(id: str, extra_deps: Sequence[HTMLDependency] | None = None) -> Ta
         id=id,
         class_="shinyjson-output",
     )
-
-
-# Backward-compatible alias — will be removed once __init__.py is updated
-ui = ui_output
