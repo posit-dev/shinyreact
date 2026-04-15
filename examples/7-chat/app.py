@@ -27,7 +27,7 @@ _chat_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui("main", extra_deps=[_chat_dep])
+app_ui = shinyjson.ui_output("main", extra_deps=[_chat_dep])
 
 
 # ---------------------------------------------------------------------------

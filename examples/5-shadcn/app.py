@@ -32,7 +32,7 @@ _shadcn_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui("main", extra_deps=[_shadcn_dep])
+app_ui = shinyjson.ui_output("main", extra_deps=[_shadcn_dep])
 
 
 # ---------------------------------------------------------------------------

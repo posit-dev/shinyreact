@@ -13,7 +13,7 @@ _hello_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui("hello", extra_deps=[_hello_dep])
+app_ui = shinyjson.ui_output("hello", extra_deps=[_hello_dep])
 
 
 # ---------------------------------------------------------------------------

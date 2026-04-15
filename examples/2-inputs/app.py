@@ -14,7 +14,7 @@ _inputs_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui("main", extra_deps=[_inputs_dep])
+app_ui = shinyjson.ui_output("main", extra_deps=[_inputs_dep])
 
 
 # ---------------------------------------------------------------------------
