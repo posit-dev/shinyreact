@@ -1,4 +1,4 @@
-from htmltools import Tag
+from htmltools import HTMLDependency, Tag
 from shinyjson._page_react import page_bare, page_react
 
 
@@ -38,20 +38,22 @@ def test_page_react_includes_shinyjson_dep():
     assert "shinyjson" in dep_names
 
 
-def test_page_react_includes_js_file():
-    result = page_react(js_file="app.js")
-    rendered = str(result.tagify())
-    assert 'src="app.js"' in rendered
+def test_page_react_accepts_htmldep_via_args():
+    dep = HTMLDependency(
+        "my-app", "1.0.0", source={"subdir": "/tmp"}, script={"src": "app.js"}
+    )
+    result = page_react(dep)
+    deps = result.get_dependencies()
+    dep_names = [d.name for d in deps]
+    assert "my-app" in dep_names
+    assert "shinyjson" in dep_names
 
 
-def test_page_react_includes_css_file():
-    result = page_react(css_file="app.css")
-    rendered = str(result.tagify())
-    assert 'href="app.css"' in rendered
+def test_page_react_no_js_file_css_file_params():
+    """page_react() no longer accepts js_file or css_file."""
+    import inspect
 
-
-def test_page_react_default_files():
-    result = page_react()
-    rendered = str(result.tagify())
-    assert 'src="main.js"' in rendered
-    assert 'href="main.css"' in rendered
+    sig = inspect.signature(page_react)
+    param_names = list(sig.parameters.keys())
+    assert "js_file" not in param_names
+    assert "css_file" not in param_names

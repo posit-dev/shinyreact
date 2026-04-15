@@ -52,10 +52,6 @@ Investigate whether shinyjson can support dynamic UI patterns where the server c
 
 Currently `ui_output`, `page_react`, and `page_bare` are flat top-level exports. Later, restructure into a `shinyjson.ui` submodule: `ui.output()`, `ui.page_react()`, `ui.page_bare()`.
 
-### `HTMLDependency` support for `page_react()`
-
-`page_react()` currently accepts `js_file`/`css_file` string paths. Consider accepting `extra_deps: list[HTMLDependency]` instead of or in addition to string paths, for consistency with the rest of the API.
-
 ### Evaluate `extra_deps` on `ui_output()`
 
 Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `ui_output()` to simplify the API.
@@ -106,6 +102,7 @@ Should HTML dependencies be handled exclusively at the render subclass or page l
 
 ### Recent fixes
 
+- **HTMLDependency support for `page_react()`**: Removed `js_file`/`css_file` string params from `page_react()`. Added `page_react_dep()` helper that builds an HTMLDependency from local file paths with mtime cache-busting. Both `page_react()` and `page_bare()` accept HTMLDependency objects via `*args` (Shiny hoists them to `<head>` automatically).
 - **Flat UI namespace**: Renamed `shinyjson.ui()` to `shinyjson.ui_output()`. Exported `page_react()` and `page_bare()` as public API. `page_react()` includes the shinyjson HTMLDependency automatically.
 - **Output registry reference-counted cleanup**: `OutputRegistry.add()` now returns a dispose function that removes only the caller's subscribers. Deferred RAF cleanup deletes the entry and DOM element only when no subscribers remain, fixing the race condition where tab switching caused duplicate output bindings.
 - **useShinyInput defaultValue stabilization**: Inline `{}` / `[]` defaults no longer cause infinite re-renders. The first value is captured in a `useRef` and used for the `useEffect` dependency array.
