@@ -1,4 +1,4 @@
-# SPA-First Architecture: Rethinking Shiny's UI Layer for an AI-Native World
+# SPA-First Architecture: Rethinking Shiny's UI Layer for an AI driven World
 
 ## 1. Executive Summary
 
@@ -24,9 +24,9 @@ An app file contains reactive computations, data access, and business logic — 
 
 Shiny apps are communication tools — they let subject matter experts who may not be technical with the underlying data safely interact with models and computations. The output is a polished product, not a notebook. This distinguishes Shiny from notebooks designed for the author's own exploration.
 
-### Tenet 3: AI is the UI author
+### Tenet 3: AI driven UI authoring is the default
 
-Claude (or equivalent) generates the HTML, CSS, and React components that make up the application's interface. The author should not have to concern themselves with implementing layout, styling, component hierarchies, or frontend state management. The framework's job is to make that generation reliable — providing a clear communication bridge, well-documented hooks, and predictable conventions — not to abstract the UI away with R/Python wrapper functions.
+Claude (or equivalent) is the default producer of the HTML, CSS, and React components that make up the application's interface. The author should not have to concern themselves with implementing layout, styling, component hierarchies, or frontend state management. Authors may still inspect or edit client code when needed, but the default path is AI driven UI authoring. The framework's job is to make that generation reliable — providing a clear communication bridge, well-documented hooks, and predictable conventions — not to abstract the UI away with R/Python wrapper functions.
 
 ### Tenet 4: UI lives on the client
 
@@ -42,7 +42,7 @@ Shiny's core value is lazy, dependency-tracked, minimal recomputation — analog
 
 ### Tenet 7: The communication bridge is small and explicit
 
-Message passing between client and server should be targeted — addressed by element id, message name, and handler — not broadcast to the document. The bridge API surface should be minimal: a small set of React hooks (functions that let components interact with Shiny) on the client (`useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`) and corresponding server-side primitives. If the bridge grows large, something has gone wrong.
+Message passing between client and server should be targeted — addressed by element id, message type, and handler — not broadcast to the document. The bridge API surface should be minimal: a small set of React hooks (functions that let components interact with Shiny) on the client (`useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`) and corresponding server-side primitives. If the bridge grows large, something has gone wrong.
 
 ### Tenet 8: Pre-built component libraries are a parallel path
 
@@ -50,7 +50,7 @@ For organizations with design systems (government style guides, enterprise UI ki
 
 ### Tenet 9: No build toolchain required for the app author
 
-Even in an SPA-first world, the app author should not need to run `npm install`, `webpack`, or any frontend build step. The AI produces ready-to-serve static assets. A future iteration may introduce optional toolchain support for authors who want it, but the default path must remain zero-config.
+Even in an SPA-first world, the app author should not need to manually run `npm install`, `webpack`, Vite, or any frontend build step as part of the default workflow. A build step may still exist behind the scenes — managed by AI tooling, framework tooling, or prebuilt assets — but it must not be part of the default author experience. A future iteration may introduce optional toolchain support for authors who want it, but the default path must remain zero-config.
 
 
 ## 3. Shiny's First Principles
@@ -75,7 +75,7 @@ Joe explicitly distinguishes Shiny from notebooks. Notebooks are for the author'
 
 ## 4. How AI Changes the Equation
 
-Each of Shiny's first principles was designed to solve a problem for a human author. AI doesn't eliminate those problems — it changes *who* is solving them. Here's how each principle holds up when AI is the primary UI author.
+Each of Shiny's first principles was designed to solve a problem for a human author. AI doesn't eliminate those problems — it changes *who* is solving them. Here's how each principle holds up when AI is driving most UI authoring.
 
 ### Principle 1 preserved, mechanism changed
 
@@ -93,13 +93,13 @@ Each of Shiny's first principles was designed to solve a problem for a human aut
 
 **Original:** R/Python UI code is carefully structured so that code hierarchy mirrors visual hierarchy — making the UI scannable for the author.
 
-**With AI:** When the AI generates the UI, the author is no longer reading UI code to understand layout. The scannability of the UI source matters to the AI (and it handles JSX/HTML natively), not to the app author. This principle was valuable because humans were writing and reading UI code. In an AI-generated SPA, the human reads the rendered app — not the source.
+**With AI:** When the AI generates the UI, the author is no longer primarily reading UI code to understand layout. The scannability of the UI source matters more to the AI (and it handles JSX/HTML natively) than to the app author. This principle was valuable because humans were writing and reading UI code. In an AI-generated SPA, the human primarily reads the rendered app and inspects the source only when needed.
 
 ### Principle 4 preserved, strengthened
 
 **Original:** Shiny apps are communication tools for non-programmers, distinct from notebooks.
 
-**With AI:** Unchanged — and if anything, strengthened. AI can generate more polished, accessible, and responsive interfaces than most data scientists would build by hand. And crucially, AI can implement best practices (accessibility, responsive design, modern UI patterns) as soon as they are established or desired — not when the Shiny team gets around to implementing and shipping them as framework features. The audience (subject matter experts interacting with models) is the same. The quality of what they receive goes up, and it improves at the speed of the AI, not the speed of the framework's release cycle.
+**With AI:** Unchanged — and if anything, strengthened. AI can often generate more polished, accessible, and responsive interfaces than many data scientists would build by hand, especially when guided by clear conventions and followed by validation. And crucially, AI can adopt best practices (accessibility, responsive design, modern UI patterns) as soon as they are established or desired — not only when the Shiny team implements and ships them as framework features. The audience (subject matter experts interacting with models) is the same. The quality of what they receive can go up, and it can improve at the speed of the AI plus the guardrails around it, not only the speed of the framework's release cycle.
 
 ## 5. The SPA-First Architecture
 
@@ -148,7 +148,7 @@ The core communication layer is intentionally minimal:
 |-----------|-----------|---------|
 | Client → Server | `useShinyInput(id, defaultValue)` | User selects a filter option |
 | Server → Client | `useShinyOutput(id)` | Server sends computed plot data |
-| Server → Client (push) | `useShinyMessageHandler(id, name, handler)` | Server pushes a notification |
+| Server → Client (push) | `useShinyMessageHandler(id, messageType, handler)` | Server pushes a notification |
 
 ### How `shiny run` works
 
@@ -176,7 +176,7 @@ For applications where:
 
 ### The counterpoint: "stateless" APIs aren't always stateless
 
-APIs can support session tokens via cookies to maintain user state across requests. But this requires sticky worker execution — routing all requests from a session to the same server process — which removes the "scales horizontally" advantage that stateless APIs claim. While possible on paper, sticky sessions with server-side state are essentially reinventing the websocket support that Shiny has out of the box.
+APIs can support session tokens via cookies, sticky routing, or other mechanisms to preserve user state across requests. But once a system depends on server-held session state, incremental recomputation, or request routing tied to a warm process, it gives up much of the simplicity and operational advantage that purely stateless request-response systems claim. At that point, it begins to converge on capabilities that Shiny already provides explicitly with a persistent reactive session.
 
 ### The risk
 
@@ -196,7 +196,7 @@ We don't have answers yet, but these are directions worth exploring:
 
 ### Message passing model
 
-Today, Shiny's custom messages are broadcast to the document — any handler registered for a given message type receives it. In the SPA-first model, message passing should be more targeted: addressed by element id, message name, and handler. If the id is omitted, the message falls back to the document level. The exact API shape needs design work.
+Today, Shiny's custom messages are broadcast to the document — any handler registered for a given message type receives it. In the SPA-first model, message passing should be more targeted: addressed by element id, message type, and handler. If the id is omitted, the message falls back to the document level. The exact API shape needs design work.
 
 ### Hybrid connection model
 
@@ -210,6 +210,17 @@ As AI agents begin interacting with applications programmatically (via MCP or si
 
 The SPA-first model depends on AI reliably generating correct React clients that communicate with Shiny via the bridge hooks. What does the Claude Skill (or equivalent) look like? What conventions, templates, or scaffolding make generation reliable? How do we test that generated clients are correct?
 
+### Generated client verification
+
+If the default path is AI driven client generation, then verification cannot be an afterthought. The architecture should assume that generated clients are trustworthy only when they are produced against a constrained target and passed through a managed validation pipeline.
+
+At minimum, that pipeline should include:
+
+- **Constrained generation targets.** The AI should generate against a narrow, well-documented surface area: stable bridge hooks, known file conventions, supported dependency patterns, and templates for common app shapes. Reliability comes as much from limiting the generation space as from improving the model.
+- **Managed validation behind the scenes.** The default author workflow should stay no-build and low-friction, but that does not mean no validation occurs. Tooling can still run hidden build, type, lint, or packaging checks as part of generation or publishing, as long as the app author is not expected to operate the frontend toolchain directly.
+- **Browser-level end-to-end tests.** Playwright or an equivalent browser automation layer should validate the behaviors that matter most: websocket connection, input-to-output flow, message type delivery, bookmarking/init hydration, and failure handling when the server or bridge is not ready.
+- **Security and accessibility review hooks.** The supported pipeline should include explicit checks for dependency provenance, XSS-sensitive rendering paths, and baseline accessibility expectations. AI can accelerate implementation, but it should not bypass the normal guardrails for client code shipped to users.
+
 ### Bookmarking and initial state
 
 The static client has no server-generated state. Restoring a bookmarked app state requires the server to send an init message over the websocket on connection. The protocol and client-side initialization pattern for this need to be designed.
@@ -218,9 +229,21 @@ The static client has no server-generated state. Restoring a bookmarked app stat
 
 A Claude Skill (or equivalent) to migrate existing Shiny apps — which define UI in R/Python — to the SPA-first model: a pure server file plus an AI-generated React client. This would lower the barrier for adoption and provide a concrete validation that the architecture works for real-world apps, not just greenfield projects.
 
-### No-build-toolchain SPA generation
+### Default no-build-toolchain SPA generation
 
-Tenet 9 states that the app author should not need a build toolchain, and Tenet 8 says component libraries should be standalone JavaScript packages that authors import. These are in tension (see Tenets 8 and 9): a React SPA with component imports and JSX normally requires a bundler. How does AI produce ready-to-serve static assets without a build step? Possible approaches include pre-bundled output from the AI, CDN-hosted dependencies with no JSX (plain `React.createElement`), or an AI-managed build step that is invisible to the author. This needs a concrete technical answer before the architecture can be validated.
+Tenet 9 states that the default app-author workflow should not require a build toolchain, and Tenet 8 says component libraries should be standalone JavaScript packages that SPA authors can import. These are in tension (see Tenets 8 and 9): a React SPA with component imports and JSX normally requires a bundler. The key requirement is not "no build step can exist anywhere," but rather "the default author path does not depend on the author operating one." Possible approaches include pre-bundled output from the AI, CDN-hosted dependencies with no JSX (plain `React.createElement`), or an AI-managed build step that is invisible to the author. This needs a concrete technical answer before the architecture can be validated.
+
+### Asset versioning and caching
+
+Static assets introduce operational concerns that server-generated UI largely hides. The SPA-first path needs a supported story for cache busting, versioned asset URLs, and ensuring regenerated client bundles are picked up reliably in both development and deployment.
+
+### Local edit loops
+
+The default workflow should preserve a tight, single-command development loop. How does an author regenerate client assets, preview changes, and recover when AI-generated files drift from the server logic without exposing the author to a manual frontend toolchain?
+
+### Cross-origin deployment
+
+Serving the SPA assets and the Shiny websocket server from different origins introduces CORS, cookies/authentication, websocket origin checks, and routing questions. The architecture needs an explicit same-origin default and a clear story for supported cross-origin deployments.
 
 ### What happens to the R package?
 
@@ -228,14 +251,15 @@ The R package (`pkg-r/`) was planned for feature parity with the Python package.
 
 ## 8. Next Steps
 
-This is a hard course correction. The work done on the JSON spec transfer layer was not wasted — it produced the bridge hooks, the understanding of Shiny's lifecycle, and the clarity to arrive at this conclusion — but the direction needs to change. This document asks stakeholders to approve that change:
+This is a hard course correction. The work done on the JSON spec transfer layer was not wasted — it produced the bridge hooks, the understanding of Shiny's lifecycle, and the clarity to arrive at this conclusion — but the direction needs to change. This document does not ask stakeholders to treat the SPA-first architecture as fully settled today. It asks for approval to prototype the direction, use that prototype to answer the open questions above, and then make a more final architectural decision:
 
 1. **Agree on the design tenets** (Section 2) as the guiding principles for future Shiny UI work.
-2. **Approve the SPA-first direction** — the client is a static React SPA generated by AI; the server file contains only reactive computation and business logic.
-3. **Acknowledge the scope change** — the JSON spec transfer layer (`@json-render/react`, `Spec`, `Element`, `Node`) is no longer the primary architecture. Work on it pauses in favor of the SPA-first approach.
+2. **Approve a prototype of the SPA-first direction** — the client is a static React SPA generated by AI; the server file contains only reactive computation and business logic.
+3. **Use the prototype to evaluate the role of the JSON spec transfer layer** (`@json-render/react`, `Spec`, `Element`, `Node`) instead of assuming that question is already settled.
 4. **Prioritize the bridge library** — extract and stabilize the `shiny-react` hooks as a standalone, well-documented package that AI can reliably target when generating client code.
-5. **Begin a prototype** — build one end-to-end example app using the SPA-first model (app.py + index.html + static/) to validate the architecture and surface gaps.
-6. **Invest in AI tooling** — build the Claude Skill (or equivalent) that generates correct React clients for Shiny apps, using the bridge hooks and following the conventions outlined in this document.
+5. **Define prototype acceptance criteria** — at minimum: a default no-build author workflow, a clear message type model, a bookmarking/init story, and explicit guidance for deployment and asset handling.
+6. **Begin a prototype** — build one end-to-end example app using the SPA-first model (app.py + index.html + static/) to validate the architecture and surface gaps.
+7. **Invest in AI tooling** — build the Claude Skill (or equivalent) that generates correct React clients for Shiny apps, using the bridge hooks and following the conventions outlined in this document.
 
 ## Appendix: Previous Explorations — `@json-render/react` and Server-Driven UI
 
