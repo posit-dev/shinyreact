@@ -101,6 +101,24 @@ Each of Shiny's first principles was designed to solve a problem for a human aut
 
 **With AI:** Unchanged — and if anything, strengthened. AI can often generate more polished, accessible, and responsive interfaces than many data scientists would build by hand, especially when guided by clear conventions and followed by validation. And crucially, AI can adopt best practices (accessibility, responsive design, modern UI patterns) as soon as they are established or desired — not only when the Shiny team implements and ships them as framework features. The audience (subject matter experts interacting with models) is the same. The quality of what they receive can go up, and it can improve at the speed of the AI plus the guardrails around it, not only the speed of the framework's release cycle.
 
+### The dynamic UI problem
+
+Beyond the AI argument, there is a deeper architectural motivation: **dynamic UI in traditional Shiny is unreasonably difficult.**
+
+Consider a common pattern: a collection of items distributed across columns (a Kanban board, a card layout, a sortable list). The user drags an item from one column to another. The underlying data change is trivial — move an item from one list to another. But in traditional Shiny, the server must:
+
+- Track the data (which items are in which columns)
+- Generate unique input/output IDs for each item's UI controls
+- Re-render the UI for every affected column via `render.ui`
+- Register and destroy observers dynamically as items appear and disappear
+- Manage the lifecycle of those observers to avoid stale handlers, duplicate firings, and race conditions
+
+The server is forced to manage both the data *and* the UI simultaneously. Even experienced Shiny developers find this pattern error-prone. Observer lifecycle bugs are subtle — they don't crash the app, they produce incorrect behavior that is difficult to diagnose.
+
+Now consider the same problem when UI lives on the client. The server manages only the data: receive an event ("item X moved to column Y"), update the data structure, send the new state back. The client — a standard React app — receives the updated data and re-renders. React's reconciliation handles the DOM updates automatically. No dynamic observers, no generated IDs, no lifecycle management. The server code goes from tangled UI+data logic to just pure data logic.
+
+This is not merely a convenience improvement. It eliminates an entire class of bugs that exists only because the server was responsible for UI it should never have owned. The SPA-first architecture makes the natural solution the easy solution: data flows down, events flow up, and the framework handles the rest.
+
 ## 5. The SPA-First Architecture
 
 ### What an app looks like
@@ -154,6 +172,30 @@ The core communication layer is intentionally minimal:
 | Server → Client | `useShinyOutput(id)` | Server sends computed plot data |
 | Server → Client (push) | `useShinyMessageHandler(id, messageType, handler)` | Server pushes a notification |
 
+### Server-side primitives
+
+The server file uses a constrained set of primitives for communicating with the client. Standard Shiny render methods that produce UI (`render.ui`, `render.text`, `render.table`, etc.) are **not supported** in SPA-first apps — they assume the server controls the DOM, which it does not.
+
+The supported primitives:
+
+**`@render.json`** — Sends a value to the client as JSON. The client subscribes via `useShinyOutput(id)` and receives the data. This is the primary mechanism for server → client data flow. The server computes the data; the client decides how to render it.
+
+```python
+columns = reactive.value(initial_data)
+
+@render.json
+def column_data():
+    return columns()
+```
+
+**`input.*`** — Values sent from the client via `useShinyInput`. The server reads them reactively as usual.
+
+### What is explicitly disallowed
+
+- **`render.ui`** — The server must not generate or manipulate DOM.
+- **Other standard Shiny renders** (`render.text`, `render.table`, `render.plot`, `render.image`) — These assume server-controlled output slots in the DOM. In SPA-first apps, use `render.json` to send data and let the client render it however it chooses.
+- **Unbroken reactive loops** — A pattern where the server sends data to the client, the client immediately sends it back as input, which triggers the server again, creates an infinite loop. The communication model is designed to be unidirectional per interaction: input flows up (client → server), computed data flows down (server → client). The client should never echo server data back as input without user action in between.
+
 ### How `shiny run` works
 
 `shiny run app.py` handles the full lifecycle: installs JS dependencies if needed, runs the build step to bundle `src/` into `dist/`, starts the Python server process, and serves the built static assets. The development experience remains a single command. In watch mode, it rebuilds the client when source files change. The author never runs `npm install` or `npx vite build` directly.
@@ -197,6 +239,10 @@ We don't have answers yet, but these are directions worth exploring:
 - **The "graduated complexity" path.** A user starts with a simple app (AI generates everything, minimal server logic). As their needs grow — shared computed state, incremental updates, complex reactive dependencies — Shiny's reactive engine becomes the reason they stay. The SPA-first architecture makes this on-ramp smoother: the client is already a standard React app, and the server grows in complexity as needed.
 
 ## 7. Things to Be Addressed
+
+### `reactive.sync()` — sugar for reactive value + render
+
+Evaluate whether a `reactive.sync(client_name=...)` primitive is worth adding as syntactic sugar for the common pattern of a `reactive.value` paired with a `render.data` that just returns it. The longer form (`reactive.value` + `@render.data`) is explicit and clear, but the pattern is common enough that a single-line equivalent may improve ergonomics. Key constraints: must be server-authoritative (not bidirectional — race conditions), full replacement (not patches), and should not obscure the data flow for readers of the server file.
 
 ### Message passing model
 
