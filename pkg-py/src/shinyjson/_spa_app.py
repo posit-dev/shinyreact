@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from htmltools import HTML, HTMLDependency, TagList
 from shiny import App
@@ -35,7 +35,7 @@ class SpaApp(App):
         self,
         www_dir: str | Path,
         server: Callable[[Inputs, Outputs, Session], None],
-        **kwargs: object,
+        **kwargs: Any,
     ) -> None:
         www_dir = Path(www_dir)
         ui = TagList(
