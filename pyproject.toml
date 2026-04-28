@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pkg-py/src/shinyjsonold"]
+packages = ["pkg-py/src/shinyjson", "pkg-py/src/shinyjsonold"]
 
 [dependency-groups]
 examples = [
@@ -35,7 +35,7 @@ dev = [
 ]
 
 [tool.pyright]
-include = ["pkg-py/src/shinyjsonold"]
+include = ["pkg-py/src/shinyjson", "pkg-py/src/shinyjsonold"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
