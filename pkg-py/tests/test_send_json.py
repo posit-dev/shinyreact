@@ -2,15 +2,15 @@ import unittest.mock
 from unittest.mock import AsyncMock
 
 import pytest
-from shinyjson._post_message import post_message
+from shinyjson import send_json
 
 
-class TestPostMessage:
+class TestSendJson:
     @pytest.mark.asyncio
     async def test_sends_correct_message_format(self):
-        """post_message sends the expected format to send_custom_message."""
+        """send_json sends the expected format to send_custom_message."""
         session = AsyncMock()
-        await post_message(session, "logEvent", {"text": "hello"})
+        await send_json(session, "logEvent", {"text": "hello"})
 
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",
@@ -19,9 +19,9 @@ class TestPostMessage:
 
     @pytest.mark.asyncio
     async def test_sends_string_data(self):
-        """post_message works with string data."""
+        """send_json works with string data."""
         session = AsyncMock()
-        await post_message(session, "notify", "simple string")
+        await send_json(session, "notify", "simple string")
 
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",
@@ -30,9 +30,9 @@ class TestPostMessage:
 
     @pytest.mark.asyncio
     async def test_sends_list_data(self):
-        """post_message works with list data."""
+        """send_json works with list data."""
         session = AsyncMock()
-        await post_message(session, "update", [1, 2, 3])
+        await send_json(session, "update", [1, 2, 3])
 
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",
@@ -41,15 +41,15 @@ class TestPostMessage:
 
     @pytest.mark.asyncio
     async def test_namespaces_type_with_resolve_id(self):
-        """post_message uses resolve_id to namespace the message type."""
+        """send_json uses resolve_id to namespace the message type."""
         session = AsyncMock()
 
         # Simulate being inside a Shiny module with namespace "mymod"
         with unittest.mock.patch(
-            "shinyjson._post_message.resolve_id",
+            "shinyjson._send_json.resolve_id",
             side_effect=lambda x: f"mymod-{x}",
         ):
-            await post_message(session, "logEvent", {"text": "hello"})
+            await send_json(session, "logEvent", {"text": "hello"})
 
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",

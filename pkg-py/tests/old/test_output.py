@@ -1,5 +1,5 @@
 from htmltools import HTMLDependency, Tag
-from shinyjson._output import ui_output
+from shinyjsonold._output import ui_output
 
 
 def test_ui_output_returns_tag():
@@ -34,7 +34,7 @@ def test_ui_output_no_extra_deps_by_default():
 def test_ui_output_script_has_defer():
     result = ui_output("my-output")
     deps = result.get_dependencies()
-    shinyjson_dep = next(d for d in deps if d.name == "shinyjson")
+    shinyjson_dep = next(d for d in deps if d.name == "shinyjsonold")
     # The script dict should include defer=""
     assert shinyjson_dep.script is not None
     script = shinyjson_dep.script
