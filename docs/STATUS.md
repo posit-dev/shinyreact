@@ -2,6 +2,19 @@
 
 Project status: known issues, TODOs, and feature inventory.
 
+## Parallel packages: `shinyjson` (SPA-first) and `shinyjsonold` (JSON-spec)
+
+The original `shinyjson` package — server-driven UI via JSON specs and
+`@json-render/react` — has been renamed to **`shinyjsonold`**. A new,
+minimal `shinyjson` package now sits alongside it implementing the
+SPA-first server primitives from `DESIGN.md`: `SpaApp` and `render_json`.
+
+- Existing examples (1–12) and tests use `shinyjsonold`.
+- `examples/13-spa-hello/` demonstrates the new `shinyjson`.
+
+See `docs/superpowers/specs/2026-04-28-shinyjson-spa-split-design.md` for
+the rationale and scope.
+
 ## TODOs
 
 ### Clean up example apps

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `shinyjson` is a monorepo providing Shiny UI infrastructure for JSON-driven React rendering. It provides zero UI components — it is pure plumbing for downstream packages (e.g. `shinyshadcn`) to build on top of.
 
+Two parallel Python packages now ship from this repo: the new SPA-first `shinyjson` (`SpaApp`, `render_json`) and the original JSON-spec `shinyjsonold`. See `DESIGN.md` and `docs/superpowers/specs/2026-04-28-shinyjson-spa-split-design.md` for context.
+
 ## Repo structure
 
 ```
@@ -13,10 +15,13 @@ js/                         # TypeScript/React Vite IIFE bundle
   src/                      # index.ts, registry.ts, renderer.tsx, shiny.d.ts, shinyjson.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
-pkg-py/                     # Python package
-  src/shinyjson/            # _spec.py, _output.py, _render.py, _post_message.py, __init__.py
-    www/                    # Built JS assets (copied from js/dist/)
-  tests/                    # pytest tests
+pkg-py/                         # Python packages
+  src/shinyjson/                # NEW SPA-first package: SpaApp, render_json
+    www/                        # Bundled JS
+  src/shinyjsonold/             # Original JSON-spec package
+    _spec.py, _output.py, _render.py, _post_message.py, _page_react.py, www/
+  tests/                        # pytest tests for shinyjsonold
+  tests/new/                    # pytest tests for new shinyjson
 pkg-r/                      # R package (placeholder — not yet implemented)
 docs/                       # STATUS.md, timeline.md, plans/
 decisions/                  # Architecture decision records
