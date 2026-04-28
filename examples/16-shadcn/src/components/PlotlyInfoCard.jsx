@@ -21,6 +21,7 @@ export function PlotlyInfoCard() {
   // if it wants — see input.plotly_hover() etc. in app.py.)
   const [hover] = useShinyInput("plotly_hover", null);
   const [click] = useShinyInput("plotly_click", null);
+  const [dblclick] = useShinyInput("plotly_dblclick", null);
   const [ranges] = useShinyInput("plotly_xy_ranges", null);
   const [selection] = useShinyInput("plotly_selection", null);
 
@@ -32,6 +33,7 @@ export function PlotlyInfoCard() {
       <CardContent className="space-y-3 text-sm">
         <Row label="Hover" value={fmtPair(hover)} />
         <Row label="Click" value={fmtPair(click)} />
+        <Row label="Double-click" value={fmtPair(dblclick)} />
         <Row label="Visible range" value={fmtRange(ranges)} />
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">

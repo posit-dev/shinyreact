@@ -16,17 +16,12 @@ function linearFit(xs, ys) {
   return { slope, intercept };
 }
 
-function pointFromEvent(ev) {
-  if (!ev?.points?.length) return null;
-  const p = ev.points[0];
-  return { age: p.x, score: p.y };
-}
-
 export function PlotlyCard() {
   const ref = useRef(null);
   const [data] = useShinyOutput("scatter_data", null);
   const [, setHoverPoint] = useShinyInput("plotly_hover", null);
   const [, setClickPoint] = useShinyInput("plotly_click", null);
+  const [, setDblClickPoint] = useShinyInput("plotly_dblclick", null);
   const [, setXyRanges] = useShinyInput("plotly_xy_ranges", null);
   const [, setSelection] = useShinyInput("plotly_selection", null);
 
@@ -103,21 +98,96 @@ export function PlotlyCard() {
         score: fullLayout.yaxis.p2c(py),
       });
     };
-    const onMouseLeave = () => setHoverPoint(null);
+    // Convert a DOM mouse position to {age, score} data coords, or null if the
+    // cursor is outside the plot area.
+    const eventToDataPoint = (e) => {
+      const fullLayout = el._fullLayout;
+      if (!fullLayout) return null;
+      const rect = el.getBoundingClientRect();
+      const px = e.clientX - rect.left - fullLayout.xaxis._offset;
+      const py = e.clientY - rect.top - fullLayout.yaxis._offset;
+      if (
+        px < 0 ||
+        py < 0 ||
+        px > fullLayout.xaxis._length ||
+        py > fullLayout.yaxis._length
+      ) {
+        return null;
+      }
+      return {
+        age: fullLayout.xaxis.p2c(px),
+        score: fullLayout.yaxis.p2c(py),
+      };
+    };
 
-    const onClick = (ev) => setClickPoint(pointFromEvent(ev));
+    // Plotly's drag layer uses setPointerCapture, which swallows the mouseup
+    // events the browser needs to detect dblclick — so we count clicks
+    // manually within a 300 ms window instead of relying on a native dblclick.
+    let pendingClickTimer = null;
+    const DBLCLICK_MS = 300;
+
+    const onDomClick = (e) => {
+      const point = eventToDataPoint(e);
+      if (!point) return;
+      setClickPoint(point);
+
+      if (pendingClickTimer != null) {
+        clearTimeout(pendingClickTimer);
+        pendingClickTimer = null;
+        setDblClickPoint(point);
+        resetView();
+      } else {
+        pendingClickTimer = setTimeout(() => {
+          pendingClickTimer = null;
+        }, DBLCLICK_MS);
+      }
+    };
+
+    const updateSelectionFromEvent = (ev) => {
+      if (!ev?.points?.length) return;
+      setSelection(ev.points.map((p) => ({ age: p.x, score: p.y })));
+    };
+    const onSelecting = updateSelectionFromEvent;
     const onSelected = (ev) => {
       // Plotly fires plotly_selected with no points when the user clicks
       // outside the selection or the selection is otherwise cleared. Treat
-      // that as "preserve the previous selection" rather than wiping it,
-      // so the info card keeps showing what the user picked.
-      if (!ev?.points?.length) return;
-      setSelection(ev.points.map((p) => ({ age: p.x, score: p.y })));
-      if (ev.range?.x && ev.range?.y) {
+      // that as "preserve the previous selection" rather than wiping it.
+      updateSelectionFromEvent(ev);
+      if (ev?.range?.x && ev?.range?.y) {
+        // Zoom into the selection box AND clear the selection state — once we
+        // zoom, the dashed selection rectangle is no longer meaningful, and
+        // the user expects a clean zoomed view.
         Plotly.relayout(el, {
           "xaxis.range": ev.range.x,
           "yaxis.range": ev.range.y,
+          selections: [],
         });
+        setSelection(null);
+      }
+    };
+
+    const resetView = () => {
+      Plotly.relayout(el, {
+        "xaxis.autorange": true,
+        "yaxis.autorange": true,
+        selections: [],
+      });
+      setSelection(null);
+    };
+    // Track whether the cursor is over the plot so a global Esc handler only
+    // fires when the user means it (not while they're typing in the text
+    // input card, etc.).
+    let mouseInPlot = false;
+    const onMouseEnter = () => {
+      mouseInPlot = true;
+    };
+    const onMouseLeave = () => {
+      mouseInPlot = false;
+    };
+    const onKeyDown = (e) => {
+      if (e.key === "Escape" && mouseInPlot) {
+        e.preventDefault();
+        resetView();
       }
     };
     const onRelayout = (ev) => {
@@ -144,17 +214,31 @@ export function PlotlyCard() {
     };
 
     el.addEventListener("mousemove", onMouseMove);
+    el.addEventListener("mouseenter", onMouseEnter);
     el.addEventListener("mouseleave", onMouseLeave);
-    el.on("plotly_click", onClick);
+    el.addEventListener("click", onDomClick);
+    document.addEventListener("keydown", onKeyDown);
+    el.on("plotly_selecting", onSelecting);
     el.on("plotly_selected", onSelected);
     el.on("plotly_relayout", onRelayout);
 
     return () => {
       el.removeEventListener("mousemove", onMouseMove);
+      el.removeEventListener("mouseenter", onMouseEnter);
       el.removeEventListener("mouseleave", onMouseLeave);
+      el.removeEventListener("click", onDomClick);
+      document.removeEventListener("keydown", onKeyDown);
+      if (pendingClickTimer != null) clearTimeout(pendingClickTimer);
       Plotly.purge(el);
     };
-  }, [data, setHoverPoint, setClickPoint, setXyRanges, setSelection]);
+  }, [
+    data,
+    setHoverPoint,
+    setClickPoint,
+    setDblClickPoint,
+    setXyRanges,
+    setSelection,
+  ]);
 
   return (
     <Card>
