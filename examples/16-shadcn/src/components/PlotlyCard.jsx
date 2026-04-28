@@ -26,10 +26,7 @@ export function PlotlyCard() {
   const ref = useRef(null);
   const [data] = useShinyOutput("scatter_data", null);
   const [, setHoverPoint] = useShinyInput("plotly_hover", null);
-  const [, setClickPoint] = useShinyInput("plotly_click", null, {
-    debounceMs: 0,
-    priority: "event",
-  });
+  const [, setClickPoint] = useShinyInput("plotly_click", null);
   const [, setXyRanges] = useShinyInput("plotly_xy_ranges", null);
   const [, setSelection] = useShinyInput("plotly_selection", null);
 
@@ -110,20 +107,16 @@ export function PlotlyCard() {
 
     const onClick = (ev) => setClickPoint(pointFromEvent(ev));
     const onSelected = (ev) => {
-      if (!ev) {
-        setSelection(null);
-        return;
-      }
-      setSelection(
-        ev.points ? ev.points.map((p) => ({ age: p.x, score: p.y })) : null,
-      );
-      // Zoom into the selected box, then clear the selection rectangle so
-      // the user is left with a normal zoomed view.
+      // Plotly fires plotly_selected with no points when the user clicks
+      // outside the selection or the selection is otherwise cleared. Treat
+      // that as "preserve the previous selection" rather than wiping it,
+      // so the info card keeps showing what the user picked.
+      if (!ev?.points?.length) return;
+      setSelection(ev.points.map((p) => ({ age: p.x, score: p.y })));
       if (ev.range?.x && ev.range?.y) {
         Plotly.relayout(el, {
           "xaxis.range": ev.range.x,
           "yaxis.range": ev.range.y,
-          selections: [],
         });
       }
     };

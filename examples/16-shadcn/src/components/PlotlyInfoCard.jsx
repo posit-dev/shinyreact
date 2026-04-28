@@ -20,10 +20,7 @@ export function PlotlyInfoCard() {
   // (The values are also shipped to Shiny so the server can react to them
   // if it wants — see input.plotly_hover() etc. in app.py.)
   const [hover] = useShinyInput("plotly_hover", null);
-  const [click] = useShinyInput("plotly_click", null, {
-    debounceMs: 0,
-    priority: "event",
-  });
+  const [click] = useShinyInput("plotly_click", null);
   const [ranges] = useShinyInput("plotly_xy_ranges", null);
   const [selection] = useShinyInput("plotly_selection", null);
 
