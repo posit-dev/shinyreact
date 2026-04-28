@@ -23,6 +23,10 @@ sample_data = pd.DataFrame(
 
 def server(input, output, session):  # noqa: ARG001
     @render_json
+    def scatter_data():
+        return sample_data[["age", "score"]].to_dict(orient="list")
+
+    @render_json
     def processed_text():
         text = input.user_text() or ""
         if text == "":
