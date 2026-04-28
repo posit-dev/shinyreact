@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "rm -f www/main-*.js && npx esbuild src/index.jsx --bundle --outdir=www --entry-names=[name]-[hash] --format=iife --inject:src/react-shim.js --jsx=transform --loader:.jsx=jsx --metafile=www/meta.json && node -e \"const m=require('./www/meta.json');const f=Object.keys(m.outputs).find(k=>k.endsWith('.js'));const n=f.split('/').pop();const fs=require('fs');fs.writeFileSync('www/index.html',fs.readFileSync('src/index.html','utf8').replace('__MAIN_JS__',n));fs.unlinkSync('www/meta.json');console.log('Built:',n)\""
+  }
+}
