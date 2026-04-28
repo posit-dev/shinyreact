@@ -6,7 +6,7 @@ from htmltools import HTMLDependency, Tag, div
 
 def _dep() -> HTMLDependency:
     return HTMLDependency(
-        name="shinyjson",
+        name="shinyjsonold",
         version="0.1.0",
         source={"subdir": str(Path(__file__).parent / "www")},
         script={"src": "shinyjson.js", "defer": ""},
