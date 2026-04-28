@@ -4,6 +4,10 @@ Project status: known issues, TODOs, and feature inventory.
 
 ## TODOs
 
+### Clean up example apps
+
+Examples 10-spa-hello, 11-columns-traditional, and 12-columns-spa are rough prototypes used for design exploration. They need cleanup before being presentable: remove scratch comments from app.py files, ensure consistent code style, and verify each runs cleanly with `--dev-mode`.
+
 ### 7-chat requires external API key
 
 The chat example requires `OPENAI_API_KEY` and the `chatlas` package. It cannot be smoke-tested without credentials. Consider adding a mock/echo mode for demo purposes.
