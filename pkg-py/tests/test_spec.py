@@ -1,5 +1,5 @@
 import pytest
-from shinyjson._spec import Element, Node, Spec
+from shinyjsonold._spec import Element, Node, Spec
 
 
 def test_element_to_dict_no_children():

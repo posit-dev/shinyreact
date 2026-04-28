@@ -2,7 +2,7 @@ import unittest.mock
 from unittest.mock import AsyncMock
 
 import pytest
-from shinyjson._post_message import post_message
+from shinyjsonold._post_message import post_message
 
 
 class TestPostMessage:
@@ -46,7 +46,7 @@ class TestPostMessage:
 
         # Simulate being inside a Shiny module with namespace "mymod"
         with unittest.mock.patch(
-            "shinyjson._post_message.resolve_id",
+            "shinyjsonold._post_message.resolve_id",
             side_effect=lambda x: f"mymod-{x}",
         ):
             await post_message(session, "logEvent", {"text": "hello"})

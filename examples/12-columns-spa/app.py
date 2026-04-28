@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import shinyjson
+import shinyjsonold as shinyjson
 from shiny import reactive
 from spa_app import SpaApp
 
