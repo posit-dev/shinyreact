@@ -1,6 +1,7 @@
 import { ButtonEventCard } from "@/components/ButtonEventCard";
 import { PlotCard } from "@/components/PlotCard";
 import { PlotlyCard } from "@/components/PlotlyCard";
+import { PlotlyInfoCard } from "@/components/PlotlyInfoCard";
 import { TextInputCard } from "@/components/TextInputCard";
 import { Separator } from "@/components/ui/separator";
 
@@ -33,6 +34,10 @@ export default function App() {
         <div className="grid gap-6 md:grid-cols-2">
           <PlotCard />
           <PlotlyCard />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-1">
+          <PlotlyInfoCard />
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import Plotly from "plotly.js-basic-dist-min";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyOutput } = window.shinyjson;
+const { useShinyInput, useShinyOutput } = window.shinyjson;
 
 function linearFit(xs, ys) {
   const n = xs.length;
@@ -16,9 +16,22 @@ function linearFit(xs, ys) {
   return { slope, intercept };
 }
 
+function pointFromEvent(ev) {
+  if (!ev?.points?.length) return null;
+  const p = ev.points[0];
+  return { age: p.x, score: p.y };
+}
+
 export function PlotlyCard() {
   const ref = useRef(null);
   const [data] = useShinyOutput("scatter_data", null);
+  const [, setHoverPoint] = useShinyInput("plotly_hover", null);
+  const [, setClickPoint] = useShinyInput("plotly_click", null, {
+    debounceMs: 0,
+    priority: "event",
+  });
+  const [, setXyRanges] = useShinyInput("plotly_xy_ranges", null);
+  const [, setSelection] = useShinyInput("plotly_selection", null);
 
   useEffect(() => {
     if (!ref.current || !data?.age?.length) return;
@@ -31,8 +44,9 @@ export function PlotlyCard() {
     const trendX = [xMin, xMax];
     const trendY = trendX.map((x) => slope * x + intercept);
 
+    const el = ref.current;
     Plotly.react(
-      ref.current,
+      el,
       [
         {
           x: xs,
@@ -56,15 +70,58 @@ export function PlotlyCard() {
         xaxis: { title: { text: "Age" } },
         yaxis: { title: { text: "Score" } },
         showlegend: false,
+        dragmode: "select",
       },
-      { displayModeBar: false, responsive: true },
-    );
+      { displayModeBar: true, responsive: true },
+    ).then(() => {
+      // Initial axis ranges from the just-rendered figure.
+      const fullLayout = el._fullLayout;
+      if (fullLayout) {
+        setXyRanges({
+          x: fullLayout.xaxis.range.slice(),
+          y: fullLayout.yaxis.range.slice(),
+        });
+      }
+    });
 
-    const el = ref.current;
+    const onHover = (ev) => setHoverPoint(pointFromEvent(ev));
+    const onUnhover = () => setHoverPoint(null);
+    const onClick = (ev) => setClickPoint(pointFromEvent(ev));
+    const onSelected = (ev) =>
+      setSelection(
+        ev?.points
+          ? ev.points.map((p) => ({ age: p.x, score: p.y }))
+          : null,
+      );
+    const onRelayout = (ev) => {
+      const x0 = ev["xaxis.range[0]"];
+      const x1 = ev["xaxis.range[1]"];
+      const y0 = ev["yaxis.range[0]"];
+      const y1 = ev["yaxis.range[1]"];
+      if (x0 != null && x1 != null && y0 != null && y1 != null) {
+        setXyRanges({ x: [x0, x1], y: [y0, y1] });
+      } else if (ev["xaxis.autorange"] || ev["yaxis.autorange"]) {
+        // Double-click / autorange: re-read computed ranges.
+        const fullLayout = el._fullLayout;
+        if (fullLayout) {
+          setXyRanges({
+            x: fullLayout.xaxis.range.slice(),
+            y: fullLayout.yaxis.range.slice(),
+          });
+        }
+      }
+    };
+
+    el.on("plotly_hover", onHover);
+    el.on("plotly_unhover", onUnhover);
+    el.on("plotly_click", onClick);
+    el.on("plotly_selected", onSelected);
+    el.on("plotly_relayout", onRelayout);
+
     return () => {
       Plotly.purge(el);
     };
-  }, [data]);
+  }, [data, setHoverPoint, setClickPoint, setXyRanges, setSelection]);
 
   return (
     <Card>
