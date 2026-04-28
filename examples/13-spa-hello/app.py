@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import shinyjson
 from shiny import reactive
+from shinyjson import SpaApp, render_json
 
 _src_dir = Path(__file__).parent
 
@@ -14,13 +14,13 @@ def server(input, output, session):  # noqa: ARG001
             return "World"
         return name
 
-    @shinyjson.render_json
+    @render_json
     def txtout_title():
         return f"Hello, {greeting()}!"
 
-    @shinyjson.render_json
+    @render_json
     def txtout_count():
         return input.click_count()
 
 
-app = shinyjson.SpaApp(_src_dir / "www", server)
+app = SpaApp(_src_dir / "www", server)

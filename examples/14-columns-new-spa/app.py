@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import shinyjson
 from shiny import reactive
+from shinyjson import SpaApp, render_json
 
 _src_dir = Path(__file__).parent
 
@@ -26,9 +26,9 @@ def server(input, output, session):  # noqa: ARG001
             data[to_col].append(item)
             columns.set(data)
 
-    @shinyjson.render_json
+    @render_json
     def column_data():
         return columns()
 
 
-app = shinyjson.SpaApp(_src_dir / "www", server)
+app = SpaApp(_src_dir / "www", server)
