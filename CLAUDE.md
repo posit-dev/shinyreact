@@ -20,8 +20,8 @@ pkg-py/                         # Python packages
     www/                        # Bundled JS
   src/shinyjsonold/             # Original JSON-spec package
     _spec.py, _output.py, _render.py, _post_message.py, _page_react.py, www/
-  tests/                        # pytest tests for shinyjsonold
-  tests/new/                    # pytest tests for new shinyjson
+  tests/                        # pytest tests for new shinyjson
+  tests/old/                    # pytest tests for shinyjsonold
 pkg-r/                      # R package (placeholder — not yet implemented)
 docs/                       # STATUS.md, timeline.md, plans/
 decisions/                  # Architecture decision records
@@ -57,7 +57,7 @@ make r-check                         # format + tests + R CMD Check
 make r-format                        # air format
 
 # Run a single Python test
-uv run pytest pkg-py/tests/test_spec.py::test_name
+uv run pytest pkg-py/tests/old/test_spec.py::test_name
 
 # Update test snapshots
 make py-update-snaps
