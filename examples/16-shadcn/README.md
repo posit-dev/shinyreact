@@ -10,7 +10,8 @@ A SPA-first Shiny app whose UI is a React app styled with [shadcn/ui](https://ui
 | **TextInputCard** | shadcn `Input` + `Card` + `Badge`. `useShinyInput("user_text", "")` round-trips text through the server, which sends back the reversed/uppercased string and a length count via `@render_json`. |
 | **ButtonEventCard** | shadcn `Button` + `Card`. `useShinyInput("button_trigger", 0, { priority: "event" })` is a Shiny-style action button — increments on every click; the server's `@render_json @reactive.event(input.button_trigger)` returns a fresh timestamp string. |
 | **PlotCard** | shadcn `Card` wrapping `<ImageOutput id="plot1"/>`. The server uses Shiny's standard `@render.plot` to draw a matplotlib scatter + linear trend line; the SPA's `ImageOutput` binding picks up the rendered PNG. |
-| **PlotlyCard** | shadcn `Card` with a `plotly.js-basic-dist-min` chart. The server only ships the raw data via `@render_json scatter_data`; the client receives `{age: [...], score: [...]}`, computes the trend-line slope/intercept locally, and calls `Plotly.react`. Pan/zoom/hover are pure client interactions — zero roundtrips after the initial fetch. |
+| **PlotlyCard** | shadcn `Card` with a `plotly.js-basic-dist-min` chart. The server only ships the raw data via `@render_json scatter_data`; the client receives `{age: [...], score: [...]}`, computes the trend-line slope/intercept locally, and calls `Plotly.react`. Continuous hover (anywhere in the plot, not just on markers), click anywhere, drag-to-select-and-zoom, double-click or Esc to reset the view. All interactions push the cursor's data coords into Shiny inputs (`plotly_hover`, `plotly_click`, `plotly_dblclick`, `plotly_selection`, `plotly_xy_ranges`). |
+| **PlotlyInfoCard** | A read-only card that re-subscribes to those same input ids via `useShinyInput`. The displayed values are React's local state (no roundtrip), demonstrating that "set a Shiny input from a client interaction" and "display a value the client already has" are the same hook. The values also travel to the server, so `input.plotly_hover()` etc. work in the Python reactive graph if you want them. |
 
 The two plots draw the same data so you can see the trade-off directly:
 
@@ -23,12 +24,12 @@ The two plots draw the same data so you can see the trade-off directly:
 
 ```
 examples/16-shadcn/
-├── app.py                          # SpaApp + 4 outputs (3 render_json + 1 render.plot)
+├── app.py                          # SpaApp + outputs (4 render_json + 1 render.plot)
 ├── package.json
 ├── vite.config.js                  # lib-mode IIFE; React externalized to window.shinyjson
 ├── README.md
 ├── src/
-│   ├── App.jsx                     # composes the four cards
+│   ├── App.jsx                     # composes the cards
 │   ├── main.jsx                    # mounts via window.shinyjson.React/ReactDOM
 │   ├── index.css                   # Tailwind v4 + shadcn theme tokens
 │   ├── lib/utils.js                # cn() = clsx + tailwind-merge
@@ -37,6 +38,7 @@ examples/16-shadcn/
 │       ├── ButtonEventCard.jsx
 │       ├── PlotCard.jsx            # server-rendered matplotlib plot
 │       ├── PlotlyCard.jsx          # client-rendered plotly.js chart
+│       ├── PlotlyInfoCard.jsx      # reads back hover/click/etc. via useShinyInput
 │       └── ui/                     # actual shadcn component files (cva + Tailwind)
 │           ├── badge.jsx
 │           ├── button.jsx
@@ -71,4 +73,11 @@ cd ../..
 uv run shiny run examples/16-shadcn/app.py
 ```
 
-Open the URL printed by Shiny. Type in the text box, click "Send Event", and compare the two plots — try drag-zoom on the Plotly chart to see how the client-rendered version reacts instantly.
+Open the URL printed by Shiny. Type in the text box, click "Send Event", and compare the two plots. On the Plotly chart, try:
+
+- Move the cursor anywhere — the **Hover** row in the info card updates continuously.
+- Click anywhere — the **Click** row updates with the cursor's data coords.
+- Drag a box — the **Selection** row populates as you drag, and on release the chart zooms to that region.
+- Double-click anywhere, or hover the chart and press **Esc** — view resets to autorange and the selection clears.
+
+> **Note on double-click:** Plotly's drag layer uses `setPointerCapture`, which swallows the `mouseup` events the browser needs to detect a native `dblclick`. The example falls back to a manual click counter (two clicks within 300 ms) — see `PlotlyCard.jsx`.
