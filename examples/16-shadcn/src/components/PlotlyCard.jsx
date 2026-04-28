@@ -84,15 +84,49 @@ export function PlotlyCard() {
       }
     });
 
-    const onHover = (ev) => setHoverPoint(pointFromEvent(ev));
-    const onUnhover = () => setHoverPoint(null);
+    // Continuous hover: convert pixel position to data coords using plotly's
+    // internal axis helpers, regardless of whether the cursor is over a point.
+    const onMouseMove = (e) => {
+      const fullLayout = el._fullLayout;
+      if (!fullLayout) return;
+      const rect = el.getBoundingClientRect();
+      const px = e.clientX - rect.left - fullLayout.xaxis._offset;
+      const py = e.clientY - rect.top - fullLayout.yaxis._offset;
+      // Bail when the cursor is outside the plot area (negative or past length).
+      if (
+        px < 0 ||
+        py < 0 ||
+        px > fullLayout.xaxis._length ||
+        py > fullLayout.yaxis._length
+      ) {
+        return;
+      }
+      setHoverPoint({
+        age: fullLayout.xaxis.p2c(px),
+        score: fullLayout.yaxis.p2c(py),
+      });
+    };
+    const onMouseLeave = () => setHoverPoint(null);
+
     const onClick = (ev) => setClickPoint(pointFromEvent(ev));
-    const onSelected = (ev) =>
+    const onSelected = (ev) => {
+      if (!ev) {
+        setSelection(null);
+        return;
+      }
       setSelection(
-        ev?.points
-          ? ev.points.map((p) => ({ age: p.x, score: p.y }))
-          : null,
+        ev.points ? ev.points.map((p) => ({ age: p.x, score: p.y })) : null,
       );
+      // Zoom into the selected box, then clear the selection rectangle so
+      // the user is left with a normal zoomed view.
+      if (ev.range?.x && ev.range?.y) {
+        Plotly.relayout(el, {
+          "xaxis.range": ev.range.x,
+          "yaxis.range": ev.range.y,
+          selections: [],
+        });
+      }
+    };
     const onRelayout = (ev) => {
       const x0 = ev["xaxis.range[0]"];
       const x1 = ev["xaxis.range[1]"];
@@ -100,8 +134,12 @@ export function PlotlyCard() {
       const y1 = ev["yaxis.range[1]"];
       if (x0 != null && x1 != null && y0 != null && y1 != null) {
         setXyRanges({ x: [x0, x1], y: [y0, y1] });
-      } else if (ev["xaxis.autorange"] || ev["yaxis.autorange"]) {
-        // Double-click / autorange: re-read computed ranges.
+      } else if (
+        ev["xaxis.autorange"] ||
+        ev["yaxis.autorange"] ||
+        ev["xaxis.range"] ||
+        ev["yaxis.range"]
+      ) {
         const fullLayout = el._fullLayout;
         if (fullLayout) {
           setXyRanges({
@@ -112,13 +150,15 @@ export function PlotlyCard() {
       }
     };
 
-    el.on("plotly_hover", onHover);
-    el.on("plotly_unhover", onUnhover);
+    el.addEventListener("mousemove", onMouseMove);
+    el.addEventListener("mouseleave", onMouseLeave);
     el.on("plotly_click", onClick);
     el.on("plotly_selected", onSelected);
     el.on("plotly_relayout", onRelayout);
 
     return () => {
+      el.removeEventListener("mousemove", onMouseMove);
+      el.removeEventListener("mouseleave", onMouseLeave);
       Plotly.purge(el);
     };
   }, [data, setHoverPoint, setClickPoint, setXyRanges, setSelection]);
