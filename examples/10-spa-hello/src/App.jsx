@@ -8,7 +8,8 @@ function App() {
     debounceMs: 0,
     priority: "event",
   });
-  const [data] = useShinyOutput("greeting_data", null);
+  const [title] = useShinyOutput("txtout_title", null);
+  const [count] = useShinyOutput("txtout_count", null);
 
   if (!initialized) {
     return null;
@@ -43,22 +44,18 @@ function App() {
           marginBottom: "1rem",
         }}
       >
-        Click me
+        Click me ({clickCount})
       </button>
+      <p style={{ color: "#666", margin: "0 0 1rem 0" }}>
+        Client count: {clickCount}
+      </p>
       <div style={{ padding: "1rem", background: "#f0f0f0", borderRadius: "8px" }}>
-        {data ? (
-          <>
-            <p style={{ fontSize: "1.25rem", margin: 0 }}>{data.greeting}</p>
-            <p style={{ color: "#666", margin: "0.5rem 0 0 0" }}>
-              Button clicked {data.count} times
-            </p>
-          </>
-        ) : (
-          <>
-            <p style={{ fontSize: "1.25rem", margin: 0 }}>{"\u00A0"}</p>
-            <p style={{ margin: "0.5rem 0 0 0" }}>{"\u00A0"}</p>
-          </>
-        )}
+        <p style={{ fontSize: "1.25rem", margin: 0 }}>
+          {title != null ? title : " "}
+        </p>
+        <p style={{ color: "#666", margin: "0.5rem 0 0 0" }}>
+          {count != null ? `Server count: ${count}` : " "}
+        </p>
       </div>
     </div>
   );
