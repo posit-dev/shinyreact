@@ -1,5 +1,4 @@
 from datetime import datetime
-from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -9,8 +8,6 @@ from shiny import reactive, render
 from shinyjson import SpaApp, render_json
 
 matplotlib.use("Agg")
-
-_src_dir = Path(__file__).parent
 
 sample_data = pd.DataFrame(
     {
@@ -60,4 +57,4 @@ def server(input, output, session):  # noqa: ARG001
         return fig
 
 
-app = SpaApp(_src_dir / "www", server)
+app = SpaApp(server)

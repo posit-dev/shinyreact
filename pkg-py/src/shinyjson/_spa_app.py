@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 from typing import Any, Callable
 
@@ -19,27 +20,41 @@ def _dep() -> HTMLDependency:
 
 
 class SpaApp(App):
-    """A Shiny app that serves a static SPA from a ``www/`` directory.
+    """A Shiny app that serves a static SPA from a directory of assets.
 
-    The ``www_dir`` must contain an ``index.html`` file. All files in
-    ``www_dir`` are served as static assets. The server function contains only
-    reactive computation and business logic — no UI definitions.
+    The directory must contain an ``index.html`` file. All files in it are
+    served as static assets. The server function contains only reactive
+    computation and business logic — no UI definitions.
 
     Args:
-        www_dir: Path to the directory containing ``index.html`` and static
-            assets. Typically ``Path(__file__).parent / "www"``.
         server: The Shiny server function.
+        static_dir: Path to the directory containing ``index.html`` and static
+            assets. Defaults to ``./www`` relative to the file that constructs
+            ``SpaApp`` (typically the app's ``app.py``).
+
+    Example::
+
+        from shinyjson import SpaApp
+
+        def server(input, output, session):
+            ...
+
+        app = SpaApp(server)  # serves ./www/ next to this file
     """
 
     def __init__(
         self,
-        www_dir: str | Path,
         server: Callable[[Inputs, Outputs, Session], None],
+        *,
+        static_dir: str | Path | None = None,
         **kwargs: Any,
     ) -> None:
-        www_dir = Path(www_dir)
+        if static_dir is None:
+            caller_file = inspect.stack()[1].filename
+            static_dir = Path(caller_file).parent / "www"
+        static_dir = Path(static_dir)
         ui = TagList(
             _dep(),
-            HTML((www_dir / "index.html").read_text()),
+            HTML((static_dir / "index.html").read_text()),
         )
-        super().__init__(ui, server, static_assets=www_dir, **kwargs)
+        super().__init__(ui, server, static_assets=static_dir, **kwargs)
