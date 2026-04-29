@@ -17,6 +17,18 @@ the rationale and scope.
 
 ## TODOs
 
+### Safeguard `render_json` against use in non-SPA Shiny apps
+
+`shinyjson.render_json` is designed to deliver values to `useShinyOutput()` hooks inside an `SpaApp`. If used in a standard Shiny app (with `ui.output_text()` or other server-rendered UI elements), it will silently send a JSON payload that no client-side binding consumes. Add a runtime check (or session-level marker on `SpaApp`) so `render_json` errors clearly when used outside the SPA-first context.
+
+### Discourage non-`render_json` / non-plot renderers in SPA apps
+
+`useShinyOutput` accepts whatever payload any Shiny renderer ships. For primitives (`@render.text` returning a string) this happens to work, but renderers like `@render.table` send pre-rendered HTML across the wire — wasteful and defeats the SPA-first model. The principle is: **send the minimal data; let the client handle presentation**. For tabular data, the right pattern is `@render_json` returning rows/columns, then TanStack Table (or similar) on the client. Consider:
+
+- A warning or error when a non-`render_json` (and non-`render.plot`) renderer is bound to an output consumed by `useShinyOutput`.
+- Documentation guidance on which renderers are appropriate in SPA mode.
+- Possibly a registry of "approved" renderers (`render_json`, `render.plot`, future `render.image`, etc.) with everything else flagged.
+
 ### Clean up example apps
 
 Examples 10-spa-hello, 11-columns-traditional, and 12-columns-spa are rough prototypes used for design exploration. They need cleanup before being presentable: remove scratch comments from app.py files, ensure consistent code style, and verify each runs cleanly with `--dev-mode`.
