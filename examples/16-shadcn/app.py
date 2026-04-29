@@ -34,6 +34,13 @@ def server(input, output, session):  # noqa: ARG001
     def text_length():
         return len(input.user_text() or "")
 
+    @render.text
+    def render_text_demo():
+        text = input.user_text() or ""
+        if text == "":
+            return ""
+        return f"render.text says: {text!r} ({len(text)} chars)"
+
     @render_json
     @reactive.event(input.button_trigger, ignore_init=True)
     def button_response():
