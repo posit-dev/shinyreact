@@ -17,6 +17,7 @@ eggs/
 .eggs/
 lib/
 !pkg-r/inst/lib/
+!examples/*/src/lib/
 lib64/
 parts/
 sdist/
