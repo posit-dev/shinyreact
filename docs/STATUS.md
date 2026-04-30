@@ -51,12 +51,6 @@ The `renderMarkdown()` function in `examples/7-chat/chat.js` escapes code blocks
 - End-to-end example app demonstrating the full React SPA pattern.
 - Ensure all hooks and the output binding gracefully handle late Shiny arrival.
 
-### JSON Patch for partial/dynamic UI updates
-
-Explore using RFC 6902 JSON Patch operations to send incremental spec updates from Python instead of replacing the full spec each time. `@json-render/react` has an internal (unexported) `applyPatch` function that applies patch ops (`add`, `replace`, `remove`, `move`, `copy`) to a spec's flat element map. A shinyjson implementation would need: (1) a Python-side `shinyjson.patch(session, id, ops)` function that sends patches via `post_message`, (2) JS-side patch application against the current spec, and (3) Python helpers or diffing to generate correct patch ops from spec changes.
-
-**Why not client-side diffing instead?** json-render's `ElementRenderer` receives the entire `spec` object as a prop alongside each `element`, so `React.memo` never bails out even with stabilized element references — the `spec` reference is always new. React's DOM reconciliation already handles efficient updates for typical spec sizes. The JSON Patch approach is primarily valuable for (a) reducing wire payload for large specs and (b) enabling streaming/incremental spec building (e.g., AI-generated UIs).
-
 ### No build step for example JS
 
 All example JS files use `React.createElement` directly (no JSX, no bundler). This works but is verbose. A lightweight build step (e.g., esbuild with JSX) could improve readability without adding heavy tooling.
