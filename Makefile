@@ -215,16 +215,18 @@ py-build:   ## [py] Build python package
 	uv build
 
 .PHONY: py-update-dist
-py-update-dist: ## [py] Update shinyjson web assets
+py-update-dist: ## [py] Update shinyjson + shinyjsonold web assets
 	@echo ""
-	@echo "🔄 Updating shinyjson web assets"
-	if [ -d $(PATH_PKG_PY)/src/shinyjson/www ]; then \
-		rm -rf $(PATH_PKG_PY)/src/shinyjson/www; \
-	fi
-	mkdir -p $(PATH_PKG_PY)/src/shinyjson/www
-	cp $(PATH_PKG_JS)/dist/shinyjson.js $(PATH_PKG_PY)/src/shinyjson/www/
-	cp $(PATH_PKG_JS)/dist/shinyjson.css $(PATH_PKG_PY)/src/shinyjson/www/
-	(git rev-parse HEAD) > "$(PATH_PKG_PY)/src/shinyjson/www/GIT_VERSION"
+	@echo "🔄 Updating shinyjson + shinyjsonold web assets"
+	for pkg in shinyjson shinyjsonold; do \
+		if [ -d $(PATH_PKG_PY)/src/$$pkg/www ]; then \
+			rm -rf $(PATH_PKG_PY)/src/$$pkg/www; \
+		fi; \
+		mkdir -p $(PATH_PKG_PY)/src/$$pkg/www; \
+		cp $(PATH_PKG_JS)/dist/shinyjson.js $(PATH_PKG_PY)/src/$$pkg/www/; \
+		cp $(PATH_PKG_JS)/dist/shinyjson.css $(PATH_PKG_PY)/src/$$pkg/www/; \
+		(git rev-parse HEAD) > "$(PATH_PKG_PY)/src/$$pkg/www/GIT_VERSION"; \
+	done
 
 
 .PHONY: pre-commit-setup

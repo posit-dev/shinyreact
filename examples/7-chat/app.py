@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import dotenv
-import shinyjson
+import shinyjsonold as shinyjson
 from chatlas import ChatOpenAI, content_image_url
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive

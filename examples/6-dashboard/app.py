@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import shinyjson
+import shinyjsonold as shinyjson
 from data import calculate_metrics, filter_data, generate_sample_data
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive

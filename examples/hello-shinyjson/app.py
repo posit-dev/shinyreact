@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import shinyjson
+import shinyjsonold as shinyjson
 from htmltools import HTMLDependency
 from shiny.express import input, render, ui
 

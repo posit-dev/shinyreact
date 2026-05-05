@@ -3,7 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import shinyjson
+import shinyjsonold as shinyjson
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive, render
 

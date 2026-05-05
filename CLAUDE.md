@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `shinyjson` is a monorepo providing Shiny UI infrastructure for JSON-driven React rendering. It provides zero UI components — it is pure plumbing for downstream packages (e.g. `shinyshadcn`) to build on top of.
 
+Two parallel Python packages now ship from this repo: the new SPA-first `shinyjson` (`SpaApp`, `render_json`) and the original JSON-spec `shinyjsonold`. See `DESIGN.md` and `docs/superpowers/specs/2026-04-28-shinyjson-spa-split-design.md` for context.
+
 ## Repo structure
 
 ```
@@ -13,12 +15,15 @@ js/                         # TypeScript/React Vite IIFE bundle
   src/                      # index.ts, registry.ts, renderer.tsx, shiny.d.ts, shinyjson.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
-pkg-py/                     # Python package
-  src/shinyjson/            # _spec.py, _output.py, _render.py, _post_message.py, __init__.py
-    www/                    # Built JS assets (copied from js/dist/)
-  tests/                    # pytest tests
+pkg-py/                         # Python packages
+  src/shinyjson/                # NEW SPA-first package: SpaApp, render_json
+    www/                        # Bundled JS
+  src/shinyjsonold/             # Original JSON-spec package
+    _spec.py, _output.py, _render.py, _post_message.py, _page_react.py, www/
+  tests/                        # pytest tests for new shinyjson
+  tests/old/                    # pytest tests for shinyjsonold
 pkg-r/                      # R package (placeholder — not yet implemented)
-docs/                       # STATUS.md, timeline.md, plans/
+docs/                       # todos.md, features.md, features-shinyjson-old.md, TIMELINE.md, plans/
 decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
@@ -52,7 +57,7 @@ make r-check                         # format + tests + R CMD Check
 make r-format                        # air format
 
 # Run a single Python test
-uv run pytest pkg-py/tests/test_spec.py::test_name
+uv run pytest pkg-py/tests/old/test_spec.py::test_name
 
 # Update test snapshots
 make py-update-snaps
@@ -155,14 +160,14 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 - **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
 - **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
 
-## docs/STATUS.md
+## docs/todos.md, features.md, features-shinyjson-old.md
 
-`docs/STATUS.md` tracks known issues (TODOs), feature inventory, and recent fixes. Keep it up to date:
+These three files replace the old `STATUS.md`. Keep them up to date:
 
-- **When you find a bug or known issue**: add it under `## TODOs` with a descriptive heading and explanation.
-- **When you fix a TODO**: remove it from the TODOs section and add a bullet under `## Recent fixes`.
-- **When you add a feature or example**: update the relevant table under `## Features`.
-- Keep entries concise. TODOs should describe the problem and any known constraints. Fixes should summarize what changed.
+- **`docs/todos.md`** — known issues and open work. Add new entries with a descriptive heading and explanation. Remove entries when fixed (no "recent fixes" log — git history is the record). Prefer a GitHub issue for substantive work and link it from here.
+- **`docs/features.md`** — feature inventory for the new SPA-first `shinyjson` (`SpaApp`, `render_json`, JS bridge hooks, examples 13–16).
+- **`docs/features-shinyjson-old.md`** — feature inventory for the legacy JSON-spec `shinyjsonold` package (examples 1–12).
+- Keep entries concise. TODOs describe the problem and constraints; feature tables describe what exists today.
 
 ## Key decisions
 

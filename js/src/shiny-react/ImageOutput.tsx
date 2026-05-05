@@ -181,6 +181,9 @@ export function ImageOutput({
 
   // Create a reference to the img element to access its properties
   const imgRef = useRef<HTMLImageElement>(null);
+  // Reference to the placeholder div, used to measure initial dimensions
+  // before the first image arrives so the server can render at the right size.
+  const placeholderRef = useRef<HTMLDivElement>(null);
 
   // Track when the image data changes
   const [imageVersion, setImageVersion] = useState(0);
@@ -253,6 +256,39 @@ export function ImageOutput({
     handleImageLoad,
   ]);
 
+  // Before the first image arrives, observe the placeholder so the server
+  // gets initial dimensions to render at. Without this, @render.plot can
+  // never fire because client-side width/height stay MISSING forever (the
+  // <img> only renders once imgData exists, which only exists once the
+  // server has rendered, which only happens once dimensions arrive — a
+  // chicken-and-egg loop).
+  useEffect(() => {
+    if (imgData) return;
+    const placeholder = placeholderRef.current;
+    if (!placeholder) return;
+
+    const measureAndSend = () => {
+      const w = placeholder.clientWidth;
+      const h = placeholder.clientHeight;
+      if (w > 0 && h > 0) {
+        setImgWidth(w);
+        setImgHeight(h);
+      }
+    };
+
+    // Measure synchronously so the very first render request has dimensions.
+    measureAndSend();
+
+    const debounced = createDebouncedFn(measureAndSend, debounceMs);
+    const resizeObserver = new ResizeObserver(() => debounced());
+    resizeObserver.observe(placeholder);
+
+    return () => {
+      resizeObserver.disconnect();
+      debounced.cancel();
+    };
+  }, [imgData, setImgWidth, setImgHeight, debounceMs]);
+
   if (imgHidden) {
     return null;
   }
@@ -261,6 +297,7 @@ export function ImageOutput({
   if (!imgData) {
     return (
       <div
+        ref={placeholderRef}
         className={className}
         style={{
           width: width,

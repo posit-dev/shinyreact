@@ -1,6 +1,6 @@
 import pytest
-from shinyjson._render import render
-from shinyjson._spec import Element, Node, Spec
+from shinyjsonold._render import render
+from shinyjsonold._spec import Element, Node, Spec
 
 
 class TestRenderTransform:

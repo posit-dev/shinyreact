@@ -1,5 +1,5 @@
 from htmltools import HTMLDependency, Tag
-from shinyjson._page_react import page_bare, page_react
+from shinyjsonold._page_react import page_bare, page_react
 
 
 def test_page_bare_returns_tag():
@@ -17,7 +17,7 @@ def test_page_bare_no_shinyjson_dep():
     result = page_bare()
     deps = result.get_dependencies()
     dep_names = [d.name for d in deps]
-    assert "shinyjson" not in dep_names
+    assert "shinyjsonold" not in dep_names
 
 
 def test_page_react_returns_tag():
@@ -35,7 +35,7 @@ def test_page_react_includes_shinyjson_dep():
     result = page_react()
     deps = result.get_dependencies()
     dep_names = [d.name for d in deps]
-    assert "shinyjson" in dep_names
+    assert "shinyjsonold" in dep_names
 
 
 def test_page_react_accepts_htmldep_via_args():
@@ -46,7 +46,7 @@ def test_page_react_accepts_htmldep_via_args():
     deps = result.get_dependencies()
     dep_names = [d.name for d in deps]
     assert "my-app" in dep_names
-    assert "shinyjson" in dep_names
+    assert "shinyjsonold" in dep_names
 
 
 def test_page_react_no_js_file_css_file_params():
