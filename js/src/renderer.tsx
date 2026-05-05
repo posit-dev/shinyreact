@@ -19,12 +19,10 @@ function renderNode(
 
   const Registered = registry[el.type];
   if (Registered) {
-    return React.createElement(Registered, { element: el, children, key: id });
+    return React.createElement(Registered, { element: el, children });
   }
 
-  // Intrinsic HTML tag (or unknown type) — spread props directly. React will
-  // warn at runtime if `el.type` is not a valid intrinsic.
-  return React.createElement(el.type, { ...el.props, key: id }, ...children);
+  return React.createElement(el.type, el.props, ...children);
 }
 
 interface ShinyjsonRendererProps {
