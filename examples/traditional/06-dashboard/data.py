@@ -1,7 +1,8 @@
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
+
+import numpy as np
+import pandas as pd
 
 
 def generate_sample_data(n_days: int = 180, n_products: int = 20) -> Dict[str, Any]:
