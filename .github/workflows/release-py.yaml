@@ -1,6 +1,6 @@
 # TODO: Enable when PyPI project is created.
 # Uncomment the on: block below and remove the workflow_dispatch-only trigger.
-# Set up trusted publishing at: https://pypi.org/manage/project/shinyjson/settings/publishing/
+# Set up trusted publishing at: https://pypi.org/manage/project/shinyreact/settings/publishing/
 #
 # on:
 #   release:
@@ -24,7 +24,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/project/shinyjson/
+      url: https://pypi.org/project/shinyreact/
 
     permissions:
       id-token: write

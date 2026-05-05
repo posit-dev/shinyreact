@@ -47,7 +47,7 @@ jobs:
       - name: 🐍 Set up Python ${{ env.PYTHON_VERSION }}
         run: uv python install ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install shinyjson and dependencies
+      - name: 📦 Install shinyreact and dependencies
         run: uv sync --python ${{ env.PYTHON_VERSION }} --all-extras --all-groups
 
       - name: 🔌 Activate venv

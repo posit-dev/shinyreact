@@ -1,7 +1,6 @@
 """Tests for the unified reactive_output decorator.
 
-Covers all behaviors that previously lived in shinyjson.render_json (passthrough)
-and shinyjsonold.render (Spec/Node flattening + auto_output_ui).
+Covers all behaviors: passthrough JSON, Spec/Node flattening, and auto_output_ui.
 """
 from __future__ import annotations
 
