@@ -1,11 +1,11 @@
-# Playwright Testing Architecture for shinyjson
+# Playwright Testing Architecture for shinyreact
 
 **Date:** 2026-03-17
 **Status:** Exploration complete, decision deferred — code-gen approach recommended
 
 ## Context
 
-shinyjson is a monorepo with three sub-packages: `js/` (TypeScript/React), `pkg-py/` (Python Shiny), and `pkg-r/` (R Shiny, placeholder). The JS bundle renders JSON specs into React components via `@json-render/react`. Currently there are 10 Python unit tests (pytest) but zero JavaScript or browser tests — no Playwright, Cypress, or any browser testing infrastructure exists.
+shinyreact is a monorepo with three sub-packages: `js/` (TypeScript/React), `pkg-py/` (Python Shiny), and `pkg-r/` (R Shiny, placeholder). The JS bundle renders JSON specs into React components via `@json-render/react`. Currently there are 10 Python unit tests (pytest) but zero JavaScript or browser tests — no Playwright, Cypress, or any browser testing infrastructure exists.
 
 The goal is to add end-to-end browser testing with a **controllers pattern** similar to `shiny.playwright.controllers`, where reusable controller classes wrap UI elements with locator properties, action methods (`set()`, `click()`), and assertion methods (`expect_value()`, `expect_label()`).
 
@@ -110,7 +110,7 @@ test('output renders correctly', async ({ page, baseURL }) => {
 **Example:**
 ```python
 # Python
-page.evaluate("await shinyjsonTest.output('my_output').expectValue('hello')")
+page.evaluate("await shinyreactTest.output('my_output').expectValue('hello')")
 ```
 
 ```typescript
@@ -155,7 +155,7 @@ class ShinyjsonOutput {
 - **Maintenance burden** — we own the assertion library forever; Playwright's improvements don't flow to us
 - **Divergent behavior** — our browser-native assertions will behave differently from Playwright's expect in subtle ways, making it harder to reason about test failures
 
-**Verdict:** Moderate risk, feasible for shinyjson's bounded scope. However, it sacrifices the robustness of Playwright's expect for architectural convenience. The flaky-test risk is the primary concern.
+**Verdict:** Moderate risk, feasible for shinyreact's bounded scope. However, it sacrifices the robustness of Playwright's expect for architectural convenience. The flaky-test risk is the primary concern.
 
 ### Approach 4: Code Generation from TypeScript to Python/R (Recommended)
 
@@ -163,14 +163,14 @@ class ShinyjsonOutput {
 
 **Example TypeScript source (source of truth):**
 ```typescript
-// controllers/shinyjson-output.ts
+// controllers/shinyreact-output.ts
 import { Page, Locator, expect } from '@playwright/test';
 
 export class ShinyjsonOutput {
   readonly loc: Locator;
 
   constructor(readonly page: Page, readonly id: string) {
-    this.loc = page.locator(`#${id}.shinyjson-output`);
+    this.loc = page.locator(`#${id}.shinyreact-output`);
   }
 
   async expectSpec(value: Record<string, unknown>, timeout?: number) {
@@ -190,14 +190,14 @@ export class ShinyjsonOutput {
 
 **Generated Python controller:**
 ```python
-# shinyjson/playwright/controllers/_shinyjson_output.py  (generated)
+# shinyreact/playwright/controllers/_shinyreact_output.py  (generated)
 from playwright.sync_api import Page, Locator, expect
 
 class ShinyjsonOutput:
     def __init__(self, page: Page, id: str):
         self.page = page
         self.id = id
-        self.loc: Locator = page.locator(f"#{id}.shinyjson-output")
+        self.loc: Locator = page.locator(f"#{id}.shinyreact-output")
 
     def expect_spec(self, value: dict, *, timeout: float | None = None):
         expect(self.loc).to_contain_text(json.dumps(value), timeout=timeout)
@@ -211,13 +211,13 @@ class ShinyjsonOutput:
 
 **Generated R controller (future):**
 ```r
-# shinyjson/R/playwright-controllers.R  (generated)
+# shinyreact/R/playwright-controllers.R  (generated)
 ShinyjsonOutput <- R6::R6Class("ShinyjsonOutput",
   public = list(
     initialize = function(page, id) {
       self$page <- page
       self$id <- id
-      self$loc <- page$locator(sprintf("#%s.shinyjson-output", id))
+      self$loc <- page$locator(sprintf("#%s.shinyreact-output", id))
     },
     expect_spec = function(value, timeout = NULL) {
       self$loc$expect()$to_contain_text(jsonlite::toJSON(value), timeout = timeout)
@@ -261,7 +261,7 @@ Code generation can start simple — even hand-maintained Python/R controllers t
 
 ### Downstream extensibility
 
-When downstream packages like `shinyshadcn` define their own controllers in TypeScript, they can use the same code-gen pipeline to produce Python/R controller classes. The pattern scales to the ecosystem, not just shinyjson.
+When downstream packages like `shinyshadcn` define their own controllers in TypeScript, they can use the same code-gen pipeline to produce Python/R controller classes. The pattern scales to the ecosystem, not just shinyreact.
 
 ## Open Questions (Deferred)
 

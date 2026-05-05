@@ -6,7 +6,7 @@ Source: https://github.com/wch/shiny-react
 
 **shiny-react** (`@posit/shiny-react`, v0.0.16, experimental) is a React bindings library for Shiny. It provides TypeScript hooks that enable bidirectional communication between a React frontend and a Shiny server (R or Python). The core philosophy: **the entire UI is a React app**, and Shiny serves purely as a reactive data backend.
 
-Each app is a standalone project: an esbuild/TypeScript build produces `main.js`/`main.css`, and the Shiny backend serves a bare HTML page with `<div id="root">`. There is no installable Python/R package — each app copy-pastes a `shinyreact.py` or `shinyreact.R` utility file providing `page_react()`, `render_json`, and `post_message()`.
+Each app is a standalone project: an esbuild/TypeScript build produces `main.js`/`main.css`, and the Shiny backend serves a bare HTML page with `<div id="root">`. There is no installable Python/R package — each app copy-pastes a `shinyreact.py` or `shinyreact.R` utility file providing `page_react()`, `reactive_output`, and `send_message()`.
 
 ---
 
@@ -62,25 +62,25 @@ There is **no installable package**. Each example contains a `shinyreact.py` / `
 
 `shinyreact.py`/`shinyreact.R` is duplicated into every app directory. Helper files diverge between examples. There's no `pip install` or `install.packages()` story.
 
-**Address:** Publish `page_react()`, `render_json`, and `post_message()` as an installable package (like shinyjson does). Bundle the JS as an HTMLDependency so apps don't need to manage script tags manually.
+**Address:** Publish `page_react()`, `reactive_output`, and `send_message()` as an installable package (like shinyreact does). Bundle the JS as an HTMLDependency so apps don't need to manage script tags manually.
 
 ### 2. Every app needs a Node.js build toolchain
 
 `package.json`, esbuild, `tsconfig.json` required per project. Massive barrier vs. Shiny's "just write Python/R" experience.
 
-**Address:** For apps that only need pre-built components, a server-driven spec (like shinyjson's `Spec`/`Element`) eliminates the need for per-app JS builds entirely.
+**Address:** For apps that only need pre-built components, a server-driven spec (like shinyreact's `Spec`/`Element`) eliminates the need for per-app JS builds entirely.
 
 ### 3. No extension/plugin mechanism
 
 Each app builds its entire React UI from scratch. No way for downstream packages to contribute components without the user modifying their own esbuild bundle.
 
-**Address:** Provide a `registerComponents()` API (similar to shinyjson's `window.shinyjson.registerComponents`) so downstream packages can contribute component catalogs that any app can use.
+**Address:** Provide a `registerComponents()` API (similar to shinyreact's `window.shinyreact.registerComponents`) so downstream packages can contribute component catalogs that any app can use.
 
 ### 4. Server cannot describe UI structure
 
 The server can only send data, never describe what to render or how to lay it out. The entire UI layout is hardcoded in React source.
 
-**Address:** Implement a JSON-based UI spec (like shinyjson) where the server returns `{root, elements}` describing the component tree. The client renders from the spec, enabling server-driven dynamic UIs without rebuilding JS.
+**Address:** Implement a JSON-based UI spec (like shinyreact) where the server returns `{root, elements}` describing the component tree. The client renders from the spec, enabling server-driven dynamic UIs without rebuilding JS.
 
 ### 5. Hidden DOM element hack for outputs is fragile
 
@@ -120,9 +120,9 @@ Several `if (!shinyInitialized)` guards are commented out, and TODOs suggest the
 
 ---
 
-## Comparison with shinyjson
+## Comparison with shinyreact
 
-| | shiny-react | shinyjson |
+| | shiny-react | shinyreact |
 |---|---|---|
 | **UI defined in** | TypeScript / React | Python / R (via JSON spec) |
 | **Server role** | Data only | UI structure + data |
@@ -132,7 +132,7 @@ Several `if (!shinyInitialized)` guards are commented out, and TODOs suggest the
 | **JS format** | ESM library (peer dep React) | IIFE bundle (bundles React) |
 | **Python package** | None (copy-paste helpers) | Installable via pip |
 
-shiny-react maximizes flexibility for developers who already know React. shinyjson keeps app developers in Python/R and hides the JS layer entirely.
+shiny-react maximizes flexibility for developers who already know React. shinyreact keeps app developers in Python/R and hides the JS layer entirely.
 
 ---
 
