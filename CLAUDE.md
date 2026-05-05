@@ -69,7 +69,7 @@ Run `make help` to see all targets.
 
 ### JS bundle
 
-The JS output (`js/dist/shinyjson.js`) is a self-contained IIFE that bundles React 19, `@json-render/react`, and vendored `@posit/shiny-react`. It registers a Shiny `OutputBinding` that finds `.shinyjson-output` elements and renders JSON specs as React component trees via `@json-render/react`.
+The JS output (`js/dist/shinyjson.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`. It registers a Shiny `OutputBinding` that finds `.shinyjson-output` elements and renders JSON specs as React component trees using an in-house recursive walker (`js/src/renderer.tsx` + `js/src/spec.ts`).
 
 **Global API exposed at `window.shinyjson`:**
 - `registerComponents(catalog, registry)` — downstream packages call this at page load to register their React components
