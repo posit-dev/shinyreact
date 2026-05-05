@@ -3,7 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import shinyjsonold as shinyjson
+import shinyreact
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive, render
 
@@ -50,22 +50,22 @@ _blended_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui_output("main", extra_deps=[_blended_dep])
+app_ui = shinyreact.ui_output("main", extra_deps=[_blended_dep])
 
 
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def sidebar_app(title: str, *children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(
+def sidebar_app(title: str, *children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(
         type="SidebarApp", props={"title": title}, children=list(children)
     )
 
 
 def dashboard_panel(
     months_id: str, region_id: str, sales_plot_id: str
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="DashboardPanel",
         props={
             "months_id": months_id,
@@ -77,8 +77,8 @@ def dashboard_panel(
 
 def data_panel(
     data_table_id: str, refresh_id: str, refresh_count_id: str
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="DataPanel",
         props={
             "data_table_id": data_table_id,
@@ -93,8 +93,8 @@ def settings_panel(
     dark_mode_id: str,
     notifications_id: str,
     settings_output_id: str,
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="SettingsPanel",
         props={
             "username_id": username_id,
@@ -106,7 +106,7 @@ def settings_panel(
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def main():
         return sidebar_app(
             "Blended Demo",
@@ -142,7 +142,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return fig
 
     # Data Table - rendered as JSON for useShinyOutput
-    @shinyjson.render
+    @shinyreact.reactive_output
     def dataTable():
         return {
             "columns": list(mtcars.columns),
@@ -160,12 +160,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     def _():
         refresh_count.set(refresh_count() + 1)
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def refreshCount():
         return f"Data refreshed {refresh_count()} times"
 
     # Current Settings Display
-    @shinyjson.render
+    @shinyreact.reactive_output
     def currentSettings():
         username = input.username() if len(input.username()) > 0 else "(not set)"
         dark = input.darkMode()

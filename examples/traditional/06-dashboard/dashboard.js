@@ -1,11 +1,11 @@
-// Dashboard — shinyjson conversion of shiny-react-upstream/6-dashboard
+// Dashboard — shinyreact conversion of shiny-react-upstream/6-dashboard
 // Registers App, Sidebar, FilterPanel, MetricsCards, Charts, DataTable components.
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
   var useState = React.useState;
-  var useShinyInput = window.shinyjson.useShinyInput;
-  var useShinyOutput = window.shinyjson.useShinyOutput;
+  var useShinyInput = window.shinyreact.useShinyInput;
+  var useShinyOutput = window.shinyreact.useShinyOutput;
 
   // ---------------------------------------------------------------------------
   // Utility helpers
@@ -445,10 +445,10 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Register all components with shinyjson
+  // Register all components with shinyreact
   // ---------------------------------------------------------------------------
 
-  window.shinyjson.registerComponents(null, {
+  window.shinyreact.registerComponents(null, {
     DashboardApp: DashboardApp,
     FilterPanel: FilterPanel,
     MetricsCards: MetricsCards,

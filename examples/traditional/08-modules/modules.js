@@ -1,13 +1,13 @@
 // Modules example — three independent counter widgets with Shiny module namespaces
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
   var useState = React.useState;
   var useRef = React.useRef;
-  var useShinyInput = window.shinyjson.useShinyInput;
-  var useShinyOutput = window.shinyjson.useShinyOutput;
-  var useShinyMessageHandler = window.shinyjson.useShinyMessageHandler;
-  var ShinyModuleProvider = window.shinyjson.ShinyModuleProvider;
+  var useShinyInput = window.shinyreact.useShinyInput;
+  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var useShinyMessageHandler = window.shinyreact.useShinyMessageHandler;
+  var ShinyModuleProvider = window.shinyreact.ShinyModuleProvider;
 
   // ---------------------------------------------------------------------------
   // AppLayout — registered, invoked from spec
@@ -172,7 +172,7 @@
     );
   }
 
-  window.shinyjson.registerComponents(null, {
+  window.shinyreact.registerComponents(null, {
     AppLayout: AppLayout,
     WidgetsGrid: WidgetsGrid,
     ModuleCounter: ModuleCounter,

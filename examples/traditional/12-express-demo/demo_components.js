@@ -1,10 +1,10 @@
-// demo_components.js — Registers demo components for the hello-shinyjson example.
-// Loaded via HTMLDependency after shinyjson.js.
+// demo_components.js — Registers demo components for the hello-shinyreact example.
+// Loaded via HTMLDependency after shinyreact.js.
 
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
-  var useShinyInput = window.shinyjson.useShinyInput;
+  var useShinyInput = window.shinyreact.useShinyInput;
 
   // Card: styled container with title prop and children slot
   function Card(args) {
@@ -86,7 +86,7 @@
     );
   }
 
-  window.shinyjson.registerComponents(null, {
+  window.shinyreact.registerComponents(null, {
     Card: Card,
     Badge: Badge,
     Button: Button,

@@ -1,6 +1,6 @@
 # Example 11 — Drag-between-columns (traditional Shiny)
 
-The classic "items move between columns" demo built with **traditional Shiny only** — no `shinyjson*`, no React. Stays here as the "before" picture for the SPA-first sales pitch in `DESIGN.md` §4.
+The classic "items move between columns" demo built with **traditional Shiny only** — no `shinyreact*`, no React. Stays here as the "before" picture for the SPA-first sales pitch in `DESIGN.md` §4.
 
 ## What it shows
 
@@ -15,8 +15,8 @@ The whole file is ~80 lines of server logic, almost all of it bookkeeping for th
 
 ## Compared to the SPA versions
 
-- [Example 12](../12-columns-spa/) — same demo with the **legacy** `shinyjsonold` SPA prototype. Server drops to ~20 lines.
-- [Example 14](../14-columns-new-spa/) — same demo with the **new** `shinyjson` package, no build step.
+- [Example 12](../12-columns-spa/) — same demo with the **legacy** `shinyreact` SPA prototype. Server drops to ~20 lines.
+- [Example 14](../14-columns-new-spa/) — same demo with the **new** `shinyreact` package, no build step.
 - [Example 15](../15-columns-shadcn/) — same demo with shadcn/ui styling (Vite build).
 
 The point of preserving this file is to show what `DESIGN.md` means by "the dynamic UI problem" — server-managed UI for collection-style interactions is genuinely hard, even for experienced Shiny developers, and the SPA-first model dissolves it.

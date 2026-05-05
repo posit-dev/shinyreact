@@ -1,14 +1,14 @@
-import shinyjsonold as shinyjson
+import shinyreact
 from shiny import App, Inputs, Outputs, Session
 
-app_ui = shinyjson.page_react(
-    shinyjson.page_react_dep(js_file="main.js", css_file="styles.css"),
+app_ui = shinyreact.page_react(
+    shinyreact.page_react_dep(js_file="main.js", css_file="styles.css"),
     title="Hello SPA",
 )
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def txtout():
         return input.txtin().upper()
 

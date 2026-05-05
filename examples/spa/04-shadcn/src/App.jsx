@@ -6,7 +6,7 @@ import { RenderTextCard } from "@/components/RenderTextCard";
 import { TextInputCard } from "@/components/TextInputCard";
 import { Separator } from "@/components/ui/separator";
 
-const { useShinyInitialized } = window.shinyjson;
+const { useShinyInitialized } = window.shinyreact;
 
 export default function App() {
   const initialized = useShinyInitialized();
@@ -20,7 +20,7 @@ export default function App() {
             Shiny + React + shadcn/ui
           </h1>
           <p className="text-muted-foreground mt-2">
-            Demonstrating shadcn/ui components with various shinyjson output
+            Demonstrating shadcn/ui components with various shinyreact output
             types
           </p>
         </div>

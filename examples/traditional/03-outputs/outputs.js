@@ -1,10 +1,10 @@
-// 3-outputs example — registers components with shinyjson
+// 3-outputs example — registers components with shinyreact
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
-  var useShinyInput = window.shinyjson.useShinyInput;
-  var useShinyOutput = window.shinyjson.useShinyOutput;
-  var ImageOutput = window.shinyjson.ImageOutput;
+  var useShinyInput = window.shinyreact.useShinyInput;
+  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var ImageOutput = window.shinyreact.ImageOutput;
 
   // ---------------------------------------------------------------------------
   // PageLayout — registered, invoked from spec
@@ -240,7 +240,7 @@
   }
 
   // Register all components
-  window.shinyjson.registerComponents(null, {
+  window.shinyreact.registerComponents(null, {
     PageLayout: PageLayout,
     SliderCard: SliderCard,
     StatisticsCard: StatisticsCard,

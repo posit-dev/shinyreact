@@ -1,14 +1,14 @@
-# Example 5 — shadcn-styled cards (shinyjsonold)
+# Example 5 — shadcn-styled cards (shinyreact)
 
 A gallery of cards styled to look like [shadcn/ui](https://ui.shadcn.com/) — but using **hand-written CSS variables and class names**, not real shadcn (no Tailwind, no `cva`, no build step). This is a "looks like shadcn" approximation that runs as a single static JS file.
 
-> **Note:** Uses `shinyjsonold`. For the SPA-first equivalent that uses *actual* shadcn components (real `cva`, real Tailwind v4, real `Card`/`Button`/etc.), see [example 16](../16-shadcn/).
+> **Note:** Uses `shinyreact`. For the SPA-first equivalent that uses *actual* shadcn components (real `cva`, real Tailwind v4, real `Card`/`Button`/etc.), see [example 16](../16-shadcn/).
 
 ## What it shows
 
 - `PageLayout`, `Grid`, `TextInputCard`, `ButtonEventCard`, `PlotCard` registered in `shadcn.js` using `React.createElement` plus class names that match the shadcn naming convention.
 - `styles.css` defines the shadcn CSS variables (`--background`, `--primary`, etc.) by hand and applies utility-style classes.
-- The plot card uses `window.shinyjson.ImageOutput` to surface a matplotlib figure rendered with `@render.plot`.
+- The plot card uses `window.shinyreact.ImageOutput` to surface a matplotlib figure rendered with `@render.plot`.
 
 ## Layout
 

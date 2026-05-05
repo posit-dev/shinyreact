@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyInput } = window.shinyjson;
+const { useShinyInput } = window.shinyreact;
 
 function fmtPair(p) {
   if (!p) return "—";

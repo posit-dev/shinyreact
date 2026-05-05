@@ -1,11 +1,11 @@
-// 5-shadcn example — shadcn/ui styled cards with shinyjson
+// 5-shadcn example — shadcn/ui styled cards with shinyreact
 // Uses plain HTML + CSS to approximate shadcn look (no build step).
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
-  var useShinyInput = window.shinyjson.useShinyInput;
-  var useShinyOutput = window.shinyjson.useShinyOutput;
-  var ImageOutput = window.shinyjson.ImageOutput;
+  var useShinyInput = window.shinyreact.useShinyInput;
+  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var ImageOutput = window.shinyreact.ImageOutput;
 
   // ---------------------------------------------------------------------------
   // PageLayout — registered, invoked from spec
@@ -201,8 +201,8 @@
     );
   }
 
-  // Register all components with shinyjson
-  window.shinyjson.registerComponents(null, {
+  // Register all components with shinyreact
+  window.shinyreact.registerComponents(null, {
     PageLayout: PageLayout,
     Grid: Grid,
     TextInputCard: TextInputCard,

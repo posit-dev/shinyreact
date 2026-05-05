@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyInput, useShinyOutput } = window.shinyjson;
+const { useShinyInput, useShinyOutput } = window.shinyreact;
 
 export function ButtonEventCard() {
   const [buttonTrigger, setButtonTrigger] = useShinyInput("button_trigger", 0, {

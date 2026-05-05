@@ -1,12 +1,12 @@
 // Blended example — sidebar layout with 3 tabbed panels mixing
 // React inputs (useShinyInput) and Shiny outputs (useShinyOutput, ImageOutput).
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
   var useState = React.useState;
-  var useShinyInput = window.shinyjson.useShinyInput;
-  var useShinyOutput = window.shinyjson.useShinyOutput;
-  var ImageOutput = window.shinyjson.ImageOutput;
+  var useShinyInput = window.shinyreact.useShinyInput;
+  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var ImageOutput = window.shinyreact.ImageOutput;
 
   // ── SVG Icons ──────────────────────────────────────────────────────────
   var chartIcon = h(
@@ -393,7 +393,7 @@
     );
   }
 
-  window.shinyjson.registerComponents(null, {
+  window.shinyreact.registerComponents(null, {
     SidebarApp: SidebarApp,
     DashboardPanel: DashboardPanel,
     DataPanel: DataPanel,

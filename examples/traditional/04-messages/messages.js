@@ -1,12 +1,12 @@
-// Messages example — registers decomposed components with shinyjson to
+// Messages example — registers decomposed components with shinyreact to
 // demonstrate useShinyMessageHandler hook for server-to-client messaging.
 // Each component receives `args` (ComponentRenderProps) and reads
 // configuration from `args.element.props`.
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
   var useState = React.useState;
-  var useShinyMessageHandler = window.shinyjson.useShinyMessageHandler;
+  var useShinyMessageHandler = window.shinyreact.useShinyMessageHandler;
 
   // AppLayout: top-level container with a title and children slot
   function AppLayout(args) {
@@ -68,7 +68,7 @@
     );
   }
 
-  window.shinyjson.registerComponents(null, {
+  window.shinyreact.registerComponents(null, {
     AppLayout: AppLayout,
     ToastCard: ToastCard,
   });

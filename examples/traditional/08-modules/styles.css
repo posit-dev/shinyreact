@@ -12,7 +12,7 @@ body {
   padding: 20px;
 }
 
-.shinyjson-output {
+.shinyreact-output {
   min-height: calc(100vh - 40px);
 }
 

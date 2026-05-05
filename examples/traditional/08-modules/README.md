@@ -1,8 +1,8 @@
-# Example 8 — Shiny modules (shinyjsonold)
+# Example 8 — Shiny modules (shinyreact)
 
 Demonstrates Shiny's `@module.server` integration with the JSON-spec bridge. Multiple instances of the same component (a counter) live on one page, each with its own namespaced inputs and outputs.
 
-> **Note:** Uses `shinyjsonold`. The module/namespace machinery is implemented in the vendored `shiny-react` (via `ShinyModuleProvider` and `useShinyModuleNamespace`) and works in both the JSON-spec and SPA-first models.
+> **Note:** Uses `shinyreact`. The module/namespace machinery is implemented in the vendored `shiny-react` (via `ShinyModuleProvider` and `useShinyModuleNamespace`) and works in both the JSON-spec and SPA-first models.
 
 ## What it shows
 

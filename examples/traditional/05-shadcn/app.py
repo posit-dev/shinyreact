@@ -7,7 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import shinyjsonold as shinyjson
+import shinyreact
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive, render
 
@@ -32,28 +32,28 @@ _shadcn_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui_output("main", extra_deps=[_shadcn_dep])
+app_ui = shinyreact.ui_output("main", extra_deps=[_shadcn_dep])
 
 
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def page_layout(title: str, subtitle: str, *children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(
+def page_layout(title: str, subtitle: str, *children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(
         type="PageLayout",
         props={"title": title, "subtitle": subtitle},
         children=list(children),
     )
 
 
-def grid(*children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(type="Grid", children=list(children))
+def grid(*children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(type="Grid", children=list(children))
 
 
 def text_input_card(
     input_id: str, processed_output_id: str, length_output_id: str
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="TextInputCard",
         props={
             "input_id": input_id,
@@ -63,19 +63,19 @@ def text_input_card(
     )
 
 
-def button_event_card(input_id: str, output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(
+def button_event_card(input_id: str, output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(
         type="ButtonEventCard",
         props={"input_id": input_id, "output_id": output_id},
     )
 
 
-def plot_card(plot_id: str) -> shinyjson.Node:
-    return shinyjson.Node(type="PlotCard", props={"plot_id": plot_id})
+def plot_card(plot_id: str) -> shinyreact.Node:
+    return shinyreact.Node(type="PlotCard", props={"plot_id": plot_id})
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def main():
         return page_layout(
             "Shiny + React + shadcn/ui",
@@ -87,7 +87,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             grid(plot_card("plot1")),
         )
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def processed_text():
         text = input.user_text() if input.user_text() is not None else ""
         if text == "":
@@ -95,12 +95,12 @@ def server(input: Inputs, output: Outputs, session: Session):
         # Simple text processing - uppercase and reverse
         return "".join(reversed(text.upper()))
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def text_length():
         text = input.user_text() if input.user_text() is not None else ""
         return str(len(text))
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     @reactive.event(input.button_trigger, ignore_init=True)
     def button_response():
         now = datetime.now()

@@ -3,7 +3,7 @@ import Plotly from "plotly.js-basic-dist-min";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyInput, useShinyOutput } = window.shinyjson;
+const { useShinyInput, useShinyOutput } = window.shinyreact;
 
 function linearFit(xs, ys) {
   const n = xs.length;

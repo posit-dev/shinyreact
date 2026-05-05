@@ -1,5 +1,5 @@
 const { React, ReactDOM, useShinyInput, useShinyOutput, useShinyInitialized } =
-  window.shinyjson;
+  window.shinyreact;
 
 const h = React.createElement;
 

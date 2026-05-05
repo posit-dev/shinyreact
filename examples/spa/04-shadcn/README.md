@@ -7,10 +7,10 @@ A SPA-first Shiny app whose UI is a React app styled with [shadcn/ui](https://ui
 
 | Card | Demonstrates |
 |------|--------------|
-| **TextInputCard** | shadcn `Input` + `Card` + `Badge`. `useShinyInput("user_text", "")` round-trips text through the server, which sends back the reversed/uppercased string and a length count via `@render_json`. |
-| **ButtonEventCard** | shadcn `Button` + `Card`. `useShinyInput("button_trigger", 0, { priority: "event" })` is a Shiny-style action button — increments on every click; the server's `@render_json @reactive.event(input.button_trigger)` returns a fresh timestamp string. |
+| **TextInputCard** | shadcn `Input` + `Card` + `Badge`. `useShinyInput("user_text", "")` round-trips text through the server, which sends back the reversed/uppercased string and a length count via `@reactive_output`. |
+| **ButtonEventCard** | shadcn `Button` + `Card`. `useShinyInput("button_trigger", 0, { priority: "event" })` is a Shiny-style action button — increments on every click; the server's `@reactive_output @reactive.event(input.button_trigger)` returns a fresh timestamp string. |
 | **PlotCard** | shadcn `Card` wrapping `<ImageOutput id="plot1"/>`. The server uses Shiny's standard `@render.plot` to draw a matplotlib scatter + linear trend line; the SPA's `ImageOutput` binding picks up the rendered PNG. |
-| **PlotlyCard** | shadcn `Card` with a `plotly.js-basic-dist-min` chart. The server only ships the raw data via `@render_json scatter_data`; the client receives `{age: [...], score: [...]}`, computes the trend-line slope/intercept locally, and calls `Plotly.react`. Continuous hover (anywhere in the plot, not just on markers), click anywhere, drag-to-select-and-zoom, double-click or Esc to reset the view. All interactions push the cursor's data coords into Shiny inputs (`plotly_hover`, `plotly_click`, `plotly_dblclick`, `plotly_selection`, `plotly_xy_ranges`). |
+| **PlotlyCard** | shadcn `Card` with a `plotly.js-basic-dist-min` chart. The server only ships the raw data via `@reactive_output scatter_data`; the client receives `{age: [...], score: [...]}`, computes the trend-line slope/intercept locally, and calls `Plotly.react`. Continuous hover (anywhere in the plot, not just on markers), click anywhere, drag-to-select-and-zoom, double-click or Esc to reset the view. All interactions push the cursor's data coords into Shiny inputs (`plotly_hover`, `plotly_click`, `plotly_dblclick`, `plotly_selection`, `plotly_xy_ranges`). |
 | **PlotlyInfoCard** | A read-only card that re-subscribes to those same input ids via `useShinyInput`. The displayed values are React's local state (no roundtrip), demonstrating that "set a Shiny input from a client interaction" and "display a value the client already has" are the same hook. The values also travel to the server, so `input.plotly_hover()` etc. work in the Python reactive graph if you want them. |
 
 The two plots draw the same data so you can see the trade-off directly:
@@ -24,13 +24,13 @@ The two plots draw the same data so you can see the trade-off directly:
 
 ```
 examples/16-shadcn/
-├── app.py                          # SpaApp + outputs (4 render_json + 1 render.plot)
+├── app.py                          # SpaApp + outputs (4 reactive_output + 1 render.plot)
 ├── package.json
-├── vite.config.js                  # lib-mode IIFE; React externalized to window.shinyjson
+├── vite.config.js                  # lib-mode IIFE; React externalized to window.shinyreact
 ├── README.md
 ├── src/
 │   ├── App.jsx                     # composes the cards
-│   ├── main.jsx                    # mounts via window.shinyjson.React/ReactDOM
+│   ├── main.jsx                    # mounts via window.shinyreact.React/ReactDOM
 │   ├── index.css                   # Tailwind v4 + shadcn theme tokens
 │   ├── lib/utils.js                # cn() = clsx + tailwind-merge
 │   └── components/
@@ -53,10 +53,10 @@ examples/16-shadcn/
 
 ## Build plumbing
 
-The non-obvious bit is how the bundle stays compatible with the page-level `window.shinyjson` runtime:
+The non-obvious bit is how the bundle stays compatible with the page-level `window.shinyreact` runtime:
 
 - `vite.config.js` is in **lib mode** with format `iife`, output filename `app.js`.
-- `react`, `react-dom`, and `react-dom/client` are listed as `external` and mapped via `rollupOptions.output.globals` to `window.shinyjson.React` / `window.shinyjson.ReactDOM`. The IIFE bundle reuses the React instance that owns the shinyjson hooks (mixing two React copies would break `useShinyInput`/`useShinyOutput`).
+- `react`, `react-dom`, and `react-dom/client` are listed as `external` and mapped via `rollupOptions.output.globals` to `window.shinyreact.React` / `window.shinyreact.ReactDOM`. The IIFE bundle reuses the React instance that owns the shinyreact hooks (mixing two React copies would break `useShinyInput`/`useShinyOutput`).
 - `react`/`react-dom` are still listed as `devDependencies` so `react/jsx-runtime` resolves at build time when Vite's automatic JSX transform inlines it.
 - Tailwind v4 is wired in through `@tailwindcss/vite`; the shadcn design tokens live in `src/index.css`.
 - `define: { "process.env.NODE_ENV": '"production"' }` is set in the Vite config because lib mode does not auto-replace it (it assumes a downstream bundler will). Without it, the bundled React jsx-runtime hits a `process is not defined` error in the browser.

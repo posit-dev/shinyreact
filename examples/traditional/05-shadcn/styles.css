@@ -36,7 +36,7 @@ body {
 }
 
 /* Root output container */
-.shinyjson-output {
+.shinyreact-output {
   min-height: 100dvh;
 }
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import shinyjsonold as shinyjson
+import shinyreact
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, module, reactive
 
@@ -13,46 +13,46 @@ _modules_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui_output("main", extra_deps=[_modules_dep])
+app_ui = shinyreact.ui_output("main", extra_deps=[_modules_dep])
 
 
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def app_layout(title: str, subtitle: str, *children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(
+def app_layout(title: str, subtitle: str, *children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(
         type="AppLayout",
         props={"title": title, "subtitle": subtitle},
         children=list(children),
     )
 
 
-def widgets_grid(*children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(type="WidgetsGrid", children=list(children))
+def widgets_grid(*children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(type="WidgetsGrid", children=list(children))
 
 
-def module_counter(namespace: str, label: str) -> shinyjson.Node:
-    return shinyjson.Node(
+def module_counter(namespace: str, label: str) -> shinyreact.Node:
+    return shinyreact.Node(
         type="ModuleCounter",
         props={"namespace": namespace, "label": label},
     )
 
 
-def info_section() -> shinyjson.Node:
-    return shinyjson.Node(type="InfoSection")
+def info_section() -> shinyreact.Node:
+    return shinyreact.Node(type="InfoSection")
 
 
 # Module server function
 @module.server
 def counter_module_server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def serverCount():
         """Echo the count value from the server"""
         if input.count() is not None:
             return input.count()
         return 0
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def serverDoubled():
         """Double the count value and send to client"""
         if input.count() is not None:
@@ -64,7 +64,7 @@ def counter_module_server(input: Inputs, output: Outputs, session: Session):
         """Send notification message every 5 counts"""
         count = input.count()
         if count is not None and count > 0 and count % 5 == 0:
-            await shinyjson.post_message(
+            await shinyreact.send_message(
                 session,
                 "notification",
                 {"message": f"Milestone reached: {count}"},
@@ -72,7 +72,7 @@ def counter_module_server(input: Inputs, output: Outputs, session: Session):
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def main():
         return app_layout(
             "Shiny Module Namespace Demo",

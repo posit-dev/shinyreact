@@ -1,5 +1,5 @@
 from shiny import reactive
-from shinyjson import SpaApp, render_json
+from shinyreact import SpaApp, reactive_output
 
 
 def server(input, output, session):  # noqa: ARG001
@@ -10,11 +10,11 @@ def server(input, output, session):  # noqa: ARG001
             return "World"
         return name
 
-    @render_json
+    @reactive_output
     def txtout_title():
         return f"Hello, {greeting()}!"
 
-    @render_json
+    @reactive_output
     def txtout_count():
         return input.click_count()
 

@@ -1,5 +1,5 @@
 from shiny import reactive
-from shinyjson import SpaApp, render_json
+from shinyreact import SpaApp, reactive_output
 
 INITIAL_DATA = {
     "A": ["Apple", "Apricot"],
@@ -22,7 +22,7 @@ def server(input, output, session):  # noqa: ARG001
             data[to_col].append(item)
             columns.set(data)
 
-    @render_json
+    @reactive_output
     def column_data():
         return columns()
 

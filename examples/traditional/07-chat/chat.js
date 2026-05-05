@@ -1,11 +1,11 @@
-// AI Chat — shinyjson example
-// Converts the upstream shiny-react 7-chat example to the shinyjson pattern.
+// AI Chat — shinyreact example
+// Converts the upstream shiny-react 7-chat example to the shinyreact pattern.
 // All React UI is built with React.createElement (aliased as `h`).
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
-  var useShinyInput = window.shinyjson.useShinyInput;
-  var useShinyMessageHandler = window.shinyjson.useShinyMessageHandler;
+  var useShinyInput = window.shinyreact.useShinyInput;
+  var useShinyMessageHandler = window.shinyreact.useShinyMessageHandler;
 
   var useState = React.useState;
   var useEffect = React.useEffect;
@@ -763,9 +763,9 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Register with shinyjson
+  // Register with shinyreact
   // ---------------------------------------------------------------------------
-  window.shinyjson.registerComponents(null, {
+  window.shinyreact.registerComponents(null, {
     ChatApp: ChatApp,
   });
 })();

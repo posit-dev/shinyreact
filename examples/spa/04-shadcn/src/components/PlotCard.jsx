@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { ImageOutput } = window.shinyjson;
+const { ImageOutput } = window.shinyreact;
 
 export function PlotCard() {
   return (

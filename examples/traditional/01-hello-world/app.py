@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import shinyjsonold as shinyjson
+import shinyreact
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session
 
@@ -13,18 +13,18 @@ _hello_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.page_react(
+app_ui = shinyreact.page_react(
     _hello_dep,
-    shinyjson.ui_output("hello"),
+    shinyreact.ui_output("hello"),
 )
 
 
 # ---------------------------------------------------------------------------
-# Component helpers — thin wrappers around shinyjson.Node that mirror the
+# Component helpers — thin wrappers around shinyreact.Node that mirror the
 # registered JS components in hello_world.js.
 # ---------------------------------------------------------------------------
-def card(title: str, *children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(type="Card", props={"title": title}, children=list(children))
+def card(title: str, *children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(type="Card", props={"title": title}, children=list(children))
 
 
 def text_input(
@@ -34,7 +34,7 @@ def text_input(
     placeholder: str = "",
     label: str = "",
     debounce_ms: int | None = None,
-) -> shinyjson.Node:
+) -> shinyreact.Node:
     props: dict[str, object] = {
         "input_id": input_id,
         "default_value": default_value,
@@ -43,24 +43,24 @@ def text_input(
     }
     if debounce_ms is not None:
         props["debounce_ms"] = debounce_ms
-    return shinyjson.Node(type="TextInput", props=props)
+    return shinyreact.Node(type="TextInput", props=props)
 
 
-def hr() -> shinyjson.Node:
-    return shinyjson.Node(type="Divider")
+def hr() -> shinyreact.Node:
+    return shinyreact.Node(type="Divider")
 
 
 def input_display(
     input_id: str, *, default_value: str = "", label: str = ""
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="InputDisplay",
         props={"input_id": input_id, "default_value": default_value, "label": label},
     )
 
 
-def output_display(output_id: str, *, label: str = "") -> shinyjson.Node:
-    return shinyjson.Node(
+def output_display(output_id: str, *, label: str = "") -> shinyreact.Node:
+    return shinyreact.Node(
         type="OutputDisplay", props={"output_id": output_id, "label": label}
     )
 
@@ -69,7 +69,7 @@ def output_display(output_id: str, *, label: str = "") -> shinyjson.Node:
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def hello():
         return card(
             "Hello Shiny React!",
@@ -86,7 +86,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             output_display("txtout", label="Response from Shiny server:"),
         )
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def txtout():
         return input.txtin().upper()
 

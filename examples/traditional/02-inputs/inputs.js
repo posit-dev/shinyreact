@@ -1,13 +1,13 @@
-// 2-inputs example — registers all input card components with shinyjson.
+// 2-inputs example — registers all input card components with shinyreact.
 // Converted from the upstream shiny-react TypeScript example to plain JS
 // using React.createElement (no JSX, no build step).
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
   var useState = React.useState;
   var useRef = React.useRef;
-  var useShinyInput = window.shinyjson.useShinyInput;
-  var useShinyOutput = window.shinyjson.useShinyOutput;
+  var useShinyInput = window.shinyreact.useShinyInput;
+  var useShinyOutput = window.shinyreact.useShinyOutput;
 
   // ---------------------------------------------------------------------------
   // Card — simple wrapper with a title
@@ -658,8 +658,8 @@
     });
   }
 
-  // Register all components with shinyjson
-  window.shinyjson.registerComponents(null, {
+  // Register all components with shinyreact
+  window.shinyreact.registerComponents(null, {
     PageLayout: PageLayout,
     TextInputCard: TextInputCard,
     NumberInputCard: NumberInputCard,

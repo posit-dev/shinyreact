@@ -1,4 +1,4 @@
-/* Dashboard styles — shinyjson 6-dashboard example */
+/* Dashboard styles — shinyreact 6-dashboard example */
 
 :root {
   --bg: #f8f9fb;
@@ -27,7 +27,7 @@ body {
   line-height: 1.5;
 }
 
-.shinyjson-output {
+.shinyreact-output {
   min-height: 100dvh;
 }
 

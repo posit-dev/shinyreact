@@ -2,10 +2,10 @@
 // 1-hello-world example. Each component receives `args` (ComponentRenderProps
 // from @json-render/react) and reads configuration from `args.element.props`.
 (function () {
-  var React = window.shinyjson.React;
+  var React = window.shinyreact.React;
   var h = React.createElement;
-  var useShinyInput = window.shinyjson.useShinyInput;
-  var useShinyOutput = window.shinyjson.useShinyOutput;
+  var useShinyInput = window.shinyreact.useShinyInput;
+  var useShinyOutput = window.shinyreact.useShinyOutput;
 
   // Card: styled container with optional title and children
   function Card(args) {
@@ -85,7 +85,7 @@
     );
   }
 
-  window.shinyjson.registerComponents(null, {
+  window.shinyreact.registerComponents(null, {
     Card: Card,
     Heading: Heading,
     TextInput: TextInput,

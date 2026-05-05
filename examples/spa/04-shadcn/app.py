@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from shiny import reactive, render
-from shinyjson import SpaApp, render_json
+from shinyreact import SpaApp, reactive_output
 
 matplotlib.use("Agg")
 
@@ -19,18 +19,18 @@ sample_data = pd.DataFrame(
 
 
 def server(input, output, session):  # noqa: ARG001
-    @render_json
+    @reactive_output
     def scatter_data():
         return sample_data[["age", "score"]].to_dict(orient="list")
 
-    @render_json
+    @reactive_output
     def processed_text():
         text = input.user_text() or ""
         if text == "":
             return ""
         return "".join(reversed(text.upper()))
 
-    @render_json
+    @reactive_output
     def text_length():
         return len(input.user_text() or "")
 
@@ -41,7 +41,7 @@ def server(input, output, session):  # noqa: ARG001
             return ""
         return f"render.text says: {text!r} ({len(text)} chars)"
 
-    @render_json
+    @reactive_output
     @reactive.event(input.button_trigger, ignore_init=True)
     def button_response():
         now = datetime.now()

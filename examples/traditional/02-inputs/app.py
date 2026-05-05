@@ -1,7 +1,7 @@
 import datetime
 from pathlib import Path
 
-import shinyjsonold as shinyjson
+import shinyreact
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive
 
@@ -14,22 +14,22 @@ _inputs_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui_output("main", extra_deps=[_inputs_dep])
+app_ui = shinyreact.ui_output("main", extra_deps=[_inputs_dep])
 
 
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def page_layout(title: str, *children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(
+def page_layout(title: str, *children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(
         type="PageLayout", props={"title": title}, children=list(children)
     )
 
 
 def text_input_card(
     input_id: str, output_id: str, default_value: str = "Hello, world!"
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="TextInputCard",
         props={
             "input_id": input_id,
@@ -41,8 +41,8 @@ def text_input_card(
 
 def number_input_card(
     input_id: str, output_id: str, default_value: float = 42
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="NumberInputCard",
         props={
             "input_id": input_id,
@@ -54,8 +54,8 @@ def number_input_card(
 
 def checkbox_input_card(
     input_id: str, output_id: str, default_value: bool = False
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="CheckboxInputCard",
         props={
             "input_id": input_id,
@@ -67,8 +67,8 @@ def checkbox_input_card(
 
 def radio_input_card(
     input_id: str, output_id: str, default_value: str = "option1"
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="RadioInputCard",
         props={
             "input_id": input_id,
@@ -80,8 +80,8 @@ def radio_input_card(
 
 def select_input_card(
     input_id: str, output_id: str, default_value: str = "apple"
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="SelectInputCard",
         props={
             "input_id": input_id,
@@ -93,8 +93,8 @@ def select_input_card(
 
 def slider_input_card(
     input_id: str, output_id: str, default_value: float = 50
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="SliderInputCard",
         props={
             "input_id": input_id,
@@ -104,36 +104,36 @@ def slider_input_card(
     )
 
 
-def date_input_card(input_id: str, output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(
+def date_input_card(input_id: str, output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(
         type="DateInputCard",
         props={"input_id": input_id, "output_id": output_id},
     )
 
 
-def button_input_card(input_id: str, output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(
+def button_input_card(input_id: str, output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(
         type="ButtonInputCard",
         props={"input_id": input_id, "output_id": output_id},
     )
 
 
-def file_input_card(input_id: str, output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(
+def file_input_card(input_id: str, output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(
         type="FileInputCard",
         props={"input_id": input_id, "output_id": output_id},
     )
 
 
-def batch_form_card(input_id: str, output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(
+def batch_form_card(input_id: str, output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(
         type="BatchFormCard",
         props={"input_id": input_id, "output_id": output_id},
     )
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def main():
         return page_layout(
             "Shiny React Input Examples",
@@ -149,40 +149,40 @@ def server(input: Inputs, output: Outputs, session: Session):
             batch_form_card("batchdata", "batchout"),
         )
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def txtout():
         return input.txtin().upper()
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def numberout():
         return str(input.numberin())
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def checkboxout():
         return str(input.checkboxin())
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def radioout():
         return str(input.radioin())
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def selectout():
         return str(input.selectin())
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def sliderout():
         return str(input.sliderin())
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def dateout():
         return str(input.datein())
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     @reactive.event(input.buttonin, ignore_init=True)
     def buttonout():
         return str(input.buttonin())
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def fileout():
         files = input.filein()
         if files is None:
@@ -196,7 +196,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
         return "\n".join(summaries)
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def batchout():
         data = input.batchdata()
         if data is None:

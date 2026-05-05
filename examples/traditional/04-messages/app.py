@@ -1,7 +1,7 @@
 import random
 from pathlib import Path
 
-import shinyjsonold as shinyjson
+import shinyreact
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive
 
@@ -14,21 +14,21 @@ _messages_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui_output("main", extra_deps=[_messages_dep])
+app_ui = shinyreact.ui_output("main", extra_deps=[_messages_dep])
 
 
 # ---------------------------------------------------------------------------
-# Component helpers — thin wrappers around shinyjson.Node that mirror the
+# Component helpers — thin wrappers around shinyreact.Node that mirror the
 # registered JS components in messages.js.
 # ---------------------------------------------------------------------------
-def app_layout(title: str, *children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(
+def app_layout(title: str, *children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(
         type="AppLayout", props={"title": title}, children=list(children)
     )
 
 
-def toast_card(title: str) -> shinyjson.Node:
-    return shinyjson.Node(type="ToastCard", props={"title": title})
+def toast_card(title: str) -> shinyreact.Node:
+    return shinyreact.Node(type="ToastCard", props={"title": title})
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         {"text": "Cache cleared", "category": "info"},
     ]
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def main():
         return app_layout(
             "Event Message Demo",
@@ -57,7 +57,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         # Timer that triggers every 2 seconds
         reactive.invalidate_later(2)
         log_event = random.choice(log_messages)
-        await shinyjson.post_message(session, "logEvent", log_event)
+        await shinyreact.send_message(session, "logEvent", log_event)
 
 
 app = App(app_ui, server)

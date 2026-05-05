@@ -7,7 +7,7 @@ The smallest possible SPA-first Shiny app: a Python server that contains only re
 A name-input form and click counter rendered twice for direct comparison:
 
 - **Client card** — `Hello, {name}!` and `Count: {clickCount}` computed locally in React state. Updates on every keystroke / click with no roundtrip.
-- **Server card** — same two values, but routed through Shiny: `useShinyInput("name")` → `@reactive.calc greeting` → `@render_json txtout_title` → `useShinyOutput("txtout_title")`. Updates lag by the websocket round-trip.
+- **Server card** — same two values, but routed through Shiny: `useShinyInput("name")` → `@reactive.calc greeting` → `@reactive_output txtout_title` → `useShinyOutput("txtout_title")`. Updates lag by the websocket round-trip.
 
 The point is that the same data shows up on both cards but the latency is visibly different — the client card is instantaneous, the server card has the websocket delay you'd expect.
 
@@ -15,7 +15,7 @@ The point is that the same data shows up on both cards but the latency is visibl
 
 ```
 examples/13-spa-hello/
-├── app.py            # SpaApp + 2 render_json outputs (greeting, click count)
+├── app.py            # SpaApp + 2 reactive_output outputs (greeting, click count)
 └── www/
     ├── index.html    # 3 lines: stylesheet, #root div, script
     ├── app.js        # raw React.createElement (with `h` shorthand)
@@ -26,12 +26,12 @@ Four files. No `node_modules`, no Vite, no build script.
 
 ## Bridge primitives used
 
-- `from shinyjson import SpaApp, render_json` (server)
-- `window.shinyjson.useShinyInput(id, default, options?)` for the name field and click counter
-- `window.shinyjson.useShinyOutput(id, default)` for the server-computed title and count
-- `window.shinyjson.useShinyInitialized()` to suppress the placeholder UI during connection setup
+- `from shinyreact import SpaApp, reactive_output` (server)
+- `window.shinyreact.useShinyInput(id, default, options?)` for the name field and click counter
+- `window.shinyreact.useShinyOutput(id, default)` for the server-computed title and count
+- `window.shinyreact.useShinyInitialized()` to suppress the placeholder UI during connection setup
 
-`window.shinyjson.React` and `window.shinyjson.ReactDOM` are pulled in directly so the SPA shares the React instance that owns the shinyjson hooks.
+`window.shinyreact.React` and `window.shinyreact.ReactDOM` are pulled in directly so the SPA shares the React instance that owns the shinyreact hooks.
 
 ## Run it
 

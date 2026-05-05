@@ -7,8 +7,8 @@ import { defineConfig } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// React/ReactDOM are externalized and pulled from window.shinyjson at runtime
-// so this bundle shares the React instance that owns the shinyjson hooks.
+// React/ReactDOM are externalized and pulled from window.shinyreact at runtime
+// so this bundle shares the React instance that owns the shinyreact hooks.
 export default defineConfig({
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),
@@ -31,9 +31,9 @@ export default defineConfig({
       external: ["react", "react-dom", "react-dom/client"],
       output: {
         globals: {
-          react: "window.shinyjson.React",
-          "react-dom": "window.shinyjson.ReactDOM",
-          "react-dom/client": "window.shinyjson.ReactDOM",
+          react: "window.shinyreact.React",
+          "react-dom": "window.shinyreact.ReactDOM",
+          "react-dom/client": "window.shinyreact.ReactDOM",
         },
       },
     },

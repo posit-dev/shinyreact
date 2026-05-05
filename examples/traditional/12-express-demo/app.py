@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import shinyjsonold as shinyjson
+import shinyreact
 from htmltools import HTMLDependency
 from shiny.express import input, render, ui
 
@@ -14,39 +14,39 @@ _demo_dep = HTMLDependency(
 )
 
 
-# Subclass shinyjson.render to inject our demo components dependency
-class render_demo(shinyjson.render):
+# Subclass shinyreact.reactive_output to inject our demo components dependency
+class render_demo(shinyreact.reactive_output):
     extra_deps = [_demo_dep]
 
 
 # ---------------------------------------------------------------------------
-# Component helpers — thin wrappers around shinyjson.Node that mirror the
+# Component helpers — thin wrappers around shinyreact.Node that mirror the
 # registered JS components in demo_components.js.
 # ---------------------------------------------------------------------------
-def card(title: str, *children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(type="Card", props={"title": title}, children=list(children))
+def card(title: str, *children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(type="Card", props={"title": title}, children=list(children))
 
 
-def badge(text: str, variant: str = "default") -> shinyjson.Node:
-    return shinyjson.Node(type="Badge", props={"text": text, "variant": variant})
+def badge(text: str, variant: str = "default") -> shinyreact.Node:
+    return shinyreact.Node(type="Badge", props={"text": text, "variant": variant})
 
 
-def button(label: str, input_id: str, color: str = "#4a90d9") -> shinyjson.Node:
-    return shinyjson.Node(
+def button(label: str, input_id: str, color: str = "#4a90d9") -> shinyreact.Node:
+    return shinyreact.Node(
         type="Button", props={"label": label, "input_id": input_id, "color": color}
     )
 
 
 # ---------------------------------------------------------------------------
 
-ui.page_opts(title="Hello Shinyjson")
+ui.page_opts(title="Hello Shinyreact")
 
-ui.h2("Shinyjson Demo")
-ui.p("This app demonstrates shinyjson's Python API with reactive updates.")
+ui.h2("Shinyreact Demo")
+ui.p("This app demonstrates shinyreact's Python API with reactive updates.")
 
 with ui.layout_sidebar():
     with ui.sidebar():
-        ui.input_text("title", "Card Title", value="Hello Shinyjson!")
+        ui.input_text("title", "Card Title", value="Hello Shinyreact!")
         ui.input_slider("count", "Badge Count", min=0, max=10, value=3)
         ui.input_select(
             "variant",
@@ -56,7 +56,7 @@ with ui.layout_sidebar():
         )
 
     @render_demo
-    def demo_output() -> shinyjson.Node:
+    def demo_output() -> shinyreact.Node:
         badges = [badge(f"#{i + 1}", input.variant()) for i in range(input.count())]
         return card(
             input.title(),

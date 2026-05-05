@@ -1,8 +1,8 @@
-from shinyjson import SpaApp, render_json
+from shinyreact import SpaApp, reactive_output
 
 
 def server(input, output, session):  # noqa: ARG001
-    @render_json
+    @reactive_output
     def display():
         c = input.celsius()
         if c is None:

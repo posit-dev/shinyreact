@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import shinyjsonold as shinyjson
+import shinyreact
 from data import calculate_metrics, filter_data, generate_sample_data
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive
@@ -17,20 +17,20 @@ _dashboard_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui_output("main", extra_deps=[_dashboard_dep])
+app_ui = shinyreact.ui_output("main", extra_deps=[_dashboard_dep])
 
 
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def dashboard_app(*children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(type="DashboardApp", children=list(children))
+def dashboard_app(*children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(type="DashboardApp", children=list(children))
 
 
 def filter_panel(
     date_range_id: str, search_id: str, categories_id: str
-) -> shinyjson.Node:
-    return shinyjson.Node(
+) -> shinyreact.Node:
+    return shinyreact.Node(
         type="FilterPanel",
         props={
             "date_range_id": date_range_id,
@@ -40,16 +40,16 @@ def filter_panel(
     )
 
 
-def metrics_cards(output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(type="MetricsCards", props={"output_id": output_id})
+def metrics_cards(output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(type="MetricsCards", props={"output_id": output_id})
 
 
-def charts(output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(type="Charts", props={"output_id": output_id})
+def charts(output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(type="Charts", props={"output_id": output_id})
 
 
-def data_table(output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(type="DataTable", props={"output_id": output_id})
+def data_table(output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(type="DataTable", props={"output_id": output_id})
 
 
 def server(input: Inputs, output: Outputs, session: Session):
@@ -74,7 +74,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             selected_categories=selected_categories,
         )
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def main():
         return dashboard_app(
             filter_panel("date_range", "search_term", "selected_categories"),
@@ -83,13 +83,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             data_table("table_data"),
         )
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def metrics_data():
         """Calculate and return metrics"""
         data = filtered_data()
         return calculate_metrics(data)
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def chart_data():
         """Return chart data in column-major format"""
         data = filtered_data()
@@ -102,7 +102,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             "category_performance": category_performance_columns,
         }
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def table_data():
         """Return table data in column-major format"""
         data = filtered_data()

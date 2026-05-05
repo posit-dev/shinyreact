@@ -6,7 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import shinyjsonold as shinyjson
+import shinyreact
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, render
 
@@ -23,39 +23,39 @@ _outputs_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui_output("main", extra_deps=[_outputs_dep])
+app_ui = shinyreact.ui_output("main", extra_deps=[_outputs_dep])
 
 
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def page_layout(title: str, *children: shinyjson.Node) -> shinyjson.Node:
-    return shinyjson.Node(
+def page_layout(title: str, *children: shinyreact.Node) -> shinyreact.Node:
+    return shinyreact.Node(
         type="PageLayout", props={"title": title}, children=list(children)
     )
 
 
-def slider_card(input_id: str, default_value: int = 4) -> shinyjson.Node:
-    return shinyjson.Node(
+def slider_card(input_id: str, default_value: int = 4) -> shinyreact.Node:
+    return shinyreact.Node(
         type="SliderCard",
         props={"input_id": input_id, "default_value": default_value},
     )
 
 
-def statistics_card(output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(type="StatisticsCard", props={"output_id": output_id})
+def statistics_card(output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(type="StatisticsCard", props={"output_id": output_id})
 
 
-def data_table_card(output_id: str) -> shinyjson.Node:
-    return shinyjson.Node(type="DataTableCard", props={"output_id": output_id})
+def data_table_card(output_id: str) -> shinyreact.Node:
+    return shinyreact.Node(type="DataTableCard", props={"output_id": output_id})
 
 
-def plot_card(plot_id: str) -> shinyjson.Node:
-    return shinyjson.Node(type="PlotCard", props={"plot_id": plot_id})
+def plot_card(plot_id: str) -> shinyreact.Node:
+    return shinyreact.Node(type="PlotCard", props={"plot_id": plot_id})
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def main():
         return page_layout(
             "Shiny React Output Examples",
@@ -65,12 +65,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             plot_card("plot1"),
         )
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def table_data():
         num_rows = input.table_rows()
         return mtcars.head(num_rows).to_dict(orient="list")
 
-    @shinyjson.render
+    @shinyreact.reactive_output
     def table_stats():
         num_rows = input.table_rows()
         mtcars_subset = mtcars.head(num_rows)

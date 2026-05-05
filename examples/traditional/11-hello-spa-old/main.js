@@ -1,9 +1,9 @@
-var React = window.shinyjson.React;
-var ReactDOM = window.shinyjson.ReactDOM;
+var React = window.shinyreact.React;
+var ReactDOM = window.shinyreact.ReactDOM;
 var h = React.createElement;
-var useShinyInput = window.shinyjson.useShinyInput;
-var useShinyOutput = window.shinyjson.useShinyOutput;
-var useShinyInitialized = window.shinyjson.useShinyInitialized;
+var useShinyInput = window.shinyreact.useShinyInput;
+var useShinyOutput = window.shinyreact.useShinyOutput;
+var useShinyInitialized = window.shinyreact.useShinyInitialized;
 
 function Card(_ref) {
   var title = _ref.title;

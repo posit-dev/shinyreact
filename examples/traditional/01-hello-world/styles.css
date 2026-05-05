@@ -44,7 +44,7 @@ body::before {
   z-index: -1;
 }
 
-.shinyjson-output {
+.shinyreact-output {
   min-height: calc(100dvh - 32px);
   display: flex;
   align-items: center;

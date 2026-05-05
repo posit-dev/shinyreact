@@ -1,5 +1,5 @@
 /* ============================================================
-   AI Chat — shinyjson example styles
+   AI Chat — shinyreact example styles
    Adapted from the upstream shiny-react 7-chat globals.css.
    Uses CSS custom properties for theme switching; no Tailwind.
    ============================================================ */
@@ -152,8 +152,8 @@ body {
   font-family: "Courier New", Monaco, monospace;
 }
 
-/* ----- shinyjson output container ----- */
-.shinyjson-output {
+/* ----- shinyreact output container ----- */
+.shinyreact-output {
   height: 100vh;
   display: flex;
   flex-direction: column;

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import dotenv
-import shinyjsonold as shinyjson
+import shinyreact
 from chatlas import ChatOpenAI, content_image_url
 from htmltools import HTMLDependency
 from shiny import App, Inputs, Outputs, Session, reactive
@@ -27,21 +27,21 @@ _chat_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyjson.ui_output("main", extra_deps=[_chat_dep])
+app_ui = shinyreact.ui_output("main", extra_deps=[_chat_dep])
 
 
 # ---------------------------------------------------------------------------
 # Component helpers
 # ---------------------------------------------------------------------------
-def chat_app(input_id: str, stream_handler: str) -> shinyjson.Node:
-    return shinyjson.Node(
+def chat_app(input_id: str, stream_handler: str) -> shinyreact.Node:
+    return shinyreact.Node(
         type="ChatApp",
         props={"input_id": input_id, "stream_handler": stream_handler},
     )
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyjson.render
+    @shinyreact.reactive_output
     def main():
         return chat_app("chat_input", "chat_stream")
 
@@ -97,7 +97,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
     async def send_chunk(chunk: str, done: bool = False):
-        await shinyjson.post_message(
+        await shinyreact.send_message(
             session, "chat_stream", {"chunk": chunk, "done": done}
         )
 

@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyInput, useShinyOutput, useShinyInitialized } = window.shinyjson;
+const { useShinyInput, useShinyOutput, useShinyInitialized } = window.shinyreact;
 
 const COLUMNS = ["A", "B", "C"];
 

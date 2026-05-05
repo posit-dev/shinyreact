@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-const { useShinyInput, useShinyOutput } = window.shinyjson;
+const { useShinyInput, useShinyOutput } = window.shinyreact;
 
 export function TextInputCard() {
   const [inputText, setInputText] = useShinyInput("user_text", "");
