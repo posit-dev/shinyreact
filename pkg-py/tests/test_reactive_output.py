@@ -74,3 +74,30 @@ def test_auto_output_ui_returns_ui_output() -> None:
 def test_no_extra_deps_attribute() -> None:
     """The unified decorator drops the extra_deps extension hook."""
     assert not hasattr(reactive_output, "extra_deps")
+
+
+@pytest.mark.asyncio
+async def test_passthrough_string() -> None:
+    @reactive_output
+    def out():
+        return "hello"
+
+    assert await out.transform("hello") == "hello"
+
+
+@pytest.mark.asyncio
+async def test_passthrough_none() -> None:
+    @reactive_output
+    def out():
+        return None
+
+    assert await out.transform(None) is None
+
+
+@pytest.mark.asyncio
+async def test_passthrough_list() -> None:
+    @reactive_output
+    def out():
+        return [1, 2, 3]
+
+    assert await out.transform([1, 2, 3]) == [1, 2, 3]
