@@ -1,4 +1,4 @@
-import type { ComponentRegistry } from "@json-render/react";
+import type { ComponentRegistry } from "./spec";
 
 // Accumulated component registry — populated by downstream packages calling
 // window.shinyjson.registerComponents() at page load.
