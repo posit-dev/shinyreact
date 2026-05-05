@@ -62,6 +62,31 @@ describe("ShinyjsonRenderer", () => {
     );
   });
 
+  it("passes direct rendered nodes (not Fragments) as children to registered components", () => {
+    let observedChildren: React.ReactNode = null;
+    const Inspector = ({ children }: { children: React.ReactNode }) => {
+      observedChildren = children;
+      return <div>{children}</div>;
+    };
+    registerComponents(null, { Inspector });
+
+    const spec: Spec = {
+      root: "root",
+      elements: {
+        root: { type: "Inspector", props: {}, children: ["a", "b"] },
+        a: { type: "span", props: { children: "A" } },
+        b: { type: "em", props: { children: "B" } },
+      },
+    };
+    render(<ShinyjsonRenderer spec={spec} />);
+
+    const arr = observedChildren as unknown as React.ReactElement[];
+    expect(Array.isArray(arr)).toBe(true);
+    expect(arr).toHaveLength(2);
+    expect(arr[0].type).toBe("span");
+    expect(arr[1].type).toBe("em");
+  });
+
   it("renders nothing when an id reference is missing", () => {
     const spec: Spec = {
       root: "root",

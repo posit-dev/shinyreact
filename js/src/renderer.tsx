@@ -11,18 +11,14 @@ function renderNode(
   if (!el) return null;
 
   const childIds = el.children ?? [];
-  const children = childIds.map((cid) => (
-    <React.Fragment key={cid}>
-      {renderNode(cid, spec, registry)}
-    </React.Fragment>
-  ));
+  const children = childIds.map((cid) => renderNode(cid, spec, registry));
 
   const Registered = registry[el.type];
   if (Registered) {
-    return React.createElement(Registered, { element: el, children });
+    return React.createElement(Registered, { element: el, children, key: id });
   }
 
-  return React.createElement(el.type, el.props, ...children);
+  return React.createElement(el.type, { ...el.props, key: id }, ...children);
 }
 
 interface ShinyjsonRendererProps {
