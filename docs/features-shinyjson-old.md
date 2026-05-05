@@ -1,6 +1,6 @@
 # Features — `shinyjsonold` (JSON-spec)
 
-The original `shinyjson` package, renamed to `shinyjsonold`. Server emits JSON specs that the client renders via `@json-render/react`. Lives at `pkg-py/src/shinyjsonold/`. Examples 1–9 use this package. See `features.md` for the new SPA-first `shinyjson`.
+The original `shinyjson` package, renamed to `shinyjsonold`. Server emits JSON specs that the client renders into a React tree using `shinyjson`'s in-house Spec walker (`js/src/renderer.tsx`). Lives at `pkg-py/src/shinyjsonold/`. Examples 1–9 use this package. See `features.md` for the new SPA-first `shinyjson`.
 
 ## Python public API (`pkg-py/src/shinyjsonold/`)
 

@@ -44,9 +44,9 @@ Each of these is loaded into every shinyjson page and is functionally redundant 
 
 ### What is genuinely useful but unused today
 
-- **`ValidationProvider` / `useFieldValidation`** — client-side form validation with touched/validated/result state, custom catalog-defined validation functions, and field-level lifecycle hooks. Shiny's server-side validation works but pays a websocket round-trip per keystroke; client-side field validation is the kind of capability a downstream `shinyshadcn`-style forms package would plausibly want. We don't use it today, but it's the one part of the dep that isn't trivially redundant with Shiny's own model.
+- **`ValidationProvider` / `useFieldValidation`** — client-side form validation with touched/validated/result state, custom catalog-defined validation functions, and field-level lifecycle hooks. It is the one part of the dep that isn't trivially redundant with Shiny's own model.
 
-  This is a real cost of dropping the dep. Mitigations: (a) most downstream form packages will want their own validation primitives anyway (zod, react-hook-form, etc.) and won't rely on json-render's; (b) if we later need it, ~150 LOC of context + hook code can be vendored from json-render's source under its Apache-2.0 license without re-adding the entire dep.
+  We are not preserving it. Client-side validation is a downstream concern: form packages built on top of `shinyjson` will use their own primitives (zod, react-hook-form, etc.) and shouldn't depend on a validation system shipped by the renderer. See "Non-goals" below.
 
 ## Proposal
 
@@ -82,6 +82,11 @@ function renderNode(id: string, spec: Spec, registry: Registry): ReactNode {
 - `@json-render/core`
 - `@json-render/react`
 - The transitive bundle weight of state/action/validation/streaming subsystems.
+
+### Non-goals
+
+- **Client-side form validation primitives.** `shinyjson` will not ship `ValidationProvider`, `useFieldValidation`, or any equivalent — neither by keeping the dep, nor by vendoring its source. Downstream form packages own their validation story (zod, react-hook-form, etc.). Server-side validation via Shiny's existing reactive model remains available and unchanged.
+- **Client-side shared state between components.** See the "Future direction" section — a deliberate non-goal for this proposal, revisited only when a concrete use case surfaces.
 
 ## Approach options
 
