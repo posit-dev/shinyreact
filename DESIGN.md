@@ -273,17 +273,7 @@ At minimum, that pipeline should include:
 
 ### Bookmarking and initial state
 
-Today, Shiny's bookmarking works by re-executing the UI function on every page request, injecting bookmarked values directly into the HTML before it reaches the browser (e.g., a text input arrives with `value="hello"` already set). A static `index.html` bypasses this entirely — the HTML is served as-is with default values regardless of the URL.
-
-The good news is that much of the plumbing already exists. The client already sends `window.location.search` to the server via the websocket `init` message, and the server already parses it into a `RestoreContext`. The missing piece is a new message direction: the server sending restored input values back to the client after parsing the bookmark state. The flow becomes:
-
-1. Client loads static `index.html` with default values
-2. Client sends URL query string to server via websocket init (already works)
-3. Server parses the bookmark state into a `RestoreContext` (already works)
-4. Server sends an init message back with restored input values (new)
-5. Client applies the restored values to React state (new)
-
-This is not a redesign — it is adding one new message to a flow that is already partially built. Both the URL-encoded (`?_inputs_&...`) and server-stored (`?_state_id_=...`) bookmark modes should be supportable through this mechanism.
+A static `index.html` bypasses Shiny's HTML-injection bookmarking, so restored values must instead flow back over the websocket: the server parses the URL query string from the existing `init` message and sends restored inputs back for the client to apply to React state. Tracked in [#27](https://github.com/posit-dev/shinyjson/issues/27).
 
 ### Migration path for existing Shiny apps
 
@@ -295,18 +285,7 @@ In SPA-first apps, `shiny run` should explicitly disable HTMLDependency injectio
 
 ### Shiny client runtime as an npm package
 
-Today, `shiny.js` (the client runtime that establishes the websocket, manages input/output bindings, etc.) is embedded inside the Python and R packages and injected via HTMLDependency at serve time. It is not available as an npm package. In the SPA-first world, the client needs to explicitly depend on the Shiny runtime — it must appear in `package.json` and be importable by the bundler. This requires publishing `shiny.js` as an npm package (e.g., `@posit/shiny`). This is a significant upstream ask to the Shiny team.
-
-Similarly, the `shiny-react` bridge hooks (currently vendored in this repo) need to be published as `@posit/shiny-react`. The dependency chain becomes:
-
-```
-app's package.json
-  → @posit/shiny-react (bridge hooks)
-    → @posit/shiny (client runtime — websocket, input/output bindings)
-    → react, react-dom
-```
-
-This eliminates the current fragile pattern of IIFE bundles, `window.shinyjson` globals, and shared React instances to avoid duplicates. With proper npm packages, the bundler handles dependency deduplication natively.
+`shiny.js` and the `shiny-react` bridge hooks need to be published as `@posit/shiny` and `@posit/shiny-react` so SPA bundlers can resolve them via `package.json` instead of HTMLDependency injection — replacing IIFE bundles, `window.shinyjson` globals, and ad-hoc React deduplication. Significant upstream ask to the Shiny team. Tracked in [#28](https://github.com/posit-dev/shinyjson/issues/28).
 
 ### `shiny run` build integration
 
