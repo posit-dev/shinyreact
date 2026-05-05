@@ -2,6 +2,8 @@
 
 JSON-driven React rendering infrastructure for [Shiny](https://shiny.posit.co/py/). shinyjson provides the plumbing that lets downstream packages (like `shinyshadcn`) deliver React component trees from Python — it ships zero UI components itself.
 
+Not sure whether to use the traditional pattern or the SPA pattern? See [`docs/spa-vs-traditional.md`](docs/spa-vs-traditional.md).
+
 ## How it works
 
 1. Python server code builds a **Spec** — a flat map of elements with a root ID
