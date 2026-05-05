@@ -33,4 +33,11 @@ function getRegistry(): ComponentRegistry {
   return _registry;
 }
 
-export { registerComponents, getRegistry };
+/**
+ * Reset the registry. Test-only; not part of the public API.
+ */
+function _resetForTests(): void {
+  _registry = {};
+}
+
+export { registerComponents, getRegistry, _resetForTests };
