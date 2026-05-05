@@ -9,15 +9,15 @@ export default defineConfig({
   build: {
     lib: {
       entry: "src/index.ts",
-      name: "shinyjson",
+      name: "shinyreact",
       formats: ["iife"],
-      fileName: () => "shinyjson.js",
+      fileName: () => "shinyreact.js",
     },
     outDir: "dist",
     rollupOptions: {
       // Bundle everything including React — no externals
       output: {
-        assetFileNames: "shinyjson.[ext]",
+        assetFileNames: "shinyreact.[ext]",
       },
     },
   },

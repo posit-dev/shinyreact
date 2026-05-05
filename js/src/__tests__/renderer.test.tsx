@@ -3,14 +3,14 @@ import { render } from "@testing-library/react";
 import React from "react";
 import type { Spec } from "../spec";
 import { registerComponents, _resetForTests } from "../registry";
-import { ShinyjsonRenderer } from "../renderer";
+import { ShinyreactRenderer } from "../renderer";
 
 // Tests in this file rely on a clean registry between cases.
 beforeEach(() => {
   _resetForTests();
 });
 
-describe("ShinyjsonRenderer", () => {
+describe("ShinyreactRenderer", () => {
   it("renders a single intrinsic element with text props", () => {
     const spec: Spec = {
       root: "a",
@@ -18,7 +18,7 @@ describe("ShinyjsonRenderer", () => {
         a: { type: "div", props: { className: "hi", children: "hello" } },
       },
     };
-    const { container } = render(<ShinyjsonRenderer spec={spec} />);
+    const { container } = render(<ShinyreactRenderer spec={spec} />);
     expect(container.innerHTML).toBe('<div class="hi">hello</div>');
   });
 
@@ -31,7 +31,7 @@ describe("ShinyjsonRenderer", () => {
         c2: { type: "span", props: { children: "two" } },
       },
     };
-    const { container } = render(<ShinyjsonRenderer spec={spec} />);
+    const { container } = render(<ShinyreactRenderer spec={spec} />);
     expect(container.innerHTML).toBe(
       "<div><span>one</span><span>two</span></div>",
     );
@@ -56,7 +56,7 @@ describe("ShinyjsonRenderer", () => {
         leaf: { type: "span", props: { children: "inside" } },
       },
     };
-    const { container } = render(<ShinyjsonRenderer spec={spec} />);
+    const { container } = render(<ShinyreactRenderer spec={spec} />);
     expect(container.innerHTML).toBe(
       '<section data-label="outer"><span>inside</span></section>',
     );
@@ -78,7 +78,7 @@ describe("ShinyjsonRenderer", () => {
         b: { type: "em", props: { children: "B" } },
       },
     };
-    render(<ShinyjsonRenderer spec={spec} />);
+    render(<ShinyreactRenderer spec={spec} />);
 
     const arr = observedChildren as unknown as React.ReactElement[];
     expect(Array.isArray(arr)).toBe(true);
@@ -94,7 +94,7 @@ describe("ShinyjsonRenderer", () => {
         root: { type: "div", props: {}, children: ["missing"] },
       },
     };
-    const { container } = render(<ShinyjsonRenderer spec={spec} />);
+    const { container } = render(<ShinyreactRenderer spec={spec} />);
     expect(container.innerHTML).toBe("<div></div>");
   });
 
@@ -105,7 +105,7 @@ describe("ShinyjsonRenderer", () => {
         root: { type: "div", props: { className: "x" } },
       },
     };
-    const { container } = render(<ShinyjsonRenderer spec={spec} />);
+    const { container } = render(<ShinyreactRenderer spec={spec} />);
     expect(container.innerHTML).toBe('<div class="x"></div>');
   });
 });

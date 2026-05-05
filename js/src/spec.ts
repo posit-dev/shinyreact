@@ -37,7 +37,7 @@ export interface RegisteredComponentProps {
 
 /**
  * Map of component name → React component. Populated by downstream packages
- * via `window.shinyjson.registerComponents()`.
+ * via `window.shinyreact.registerComponents()`.
  */
 export type ComponentRegistry = Record<
   string,

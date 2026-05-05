@@ -3,15 +3,15 @@ import * as ReactDOM from "react-dom/client";
 import { createRoot, type Root } from "react-dom/client";
 import type { ComponentRegistry, Spec } from "./spec";
 import { registerComponents } from "./registry";
-import { ShinyjsonRenderer } from "./renderer";
-import "./shinyjson.css";
+import { ShinyreactRenderer } from "./renderer";
+import "./shinyreact.css";
 
 // Re-export @posit/shiny-react hooks and components.
 //
 // We bundle @posit/shiny-react and React into this single IIFE so that:
 // 1. All code shares a single React instance (React hooks break with multiple Reacts)
-// 2. Downstream component authors get hooks via window.shinyjson.*
-// 3. Downstream ESM builds can externalize React to window.shinyjson.React/ReactDOM
+// 2. Downstream component authors get hooks via window.shinyreact.*
+// 3. Downstream ESM builds can externalize React to window.shinyreact.React/ReactDOM
 import {
   useShinyBusy,
   useShinyInput,
@@ -24,10 +24,10 @@ import {
   ShinyReactComponentElement,
 } from "./shiny-react";
 
-// Extend window with shinyjson's public global API
+// Extend window with shinyreact's public global API
 declare global {
   interface Window {
-    shinyjson: {
+    shinyreact: {
       registerComponents: (
         catalog: unknown,
         registry: ComponentRegistry,
@@ -48,7 +48,7 @@ declare global {
 }
 
 // Expose global API — called by downstream packages at page load
-window.shinyjson = {
+window.shinyreact = {
   registerComponents,
   useShinyBusy,
   useShinyInput,
@@ -73,10 +73,10 @@ function getOrCreateRoot(el: HTMLElement): Root {
   return roots.get(el)!;
 }
 
-// Shiny output binding for .shinyjson-output elements
-class ShinyjsonOutputBinding extends Shiny.OutputBinding {
+// Shiny output binding for .shinyreact-output elements
+class ShinyreactOutputBinding extends Shiny.OutputBinding {
   find(scope: Element): ArrayLike<Element> {
-    return $(scope).find(".shinyjson-output");
+    return $(scope).find(".shinyreact-output");
   }
 
   renderValue(el: Element, data: Spec | null): void {
@@ -89,7 +89,7 @@ class ShinyjsonOutputBinding extends Shiny.OutputBinding {
       return;
     }
     const root = getOrCreateRoot(el as HTMLElement);
-    root.render(React.createElement(ShinyjsonRenderer, { spec: data }));
+    root.render(React.createElement(ShinyreactRenderer, { spec: data }));
   }
 
   renderError(el: Element, err: { message: string }): void {
@@ -106,4 +106,4 @@ class ShinyjsonOutputBinding extends Shiny.OutputBinding {
 
 // Register with Shiny — Shiny is always loaded before this script
 // because HTMLDependency ordering places Shiny's scripts first.
-Shiny.outputBindings.register(new ShinyjsonOutputBinding(), "shinyjson.output");
+Shiny.outputBindings.register(new ShinyreactOutputBinding(), "shinyreact.output");
