@@ -1,8 +1,7 @@
 import React from "react";
 import * as ReactDOM from "react-dom/client";
 import { createRoot, type Root } from "react-dom/client";
-import type { Spec } from "@json-render/core";
-import type { ComponentRegistry } from "@json-render/react";
+import type { ComponentRegistry, Spec } from "./spec";
 import { registerComponents } from "./registry";
 import { ShinyjsonRenderer } from "./renderer";
 import "./shinyjson.css";
