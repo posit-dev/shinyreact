@@ -6,7 +6,6 @@ and shinyjsonold.render (Spec/Node flattening + auto_output_ui).
 from __future__ import annotations
 
 import pytest
-
 from shinyreact import Element, Node, Spec, reactive_output
 
 

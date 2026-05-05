@@ -5,7 +5,6 @@ import unittest.mock
 from unittest.mock import AsyncMock
 
 import pytest
-
 from shinyreact import send_message
 
 
