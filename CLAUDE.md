@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `shinyreact` is a monorepo providing Shiny UI infrastructure for JSON-driven React rendering. It provides zero UI components — it is pure plumbing for downstream packages (e.g. `shinyshadcn`) to build on top of.
 
-Two first-class patterns ship from this repo: the **traditional pattern** (`page_react` + `reactive_output`, server describes UI as a JSON spec) and the **SPA pattern** (`SpaApp`, server contains only reactive computation and the client is a static React app). See `DESIGN.md` and `docs/spa-vs-traditional.md` for context.
+Two first-class patterns ship from this repo: the **traditional pattern** (`page_react` + `reactive_output`, server describes UI as a JSON spec) and the **SPA pattern** (`ReactApp`, server contains only reactive computation and the client is a static React app). See `DESIGN.md` and `docs/spa-vs-traditional.md` for context.
 
 ## Repo structure
 
@@ -16,7 +16,7 @@ js/                         # TypeScript/React Vite IIFE bundle
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
 pkg-py/                     # Python package
-  src/shinyreact/           # Package: SpaApp, reactive_output, page_react, Spec/Element/Node
+  src/shinyreact/           # Package: ReactApp, reactive_output, page_react, Spec/Element/Node
     www/                    # Bundled JS
   tests/                    # pytest tests
 pkg-r/                      # R package (placeholder — not yet implemented)
@@ -84,7 +84,7 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 - `shinyreact.Spec(root, elements)` / `shinyreact.Element(type, props, children)` — the data model sent to the browser (traditional pattern)
 - `shinyreact.Node` — nested tree API; `.to_spec()` auto-flattens to `Spec`
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
-- `shinyreact.SpaApp(server)` — SPA pattern app wrapper that serves a static `www/` directory alongside the Shiny server
+- `shinyreact.ReactApp(server)` — SPA pattern app wrapper that serves a static `www/` directory alongside the Shiny server
 
 ### Downstream package pattern
 

@@ -1,5 +1,5 @@
 from shiny import reactive
-from shinyreact import SpaApp, reactive_output
+from shinyreact import ReactApp, reactive_output
 
 
 def server(input, output, session):  # noqa: ARG001
@@ -19,4 +19,4 @@ def server(input, output, session):  # noqa: ARG001
         return input.click_count()
 
 
-app = SpaApp(server)
+app = ReactApp(server)

@@ -24,7 +24,7 @@ The two plots draw the same data so you can see the trade-off directly:
 
 ```
 examples/16-shadcn/
-├── app.py                          # SpaApp + outputs (4 reactive_output + 1 render.plot)
+├── app.py                          # ReactApp + outputs (4 reactive_output + 1 render.plot)
 ├── package.json
 ├── vite.config.js                  # lib-mode IIFE; React externalized to window.shinyreact
 ├── README.md

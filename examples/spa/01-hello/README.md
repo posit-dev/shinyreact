@@ -15,7 +15,7 @@ The point is that the same data shows up on both cards but the latency is visibl
 
 ```
 examples/13-spa-hello/
-├── app.py            # SpaApp + 2 reactive_output outputs (greeting, click count)
+├── app.py            # ReactApp + 2 reactive_output outputs (greeting, click count)
 └── www/
     ├── index.html    # 3 lines: stylesheet, #root div, script
     ├── app.js        # raw React.createElement (with `h` shorthand)
@@ -26,7 +26,7 @@ Four files. No `node_modules`, no Vite, no build script.
 
 ## Bridge primitives used
 
-- `from shinyreact import SpaApp, reactive_output` (server)
+- `from shinyreact import ReactApp, reactive_output` (server)
 - `window.shinyreact.useShinyInput(id, default, options?)` for the name field and click counter
 - `window.shinyreact.useShinyOutput(id, default)` for the server-computed title and count
 - `window.shinyreact.useShinyInitialized()` to suppress the placeholder UI during connection setup
