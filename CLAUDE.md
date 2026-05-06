@@ -95,10 +95,10 @@ Downstream packages (e.g. `shinyshadcn`) extend shinyreact by:
 3. **Python render subclass:**
    ```python
    class render(shinyreact.reactive_output):
-       extra_deps = [my_html_dependency()]
        async def transform(self, value: MyComponent) -> Any:
            return value.to_spec().to_dict()
    ```
+   Inject the package's `HTMLDependency` on the UI side via `shinyreact.ui_output(id, extra_deps=[...])` (step 2) — `reactive_output` does not read an `extra_deps` class attribute.
 
 ### Built assets
 

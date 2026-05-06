@@ -109,11 +109,11 @@ shinyreact.ui_output("my_output", extra_deps=[my_html_dependency()])
 
 ```python
 class render(shinyreact.reactive_output):
-    extra_deps = [my_html_dependency()]
-
     async def transform(self, value: MyComponent) -> Any:
         return value.to_spec().to_dict()
 ```
+
+Inject your package's `HTMLDependency` on the UI side via `shinyreact.ui_output(id, extra_deps=[...])` (see step 2).
 
 ### JS hooks available via `window.shinyreact`
 
