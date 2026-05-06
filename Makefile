@@ -59,7 +59,7 @@ js-test:  ## [js] Run JS tests
 
 
 .PHONY: update-dist
-update-dist: js-build r-update-dist py-update-dist  ## Update shinyjson web assets in all packages
+update-dist: js-build r-update-dist py-update-dist  ## Update shinyreact web assets in all packages
 
 
 .PHONY: r-setup
@@ -98,15 +98,15 @@ r-check-format:  ## [r] Check format
 	air format --check $(PATH_PKG_R)/
 
 .PHONY: r-update-dist
-r-update-dist: ## [r] Update shinyjson web assets
+r-update-dist: ## [r] Update shinyreact web assets
 	@echo ""
-	@echo "🔄 Updating shinyjson web assets"
+	@echo "🔄 Updating shinyreact web assets"
 	if [ -d $(PATH_PKG_R)/inst/lib/shiny ]; then \
 		rm -rf $(PATH_PKG_R)/inst/lib/shiny; \
 	fi
 	mkdir -p $(PATH_PKG_R)/inst/lib/shiny
-	cp $(PATH_PKG_JS)/dist/shinyjson.js $(PATH_PKG_R)/inst/lib/shiny/
-	cp $(PATH_PKG_JS)/dist/shinyjson.css $(PATH_PKG_R)/inst/lib/shiny/
+	cp $(PATH_PKG_JS)/dist/shinyreact.js $(PATH_PKG_R)/inst/lib/shiny/
+	cp $(PATH_PKG_JS)/dist/shinyreact.css $(PATH_PKG_R)/inst/lib/shiny/
 	(git rev-parse HEAD) > "$(PATH_PKG_R)/inst/lib/shiny/GIT_VERSION"
 
 .PHONY: r-docs-render
@@ -215,18 +215,16 @@ py-build:   ## [py] Build python package
 	uv build
 
 .PHONY: py-update-dist
-py-update-dist: ## [py] Update shinyjson + shinyjsonold web assets
+py-update-dist: ## [py] Update shinyreact web assets
 	@echo ""
-	@echo "🔄 Updating shinyjson + shinyjsonold web assets"
-	for pkg in shinyjson shinyjsonold; do \
-		if [ -d $(PATH_PKG_PY)/src/$$pkg/www ]; then \
-			rm -rf $(PATH_PKG_PY)/src/$$pkg/www; \
-		fi; \
-		mkdir -p $(PATH_PKG_PY)/src/$$pkg/www; \
-		cp $(PATH_PKG_JS)/dist/shinyjson.js $(PATH_PKG_PY)/src/$$pkg/www/; \
-		cp $(PATH_PKG_JS)/dist/shinyjson.css $(PATH_PKG_PY)/src/$$pkg/www/; \
-		(git rev-parse HEAD) > "$(PATH_PKG_PY)/src/$$pkg/www/GIT_VERSION"; \
-	done
+	@echo "🔄 Updating shinyreact web assets"
+	if [ -d $(PATH_PKG_PY)/src/shinyreact/www ]; then \
+		rm -rf $(PATH_PKG_PY)/src/shinyreact/www; \
+	fi
+	mkdir -p $(PATH_PKG_PY)/src/shinyreact/www
+	cp $(PATH_PKG_JS)/dist/shinyreact.js $(PATH_PKG_PY)/src/shinyreact/www/
+	cp $(PATH_PKG_JS)/dist/shinyreact.css $(PATH_PKG_PY)/src/shinyreact/www/
+	(git rev-parse HEAD) > "$(PATH_PKG_PY)/src/shinyreact/www/GIT_VERSION"
 
 
 .PHONY: pre-commit-setup

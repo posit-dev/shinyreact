@@ -1,0 +1,7 @@
+/* shinyreact base styles — downstream packages provide component CSS */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

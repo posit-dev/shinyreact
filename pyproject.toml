@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "shinyjson"
+name = "shinyreact"
 version = "0.1.0"
-description = "Shiny UI infrastructure for JSON-based component rendering"
+description = "Shiny UI infrastructure for React-based component rendering"
 requires-python = ">=3.10"
 dependencies = [
     "shiny>=1.2.0",
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pkg-py/src/shinyjson", "pkg-py/src/shinyjsonold"]
+packages = ["pkg-py/src/shinyreact"]
 
 [dependency-groups]
 examples = [
@@ -35,7 +35,7 @@ dev = [
 ]
 
 [tool.pyright]
-include = ["pkg-py/src/shinyjson", "pkg-py/src/shinyjsonold"]
+include = ["pkg-py/src/shinyreact"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
 

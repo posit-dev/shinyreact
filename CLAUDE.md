@@ -4,26 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`shinyjson` is a monorepo providing Shiny UI infrastructure for JSON-driven React rendering. It provides zero UI components — it is pure plumbing for downstream packages (e.g. `shinyshadcn`) to build on top of.
+`shinyreact` is a monorepo providing Shiny UI infrastructure for JSON-driven React rendering. It provides zero UI components — it is pure plumbing for downstream packages (e.g. `shinyshadcn`) to build on top of.
 
-Two parallel Python packages now ship from this repo: the new SPA-first `shinyjson` (`SpaApp`, `render_json`) and the original JSON-spec `shinyjsonold`. See `DESIGN.md` and `docs/superpowers/specs/2026-04-28-shinyjson-spa-split-design.md` for context.
+Two first-class patterns ship from this repo: the **traditional pattern** (`page_react` + `reactive_output`, server describes UI as a JSON spec) and the **SPA pattern** (`SpaApp`, server contains only reactive computation and the client is a static React app). See `DESIGN.md` and `docs/spa-vs-traditional.md` for context.
 
 ## Repo structure
 
 ```
 js/                         # TypeScript/React Vite IIFE bundle
-  src/                      # index.ts, registry.ts, renderer.tsx, shiny.d.ts, shinyjson.css
+  src/                      # index.ts, registry.ts, renderer.tsx, shiny.d.ts, shinyreact.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
-pkg-py/                         # Python packages
-  src/shinyjson/                # NEW SPA-first package: SpaApp, render_json
-    www/                        # Bundled JS
-  src/shinyjsonold/             # Original JSON-spec package
-    _spec.py, _output.py, _render.py, _post_message.py, _page_react.py, www/
-  tests/                        # pytest tests for new shinyjson
-  tests/old/                    # pytest tests for shinyjsonold
+pkg-py/                     # Python package
+  src/shinyreact/           # Package: SpaApp, reactive_output, page_react, Spec/Element/Node
+    www/                    # Bundled JS
+  tests/                    # pytest tests
 pkg-r/                      # R package (placeholder — not yet implemented)
-docs/                       # todos.md, features.md, features-shinyjson-old.md, TIMELINE.md, plans/
+examples/
+  traditional/              # Traditional pattern examples (01-hello-world … 10-columns)
+  spa/                      # SPA pattern examples (01-hello … 05-temperature)
+docs/                       # todos.md, features.md, spa-vs-traditional.md, TIMELINE.md
 decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
@@ -57,7 +57,7 @@ make r-check                         # format + tests + R CMD Check
 make r-format                        # air format
 
 # Run a single Python test
-uv run pytest pkg-py/tests/old/test_spec.py::test_name
+uv run pytest pkg-py/tests/test_spec.py::test_name
 
 # Update test snapshots
 make py-update-snaps
@@ -69,41 +69,44 @@ Run `make help` to see all targets.
 
 ### JS bundle
 
-The JS output (`js/dist/shinyjson.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`. It registers a Shiny `OutputBinding` that finds `.shinyjson-output` elements and renders JSON specs as React component trees using an in-house recursive walker (`js/src/renderer.tsx` + `js/src/spec.ts`).
+The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`. It registers a Shiny `OutputBinding` that finds `.shinyreact-output` elements and renders JSON specs as React component trees using an in-house recursive walker (`js/src/renderer.tsx` + `js/src/spec.ts`).
 
-**Global API exposed at `window.shinyjson`:**
+**Global API exposed at `window.shinyreact`:**
 - `registerComponents(catalog, registry)` — downstream packages call this at page load to register their React components
 - `useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`, `useShinyInitialized` — re-exported shiny-react hooks
 - `React`, `ReactDOM` — shared instances (downstream ESM builds should externalize to these to avoid duplicate React)
 
 ### Python package
 
-- `shinyjson.ui(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyjson-output">` with the shinyjson HTMLDependency
-- `@shinyjson.render` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutput()` hooks
-- `shinyjson.Spec(root, elements)` / `shinyjson.Element(type, props, children)` — the data model sent to the browser
-- `shinyjson.post_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
+- `shinyreact.ui_output(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyreact-output">` with the shinyreact HTMLDependency
+- `shinyreact.page_react(...)` — full-page React app with `#root` + the shinyreact HTMLDependency
+- `@shinyreact.reactive_output` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutput()` hooks
+- `shinyreact.Spec(root, elements)` / `shinyreact.Element(type, props, children)` — the data model sent to the browser (traditional pattern)
+- `shinyreact.Node` — nested tree API; `.to_spec()` auto-flattens to `Spec`
+- `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
+- `shinyreact.SpaApp(server)` — SPA pattern app wrapper that serves a static `www/` directory alongside the Shiny server
 
 ### Downstream package pattern
 
-Downstream packages (e.g. `shinyshadcn`) extend shinyjson by:
+Downstream packages (e.g. `shinyshadcn`) extend shinyreact by:
 
-1. **JS:** own IIFE bundle that calls `window.shinyjson.registerComponents(catalog, registry)` at load time
-2. **Python UI:** `shinyjson.ui(id, extra_deps=[my_dep()])`
+1. **JS:** own IIFE bundle that calls `window.shinyreact.registerComponents(catalog, registry)` at load time
+2. **Python UI:** `shinyreact.ui_output(id, extra_deps=[my_dep()])`
 3. **Python render subclass:**
    ```python
-   class render(shinyjson.render):
-       extra_deps = [my_html_dependency()]
+   class render(shinyreact.reactive_output):
        async def transform(self, value: MyComponent) -> Any:
            return value.to_spec().to_dict()
    ```
+   Inject the package's `HTMLDependency` on the UI side via `shinyreact.ui_output(id, extra_deps=[...])` (step 2) — `reactive_output` does not read an `extra_deps` class attribute.
 
 ### Built assets
 
-`js/dist/` and `pkg-py/src/shinyjson/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
+`js/dist/` and `pkg-py/src/shinyreact/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
 
 ### Build backend
 
-`pyproject.toml` uses hatchling (not uv_build) because the package source lives at `pkg-py/src/shinyjson/` — a non-standard path that requires explicit hatchling configuration.
+`pyproject.toml` uses hatchling (not uv_build) because the package source lives at `pkg-py/src/shinyreact/` — a non-standard path that requires explicit hatchling configuration.
 
 ## Common patterns
 
@@ -137,7 +140,7 @@ function handleClick() { setCount(count + 1); }
 
 **Python:**
 ```python
-@shinyjson.render
+@shinyreact.reactive_output
 @reactive.event(input.my_button, ignore_init=True)
 def button_response():
     return f"Clicked {input.my_button()} times"
@@ -160,13 +163,12 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 - **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
 - **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
 
-## docs/todos.md, features.md, features-shinyjson-old.md
+## docs/todos.md, features.md
 
-These three files replace the old `STATUS.md`. Keep them up to date:
+These files are the primary documentation source:
 
 - **`docs/todos.md`** — known issues and open work. Add new entries with a descriptive heading and explanation. Remove entries when fixed (no "recent fixes" log — git history is the record). Prefer a GitHub issue for substantive work and link it from here.
-- **`docs/features.md`** — feature inventory for the new SPA-first `shinyjson` (`SpaApp`, `render_json`, JS bridge hooks, examples 13–16).
-- **`docs/features-shinyjson-old.md`** — feature inventory for the legacy JSON-spec `shinyjsonold` package (examples 1–12).
+- **`docs/features.md`** — feature inventory for both the traditional pattern and the SPA pattern; JS bridge hooks; examples.
 - Keep entries concise. TODOs describe the problem and constraints; feature tables describe what exists today.
 
 ## Key decisions

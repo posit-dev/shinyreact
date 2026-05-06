@@ -3,9 +3,9 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^(js/dist/|pkg-py/src/shinyjson/www/|pkg-r/inst/lib/shiny/)
+        exclude: ^(js/dist/|pkg-py/src/shinyreact/www/|pkg-r/inst/lib/shiny/)
       - id: end-of-file-fixer
-        exclude: ^(js/dist/|pkg-py/src/shinyjson/www/|pkg-r/inst/lib/shiny/)
+        exclude: ^(js/dist/|pkg-py/src/shinyreact/www/|pkg-r/inst/lib/shiny/)
       - id: check-yaml
       - id: check-merge-conflict
       - id: check-added-large-files

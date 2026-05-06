@@ -21,7 +21,7 @@ function renderNode(
   return React.createElement(el.type, { ...el.props, key: id }, ...children);
 }
 
-interface ShinyjsonRendererProps {
+interface ShinyreactRendererProps {
   spec: Spec;
 }
 
@@ -30,9 +30,9 @@ interface ShinyjsonRendererProps {
  * at render time so any components registered before the render lands are
  * picked up.
  */
-function ShinyjsonRenderer({ spec }: ShinyjsonRendererProps) {
+function ShinyreactRenderer({ spec }: ShinyreactRendererProps) {
   const registry = getRegistry();
   return <>{renderNode(spec.root, spec, registry)}</>;
 }
 
-export { ShinyjsonRenderer };
+export { ShinyreactRenderer };

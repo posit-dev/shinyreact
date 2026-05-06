@@ -1,12 +1,12 @@
 import type { ComponentRegistry } from "./spec";
 
 // Accumulated component registry — populated by downstream packages calling
-// window.shinyjson.registerComponents() at page load.
+// window.shinyreact.registerComponents() at page load.
 let _registry: ComponentRegistry = {};
 
 /**
  * Register components from a downstream package (e.g. shinyshadcn).
- * Called via window.shinyjson.registerComponents(catalog, registry).
+ * Called via window.shinyreact.registerComponents(catalog, registry).
  *
  * @param _catalog - Catalog definition (reserved for future validation)
  * @param registry - Map of component name → React component
@@ -18,7 +18,7 @@ function registerComponents(
   for (const key of Object.keys(registry)) {
     if (key in _registry) {
       console.warn(
-        `[shinyjson] Component "${key}" is being re-registered. ` +
+        `[shinyreact] Component "${key}" is being re-registered. ` +
           `The previous registration will be overwritten.`,
       );
     }

@@ -4,7 +4,7 @@ import type { ComponentType, ReactNode } from "react";
  * A single node in a Spec. `children` is a list of element IDs (strings) that
  * reference other entries in the parent Spec's `elements` map.
  *
- * Mirrors the Python dataclass in `pkg-py/src/shinyjsonold/_spec.py`.
+ * Mirrors the Python dataclass in `pkg-py/src/shinyreact/_spec.py`.
  */
 export interface Element {
   type: string;
@@ -37,7 +37,7 @@ export interface RegisteredComponentProps {
 
 /**
  * Map of component name → React component. Populated by downstream packages
- * via `window.shinyjson.registerComponents()`.
+ * via `window.shinyreact.registerComponents()`.
  */
 export type ComponentRegistry = Record<
   string,
