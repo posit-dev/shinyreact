@@ -4,19 +4,11 @@ import inspect
 from pathlib import Path
 from typing import Any, Callable
 
-from htmltools import HTML, HTMLDependency, TagList
+from htmltools import HTML, TagList
 from shiny import App
 from shiny.session import Inputs, Outputs, Session
 
-
-def _dep() -> HTMLDependency:
-    return HTMLDependency(
-        name="shinyreact",
-        version="0.1.0",
-        source={"subdir": str(Path(__file__).parent / "www")},
-        script={"src": "shinyreact.js", "defer": ""},
-        stylesheet={"href": "shinyreact.css"},
-    )
+from ._output import _dep
 
 
 class SpaApp(App):
