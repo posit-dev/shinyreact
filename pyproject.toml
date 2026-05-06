@@ -32,6 +32,8 @@ dev = [
     "tox>=4.0.0",
     "tox-uv>=1.0.0",
     "pre-commit>=4.0.0",
+    "shinywidgets>=0.8.0",
+    "plotly>=6.7.0",
 ]
 
 [tool.pyright]

@@ -68,6 +68,7 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 | `useShinyBusy` | Working | App-wide busy/idle state hook |
 | `ShinyModuleProvider` | Working | Namespace support for module patterns |
 | `ImageOutput` | Working | Renders `@render.plot()` outputs; prop is `id` (not `outputId`) |
+| `ShinyOutput` | Working | Component that renders a container for traditional Shiny output bindings (`bindAll`/`unbindAll` lifecycle) |
 
 ### Examples
 
@@ -78,6 +79,8 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 | [03-columns-shadcn](../examples/spa/03-columns-shadcn/) | Working | Same drag-between-columns demo as 02, rendered with real shadcn/ui `Card` + `Button` and lucide-react icons. Vite lib-mode IIFE build with React externalized to `window.shinyreact`. Identical Python server to 02 |
 | [04-shadcn](../examples/spa/04-shadcn/) | Working | shadcn/ui + Tailwind v4 SPA. Mirrors `wch/shiny-react examples/5-shadcn` and adds a side-by-side matplotlib (`@render.plot` + `ImageOutput`) vs. Plotly (data-only via `@reactive_output`, client renders) comparison; Plotly hover/click/select events round-trip through `useShinyInput` |
 | [05-temperature](../examples/spa/05-temperature/) | Working | Temperature conversion SPA demonstrating simple reactive data flow |
+| [06-data-frame](../examples/spa/06-data-frame/) | Working | Embeds `@render.data_frame` in an Express SPA via `ShinyOutput` and `set_page()` |
+| [07-plotly](../examples/spa/07-plotly/) | Working | Embeds `@render_plotly` in an Express SPA via `ShinyOutput` and `set_page()` |
 
 ### Design decisions
 

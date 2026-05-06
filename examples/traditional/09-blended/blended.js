@@ -1,5 +1,5 @@
 // Blended example — sidebar layout with 3 tabbed panels mixing
-// React inputs (useShinyInput) and Shiny outputs (useShinyOutput, ImageOutput).
+// React inputs (useShinyInput) and render values (useShinyOutput, ImageOutput).
 (function () {
   var React = window.shinyreact.React;
   var h = React.createElement;

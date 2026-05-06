@@ -14,6 +14,15 @@ Known issues and open work items. See `features.md` for what already exists.
 - Documentation guidance on which renderers are appropriate in SPA mode.
 - Possibly a registry of "approved" renderers (`reactive_output`, `render.plot`, future `render.image`, etc.) with everything else flagged.
 
+## Clarify the two output paradigms in documentation
+
+SPA apps now have two distinct output mechanisms:
+
+- `@reactive_output` + `useShinyOutput(id)` — server sends pure data, React component renders it. Best for custom UI where the client owns presentation.
+- `<ShinyOutput id class />` — traditional Shiny output binding owns the container's DOM. Best for existing widget ecosystems (htmlwidgets, data-frame, etc.) where the binding handles rendering.
+
+Document guidance on when to use which. The principle remains: prefer `reactive_output` + client rendering when possible (avoids shipping pre-rendered HTML), but `ShinyOutput` is the legitimate path for leveraging existing output bindings without rewriting them as React components.
+
 ## 07-chat requires external API key
 
 The chat example requires `OPENAI_API_KEY` and the `chatlas` package. It cannot be smoke-tested without credentials. Consider adding a mock/echo mode for demo purposes.

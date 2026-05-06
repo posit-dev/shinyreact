@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import type { ComponentRegistry, Spec } from "./spec";
 import { registerComponents } from "./registry";
 import { ShinyreactRenderer } from "./renderer";
+import { ShinyOutput } from "./shiny-output";
 import "./shinyreact.css";
 
 // Re-export @posit/shiny-react hooks and components.
@@ -41,6 +42,7 @@ declare global {
       MISSING: typeof MISSING;
       ShinyModuleProvider: typeof ShinyModuleProvider;
       ShinyReactComponentElement: typeof ShinyReactComponentElement;
+      ShinyOutput: typeof ShinyOutput;
       React: typeof React;
       ReactDOM: typeof ReactDOM;
     };
@@ -59,6 +61,7 @@ window.shinyreact = {
   MISSING,
   ShinyModuleProvider,
   ShinyReactComponentElement,
+  ShinyOutput,
   React,
   ReactDOM,
 };
