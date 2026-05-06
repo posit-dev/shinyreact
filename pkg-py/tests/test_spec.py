@@ -113,18 +113,21 @@ def test_node_to_spec_deeply_nested():
     spec = node.to_spec()
     assert len(spec.elements) == 3
 
-    # Badge is deepest → auto_001, Card → auto_002, Page → auto_003
-    root_elem = spec.elements[spec.root]
+    # Counter increments before recursion, so keys are assigned in walk order:
+    # Page → auto_001, Card → auto_002, Badge → auto_003.
+    assert spec.root == "auto_001"
+    root_elem = spec.elements["auto_001"]
     assert root_elem.type == "Page"
+    assert root_elem.children == ["auto_002"]
 
-    card_key = root_elem.children[0]
-    card_elem = spec.elements[card_key]
+    card_elem = spec.elements["auto_002"]
     assert card_elem.type == "Card"
+    assert card_elem.children == ["auto_003"]
 
-    badge_key = card_elem.children[0]
-    badge_elem = spec.elements[badge_key]
+    badge_elem = spec.elements["auto_003"]
     assert badge_elem.type == "Badge"
     assert badge_elem.props == {"text": "#1"}
+    assert badge_elem.children == []
 
 
 def test_node_to_spec_produces_valid_spec_dict():
