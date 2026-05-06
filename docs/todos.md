@@ -4,7 +4,7 @@ Known issues and open work items. See `features.md` for what already exists.
 
 ## Safeguard `reactive_output` against use in non-SPA Shiny apps
 
-`shinyreact.reactive_output` is designed to deliver values to `useShinyOutput()` hooks inside a `ReactApp`. If used in a standard Shiny app (with `ui.output_text()` or other server-rendered UI elements), it will silently send a JSON payload that no client-side binding consumes. Add a runtime check (or session-level marker on `ReactApp`) so `reactive_output` errors clearly when used outside the SPA context.
+`shinyreact.reactive_output` is designed to deliver values to `useShinyOutput()` hooks inside a SPA app configured with `set_page()`. If used in a standard Shiny app (with `ui.output_text()` or other server-rendered UI elements), it will silently send a JSON payload that no client-side binding consumes. Add a runtime check (or session-level marker on `set_page()`) so `reactive_output` errors clearly when used outside the SPA context.
 
 ## Discourage non-`reactive_output` / non-plot renderers in SPA apps
 
