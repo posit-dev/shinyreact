@@ -65,7 +65,7 @@ def server(input, output, session):
     def greeting():
         return {"message": f"Hello, {input.name()}"}
 
-app = shinyreact.SpaApp(server)
+app = shinyreact.ReactApp(server)
 ```
 
 ### Sending messages to React components
@@ -131,7 +131,7 @@ Shared `React` and `ReactDOM` instances are also available at `window.shinyreact
 ## Architecture
 
 - **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`. Registers a Shiny `OutputBinding` for `.shinyreact-output` elements.
-- **Python package** (`pkg-py/`): `Spec` / `Element` / `Node` data model, `reactive_output` decorator, `ui_output()` + `page_react()` helpers, `SpaApp` wrapper, and `send_message()` for server-to-client communication.
+- **Python package** (`pkg-py/`): `Spec` / `Element` / `Node` data model, `reactive_output` decorator, `ui_output()` + `page_react()` helpers, `ReactApp` wrapper, and `send_message()` for server-to-client communication.
 - **R package** (`pkg-r/`): Placeholder — not yet implemented.
 
 ## Development

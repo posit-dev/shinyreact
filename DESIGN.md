@@ -9,7 +9,7 @@ AI changes the equation. When Claude can generate a complete React Single Page A
 This document was originally written to propose a SPA-first architecture as a new direction. **As of May 2026, `shinyreact` ships both patterns as first-class peers:**
 
 - **Traditional pattern** (`page_react` + `reactive_output`) — server describes UI as a JSON spec (`Spec`/`Element`/`Node`), the JS bundle renders it into a React tree. Authors work entirely in Python/R; no JS required.
-- **SPA pattern** (`SpaApp`) — server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutput` / `useShinyMessageHandler`. UI logic lives on the client.
+- **SPA pattern** (`ReactApp`) — server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutput` / `useShinyMessageHandler`. UI logic lives on the client.
 
 The tenets and analysis below describe the SPA-first reasoning that motivated the architecture. Both patterns coexist and neither is deprecated. See [`docs/spa-vs-traditional.md`](docs/spa-vs-traditional.md) for guidance on choosing between them.
 
@@ -278,7 +278,7 @@ At minimum, that pipeline should include:
 
 ### Bookmarking and initial state
 
-A static `index.html` bypasses Shiny's HTML-injection bookmarking, so restored values must instead flow back over the websocket: the server parses the URL query string from the existing `init` message and sends restored inputs back for the client to apply to React state. Tracked in [#27](https://github.com/posit-dev/shinyjson/issues/27).
+A static `index.html` bypasses Shiny's HTML-injection bookmarking, so restored values must instead flow back over the websocket: the server parses the URL query string from the existing `init` message and sends restored inputs back for the client to apply to React state. Tracked in [#27](https://github.com/posit-dev/shinyreact/issues/27).
 
 ### Migration path for existing Shiny apps
 
@@ -290,7 +290,7 @@ In SPA-first apps, `shiny run` should explicitly disable HTMLDependency injectio
 
 ### Shiny client runtime as an npm package
 
-`shiny.js` and the `shiny-react` bridge hooks need to be published as `@posit/shiny` and `@posit/shiny-react` so SPA bundlers can resolve them via `package.json` instead of HTMLDependency injection — replacing IIFE bundles, `window.shinyreact` globals, and ad-hoc React deduplication. Significant upstream ask to the Shiny team. Tracked in [#28](https://github.com/posit-dev/shinyjson/issues/28).
+`shiny.js` and the `shiny-react` bridge hooks need to be published as `@posit/shiny` and `@posit/shiny-react` so SPA bundlers can resolve them via `package.json` instead of HTMLDependency injection — replacing IIFE bundles, `window.shinyreact` globals, and ad-hoc React deduplication. Significant upstream ask to the Shiny team. Tracked in [#28](https://github.com/posit-dev/shinyreact/issues/28).
 
 ### `shiny run` build integration
 
@@ -321,10 +321,10 @@ The R package (`pkg-r/`) was planned for feature parity with the Python package.
 The SPA-first prototype proposed in this document has been built and validated. Both the SPA pattern and the traditional JSON spec pattern now ship in `shinyreact` as first-class peers. The open questions in Section 7 remain relevant — the items below reflect the current status:
 
 1. **Design tenets (Section 2) are the guiding principles.** Both patterns respect them: the app file contains server logic; the framework handles reactivity; the app is a polished product.
-2. **Both patterns are implemented and working.** The SPA pattern (`SpaApp`, `reactive_output`) and the traditional pattern (`page_react`, `reactive_output`, `Spec`/`Element`/`Node`) ship from the same package.
+2. **Both patterns are implemented and working.** The SPA pattern (`ReactApp`, `reactive_output`) and the traditional pattern (`page_react`, `reactive_output`, `Spec`/`Element`/`Node`) ship from the same package.
 3. **The JSON spec transfer layer is retained for the traditional pattern.** The `Spec`/`Element`/`Node` data model and the in-house renderer walker serve the traditional use case well. For SPA apps, the layer is bypassed — `reactive_output` sends raw JSON that the client renders directly.
 4. **The bridge library is stable.** `useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`, `ShinyModuleProvider`, and `ImageOutput` are vendored from `@posit/shiny-react` and re-exported on `window.shinyreact`.
-5. **Remaining open work** is tracked in [`docs/todos.md`](docs/todos.md) and the [GitHub issue tracker](https://github.com/posit-dev/shinyjson/issues).
+5. **Remaining open work** is tracked in [`docs/todos.md`](docs/todos.md) and the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues).
 
 ## Appendix: Previous Explorations — `@json-render/react` and Server-Driven UI
 

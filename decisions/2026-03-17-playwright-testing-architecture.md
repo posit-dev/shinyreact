@@ -5,7 +5,7 @@
 
 ## Context
 
-shinyreact is a monorepo with three sub-packages: `js/` (TypeScript/React), `pkg-py/` (Python Shiny), and `pkg-r/` (R Shiny, placeholder). The JS bundle renders JSON specs into React components via `@json-render/react`. Currently there are 10 Python unit tests (pytest) but zero JavaScript or browser tests — no Playwright, Cypress, or any browser testing infrastructure exists.
+shinyreact is a monorepo with three sub-packages: `js/` (TypeScript/React), `pkg-py/` (Python Shiny), and `pkg-r/` (R Shiny, placeholder). The JS bundle renders JSON specs into React components via an in-house Spec walker. Currently there are 10 Python unit tests (pytest) but zero JavaScript or browser tests — no Playwright, Cypress, or any browser testing infrastructure exists.
 
 The goal is to add end-to-end browser testing with a **controllers pattern** similar to `shiny.playwright.controllers`, where reusable controller classes wrap UI elements with locator properties, action methods (`set()`, `click()`), and assertion methods (`expect_value()`, `expect_label()`).
 
@@ -78,11 +78,11 @@ def test_output_renders(app: AppFixture):
 ```typescript
 // TypeScript test (the real logic)
 import { test, expect } from '@playwright/test';
-import { ShinyjsonOutput } from '../controllers';
+import { ShinyreactOutput } from '../controllers';
 
 test('output renders correctly', async ({ page, baseURL }) => {
   await page.goto(baseURL!);
-  const output = new ShinyjsonOutput(page, 'my_output');
+  const output = new ShinyreactOutput(page, 'my_output');
   await output.expectValue('hello');
 });
 ```
@@ -115,7 +115,7 @@ page.evaluate("await shinyreactTest.output('my_output').expectValue('hello')")
 
 ```typescript
 // Browser-resident controller
-class ShinyjsonOutput {
+class ShinyreactOutput {
   constructor(private id: string) {}
 
   async expectValue(expected: string, timeout = 5000): Promise<void> {
@@ -166,7 +166,7 @@ class ShinyjsonOutput {
 // controllers/shinyreact-output.ts
 import { Page, Locator, expect } from '@playwright/test';
 
-export class ShinyjsonOutput {
+export class ShinyreactOutput {
   readonly loc: Locator;
 
   constructor(readonly page: Page, readonly id: string) {
@@ -193,7 +193,7 @@ export class ShinyjsonOutput {
 # shinyreact/playwright/controllers/_shinyreact_output.py  (generated)
 from playwright.sync_api import Page, Locator, expect
 
-class ShinyjsonOutput:
+class ShinyreactOutput:
     def __init__(self, page: Page, id: str):
         self.page = page
         self.id = id
@@ -212,7 +212,7 @@ class ShinyjsonOutput:
 **Generated R controller (future):**
 ```r
 # shinyreact/R/playwright-controllers.R  (generated)
-ShinyjsonOutput <- R6::R6Class("ShinyjsonOutput",
+ShinyreactOutput <- R6::R6Class("ShinyreactOutput",
   public = list(
     initialize = function(page, id) {
       self$page <- page

@@ -1,6 +1,6 @@
 // hello_world.js — Registers small, composable components for the
-// 1-hello-world example. Each component receives `args` (ComponentRenderProps
-// from @json-render/react) and reads configuration from `args.element.props`.
+// 1-hello-world example. Each component receives `args` (with `element` and
+// `children`) and reads configuration from `args.element.props`.
 (function () {
   var React = window.shinyreact.React;
   var h = React.createElement;

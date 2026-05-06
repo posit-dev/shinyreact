@@ -1,5 +1,5 @@
 from shiny import reactive
-from shinyreact import SpaApp, reactive_output
+from shinyreact import ReactApp, reactive_output
 
 INITIAL_DATA = {
     "A": ["Apple", "Apricot"],
@@ -27,4 +27,4 @@ def server(input, output, session):  # noqa: ARG001
         return columns()
 
 
-app = SpaApp(server)
+app = ReactApp(server)

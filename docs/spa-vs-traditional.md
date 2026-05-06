@@ -13,7 +13,7 @@ Shiny has always supported two app shapes:
 
 `shinyreact` adopts the second shape but changes *what crosses the websocket*. Instead of fully-formed DOM fragments plus JavaScript, the server sends **only JSON data**. The UI logic — which component to render, how to lay it out, how interaction maps to state — lives entirely in the client (`www/index.html` + `www/app.js` or a Vite-built `www/index.tsx`). This is the novel piece: not the file layout, but the shift of UI ownership to the client.
 
-Both patterns coexist in `shinyreact`. A `SpaApp` can be one piece of a larger system; the traditional pattern continues to work exactly as before.
+Both patterns coexist in `shinyreact`. A `ReactApp` can be one piece of a larger system; the traditional pattern continues to work exactly as before.
 
 ---
 
@@ -73,7 +73,7 @@ def server(input, output, session):
     def greeting():
         return {"message": f"Hello, {input.name()}"}
 
-app = shinyreact.SpaApp(server)
+app = shinyreact.ReactApp(server)
 ```
 
 ```js
@@ -190,7 +190,7 @@ See [`examples/spa/03-columns-shadcn/`](../examples/spa/03-columns-shadcn/) and 
 
 The two patterns coexist in `shinyreact`. You do not have to choose one for your entire codebase:
 
-- A `SpaApp` serves one Python server alongside one React client — but that Python server can still use `reactive.value`, `reactive.calc`, `@reactive.effect`, and all standard Shiny reactive primitives.
+- A `ReactApp` serves one Python server alongside one React client — but that Python server can still use `reactive.value`, `reactive.calc`, `@reactive.effect`, and all standard Shiny reactive primitives.
 - You can run a traditional `shinyreact` app today and migrate individual output slots to the SPA pattern incrementally.
 - There is no deprecation of the traditional pattern. Both are first-class in `shinyreact`.
 

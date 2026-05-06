@@ -43,7 +43,7 @@ Server emits JSON specs that the client renders into a React tree using `shinyre
 
 ---
 
-## SPA pattern (`SpaApp`)
+## SPA pattern (`ReactApp`)
 
 Minimal server-side primitives for apps whose UI lives in a static (or built) React client. Examples in `examples/spa/`. See `DESIGN.md` for the architectural rationale.
 
@@ -51,7 +51,7 @@ Minimal server-side primitives for apps whose UI lives in a static (or built) Re
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| `SpaApp` | Working | App wrapper that serves a static `www/` directory (typically containing `index.html` + bundled JS) and runs a Shiny server alongside it |
+| `ReactApp` | Working | App wrapper that serves a static `www/` directory (typically containing `index.html` + bundled JS) and runs a Shiny server alongside it |
 | `@reactive_output` | Working | Renderer for SPA outputs — server returns any `Jsonifiable` value, the client picks it up via `useShinyOutput()` |
 | `send_message(session, id, data)` | Working | Server-to-client custom message helper for SPA apps |
 
@@ -82,6 +82,6 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 ### Design decisions
 
 - **Server owns data, client owns UI.** `reactive_output` ships pure data; the React client renders. Eliminates `render.ui`-driven dynamic UI patterns, per-item observer churn, and server-side ID bookkeeping.
-- **SpaApp serves static + Shiny side-by-side.** The Python file contains reactive logic only; the `www/` directory contains `index.html` and (optionally) a bundled JS app.
+- **ReactApp serves static + Shiny side-by-side.** The Python file contains reactive logic only; the `www/` directory contains `index.html` and (optionally) a bundled JS app.
 - **No build step required.** The default path uses `React.createElement` directly from a hand-written `app.js` (see ex. 01/02). Apps that want JSX or a component library opt into Vite (see ex. 03/04).
 - **Vite lib-mode IIFE for build path.** Bundled SPA apps externalize React to `window.shinyreact` to share the bundled React instance with shinyreact's hooks and avoid duplicate React copies.

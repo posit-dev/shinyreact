@@ -11,27 +11,28 @@ from shiny.session import Inputs, Outputs, Session
 from ._output import _dep
 
 
-class SpaApp(App):
-    """A Shiny app that serves a static SPA from a directory of assets.
+class ReactApp(App):
+    """A Shiny app that serves a custom React client from a directory of assets.
 
-    The directory must contain an ``index.html`` file. All files in it are
-    served as static assets. The server function contains only reactive
-    computation and business logic — no UI definitions.
+    Pairs a Shiny server (reactive computation only) with a built React client
+    — typically an ``index.html`` produced from an ``index.tsx`` source. All
+    files in the directory are served as static assets. The server function
+    contains only reactive computation and business logic — no UI definitions.
 
     Args:
         server: The Shiny server function.
         static_dir: Path to the directory containing ``index.html`` and static
             assets. Defaults to ``./www`` relative to the file that constructs
-            ``SpaApp`` (typically the app's ``app.py``).
+            ``ReactApp`` (typically the app's ``app.py``).
 
     Example::
 
-        from shinyreact import SpaApp
+        from shinyreact import ReactApp
 
         def server(input, output, session):
             ...
 
-        app = SpaApp(server)  # serves ./www/ next to this file
+        app = ReactApp(server)  # serves ./www/ next to this file
     """
 
     def __init__(

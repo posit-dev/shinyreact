@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from shiny import reactive, render
-from shinyreact import SpaApp, reactive_output
+from shinyreact import ReactApp, reactive_output
 
 matplotlib.use("Agg")
 
@@ -64,4 +64,4 @@ def server(input, output, session):  # noqa: ARG001
         return fig
 
 
-app = SpaApp(server)
+app = ReactApp(server)
