@@ -5,7 +5,7 @@ from unittest.mock import patch
 from htmltools import Tag
 from shiny import render
 from shinyreact import reactive_output, set_react_page
-from shinyreact._page import _build_spa_page_fn
+from shinyreact._page import _build_react_page_fn
 
 
 def _render(page_fn: Callable[..., Tag], *args: Any) -> dict[str, Any]:
@@ -17,7 +17,7 @@ def test_build_page_fn_injects_shinyreact_dep(tmp_path: Path) -> None:
     index = tmp_path / "index.html"
     index.write_text("<div id='root'></div>")
 
-    rendered = _render(_build_spa_page_fn(index))
+    rendered = _render(_build_react_page_fn(index))
     dep_names = [d.name for d in rendered["dependencies"]]
     assert "shinyreact" in dep_names
 
@@ -31,7 +31,7 @@ def test_build_page_fn_discovers_renderer_deps(tmp_path: Path) -> None:
     def my_table() -> None:
         return None
 
-    rendered = _render(_build_spa_page_fn(index), my_table)
+    rendered = _render(_build_react_page_fn(index), my_table)
     dep_names = [d.name for d in rendered["dependencies"]]
     assert "shiny-data-frame-output" in dep_names
 
@@ -45,7 +45,7 @@ def test_build_page_fn_skips_non_renderer_args(tmp_path: Path) -> None:
     def greeting() -> str:
         return "hi"
 
-    rendered = _render(_build_spa_page_fn(index), greeting, "not a renderer", 42)
+    rendered = _render(_build_react_page_fn(index), greeting, "not a renderer", 42)
     assert "shinyreact" in [d.name for d in rendered["dependencies"]]
 
 
@@ -55,7 +55,7 @@ def test_build_page_fn_reads_index_html(tmp_path: Path) -> None:
     index = tmp_path / "index.html"
     index.write_text(f"{marker}<div id='root'></div>")
 
-    rendered = _render(_build_spa_page_fn(index))
+    rendered = _render(_build_react_page_fn(index))
     assert marker in rendered["html"]
 
 
@@ -64,7 +64,7 @@ def test_build_page_fn_reads_index_html_once(tmp_path: Path) -> None:
     index = tmp_path / "index.html"
     index.write_text("<div>original</div>")
 
-    page_fn = _build_spa_page_fn(index)
+    page_fn = _build_react_page_fn(index)
     index.write_text("<div>changed</div>")
 
     rendered = _render(page_fn)

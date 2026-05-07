@@ -117,15 +117,15 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
     """
     caller_dir = Path(sys._getframe(1).f_globals.get("__file__", "")).parent
     index_path = caller_dir / Path(path)
-    page_opts(page_fn=_build_spa_page_fn(index_path))
+    page_opts(page_fn=_build_react_page_fn(index_path))
 
 
-def _build_spa_page_fn(index_path: Path) -> Callable[..., Tag]:
+def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
     index_html = index_path.read_text()
 
-    def _spa_page_fn(*args: Any) -> Tag:
+    def _react_page_fn(*args: Any) -> Tag:
         deps: list[HTMLDependency] = []
         for arg in args:
             if isinstance(arg, Renderer):
@@ -136,4 +136,4 @@ def _build_spa_page_fn(index_path: Path) -> Callable[..., Tag]:
         # page_opts types page_fn as -> Tag, but TagList works at runtime
         return cast(Tag, TagList(_dep(), *deps, HTML(index_html)))
 
-    return _spa_page_fn
+    return _react_page_fn

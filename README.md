@@ -2,21 +2,21 @@
 
 JSON-driven React rendering infrastructure for [Shiny](https://shiny.posit.co/py/). `shinyreact` provides the plumbing that lets downstream packages (like `shinyshadcn`) deliver React component trees from Python — it ships zero UI components itself.
 
-Not sure whether to use the traditional pattern or the SPA pattern? See [`docs/spa-vs-traditional.md`](docs/spa-vs-traditional.md).
+Not sure whether to use the `ui-object` pattern or the `client-ui` pattern? See [`docs/client-ui-vs-ui-object.md`](docs/client-ui-vs-ui-object.md).
 
 ## How it works
 
 `shinyreact` ships two first-class patterns:
 
-**Traditional pattern** — server describes UI as a JSON spec:
+**`ui-object` pattern** — UI defined as Python objects, server ships a JSON spec:
 1. Python server code builds a **Spec** — a flat map of elements with a root ID
 2. `shinyreact` serializes the Spec as JSON and sends it to the browser via a Shiny output binding
 3. The JS bundle renders the JSON into a live React component tree
 4. Downstream packages register their own React components so the renderer knows how to resolve `type` strings like `"Card"` or `"Button"`
 
-**SPA pattern** — client owns the UI:
-1. Python server contains only reactive computation (no UI definitions)
-2. A static `www/index.html` + `www/app.js` serve as the React client
+**`client-ui` pattern** — UI defined in a client codebase, server ships only data:
+1. Python server contains only reactive computation (no UI definitions); calls `set_react_page()`
+2. A static `www/index.html` + `www/app.js` (or built from `src/index.tsx`) serve as the React client
 3. Client and server communicate via `useShinyInput` / `useShinyOutput` / `useShinyMessageHandler` hooks
 
 ## Installation
@@ -27,7 +27,7 @@ pip install shinyreact
 
 ## Usage
 
-### Traditional pattern
+### `ui-object` pattern
 
 ```python
 from shiny import App, ui
@@ -55,18 +55,20 @@ app = App(app_ui, server)
 
 `@shinyreact.reactive_output` also accepts raw JSON-serializable values (dicts, lists, etc.) for use with `useShinyOutput()` hooks on the React side.
 
-### SPA pattern
+### `client-ui` pattern
 
 ```python
-import shinyreact
+from shiny.express import input
+from shinyreact import reactive_output, set_react_page
 
-def server(input, output, session):
-    @shinyreact.reactive_output
-    def greeting():
-        return {"message": f"Hello, {input.name()}"}
+set_react_page()
 
-app = shinyreact.ReactApp(server)
+@reactive_output
+def greeting():
+    return {"message": f"Hello, {input.name()}"}
 ```
+
+Pair with a `www/index.html` that loads your React client (no-build `app.js` or built bundle from `src/index.tsx`). See [`docs/client-ui-vs-ui-object.md`](docs/client-ui-vs-ui-object.md) for the file layout and dev workflow.
 
 ### Sending messages to React components
 
@@ -131,7 +133,7 @@ Shared `React` and `ReactDOM` instances are also available at `window.shinyreact
 ## Architecture
 
 - **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`. Registers a Shiny `OutputBinding` for `.shinyreact-output` elements.
-- **Python package** (`pkg-py/`): `Spec` / `Element` / `Node` data model, `reactive_output` decorator, `ui_output()` + `page_react()` helpers, `ReactApp` wrapper, and `send_message()` for server-to-client communication.
+- **Python package** (`pkg-py/`): `Spec` / `Element` / `Node` data model, `reactive_output` decorator, `ui_output()` + `page_react()` helpers, `set_react_page()` for the client-ui pattern, and `send_message()` for server-to-client communication.
 - **R package** (`pkg-r/`): Placeholder — not yet implemented.
 
 ## Development

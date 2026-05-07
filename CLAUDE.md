@@ -6,7 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `shinyreact` is a monorepo providing Shiny UI infrastructure for JSON-driven React rendering. It provides zero UI components — it is pure plumbing for downstream packages (e.g. `shinyshadcn`) to build on top of.
 
-Two first-class patterns ship from this repo: the **traditional pattern** (`page_react` + `reactive_output`, server describes UI as a JSON spec) and the **SPA pattern** (`ReactApp`, server contains only reactive computation and the client is a static React app). See `DESIGN.md` and `docs/spa-vs-traditional.md` for context.
+Two first-class patterns ship from this repo: the **`ui-object` pattern** (`page_react` + `reactive_output`, server describes UI as a JSON spec built from Python objects) and the **`client-ui` pattern** (`set_react_page` + a `www/index.tsx`-rooted React client, server contains only reactive computation). See `DESIGN.md` and `docs/client-ui-vs-ui-object.md` for context.
+
+## Terminology — canonical pair
+
+Use **`ui-object`** and **`client-ui`** consistently. **Never write "SPA", "Single Page App", "Single-Page Application", or "traditional pattern"** in new content (docs, comments, commit messages, PR/issue text).
+
+- **`ui-object` pattern** — UI defined as Python or R objects in the app file (`app.py` / `app.R`) via `page_react()`, `Spec`, etc.
+- **`client-ui` pattern** — UI defined in a client-side codebase (`www/`, `src/index.tsx`), bootstrapped from the app file via `set_react_page()`.
+
+Borrowed from [Shiny's "Build your entire UI with HTML"](https://shiny.posit.co/r/articles/build/html-ui/) framing (UI object vs HTML UI) — `client-ui` is the shinyreact-flavored equivalent of "HTML UI".
+
+The phrase "traditional Shiny" is fine when it refers to vanilla Shiny (no shinyreact involved). Do not use "traditional" as a label for one of `shinyreact`'s patterns.
 
 ## Repo structure
 
@@ -16,14 +27,14 @@ js/                         # TypeScript/React Vite IIFE bundle
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
 pkg-py/                     # Python package
-  src/shinyreact/           # Package: ReactApp, reactive_output, page_react, Spec/Element/Node
+  src/shinyreact/           # Package: set_react_page, reactive_output, page_react, Spec/Element/Node
     www/                    # Bundled JS
   tests/                    # pytest tests
 pkg-r/                      # R package (placeholder — not yet implemented)
 examples/
-  traditional/              # Traditional pattern examples (01-hello-world … 10-columns)
-  spa/                      # SPA pattern examples (01-hello … 05-temperature)
-docs/                       # todos.md, features.md, spa-vs-traditional.md, TIMELINE.md
+  ui-object/                # ui-object pattern examples (01-hello-world … 10-columns)
+  client-ui/                # client-ui pattern examples (01-hello … 07-plotly)
+docs/                       # todos.md, features.md, client-ui-vs-ui-object.md, timeline.md
 decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
@@ -81,10 +92,10 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 - `shinyreact.ui_output(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyreact-output">` with the shinyreact HTMLDependency
 - `shinyreact.page_react(...)` — full-page React app with `#root` + the shinyreact HTMLDependency
 - `@shinyreact.reactive_output` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutput()` hooks
-- `shinyreact.Spec(root, elements)` / `shinyreact.Element(type, props, children)` — the data model sent to the browser (traditional pattern)
+- `shinyreact.Spec(root, elements)` / `shinyreact.Element(type, props, children)` — the data model sent to the browser (ui-object pattern)
 - `shinyreact.Node` — nested tree API; `.to_spec()` auto-flattens to `Spec`
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
-- `shinyreact.ReactApp(server)` — SPA pattern app wrapper that serves a static `www/` directory alongside the Shiny server
+- `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html` (the client-ui pattern); auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
 
 ### Downstream package pattern
 
@@ -168,7 +179,7 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 These files are the primary documentation source:
 
 - **`docs/todos.md`** — known issues and open work. Add new entries with a descriptive heading and explanation. Remove entries when fixed (no "recent fixes" log — git history is the record). Prefer a GitHub issue for substantive work and link it from here.
-- **`docs/features.md`** — feature inventory for both the traditional pattern and the SPA pattern; JS bridge hooks; examples.
+- **`docs/features.md`** — feature inventory for both the `ui-object` pattern and the `client-ui` pattern; JS bridge hooks; examples.
 - Keep entries concise. TODOs describe the problem and constraints; feature tables describe what exists today.
 
 ## Key decisions
