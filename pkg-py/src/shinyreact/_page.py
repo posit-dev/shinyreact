@@ -103,8 +103,8 @@ def page_react_dep(
     )
 
 
-def set_page(path: str | Path = "www/index.html") -> None:
-    """Set the page for this Express app to an HTML file.
+def set_react_page(path: str | Path = "www/index.html") -> None:
+    """Set the page for this Express app to an HTML file hosting a React app.
 
     Reads the specified HTML file (relative to the app file) and uses it as the
     page body. Dependencies from traditional Shiny renderers (e.g.

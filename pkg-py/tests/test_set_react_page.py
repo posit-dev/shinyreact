@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from htmltools import Tag
 from shiny import render
-from shinyreact import reactive_output, set_page
+from shinyreact import reactive_output, set_react_page
 from shinyreact._page import _build_spa_page_fn
 
 
@@ -72,15 +72,15 @@ def test_build_page_fn_reads_index_html_once(tmp_path: Path) -> None:
     assert "changed" not in rendered["html"]
 
 
-def test_set_page_resolves_path_relative_to_caller(tmp_path: Path) -> None:
-    """set_page() resolves a relative path against the caller's directory."""
+def test_set_react_page_resolves_path_relative_to_caller(tmp_path: Path) -> None:
+    """set_react_page() resolves a relative path against the caller's directory."""
     www = tmp_path / "www"
     www.mkdir()
     marker = "<!-- caller-resolution -->"
     (www / "index.html").write_text(f"{marker}<div id='root'></div>")
 
     app_file = tmp_path / "app.py"
-    app_file.write_text("from shinyreact import set_page\nset_page()\n")
+    app_file.write_text("from shinyreact import set_react_page\nset_react_page()\n")
 
     captured: dict[str, Callable[..., Tag]] = {}
 
@@ -97,8 +97,8 @@ def test_set_page_resolves_path_relative_to_caller(tmp_path: Path) -> None:
     assert marker in rendered["html"]
 
 
-def test_set_page_accepts_path_object(tmp_path: Path) -> None:
-    """set_page() accepts a pathlib.Path as well as a str."""
+def test_set_react_page_accepts_path_object(tmp_path: Path) -> None:
+    """set_react_page() accepts a pathlib.Path as well as a str."""
     (tmp_path / "custom.html").write_text("<div id='custom'></div>")
 
     captured: dict[str, Callable[..., Tag]] = {}
@@ -107,18 +107,20 @@ def test_set_page_accepts_path_object(tmp_path: Path) -> None:
         captured["page_fn"] = page_fn
 
     with patch("shinyreact._page.page_opts", fake_page_opts):
-        set_page(tmp_path / "custom.html")
+        set_react_page(tmp_path / "custom.html")
 
     rendered = _render(captured["page_fn"])
     assert "<div id='custom'></div>" in rendered["html"]
 
 
-def test_set_page_custom_relative_path(tmp_path: Path) -> None:
+def test_set_react_page_custom_relative_path(tmp_path: Path) -> None:
     """A custom relative path is resolved against the caller's directory."""
     (tmp_path / "custom.html").write_text("<div id='app'></div>")
 
     app_file = tmp_path / "app.py"
-    app_file.write_text("from shinyreact import set_page\nset_page('custom.html')\n")
+    app_file.write_text(
+        "from shinyreact import set_react_page\nset_react_page('custom.html')\n"
+    )
 
     captured: dict[str, Callable[..., Tag]] = {}
 

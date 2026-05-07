@@ -67,16 +67,16 @@ A minimal example:
 ```python
 # app.py (SPA — Shiny Express)
 from shiny.express import input
-from shinyreact import reactive_output, set_page
+from shinyreact import reactive_output, set_react_page
 
-set_page()
+set_react_page()
 
 @reactive_output
 def greeting():
     return {"message": f"Hello, {input.name()}"}
 ```
 
-`set_page()` configures the Express app to serve `www/index.html` as the page body and auto-discovers `HTMLDependency` objects from any traditional renderers in the module.
+`set_react_page()` configures the Express app to serve `www/index.html` as the page body and auto-discovers `HTMLDependency` objects from any traditional renderers in the module.
 
 ```js
 // www/app.js
@@ -140,7 +140,7 @@ function App() {
 }
 ```
 
-`set_page()` automatically discovers the `HTMLDependency` objects each `@render.<x>` needs and injects them into the page — no manual dep wiring.
+`set_react_page()` automatically discovers the `HTMLDependency` objects each `@render.<x>` needs and injects them into the page — no manual dep wiring.
 
 See [`examples/spa/06-data-frame/`](../examples/spa/06-data-frame/) and [`examples/spa/07-plotly/`](../examples/spa/07-plotly/) for working examples.
 

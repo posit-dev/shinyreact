@@ -1,10 +1,10 @@
 import numpy as np
 import plotly.express as px
 from shiny.express import input
-from shinyreact import reactive_output, set_page
+from shinyreact import reactive_output, set_react_page
 from shinywidgets import render_plotly
 
-set_page()
+set_react_page()
 
 
 @reactive_output

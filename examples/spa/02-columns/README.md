@@ -19,7 +19,7 @@ Compare `examples/14-columns-new-spa/app.py` (~20 lines of server logic) to `exa
 
 ```
 examples/14-columns-new-spa/
-├── app.py            # set_page() + 1 reactive_output (column_data) + 1 reactive.effect on input.move_item
+├── app.py            # set_react_page() + 1 reactive_output (column_data) + 1 reactive.effect on input.move_item
 └── www/
     ├── index.html
     ├── app.js        # raw React.createElement (Column + ItemRow components)
@@ -30,7 +30,7 @@ Same 4-file shape as [example 13](../13-spa-hello/). No `package.json`, no bundl
 
 ## Bridge primitives used
 
-- `from shinyreact import reactive_output, set_page` (server)
+- `from shinyreact import reactive_output, set_react_page` (server)
 - `useShinyInput("move_item", null, { debounceMs: 0, priority: "event" })` — sends a `{item, from, to}` event payload on each click; `priority: "event"` is the Shiny pattern for action-button-style inputs.
 - `useShinyOutput("column_data", null)` — receives the latest `{A:[...], B:[...], C:[...]}` from the server and re-renders.
 
