@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import inspect
+import sys
 from pathlib import Path
 from typing import Any, Callable, cast
 
@@ -87,7 +87,7 @@ def page_react_dep(
         js_file: Filename of the JS entry point (default ``"main.js"``).
         css_file: Filename of the CSS file (default ``"main.css"``).
     """
-    caller_file = inspect.stack()[1].filename
+    caller_file = sys._getframe(1).f_globals.get("__file__", "")
     src_dir = Path(caller_file).parent
     dep_name = src_dir.name
 
@@ -115,12 +115,14 @@ def set_page(path: str | Path = "www/index.html") -> None:
         path: Path to the HTML file. If relative, resolved against the app
             file's directory. Defaults to ``"www/index.html"``.
     """
-    caller_dir = Path(inspect.stack()[1].filename).parent
+    caller_dir = Path(sys._getframe(1).f_globals.get("__file__", "")).parent
     index_path = caller_dir / Path(path)
     page_opts(page_fn=_build_spa_page_fn(index_path))
 
 
 def _build_spa_page_fn(index_path: Path) -> Callable[..., Tag]:
+    if not index_path.exists():
+        raise FileNotFoundError(f"HTML file not found: {index_path}")
     index_html = index_path.read_text()
 
     def _spa_page_fn(*args: Any) -> Tag:
