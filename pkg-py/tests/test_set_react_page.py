@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Callable
 from unittest.mock import patch
 
+import pytest
 from htmltools import Tag
 from shiny import render
 from shinyreact import reactive_output, set_react_page
@@ -135,3 +136,56 @@ def test_set_react_page_custom_relative_path(tmp_path: Path) -> None:
 
     rendered = _render(captured["page_fn"])
     assert "<div id='app'></div>" in rendered["html"]
+
+
+def test_set_react_page_falls_back_to_cwd_when_caller_has_no_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A relative path with no caller __file__ resolves against the CWD."""
+    (tmp_path / "cwd.html").write_text("<div id='cwd'></div>")
+    monkeypatch.chdir(tmp_path)
+
+    captured: dict[str, Callable[..., Tag]] = {}
+
+    def fake_page_opts(*, page_fn: Callable[..., Tag], **_: Any) -> None:
+        captured["page_fn"] = page_fn
+
+    with patch("shinyreact._page.page_opts", fake_page_opts):
+        # Caller frame has no __file__ — relative path resolves against CWD.
+        exec(
+            compile(
+                "from shinyreact import set_react_page\n"
+                "set_react_page('cwd.html')\n",
+                "<test>",
+                "exec",
+            ),
+            {},
+        )
+
+    rendered = _render(captured["page_fn"])
+    assert "<div id='cwd'></div>" in rendered["html"]
+
+
+def test_set_react_page_absolute_path_works_without_caller_file(tmp_path: Path) -> None:
+    """An absolute path bypasses caller-dir resolution and works without __file__."""
+    (tmp_path / "abs.html").write_text("<div id='abs'></div>")
+
+    captured: dict[str, Callable[..., Tag]] = {}
+
+    def fake_page_opts(*, page_fn: Callable[..., Tag], **_: Any) -> None:
+        captured["page_fn"] = page_fn
+
+    with patch("shinyreact._page.page_opts", fake_page_opts):
+        # Caller frame has no __file__ — but absolute path doesn't need it.
+        exec(
+            compile(
+                f"from shinyreact import set_react_page\n"
+                f"set_react_page(r'{tmp_path / 'abs.html'}')\n",
+                "<test>",
+                "exec",
+            ),
+            {},
+        )
+
+    rendered = _render(captured["page_fn"])
+    assert "<div id='abs'></div>" in rendered["html"]

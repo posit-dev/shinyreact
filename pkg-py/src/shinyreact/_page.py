@@ -87,8 +87,11 @@ def page_react_dep(
         js_file: Filename of the JS entry point (default ``"main.js"``).
         css_file: Filename of the CSS file (default ``"main.css"``).
     """
-    caller_file = sys._getframe(1).f_globals.get("__file__", "")
-    src_dir = Path(caller_file).parent
+    caller_file = sys._getframe(1).f_globals.get("__file__")
+    # If the caller has no __file__ (REPL or dynamically exec'd code),
+    # fall back to the current working directory — same convention as
+    # most CLI tools resolving relative paths.
+    src_dir = Path(caller_file).parent if caller_file else Path.cwd()
     dep_name = src_dir.name
 
     js_path = src_dir / js_file
@@ -115,8 +118,15 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
         path: Path to the HTML file. If relative, resolved against the app
             file's directory. Defaults to ``"www/index.html"``.
     """
-    caller_dir = Path(sys._getframe(1).f_globals.get("__file__", "")).parent
-    index_path = caller_dir / Path(path)
+    path = Path(path)
+    if path.is_absolute():
+        index_path = path
+    else:
+        caller_file = sys._getframe(1).f_globals.get("__file__")
+        # If the caller has no __file__ (REPL or dynamically exec'd code),
+        # fall back to the current working directory.
+        caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
+        index_path = caller_dir / path
     page_opts(page_fn=_build_react_page_fn(index_path))
 
 
