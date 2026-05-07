@@ -84,4 +84,23 @@ describe("ShinyOutput", () => {
     expect(wrapper).not.toBe(inner);
     expect(wrapper?.contains(inner!)).toBe(true);
   });
+
+  it("re-binds when id changes", () => {
+    const { rerender } = render(<ShinyOutput id="first" />);
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+    expect(mockUnbindAll).toHaveBeenCalledTimes(0);
+
+    rerender(<ShinyOutput id="second" />);
+    expect(mockUnbindAll).toHaveBeenCalledTimes(1);
+    expect(mockBindAll).toHaveBeenCalledTimes(2);
+  });
+
+  it("re-binds when tagName changes", () => {
+    const { rerender } = render(<ShinyOutput id="my_plot" tagName="div" />);
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    rerender(<ShinyOutput id="my_plot" tagName="shiny-data-frame" />);
+    expect(mockUnbindAll).toHaveBeenCalledTimes(1);
+    expect(mockBindAll).toHaveBeenCalledTimes(2);
+  });
 });

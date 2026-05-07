@@ -20,7 +20,7 @@ export function ShinyOutput({
     return () => {
       window.Shiny?.unbindAll?.(el);
     };
-  }, []);
+  }, [id, tagName]);
 
   return (
     <div ref={ref}>
