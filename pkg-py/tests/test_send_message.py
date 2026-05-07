@@ -1,4 +1,5 @@
 """Tests for shinyreact.send_message (renamed from post_message / send_json)."""
+
 from __future__ import annotations
 
 import unittest.mock

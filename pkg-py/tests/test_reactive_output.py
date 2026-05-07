@@ -2,6 +2,7 @@
 
 Covers all behaviors: passthrough JSON, Spec/Node flattening, and auto_output_ui.
 """
+
 from __future__ import annotations
 
 import pytest

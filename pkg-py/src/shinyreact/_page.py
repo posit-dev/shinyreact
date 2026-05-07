@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList, tags
 from shiny.express.ui import page_opts
@@ -103,7 +103,7 @@ def page_react_dep(
     )
 
 
-def set_page(path: str = "www/index.html") -> None:
+def set_page(path: str | Path = "www/index.html") -> None:
     """Set the page for this Express app to an HTML file.
 
     Reads the specified HTML file (relative to the app file) and uses it as the
@@ -112,11 +112,16 @@ def set_page(path: str = "www/index.html") -> None:
     page head.
 
     Args:
-        path: Path to the HTML file, relative to the app file's directory.
-            Defaults to ``"www/index.html"``.
+        path: Path to the HTML file. If relative, resolved against the app
+            file's directory. Defaults to ``"www/index.html"``.
     """
     caller_dir = Path(inspect.stack()[1].filename).parent
-    index_path = caller_dir / path
+    index_path = caller_dir / Path(path)
+    page_opts(page_fn=_build_spa_page_fn(index_path))
+
+
+def _build_spa_page_fn(index_path: Path) -> Callable[..., Tag]:
+    index_html = index_path.read_text()
 
     def _spa_page_fn(*args: Any) -> Tag:
         deps: list[HTMLDependency] = []
@@ -126,8 +131,7 @@ def set_page(path: str = "www/index.html") -> None:
                 if isinstance(ui, (Tag, TagList)):
                     deps.extend(ui.get_dependencies())
 
-        index_html = index_path.read_text()
         # page_opts types page_fn as -> Tag, but TagList works at runtime
         return cast(Tag, TagList(_dep(), *deps, HTML(index_html)))
 
-    page_opts(page_fn=_spa_page_fn)
+    return _spa_page_fn

@@ -1,103 +1,135 @@
 from pathlib import Path
+from typing import Any, Callable
+from unittest.mock import patch
 
-from shiny.express._run import ExpressStubSession, run_express
-from shiny.session._session import session_context
+from htmltools import Tag
+from shiny import render
+from shinyreact import reactive_output, set_page
+from shinyreact._page import _build_spa_page_fn
 
 
-def test_page_injects_shinyreact_dep(tmp_path: Path) -> None:
-    """set_page() includes the shinyreact HTMLDependency."""
-    www = tmp_path / "www"
-    www.mkdir()
-    (www / "index.html").write_text("<div id='root'></div>")
+def _render(page_fn: Callable[..., Tag], *args: Any) -> dict[str, Any]:
+    return page_fn(*args).tagify().render()
 
-    app_file = tmp_path / "app.py"
-    app_file.write_text(
-        "from shiny.express import input\n"
-        "from shinyreact import set_page, reactive_output\n"
-        "set_page()\n"
-        "@reactive_output\n"
-        "def greeting(): return 'hi'\n"
-    )
 
-    stub = ExpressStubSession()
-    with session_context(stub):
-        ui = run_express(app_file, "test_pkg")
+def test_build_page_fn_injects_shinyreact_dep(tmp_path: Path) -> None:
+    """The page_fn always emits the shinyreact HTMLDependency."""
+    index = tmp_path / "index.html"
+    index.write_text("<div id='root'></div>")
 
-    tagified = ui.tagify()
-    rendered = tagified.render()
+    rendered = _render(_build_spa_page_fn(index))
     dep_names = [d.name for d in rendered["dependencies"]]
     assert "shinyreact" in dep_names
 
 
-def test_page_discovers_renderer_deps(tmp_path: Path) -> None:
-    """set_page() auto-discovers deps from traditional renderers."""
-    www = tmp_path / "www"
-    www.mkdir()
-    (www / "index.html").write_text("<div id='root'></div>")
+def test_build_page_fn_discovers_renderer_deps(tmp_path: Path) -> None:
+    """Deps from traditional Shiny renderers are auto-discovered."""
+    index = tmp_path / "index.html"
+    index.write_text("<div id='root'></div>")
 
-    app_file = tmp_path / "app.py"
-    app_file.write_text(
-        "from shiny.express import input, render\n"
-        "from shinyreact import set_page, reactive_output\n"
-        "set_page()\n"
-        "@reactive_output\n"
-        "def greeting(): return 'hi'\n"
-        "@render.data_frame\n"
-        "def my_table(): return None\n"
-    )
+    @render.data_frame
+    def my_table() -> None:
+        return None
 
-    stub = ExpressStubSession()
-    with session_context(stub):
-        ui = run_express(app_file, "test_pkg2")
-
-    tagified = ui.tagify()
-    rendered = tagified.render()
+    rendered = _render(_build_spa_page_fn(index), my_table)
     dep_names = [d.name for d in rendered["dependencies"]]
     assert "shiny-data-frame-output" in dep_names
 
 
-def test_page_reads_index_html(tmp_path: Path) -> None:
-    """set_page() reads www/index.html and includes it in the page body."""
-    www = tmp_path / "www"
-    www.mkdir()
+def test_build_page_fn_skips_non_renderer_args(tmp_path: Path) -> None:
+    """Non-Renderer args (and renderers whose UI is not a Tag/TagList) are ignored."""
+    index = tmp_path / "index.html"
+    index.write_text("<div id='root'></div>")
+
+    @reactive_output
+    def greeting() -> str:
+        return "hi"
+
+    rendered = _render(_build_spa_page_fn(index), greeting, "not a renderer", 42)
+    assert "shinyreact" in [d.name for d in rendered["dependencies"]]
+
+
+def test_build_page_fn_reads_index_html(tmp_path: Path) -> None:
+    """The contents of index.html are inlined into the page body."""
     marker = "<!-- test-marker -->"
-    (www / "index.html").write_text(f"{marker}<div id='root'></div>")
+    index = tmp_path / "index.html"
+    index.write_text(f"{marker}<div id='root'></div>")
 
-    app_file = tmp_path / "app.py"
-    app_file.write_text(
-        "from shiny.express import input\n"
-        "from shinyreact import set_page, reactive_output\n"
-        "set_page()\n"
-        "@reactive_output\n"
-        "def greeting(): return 'hi'\n"
-    )
-
-    stub = ExpressStubSession()
-    with session_context(stub):
-        ui = run_express(app_file, "test_pkg3")
-
-    tagified = ui.tagify()
-    rendered = tagified.render()
+    rendered = _render(_build_spa_page_fn(index))
     assert marker in rendered["html"]
 
 
-def test_page_custom_path(tmp_path: Path) -> None:
-    """set_page() accepts a custom HTML file path."""
+def test_build_page_fn_reads_index_html_once(tmp_path: Path) -> None:
+    """index.html is read at construction time, not per page render."""
+    index = tmp_path / "index.html"
+    index.write_text("<div>original</div>")
+
+    page_fn = _build_spa_page_fn(index)
+    index.write_text("<div>changed</div>")
+
+    rendered = _render(page_fn)
+    assert "original" in rendered["html"]
+    assert "changed" not in rendered["html"]
+
+
+def test_set_page_resolves_path_relative_to_caller(tmp_path: Path) -> None:
+    """set_page() resolves a relative path against the caller's directory."""
+    www = tmp_path / "www"
+    www.mkdir()
+    marker = "<!-- caller-resolution -->"
+    (www / "index.html").write_text(f"{marker}<div id='root'></div>")
+
+    app_file = tmp_path / "app.py"
+    app_file.write_text("from shinyreact import set_page\nset_page()\n")
+
+    captured: dict[str, Callable[..., Tag]] = {}
+
+    def fake_page_opts(*, page_fn: Callable[..., Tag], **_: Any) -> None:
+        captured["page_fn"] = page_fn
+
+    with patch("shinyreact._page.page_opts", fake_page_opts):
+        exec(
+            compile(app_file.read_text(), str(app_file), "exec"),
+            {"__file__": str(app_file)},
+        )
+
+    rendered = _render(captured["page_fn"])
+    assert marker in rendered["html"]
+
+
+def test_set_page_accepts_path_object(tmp_path: Path) -> None:
+    """set_page() accepts a pathlib.Path as well as a str."""
+    (tmp_path / "custom.html").write_text("<div id='custom'></div>")
+
+    captured: dict[str, Callable[..., Tag]] = {}
+
+    def fake_page_opts(*, page_fn: Callable[..., Tag], **_: Any) -> None:
+        captured["page_fn"] = page_fn
+
+    with patch("shinyreact._page.page_opts", fake_page_opts):
+        set_page(tmp_path / "custom.html")
+
+    rendered = _render(captured["page_fn"])
+    assert "<div id='custom'></div>" in rendered["html"]
+
+
+def test_set_page_custom_relative_path(tmp_path: Path) -> None:
+    """A custom relative path is resolved against the caller's directory."""
     (tmp_path / "custom.html").write_text("<div id='app'></div>")
 
     app_file = tmp_path / "app.py"
-    app_file.write_text(
-        "from shiny.express import input\n"
-        "from shinyreact import set_page, reactive_output\n"
-        "set_page('custom.html')\n"
-        "@reactive_output\n"
-        "def greeting(): return 'hi'\n"
-    )
+    app_file.write_text("from shinyreact import set_page\nset_page('custom.html')\n")
 
-    stub = ExpressStubSession()
-    with session_context(stub):
-        ui = run_express(app_file, "test_pkg4")
+    captured: dict[str, Callable[..., Tag]] = {}
 
-    tagified = ui.tagify()
-    rendered = tagified.render()
+    def fake_page_opts(*, page_fn: Callable[..., Tag], **_: Any) -> None:
+        captured["page_fn"] = page_fn
+
+    with patch("shinyreact._page.page_opts", fake_page_opts):
+        exec(
+            compile(app_file.read_text(), str(app_file), "exec"),
+            {"__file__": str(app_file)},
+        )
+
+    rendered = _render(captured["page_fn"])
     assert "<div id='app'></div>" in rendered["html"]
