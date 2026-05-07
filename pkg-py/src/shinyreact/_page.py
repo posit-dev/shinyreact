@@ -79,13 +79,46 @@ def page_react_dep(
 ) -> HTMLDependency:
     """Build an HTMLDependency for a React app's JS and CSS entry points.
 
-    Resolves file paths relative to the **caller's** module directory and uses
-    the JS file's mtime as the version for automatic cache-busting during
-    development.
+    Resolves file paths relative to the caller's module directory (read from
+    the calling frame's ``__file__``). The JS file's mtime is used as the
+    dependency version for automatic cache-busting during development.
+
+    Path resolution
+    ---------------
+    The base directory is determined as follows:
+
+    1. **Module call (typical):** when the caller is a regular Python module
+       (``__file__`` set), paths resolve against the module's directory. This
+       is the expected usage::
+
+           # /path/to/my-app/app.py
+           from shinyreact import page_react, page_react_dep
+
+           dep = page_react_dep(js_file="bundle.js")
+           # dep.source["subdir"] == "/path/to/my-app"
+           # dep.name == "my-app"
+           # version == mtime of /path/to/my-app/bundle.js
+
+    2. **REPL / exec'd code (no ``__file__``):** falls back to
+       :func:`pathlib.Path.cwd` — the current working directory of the
+       process. This matches the convention CLI tools use when resolving
+       relative paths::
+
+           >>> import os, shinyreact
+           >>> os.chdir("/path/to/my-app")
+           >>> shinyreact.page_react_dep(js_file="bundle.js")
+           # source["subdir"] == "/path/to/my-app"
+           # name == "my-app"
+
+       The fallback is deliberate — call from any working directory and you
+       get a predictable result. If you need a specific directory regardless
+       of CWD, ``chdir`` first or call from a real module file.
 
     Args:
-        js_file: Filename of the JS entry point (default ``"main.js"``).
-        css_file: Filename of the CSS file (default ``"main.css"``).
+        js_file: Filename of the JS entry point, relative to the resolved
+            base directory (default ``"main.js"``).
+        css_file: Filename of the CSS file, relative to the resolved base
+            directory (default ``"main.css"``).
     """
     caller_file = sys._getframe(1).f_globals.get("__file__")
     # If the caller has no __file__ (REPL or dynamically exec'd code),
@@ -109,14 +142,52 @@ def page_react_dep(
 def set_react_page(path: str | Path = "www/index.html") -> None:
     """Set the page for this Express app to an HTML file hosting a React app.
 
-    Reads the specified HTML file (relative to the app file) and uses it as the
-    page body. Dependencies from traditional Shiny renderers (e.g.
-    ``@render.data_frame``) are discovered automatically and injected into the
-    page head.
+    Reads the specified HTML file once (cached at call time) and uses it as
+    the page body. Dependencies from traditional Shiny renderers (e.g.
+    ``@render.data_frame``) are discovered automatically and injected into
+    the page head.
+
+    Path resolution
+    ---------------
+    ``path`` resolution depends on whether it is absolute or relative:
+
+    1. **Absolute path:** used verbatim, regardless of caller or CWD::
+
+           # /tmp/standalone-app.py
+           from shinyreact import set_react_page
+           set_react_page("/srv/myapp/www/index.html")
+           # → reads /srv/myapp/www/index.html
+
+    2. **Relative path from a module (typical):** resolved against the
+       caller's module directory (read from the calling frame's
+       ``__file__``)::
+
+           # /path/to/my-app/app.py
+           from shinyreact import set_react_page
+           set_react_page()                    # → /path/to/my-app/www/index.html
+           set_react_page("static/index.html") # → /path/to/my-app/static/index.html
+
+       This is the expected usage for ``shiny run app.py``.
+
+    3. **Relative path with no caller ``__file__`` (REPL / exec'd code):**
+       falls back to :func:`pathlib.Path.cwd` — the current working
+       directory of the process. Same convention CLI tools use for relative
+       paths::
+
+           >>> import os, shinyreact
+           >>> os.chdir("/path/to/my-app")
+           >>> shinyreact.set_react_page()        # → /path/to/my-app/www/index.html
+           >>> shinyreact.set_react_page("a.html") # → /path/to/my-app/a.html
+
+       The fallback is deliberate — call from any working directory and you
+       get a predictable result. If you need a specific path regardless of
+       CWD, pass an absolute path (case 1).
 
     Args:
-        path: Path to the HTML file. If relative, resolved against the app
-            file's directory. Defaults to ``"www/index.html"``.
+        path: Path to the HTML file. Absolute paths are used verbatim;
+            relative paths resolve against the caller module's directory,
+            or against ``Path.cwd()`` when there is no caller ``__file__``.
+            Defaults to ``"www/index.html"``.
     """
     path = Path(path)
     if path.is_absolute():
