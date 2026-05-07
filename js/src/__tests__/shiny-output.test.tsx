@@ -21,23 +21,47 @@ describe("ShinyOutput", () => {
     delete (window as any).Shiny;
   });
 
-  it("renders a container with the given id and class", () => {
+  it("renders the element with the given id and class", () => {
     const { container } = render(
       <ShinyOutput id="my_plot" className="plotly-output" />,
     );
-    const inner = container.querySelector("#my_plot");
-    expect(inner).not.toBeNull();
-    expect(inner?.classList.contains("plotly-output")).toBe(true);
-    expect(inner?.tagName).toBe("DIV");
+    const el = container.querySelector("#my_plot");
+    expect(el).not.toBeNull();
+    expect(el?.classList.contains("plotly-output")).toBe(true);
+    expect(el?.tagName).toBe("DIV");
   });
 
   it("renders a custom element when tagName is specified", () => {
     const { container } = render(
       <ShinyOutput id="my_table" tagName="shiny-data-frame" />,
     );
-    const inner = container.querySelector("#my_table");
-    expect(inner).not.toBeNull();
-    expect(inner?.tagName.toLowerCase()).toBe("shiny-data-frame");
+    const el = container.querySelector("#my_table");
+    expect(el).not.toBeNull();
+    expect(el?.tagName.toLowerCase()).toBe("shiny-data-frame");
+  });
+
+  it("renders without a wrapper element", () => {
+    const { container } = render(
+      <ShinyOutput id="my_plot" className="plotly-output" />,
+    );
+    const el = container.querySelector("#my_plot");
+    expect(container.firstElementChild).toBe(el);
+    expect(container.children.length).toBe(1);
+  });
+
+  it("preserves CSS layout for direct children (flexbox/grid)", () => {
+    // The element must be a *direct* child of its parent for parent CSS
+    // selectors like flex `gap`, `> *`, and grid layouts to apply.
+    const { container } = render(
+      <div style={{ display: "flex" }}>
+        <ShinyOutput id="a" />
+        <ShinyOutput id="b" />
+      </div>,
+    );
+    const flex = container.firstElementChild!;
+    expect(flex.children.length).toBe(2);
+    expect(flex.children[0].id).toBe("a");
+    expect(flex.children[1].id).toBe("b");
   });
 
   it("calls Shiny.bindAll on mount", () => {
@@ -53,7 +77,7 @@ describe("ShinyOutput", () => {
     expect(mockUnbindAll).toHaveBeenCalledTimes(1);
   });
 
-  it("passes additional props to the inner element", () => {
+  it("passes additional props to the element", () => {
     const { container } = render(
       <ShinyOutput
         id="my_plot"
@@ -62,9 +86,9 @@ describe("ShinyOutput", () => {
         data-testid="plot-container"
       />,
     );
-    const inner = container.querySelector("#my_plot") as HTMLElement;
-    expect(inner?.style.height).toBe("400px");
-    expect(inner?.dataset.testid).toBe("plot-container");
+    const el = container.querySelector("#my_plot") as HTMLElement;
+    expect(el?.style.height).toBe("400px");
+    expect(el?.dataset.testid).toBe("plot-container");
   });
 
   it("is a no-op when window.Shiny is not available", () => {
@@ -74,15 +98,29 @@ describe("ShinyOutput", () => {
     ).not.toThrow();
   });
 
-  it("bindAll scope is the wrapper, not the inner element", () => {
+  it("binds with the parent as scope so descendants-only find() locates the element", () => {
+    // Shiny's output bindings use `$(scope).find(selector)`, which excludes
+    // `scope` itself. Binding the element directly would silently no-op for
+    // non-custom-element outputs. The parent guarantees our output is a
+    // descendant.
     const { container } = render(
+      <div data-testid="parent">
+        <ShinyOutput id="my_plot" className="plotly-output" />
+      </div>,
+    );
+    const parent = container.querySelector("[data-testid='parent']");
+    expect(mockBindAll).toHaveBeenCalledWith(parent);
+  });
+
+  it("unbinds only the element itself (includeSelf=true), not the whole parent", () => {
+    // Calling unbindAll on the parent would clobber sibling outputs.
+    // includeSelf=true scopes the unbind to just this element.
+    const { container, unmount } = render(
       <ShinyOutput id="my_plot" className="plotly-output" />,
     );
-    const wrapper = container.firstElementChild;
-    const inner = container.querySelector("#my_plot");
-    expect(mockBindAll).toHaveBeenCalledWith(wrapper);
-    expect(wrapper).not.toBe(inner);
-    expect(wrapper?.contains(inner!)).toBe(true);
+    const el = container.querySelector("#my_plot");
+    unmount();
+    expect(mockUnbindAll).toHaveBeenCalledWith(el, true);
   });
 
   it("re-binds when id changes", () => {
