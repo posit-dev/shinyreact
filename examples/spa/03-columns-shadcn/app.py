@@ -1,5 +1,8 @@
 from shiny import reactive
-from shinyreact import ReactApp, reactive_output
+from shiny.express import input
+from shinyreact import reactive_output, set_page
+
+set_page()
 
 INITIAL_DATA = {
     "A": ["Apple", "Apricot"],
@@ -7,24 +10,21 @@ INITIAL_DATA = {
     "C": ["Cherry", "Cranberry"],
 }
 
-
-def server(input, output, session):  # noqa: ARG001
-    columns = reactive.value(dict(INITIAL_DATA))
-
-    @reactive.effect
-    @reactive.event(input.move_item, ignore_init=True)
-    def _handle_move():
-        msg = input.move_item()
-        item, from_col, to_col = msg["item"], msg["from"], msg["to"]
-        data = {k: list(v) for k, v in columns().items()}
-        if item in data[from_col]:
-            data[from_col].remove(item)
-            data[to_col].append(item)
-            columns.set(data)
-
-    @reactive_output
-    def column_data():
-        return columns()
+columns = reactive.value(dict(INITIAL_DATA))
 
 
-app = ReactApp(server)
+@reactive.effect
+@reactive.event(input.move_item, ignore_init=True)
+def _handle_move():
+    msg = input.move_item()
+    item, from_col, to_col = msg["item"], msg["from"], msg["to"]
+    data = {k: list(v) for k, v in columns().items()}
+    if item in data[from_col]:
+        data[from_col].remove(item)
+        data[to_col].append(item)
+        columns.set(data)
+
+
+@reactive_output
+def column_data():
+    return columns()
