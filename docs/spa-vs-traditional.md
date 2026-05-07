@@ -13,7 +13,7 @@ Shiny has always supported two app shapes:
 
 `shinyreact` adopts the second shape but changes *what crosses the websocket*. Instead of fully-formed DOM fragments plus JavaScript, the server sends **only JSON data**. The UI logic — which component to render, how to lay it out, how interaction maps to state — lives entirely in the client (`www/index.html` + `www/app.js` or a Vite-built `www/index.tsx`). This is the novel piece: not the file layout, but the shift of UI ownership to the client.
 
-Both patterns coexist in `shinyreact`. A `ReactApp` can be one piece of a larger system; the traditional pattern continues to work exactly as before.
+Both patterns coexist in `shinyreact`. An SPA app can be one piece of a larger system; the traditional pattern continues to work exactly as before.
 
 ---
 
@@ -65,16 +65,18 @@ my-app/
 A minimal example:
 
 ```python
-# app.py (SPA)
-import shinyreact
+# app.py (SPA — Shiny Express)
+from shiny.express import input
+from shinyreact import reactive_output, set_page
 
-def server(input, output, session):
-    @shinyreact.reactive_output
-    def greeting():
-        return {"message": f"Hello, {input.name()}"}
+set_page()
 
-app = shinyreact.ReactApp(server)
+@reactive_output
+def greeting():
+    return {"message": f"Hello, {input.name()}"}
 ```
+
+`set_page()` configures the Express app to serve `www/index.html` as the page body and auto-discovers `HTMLDependency` objects from any traditional renderers in the module.
 
 ```js
 // www/app.js
@@ -109,7 +111,42 @@ Implications for the SPA pattern:
 
 ---
 
-## 4. Dev workflow
+## 4. Two output paradigms within an SPA app
+
+Within an SPA app, there are two ways to ship server-side output to the page. Both are valid and they coexist in the same app.
+
+| | `@reactive_output` + `useShinyOutput` | `@render.<x>` + `<ShinyOutput>` |
+|---|---|---|
+| Wire payload | Pure data (JSON) | Whatever the binding sends — often pre-rendered HTML or widget state |
+| UI ownership | React | The traditional Shiny output binding |
+| Best for | Custom UI built from data: dashboards, custom plots, tables built from rows | Existing widgets: `@render.data_frame`, `@render_plotly`/`@render_widget`, htmlwidgets, third-party output bindings |
+
+**Prefer `@reactive_output` + client rendering when possible** — that's the principle the SPA pattern is built on (server owns data, client owns UI; minimal data over the wire). But the existing Shiny widget ecosystem is large and battle-tested, and rewriting widgets like `@render.data_frame` or `@render_plotly` as React components would be a major undertaking. `<ShinyOutput>` is the legitimate path for embedding those widgets without rewriting them:
+
+```js
+// www/app.js
+const { ShinyOutput } = window.shinyreact;
+const h = React.createElement;
+
+function App() {
+    return h("div", null,
+        // Custom UI rendered by React from JSON data
+        h(MyChart, { data: useShinyOutput("chart_data") }),
+        // Existing data-frame binding owns this subtree
+        h(ShinyOutput, { id: "my_table", tagName: "shiny-data-frame" }),
+        // Plotly via shinywidgets
+        h(ShinyOutput, { id: "scatter", className: "shiny-ipywidget-output shiny-report-size" }),
+    );
+}
+```
+
+`set_page()` automatically discovers the `HTMLDependency` objects each `@render.<x>` needs and injects them into the page — no manual dep wiring.
+
+See [`examples/spa/06-data-frame/`](../examples/spa/06-data-frame/) and [`examples/spa/07-plotly/`](../examples/spa/07-plotly/) for working examples.
+
+---
+
+## 5. Dev workflow
 
 ### Traditional
 
@@ -137,7 +174,7 @@ See [`examples/spa/03-columns-shadcn/`](../examples/spa/03-columns-shadcn/) and 
 
 ---
 
-## 5. Tradeoffs
+## 6. Tradeoffs
 
 ### Traditional strengths
 
@@ -169,7 +206,7 @@ See [`examples/spa/03-columns-shadcn/`](../examples/spa/03-columns-shadcn/) and 
 
 ---
 
-## 6. "Pick this if…" guidance
+## 7. "Pick this if…" guidance
 
 **Choose the traditional pattern if:**
 - Your app is primarily forms, reports, or dashboards with mostly static layout
@@ -186,11 +223,12 @@ See [`examples/spa/03-columns-shadcn/`](../examples/spa/03-columns-shadcn/) and 
 
 ---
 
-## 7. Migration note
+## 8. Migration note
 
 The two patterns coexist in `shinyreact`. You do not have to choose one for your entire codebase:
 
-- A `ReactApp` serves one Python server alongside one React client — but that Python server can still use `reactive.value`, `reactive.calc`, `@reactive.effect`, and all standard Shiny reactive primitives.
+- An SPA app serves one Python module alongside one React client — but that Python module can still use `reactive.value`, `reactive.calc`, `@reactive.effect`, and all standard Shiny reactive primitives.
+- Within an SPA app, you can mix `@reactive_output` + `useShinyOutput` with traditional `@render.<x>` + `<ShinyOutput>` (see section 4).
 - You can run a traditional `shinyreact` app today and migrate individual output slots to the SPA pattern incrementally.
 - There is no deprecation of the traditional pattern. Both are first-class in `shinyreact`.
 
