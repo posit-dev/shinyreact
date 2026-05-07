@@ -1,4 +1,4 @@
-# client-ui-first Architecture: Rethinking Shiny's UI Layer for an AI driven World
+# ui.tsx-first Architecture: Rethinking Shiny's UI Layer for an AI driven World
 
 ## 1. Executive Summary
 
@@ -6,14 +6,14 @@ Shiny's original design achieved something remarkable: it let data scientists bu
 
 AI changes the equation. When Claude can generate a complete React app — with layout, styling, interactivity, and accessibility — the server-side UI abstraction layer becomes indirection rather than simplification. The UI should simply live on the client from the start.
 
-This document was originally written to propose a client-ui-first architecture as a new direction. **As of May 2026, `shinyreact` ships both patterns as first-class peers:**
+This document was originally written to propose a ui.tsx-first architecture as a new direction. **As of May 2026, `shinyreact` ships both patterns as first-class peers:**
 
-- **ui-object pattern** (`page_react` + `reactive_output`) — server describes UI as a JSON spec (`Spec`/`Element`/`Node`), the JS bundle renders it into a React tree. Authors work entirely in Python/R; no JS required.
-- **client-ui pattern** (`set_react_page()`) — server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutput` / `useShinyMessageHandler`. UI logic lives on the client.
+- **app.py pattern** (`page_react` + `reactive_output`) — server describes UI as a JSON spec (`Spec`/`Element`/`Node`), the JS bundle renders it into a React tree. Authors work entirely in Python/R; no JS required.
+- **ui.tsx pattern** (`set_react_page()`) — server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutput` / `useShinyMessageHandler`. UI logic lives on the client.
 
-The tenets and analysis below describe the client-ui-first reasoning that motivated the architecture. Both patterns coexist and neither is deprecated. See [`docs/client-ui-vs-ui-object.md`](docs/client-ui-vs-ui-object.md) for guidance on choosing between them.
+The tenets and analysis below describe the ui.tsx-first reasoning that motivated the architecture. Both patterns coexist and neither is deprecated. See [`docs/app-py-vs-ui-tsx.md`](docs/app-py-vs-ui-tsx.md) for guidance on choosing between them.
 
-The document begins with the design tenets that guided the client-ui-first direction, then builds the supporting case.
+The document begins with the design tenets that guided the ui.tsx-first direction, then builds the supporting case.
 
 ## 2. Design Tenets
 
@@ -35,7 +35,7 @@ Claude (or equivalent) is the default producer of the HTML, CSS, and React compo
 
 ### Tenet 4: UI lives on the client
 
-All UI definitions — component trees, styling, layout, and client-side interactivity — exist as static assets (`index.html` + JS/CSS bundles). Nothing about the visual structure travels over the wire at runtime. The server sends data; the client decides how to render it. All client dependencies are resolved at build time via `package.json` — dynamic dependency injection (HTMLDependency) is not supported in client-ui-first apps. The server never influences what JS or CSS loads on the client.
+All UI definitions — component trees, styling, layout, and client-side interactivity — exist as static assets (`index.html` + JS/CSS bundles). Nothing about the visual structure travels over the wire at runtime. The server sends data; the client decides how to render it. All client dependencies are resolved at build time via `package.json` — dynamic dependency injection (HTMLDependency) is not supported in ui.tsx-first apps. The server never influences what JS or CSS loads on the client.
 
 ### Tenet 5: Prefer client-side computation when the server isn't needed
 
@@ -51,7 +51,7 @@ Message passing between client and server should be targeted — addressed by el
 
 ### Tenet 8: Pre-built component libraries are a parallel path
 
-For organizations with design systems (government style guides, enterprise UI kits), curated component libraries remain valuable. These should be standalone JavaScript packages that client-ui authors import — not a framework-level registry. When authors want reusable UI beyond a single app, the right path is a standalone JS library — not a server-side component registry. The client-ui-first approach and component libraries coexist; they are not competitors.
+For organizations with design systems (government style guides, enterprise UI kits), curated component libraries remain valuable. These should be standalone JavaScript packages that ui.tsx authors import — not a framework-level registry. When authors want reusable UI beyond a single app, the right path is a standalone JS library — not a server-side component registry. The ui.tsx-first approach and component libraries coexist; they are not competitors.
 
 ### Tenet 9: The build step is real but invisible to the author
 
@@ -122,13 +122,13 @@ The server is forced to manage both the data *and* the UI simultaneously. Even e
 
 Now consider the same problem when UI lives on the client. The server manages only the data: receive an event ("item X moved to column Y"), update the data structure, send the new state back. The client — a standard React app — receives the updated data and re-renders. React's reconciliation handles the DOM updates automatically. No dynamic observers, no generated IDs, no lifecycle management. The server code goes from tangled UI+data logic to just pure data logic.
 
-This is not merely a convenience improvement. It eliminates an entire class of bugs that exists only because the server was responsible for UI it should never have owned. The client-ui-first architecture makes the natural solution the easy solution: data flows down, events flow up, and the framework handles the rest.
+This is not merely a convenience improvement. It eliminates an entire class of bugs that exists only because the server was responsible for UI it should never have owned. The ui.tsx-first architecture makes the natural solution the easy solution: data flows down, events flow up, and the framework handles the rest.
 
-## 5. The client-ui-first Architecture
+## 5. The ui.tsx-first Architecture
 
 ### What an app looks like
 
-A Shiny app under the client-ui-first model consists of two parts:
+A Shiny app under the ui.tsx-first model consists of two parts:
 
 ```
 my-app/
@@ -179,7 +179,7 @@ The core communication layer is intentionally minimal:
 
 ### Server-side primitives
 
-The server file uses a constrained set of primitives for communicating with the client. Standard Shiny render methods that produce UI (`render.ui`, `render.text`, `render.table`, etc.) are **not supported** in client-ui-first apps — they assume the server controls the DOM, which it does not.
+The server file uses a constrained set of primitives for communicating with the client. Standard Shiny render methods that produce UI (`render.ui`, `render.text`, `render.table`, etc.) are **not supported** in ui.tsx-first apps — they assume the server controls the DOM, which it does not.
 
 The supported primitives:
 
@@ -198,7 +198,7 @@ def column_data():
 ### What is explicitly disallowed
 
 - **`render.ui`** — The server must not generate or manipulate DOM.
-- **Other standard Shiny renders** (`render.text`, `render.table`, `render.plot`, `render.image`) — These assume server-controlled output slots in the DOM. In client-ui-first apps, use `render.json` to send data and let the client render it however it chooses.
+- **Other standard Shiny renders** (`render.text`, `render.table`, `render.plot`, `render.image`) — These assume server-controlled output slots in the DOM. In ui.tsx-first apps, use `render.json` to send data and let the client render it however it chooses.
 - **Unbroken reactive loops** — A pattern where the server sends data to the client, the client immediately sends it back as input, which triggers the server again, creates an infinite loop. The communication model is designed to be unidirectional per interaction: input flows up (client → server), computed data flows down (server → client). The client should never echo server data back as input without user action in between.
 
 ### How `shiny run` works
@@ -241,7 +241,7 @@ We don't have answers yet, but these are directions worth exploring:
 
 - **MCP (Model Context Protocol) app communication.** As AI agents interact with applications programmatically, Shiny's reactive model could be valuable — an agent changes an input, the server recomputes only what's needed, the agent reads the result. This requires stateless request-response support that Shiny doesn't have today.
 - **Hybrid connection models.** Not every interaction in an app needs a websocket. If Shiny could serve stateless endpoints alongside the reactive graph, it could compete with FastAPI for the simple cases while maintaining its advantage for the complex ones.
-- **The "graduated complexity" path.** A user starts with a simple app (AI generates everything, minimal server logic). As their needs grow — shared computed state, incremental updates, complex reactive dependencies — Shiny's reactive engine becomes the reason they stay. The client-ui-first architecture makes this on-ramp smoother: the client is already a standard React app, and the server grows in complexity as needed.
+- **The "graduated complexity" path.** A user starts with a simple app (AI generates everything, minimal server logic). As their needs grow — shared computed state, incremental updates, complex reactive dependencies — Shiny's reactive engine becomes the reason they stay. The ui.tsx-first architecture makes this on-ramp smoother: the client is already a standard React app, and the server grows in complexity as needed.
 
 ## 7. Things to Be Addressed
 
@@ -251,11 +251,11 @@ Evaluate whether a `reactive.sync(client_name=...)` primitive is worth adding as
 
 ### Message passing model
 
-Today, Shiny's custom messages are broadcast to the document — any handler registered for a given message type receives it. In the client-ui-first model, message passing should be more targeted: addressed by element id, message type, and handler. If the id is omitted, the message falls back to the document level. The exact API shape needs design work.
+Today, Shiny's custom messages are broadcast to the document — any handler registered for a given message type receives it. In the ui.tsx-first model, message passing should be more targeted: addressed by element id, message type, and handler. If the id is omitted, the message falls back to the document level. The exact API shape needs design work.
 
 ### Hybrid connection model
 
-The websocket is right for stateful reactive apps, but not every interaction requires it. Could Shiny serve stateless REST endpoints alongside the reactive graph? This would let simple operations (fetching a static resource, submitting a one-off computation) bypass the session overhead. This is a framework-level question, not specific to client-ui-first.
+The websocket is right for stateful reactive apps, but not every interaction requires it. Could Shiny serve stateless REST endpoints alongside the reactive graph? This would let simple operations (fetching a static resource, submitting a one-off computation) bypass the session overhead. This is a framework-level question, not specific to ui.tsx-first.
 
 ### MCP and agent communication
 
@@ -263,7 +263,7 @@ As AI agents begin interacting with applications programmatically (via MCP or si
 
 ### AI tooling for generating the client
 
-The client-ui-first model depends on AI reliably generating correct React clients that communicate with Shiny via the bridge hooks. What does the Claude Skill (or equivalent) look like? What conventions, templates, or scaffolding make generation reliable? How do we test that generated clients are correct?
+The ui.tsx-first model depends on AI reliably generating correct React clients that communicate with Shiny via the bridge hooks. What does the Claude Skill (or equivalent) look like? What conventions, templates, or scaffolding make generation reliable? How do we test that generated clients are correct?
 
 ### Generated client verification
 
@@ -282,11 +282,11 @@ A static `index.html` bypasses Shiny's HTML-injection bookmarking, so restored v
 
 ### Migration path for existing Shiny apps
 
-A Claude Skill (or equivalent) to migrate existing Shiny apps — which define UI in R/Python — to the client-ui-first model: a pure server file plus an AI-generated React client. This would lower the barrier for adoption and provide a concrete validation that the architecture works for real-world apps, not just greenfield projects.
+A Claude Skill (or equivalent) to migrate existing Shiny apps — which define UI in R/Python — to the ui.tsx-first model: a pure server file plus an AI-generated React client. This would lower the barrier for adoption and provide a concrete validation that the architecture works for real-world apps, not just greenfield projects.
 
 ### Disabling dynamic dependency injection
 
-In client-ui-first apps, `shiny run` should explicitly disable HTMLDependency injection. Today, Shiny's server can inject JS/CSS into the page at serve time — this is how traditional Shiny apps load their UI libraries. In the client-ui-first model, all client dependencies are declared in `package.json` and resolved at build time. Allowing both paths simultaneously would create version conflicts, unpredictable load order, and a confusing developer experience. The server should refuse to inject HTMLDependencies when running in client-ui-first mode, and surface a clear error if server code attempts it.
+In ui.tsx-first apps, `shiny run` should explicitly disable HTMLDependency injection. Today, Shiny's server can inject JS/CSS into the page at serve time — this is how traditional Shiny apps load their UI libraries. In the ui.tsx-first model, all client dependencies are declared in `package.json` and resolved at build time. Allowing both paths simultaneously would create version conflicts, unpredictable load order, and a confusing developer experience. The server should refuse to inject HTMLDependencies when running in ui.tsx-first mode, and surface a clear error if server code attempts it.
 
 ### Shiny client runtime as an npm package
 
@@ -302,7 +302,7 @@ The uninitialized UI (before the websocket connects and data arrives) should mat
 
 ### Asset versioning and caching
 
-Static assets introduce operational concerns that server-generated UI largely hides. The client-ui-first path needs a supported story for cache busting, versioned asset URLs, and ensuring regenerated client bundles are picked up reliably in both development and deployment.
+Static assets introduce operational concerns that server-generated UI largely hides. The ui.tsx-first path needs a supported story for cache busting, versioned asset URLs, and ensuring regenerated client bundles are picked up reliably in both development and deployment.
 
 ### Local edit loops
 
@@ -314,15 +314,15 @@ Serving the client assets and the Shiny websocket server from different origins 
 
 ### What happens to the R package?
 
-The R package (`pkg-r/`) was planned for feature parity with the Python package. Under client-ui-first, the R server story is the same (reactive computation only), but the client generation tooling may differ. Should R and Python share the same client-side bridge library? Does R need its own Claude Skill?
+The R package (`pkg-r/`) was planned for feature parity with the Python package. Under ui.tsx-first, the R server story is the same (reactive computation only), but the client generation tooling may differ. Should R and Python share the same client-side bridge library? Does R need its own Claude Skill?
 
 ## 8. Current State and Next Steps
 
-The client-ui-first prototype proposed in this document has been built and validated. Both the client-ui pattern and the ui-object JSON spec pattern now ship in `shinyreact` as first-class peers. The open questions in Section 7 remain relevant — the items below reflect the current status:
+The ui.tsx-first prototype proposed in this document has been built and validated. Both the ui.tsx pattern and the app.py JSON spec pattern now ship in `shinyreact` as first-class peers. The open questions in Section 7 remain relevant — the items below reflect the current status:
 
 1. **Design tenets (Section 2) are the guiding principles.** Both patterns respect them: the app file contains server logic; the framework handles reactivity; the app is a polished product.
-2. **Both patterns are implemented and working.** The client-ui pattern (`set_react_page()`, `reactive_output`) and the ui-object pattern (`page_react`, `reactive_output`, `Spec`/`Element`/`Node`) ship from the same package.
-3. **The JSON spec transfer layer is retained for the ui-object pattern.** The `Spec`/`Element`/`Node` data model and the in-house renderer walker serve the ui-object use case well. For client-ui apps, the layer is bypassed — `reactive_output` sends raw JSON that the client renders directly.
+2. **Both patterns are implemented and working.** The ui.tsx pattern (`set_react_page()`, `reactive_output`) and the app.py pattern (`page_react`, `reactive_output`, `Spec`/`Element`/`Node`) ship from the same package.
+3. **The JSON spec transfer layer is retained for the app.py pattern.** The `Spec`/`Element`/`Node` data model and the in-house renderer walker serve the app.py use case well. For ui.tsx apps, the layer is bypassed — `reactive_output` sends raw JSON that the client renders directly.
 4. **The bridge library is stable.** `useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`, `ShinyModuleProvider`, and `ImageOutput` are vendored from `@posit/shiny-react` and re-exported on `window.shinyreact`.
 5. **Remaining open work** is tracked in [`docs/todos.md`](docs/todos.md) and the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues).
 
