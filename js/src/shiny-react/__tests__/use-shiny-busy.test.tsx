@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 vi.mock("../get-shiny", () => ({
@@ -22,10 +22,18 @@ vi.mock("../message-registry", () => ({
 }));
 
 import { useShinyBusy } from "../use-shiny";
+import { __resetLifecycleStoreForTests } from "../lifecycle-store";
 
 describe("useShinyBusy", () => {
   beforeEach(() => {
+    __resetLifecycleStoreForTests();
+    document.documentElement.classList.remove("shiny-busy");
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    __resetLifecycleStoreForTests();
+    document.documentElement.classList.remove("shiny-busy");
   });
 
   it("returns false initially", () => {
@@ -73,24 +81,6 @@ describe("useShinyBusy", () => {
     }
   });
 
-  it("cleans up event listeners on unmount", () => {
-    const addSpy = vi.spyOn(document, "addEventListener");
-    const removeSpy = vi.spyOn(document, "removeEventListener");
-
-    const { unmount } = renderHook(() => useShinyBusy());
-
-    expect(addSpy).toHaveBeenCalledWith("shiny:busy", expect.any(Function));
-    expect(addSpy).toHaveBeenCalledWith("shiny:idle", expect.any(Function));
-
-    unmount();
-
-    expect(removeSpy).toHaveBeenCalledWith("shiny:busy", expect.any(Function));
-    expect(removeSpy).toHaveBeenCalledWith("shiny:idle", expect.any(Function));
-
-    addSpy.mockRestore();
-    removeSpy.mockRestore();
-  });
-
   it("does not respond to events after unmount", () => {
     const { result, unmount } = renderHook(() => useShinyBusy());
 
@@ -103,5 +93,42 @@ describe("useShinyBusy", () => {
 
     // result.current retains the last value before unmount
     expect(result.current).toBe(false);
+  });
+
+  it("seeds busy=true when .shiny-busy is already on documentElement at first mount", () => {
+    document.documentElement.classList.add("shiny-busy");
+
+    const { result } = renderHook(() => useShinyBusy());
+
+    expect(result.current).toBe(true);
+  });
+
+  it("shares one DOM subscription across many consumers", () => {
+    const addSpy = vi.spyOn(document, "addEventListener");
+
+    // Mount many consumers — only the first should attach DOM listeners.
+    const hooks = Array.from({ length: 5 }, () =>
+      renderHook(() => useShinyBusy()),
+    );
+
+    const busyAdds = addSpy.mock.calls.filter((c) => c[0] === "shiny:busy");
+    const idleAdds = addSpy.mock.calls.filter((c) => c[0] === "shiny:idle");
+    expect(busyAdds).toHaveLength(1);
+    expect(idleAdds).toHaveLength(1);
+
+    // All consumers see the same value.
+    hooks.forEach((h) => expect(h.result.current).toBe(false));
+
+    act(() => {
+      document.dispatchEvent(new Event("shiny:busy"));
+    });
+    hooks.forEach((h) => expect(h.result.current).toBe(true));
+
+    act(() => {
+      document.dispatchEvent(new Event("shiny:idle"));
+    });
+    hooks.forEach((h) => expect(h.result.current).toBe(false));
+
+    addSpy.mockRestore();
   });
 });

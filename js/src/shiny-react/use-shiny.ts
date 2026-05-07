@@ -1,9 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { type EventPriority } from "@posit/shiny/srcts/types/src/inputPolicies";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { getShiny } from "./get-shiny";
 import { type InputRegistryEntry } from "./input-registry";
+import {
+  getBusySnapshot,
+  getInitializedSnapshot,
+  subscribeLifecycle,
+} from "./lifecycle-store";
 import { initializeMessageRegistry } from "./message-registry";
 import { createReactOutputBinding } from "./output-registry";
 import { getReactRegistry, initializeReactRegistry } from "./react-registry";
@@ -282,83 +293,37 @@ export function useShinyMessageHandler<T = any>(
 /**
  * A React hook that tracks whether Shiny has been initialized.
  *
- * Checks for `window.Shiny` on mount and waits for its
- * `initializedPromise` to resolve. If Shiny is not yet on the page
- * (e.g., in a full React page where scripts load asynchronously),
- * falls back to listening for the `"shiny:connected"` DOM event so
- * the hook will resolve even if Shiny loads after the component mounts.
+ * Reads from a shared lifecycle store (see `lifecycle-store.ts`) so all
+ * consumers on the page share a single subscription to `window.Shiny`'s
+ * `initializedPromise` / the `"shiny:connected"` DOM event, rather than each
+ * mounting its own listener.
  *
  * @returns A boolean indicating whether Shiny has been initialized.
  */
 export function useShinyInitialized(): boolean {
-  const [shinyInitialized, setShinyInitialized] = useState<boolean>(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    function waitForInitialized(shiny: NonNullable<ReturnType<typeof getShiny>>) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      shiny.initializedPromise.then(() => {
-        if (!cancelled) {
-          setShinyInitialized(true);
-        }
-      });
-    }
-
-    const shiny = getShiny();
-    if (shiny) {
-      waitForInitialized(shiny);
-      return () => { cancelled = true; };
-    }
-
-    // Shiny not yet available — listen for the DOM event it fires on connect.
-    function onShinyConnected() {
-      const shiny = getShiny();
-      if (shiny) {
-        waitForInitialized(shiny);
-      }
-    }
-    document.addEventListener("shiny:connected", onShinyConnected, { once: true });
-
-    return () => {
-      cancelled = true;
-      document.removeEventListener("shiny:connected", onShinyConnected);
-    };
-  }, []);
-
-  return shinyInitialized;
+  return useSyncExternalStore(
+    subscribeLifecycle,
+    getInitializedSnapshot,
+    getInitializedSnapshot,
+  );
 }
 
 /**
  * A React hook that tracks whether the Shiny server is currently busy.
  *
- * Listens for `shiny:busy` and `shiny:idle` DOM events on `document`.
- * Returns `false` initially, flips to `true` when a `shiny:busy` event
- * fires, and back to `false` on `shiny:idle`.
+ * Reads from a shared lifecycle store (see `lifecycle-store.ts`) so all
+ * consumers on the page share a single pair of `shiny:busy` / `shiny:idle`
+ * DOM listeners. Returns `false` initially, flips to `true` while a request
+ * is in flight, and back to `false` when the server goes idle.
  *
  * @returns A boolean indicating whether the Shiny server is currently busy.
  */
 export function useShinyBusy(): boolean {
-  const [busy, setBusy] = useState<boolean>(false);
-
-  useEffect(() => {
-    function onBusy() {
-      setBusy(true);
-    }
-    function onIdle() {
-      setBusy(false);
-    }
-
-    document.addEventListener("shiny:busy", onBusy);
-    document.addEventListener("shiny:idle", onIdle);
-
-    return () => {
-      document.removeEventListener("shiny:busy", onBusy);
-      document.removeEventListener("shiny:idle", onIdle);
-    };
-  }, []);
-
-  return busy;
+  return useSyncExternalStore(
+    subscribeLifecycle,
+    getBusySnapshot,
+    getBusySnapshot,
+  );
 }
 
 let shinyReactInitialized = false;
