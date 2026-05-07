@@ -13,7 +13,7 @@ A more realistic app that wires several inputs (date range, search, category che
 ## Layout
 
 ```
-examples/6-dashboard/
+examples/app-py/06-dashboard/
 ├── app.py         # Server: filter pipeline + render functions
 ├── dashboard.js   # JS bundle: DashboardApp / FilterPanel / MetricsCards / Charts
 ├── data.py        # Sample data generation + filter / metric helpers
@@ -23,5 +23,5 @@ examples/6-dashboard/
 ## Run it
 
 ```bash
-uv run shiny run examples/6-dashboard/app.py
+uv run shiny run examples/app-py/06-dashboard/app.py
 ```

@@ -15,7 +15,7 @@ This is the contract for any pattern where the server needs to *notify* the clie
 ## Layout
 
 ```
-examples/4-messages/
+examples/app-py/04-messages/
 ├── app.py        # Server: timed reactive.effect calling send_message
 ├── messages.js   # JS bundle: AppLayout / ToastCard
 └── styles.css
@@ -24,5 +24,5 @@ examples/4-messages/
 ## Run it
 
 ```bash
-uv run shiny run examples/4-messages/app.py
+uv run shiny run examples/app-py/04-messages/app.py
 ```

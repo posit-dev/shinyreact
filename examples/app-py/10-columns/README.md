@@ -15,14 +15,13 @@ The whole file is ~80 lines of server logic, almost all of it bookkeeping for th
 
 ## Compared to the ui.tsx versions
 
-- [Example 12](../12-columns-spa/) — same demo with the **legacy** `shinyreact` ui.tsx prototype. Server drops to ~20 lines.
-- [Example 14](../14-columns-new-spa/) — same demo with the **new** `shinyreact` package, no build step.
-- [Example 15](../15-columns-shadcn/) — same demo with shadcn/ui styling (Vite build).
+- [02-columns](../../ui-tsx/02-columns/) — same demo with the **new** `shinyreact` package, no build step.
+- [03-columns-shadcn](../../ui-tsx/03-columns-shadcn/) — same demo with shadcn/ui styling (Vite build).
 
 The point of preserving this file is to show what `DESIGN.md` means by "the dynamic UI problem" — server-managed UI for collection-style interactions is genuinely hard, even for experienced Shiny developers, and the `ui.tsx`-first model dissolves it.
 
 ## Run it
 
 ```bash
-uv run shiny run examples/11-columns-traditional/app.py
+uv run shiny run examples/app-py/10-columns/app.py
 ```

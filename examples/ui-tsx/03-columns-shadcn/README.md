@@ -1,6 +1,6 @@
 # Example 15 — drag-between-columns with shadcn/ui
 
-Same drag-between-columns demo as [example 14](../14-columns-new-spa/), but rendered with real [shadcn/ui](https://ui.shadcn.com/) `Card` and `Button` components plus [lucide-react](https://lucide.dev/) arrow icons, styled with Tailwind v4. The Python server is identical — only the client changes.
+Same drag-between-columns demo as [02-columns](../02-columns/), but rendered with real [shadcn/ui](https://ui.shadcn.com/) `Card` and `Button` components plus [lucide-react](https://lucide.dev/) arrow icons, styled with Tailwind v4. The Python server is identical — only the client changes.
 
 The point: once you want a component library, you have to bring a build step. This example shows the canonical setup for `ui.tsx`-first apps that want shadcn — Vite in lib-mode IIFE, with React externalized to `window.shinyreact`.
 
@@ -13,8 +13,8 @@ The point: once you want a component library, you have to bring a build step. Th
 ## Layout
 
 ```
-examples/15-columns-shadcn/
-├── app.py                          # identical server to ex 14
+examples/ui-tsx/03-columns-shadcn/
+├── app.py                          # identical server to 02-columns
 ├── package.json
 ├── vite.config.js                  # lib-mode IIFE; React → window.shinyreact
 ├── src/
@@ -44,14 +44,14 @@ Worth understanding because every shadcn-style example in this repo uses the sam
 ## Run it
 
 ```bash
-cd examples/15-columns-shadcn
+cd examples/ui-tsx/03-columns-shadcn
 npm install
 npm run build       # or `npm run dev` for watch mode
 
-cd ../..
-uv run shiny run examples/15-columns-shadcn/app.py
+cd ../../..
+uv run shiny run examples/ui-tsx/03-columns-shadcn/app.py
 ```
 
 ## When to use this pattern
 
-When you want shadcn (or any other JSX-based component library) with the `ui.tsx`-first model. For a richer demo with multiple cards and a server-side plot, see [example 16](../16-shadcn/). For a build-step-free version, see [example 14](../14-columns-new-spa/).
+When you want shadcn (or any other JSX-based component library) with the `ui.tsx`-first model. For a richer demo with multiple cards and a server-side plot, see [04-shadcn](../04-shadcn/). For a build-step-free version, see [02-columns](../02-columns/).

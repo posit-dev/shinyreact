@@ -1,7 +1,7 @@
 # Example 14 — drag-between-columns (ui.tsx-first, no build step)
 
 Three columns of items with ←/→ buttons that move items between columns. The same demo as
-[example 11](../11-columns-traditional/) (traditional Shiny with `render.ui` + dynamic observers) and [example 12](../12-columns-spa/) (the previous-shinyreact ui.tsx prototype), but rebuilt on the new `shinyreact` package and stripped down to no build step.
+[10-columns](../../app-py/10-columns/) (traditional Shiny with `render.ui` + dynamic observers), but rebuilt on the new `shinyreact` package and stripped down to no build step.
 
 ## Why it exists
 
@@ -13,12 +13,12 @@ This pattern is the canonical motivating case for the `ui.tsx`-first architectur
 
 In the `ui.tsx`-first model the server only owns the **data**. The client (a plain React app) owns the **UI**. The server gets one event input — `move_item` carrying `{item, from, to}` — applies it to a `reactive.value`, and ships the new column dict back through `@reactive_output`. React reconciles. No dynamic observers, no generated IDs, no UI lifecycle code on the server.
 
-Compare `examples/14-columns-new-spa/app.py` (~20 lines of server logic) to `examples/11-columns-traditional/app.py` (~80 lines wrestling with observers).
+Compare `examples/ui-tsx/02-columns/app.py` (~20 lines of server logic) to `examples/app-py/10-columns/app.py` (~80 lines wrestling with observers).
 
 ## Layout
 
 ```
-examples/14-columns-new-spa/
+examples/ui-tsx/02-columns/
 ├── app.py            # set_react_page() + 1 reactive_output (column_data) + 1 reactive.effect on input.move_item
 └── www/
     ├── index.html
@@ -26,7 +26,7 @@ examples/14-columns-new-spa/
     └── main.css
 ```
 
-Same 4-file shape as [example 13](../13-spa-hello/). No `package.json`, no bundler.
+Same 4-file shape as [01-hello](../01-hello/). No `package.json`, no bundler.
 
 ## Bridge primitives used
 
@@ -37,9 +37,9 @@ Same 4-file shape as [example 13](../13-spa-hello/). No `package.json`, no bundl
 ## Run it
 
 ```bash
-uv run shiny run examples/14-columns-new-spa/app.py
+uv run shiny run examples/ui-tsx/02-columns/app.py
 ```
 
 ## When to use this pattern
 
-Anytime the UI is a function of dynamic data (drag-and-drop boards, sortable lists, arbitrary collections) — owning the UI on the client eliminates an entire class of observer-lifecycle bugs that the `app.py` pattern is prone to. For a styled version with shadcn components see [example 15](../15-columns-shadcn/).
+Anytime the UI is a function of dynamic data (drag-and-drop boards, sortable lists, arbitrary collections) — owning the UI on the client eliminates an entire class of observer-lifecycle bugs that the `app.py` pattern is prone to. For a styled version with shadcn components see [03-columns-shadcn](../03-columns-shadcn/).

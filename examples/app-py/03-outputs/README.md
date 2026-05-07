@@ -2,7 +2,7 @@
 
 A gallery of output types over the JSON-spec bridge: numeric statistics, a data table, a matplotlib plot, and a verbatim-text display, all driven by a shared slider input filtering rows of `mtcars`.
 
-> **Note:** Uses `shinyreact`. `ui.tsx`-first apps generally don't need a per-output-type bridge — the client picks how to render whatever JSON the server ships. See [example 16](../16-shadcn/) for matplotlib + plotly versions of the plot pattern.
+> **Note:** Uses `shinyreact`. `ui.tsx`-first apps generally don't need a per-output-type bridge — the client picks how to render whatever JSON the server ships. See [04-shadcn](../../ui-tsx/04-shadcn/) for matplotlib + plotly versions of the plot pattern.
 
 ## What it shows
 
@@ -14,7 +14,7 @@ A gallery of output types over the JSON-spec bridge: numeric statistics, a data 
 ## Layout
 
 ```
-examples/3-outputs/
+examples/app-py/03-outputs/
 ├── app.py        # Server: filter mtcars by cylinder count, render outputs
 ├── outputs.js    # JS bundle: SliderCard / StatisticsCard / DataTableCard / PlotCard
 ├── mtcars.csv
@@ -24,5 +24,5 @@ examples/3-outputs/
 ## Run it
 
 ```bash
-uv run shiny run examples/3-outputs/app.py
+uv run shiny run examples/app-py/03-outputs/app.py
 ```

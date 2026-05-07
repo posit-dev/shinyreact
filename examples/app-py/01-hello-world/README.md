@@ -2,7 +2,7 @@
 
 The smallest end-to-end example using the **JSON-spec** package (`shinyreact`). The Python server describes a UI tree as a `shinyreact.Node`, sends it as JSON, and a small client-side JavaScript bundle renders it with React.
 
-> **Note:** This example uses `shinyreact` — the original server-driven-UI approach. For the `ui.tsx`-first replacement, see [example 13](../13-spa-hello/).
+> **Note:** This example uses `shinyreact` — the original server-driven-UI approach. For the `ui.tsx`-first replacement, see [01-hello](../../ui-tsx/01-hello/).
 
 ## What it shows
 
@@ -13,7 +13,7 @@ The smallest end-to-end example using the **JSON-spec** package (`shinyreact`). 
 ## Layout
 
 ```
-examples/1-hello-world/
+examples/app-py/01-hello-world/
 ├── app.py                # Server: composes Node tree, returns it from @shinyreact.reactive_output
 ├── hello_world.js        # JS bundle: registers Card / TextInput / Divider / InputDisplay
 └── styles.css
@@ -24,5 +24,5 @@ The JS bundle is loaded as an `HTMLDependency`, version-stamped with the file's 
 ## Run it
 
 ```bash
-uv run shiny run examples/1-hello-world/app.py
+uv run shiny run examples/app-py/01-hello-world/app.py
 ```

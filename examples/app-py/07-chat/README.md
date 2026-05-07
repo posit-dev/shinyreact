@@ -9,7 +9,7 @@ A chat UI backed by OpenAI's `gpt-4o-mini` (via [chatlas](https://github.com/pos
 You need an OpenAI API key:
 
 ```bash
-echo 'OPENAI_API_KEY=sk-...' > examples/7-chat/.env
+echo 'OPENAI_API_KEY=sk-...' > examples/app-py/07-chat/.env
 ```
 
 The `.env` file is loaded automatically when the app starts.
@@ -23,7 +23,7 @@ The `.env` file is loaded automatically when the app starts.
 ## Layout
 
 ```
-examples/7-chat/
+examples/app-py/07-chat/
 ├── app.py        # Server: chat input handler + streaming loop
 ├── chat.js       # JS bundle: ChatApp component
 ├── styles.css
@@ -33,5 +33,5 @@ examples/7-chat/
 ## Run it
 
 ```bash
-uv run shiny run examples/7-chat/app.py
+uv run shiny run examples/app-py/07-chat/app.py
 ```

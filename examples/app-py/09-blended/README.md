@@ -13,7 +13,7 @@ Demonstrates that `shinyreact` can coexist with traditional Shiny outputs on the
 ## Layout
 
 ```
-examples/9-blended/
+examples/app-py/09-blended/
 ├── app.py        # Server: shinyreact.reactive_output outputs + traditional render.plot
 ├── blended.js    # JS bundle: custom cards
 └── styles.css
@@ -22,5 +22,5 @@ examples/9-blended/
 ## Run it
 
 ```bash
-uv run shiny run examples/9-blended/app.py
+uv run shiny run examples/app-py/09-blended/app.py
 ```

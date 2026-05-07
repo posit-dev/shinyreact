@@ -15,7 +15,7 @@ The point is that you can build a reusable React component that talks to Shiny w
 ## Layout
 
 ```
-examples/8-modules/
+examples/app-py/08-modules/
 ├── app.py        # Server: counter_module_server invoked 3x with different namespaces
 ├── modules.js    # JS bundle: AppLayout / WidgetsGrid / ModuleCounter / InfoSection
 └── styles.css
@@ -24,5 +24,5 @@ examples/8-modules/
 ## Run it
 
 ```bash
-uv run shiny run examples/8-modules/app.py
+uv run shiny run examples/app-py/08-modules/app.py
 ```
