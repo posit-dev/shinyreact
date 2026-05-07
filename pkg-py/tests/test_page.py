@@ -57,3 +57,21 @@ def test_page_react_no_js_file_css_file_params():
     param_names = list(sig.parameters.keys())
     assert "js_file" not in param_names
     assert "css_file" not in param_names
+
+
+def test_page_react_dep_falls_back_to_cwd_without_file(tmp_path, monkeypatch):
+    """page_react_dep() falls back to CWD when the caller has no __file__."""
+    (tmp_path / "main.js").write_text("// ...")
+    monkeypatch.chdir(tmp_path)
+
+    captured: dict[str, HTMLDependency] = {}
+    src = (
+        "from shinyreact._page import page_react_dep\n"
+        "captured['dep'] = page_react_dep()\n"
+    )
+    exec(compile(src, "<test>", "exec"), {"captured": captured})
+
+    dep = captured["dep"]
+    assert isinstance(dep, HTMLDependency)
+    # Source resolved to CWD, so dep_name is the CWD's basename.
+    assert dep.name == tmp_path.name
