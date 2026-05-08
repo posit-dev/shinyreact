@@ -24,6 +24,7 @@ vi.mock("../message-registry", () => ({
 }));
 
 import { useShinyInitialized } from "../use-shiny";
+import { __resetLifecycleStoreForTests } from "../lifecycle-store";
 
 async function flushPromises() {
   await act(async () => {
@@ -34,11 +35,13 @@ async function flushPromises() {
 describe("useShinyInitialized", () => {
   beforeEach(() => {
     mockShiny = undefined;
+    __resetLifecycleStoreForTests();
     vi.clearAllMocks();
   });
 
   afterEach(() => {
     mockShiny = undefined;
+    __resetLifecycleStoreForTests();
   });
 
   it("returns true when Shiny is already available and initialized", async () => {
@@ -75,35 +78,25 @@ describe("useShinyInitialized", () => {
     expect(result.current).toBe(true);
   });
 
-  it("cleans up event listener on unmount", () => {
-    mockShiny = undefined;
+  it("returns true immediately for a consumer that mounts after init", async () => {
+    // First consumer mounts, drives the store to initialized.
+    mockShiny = { initializedPromise: Promise.resolve() };
+    const first = renderHook(() => useShinyInitialized());
+    await flushPromises();
+    expect(first.result.current).toBe(true);
 
-    const addSpy = vi.spyOn(document, "addEventListener");
-    const removeSpy = vi.spyOn(document, "removeEventListener");
-
-    const { unmount } = renderHook(() => useShinyInitialized());
-
-    expect(addSpy).toHaveBeenCalledWith(
-      "shiny:connected",
-      expect.any(Function),
-      { once: true },
-    );
-
-    unmount();
-
-    expect(removeSpy).toHaveBeenCalledWith(
-      "shiny:connected",
-      expect.any(Function),
-    );
-
-    addSpy.mockRestore();
-    removeSpy.mockRestore();
+    // Second consumer mounts later — should see `true` on its first render
+    // (no waiting, no flush needed).
+    const second = renderHook(() => useShinyInitialized());
+    expect(second.result.current).toBe(true);
   });
 
-  it("does not update state after unmount (cancelled)", async () => {
+  it("does not update state after unmount", async () => {
     // Use a promise that we control
     let resolveInit!: () => void;
-    const initPromise = new Promise<void>((r) => { resolveInit = r; });
+    const initPromise = new Promise<void>((r) => {
+      resolveInit = r;
+    });
     mockShiny = { initializedPromise: initPromise };
 
     const { result, unmount } = renderHook(() => useShinyInitialized());
