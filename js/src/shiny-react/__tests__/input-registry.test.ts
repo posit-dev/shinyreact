@@ -274,4 +274,37 @@ describe("InputRegistry.subscribe (read-only consumer)", () => {
     registry.get("foo")!.setValue(2);
     expect(setFn).not.toHaveBeenCalled();
   });
+
+  it("dispose() is idempotent (safe to call twice)", () => {
+    const registry = new InputRegistry();
+    registry.add("foo", 1);
+    const setFn = vi.fn();
+    const dispose = registry.subscribe("foo", setFn);
+    setFn.mockClear();
+
+    dispose();
+    expect(() => dispose()).not.toThrow();
+
+    registry.get("foo")!.setValue(2);
+    expect(setFn).not.toHaveBeenCalled();
+  });
+
+  it("multiple subscribers on the same pending id all receive the value, and dispose is independent", () => {
+    const registry = new InputRegistry();
+    const setFn1 = vi.fn();
+    const setFn2 = vi.fn();
+    const dispose1 = registry.subscribe("foo", setFn1);
+    const dispose2 = registry.subscribe("foo", setFn2);
+
+    registry.add("foo", 99);
+    expect(setFn1).toHaveBeenCalledWith(99);
+    expect(setFn2).toHaveBeenCalledWith(99);
+
+    dispose1();
+    registry.get("foo")!.setValue(100);
+    expect(setFn1).not.toHaveBeenCalledWith(100);
+    expect(setFn2).toHaveBeenCalledWith(100);
+
+    dispose2();
+  });
 });
