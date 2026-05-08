@@ -178,7 +178,7 @@
   function MetricsCards(args) {
     var result = useShinyOutput(args.element.props.output_id, undefined);
     var metricsData = result[0];
-    var isLoading = result[1];
+    var isLoading = result[1] !== "ready";
 
     if (!metricsData || isLoading) {
       return h("div", { className: "metrics-grid" },
@@ -227,7 +227,7 @@
   function Charts(args) {
     var result = useShinyOutput(args.element.props.output_id, undefined);
     var chartColumnsData = result[0];
-    var isLoading = result[1];
+    var isLoading = result[1] !== "ready";
 
     if (!chartColumnsData || isLoading) {
       return h("div", { className: "charts-container" },
@@ -312,7 +312,7 @@
   function DataTable(args) {
     var result = useShinyOutput(args.element.props.output_id, undefined);
     var tableData = result[0];
-    var isLoading = result[1];
+    var isLoading = result[1] !== "ready";
 
     if (!tableData || isLoading) {
       return h("div", { className: "card table-card" },

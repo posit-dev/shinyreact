@@ -11,7 +11,7 @@ A `ui.tsx`-first Shiny app whose UI is a React app styled with [shadcn/ui](https
 | **ButtonEventCard** | shadcn `Button` + `Card`. `useShinyInput("button_trigger", 0, { priority: "event" })` is a Shiny-style action button — increments on every click; the server's `@reactive_output @reactive.event(input.button_trigger)` returns a fresh timestamp string. |
 | **PlotCard** | shadcn `Card` wrapping `<ImageOutput id="plot1"/>`. The server uses Shiny's standard `@render.plot` to draw a matplotlib scatter + linear trend line; the client's `ImageOutput` binding picks up the rendered PNG. |
 | **PlotlyCard** | shadcn `Card` with a `plotly.js-basic-dist-min` chart. The server only ships the raw data via `@reactive_output scatter_data`; the client receives `{age: [...], score: [...]}`, computes the trend-line slope/intercept locally, and calls `Plotly.react`. Continuous hover (anywhere in the plot, not just on markers), click anywhere, drag-to-select-and-zoom, double-click or Esc to reset the view. All interactions push the cursor's data coords into Shiny inputs (`plotly_hover`, `plotly_click`, `plotly_dblclick`, `plotly_selection`, `plotly_xy_ranges`). |
-| **PlotlyInfoCard** | A read-only card that re-subscribes to those same input ids via `useShinyInput`. The displayed values are React's local state (no roundtrip), demonstrating that "set a Shiny input from a client interaction" and "display a value the client already has" are the same hook. The values also travel to the server, so `input.plotly_hover()` etc. work in the Python reactive graph if you want them. |
+| **PlotlyInfoCard** | A read-only card that re-subscribes to those same input ids via `useShinyInputValue`. The displayed values are React's local state (no roundtrip), demonstrating that "set a Shiny input from a client interaction" and "display a value the client already has" are the same hook. The values also travel to the server, so `input.plotly_hover()` etc. work in the Python reactive graph if you want them. |
 
 The two plots draw the same data so you can see the trade-off directly:
 
@@ -38,7 +38,7 @@ examples/ui-tsx/04-shadcn/
 │       ├── ButtonEventCard.jsx
 │       ├── PlotCard.jsx            # server-rendered matplotlib plot
 │       ├── PlotlyCard.jsx          # client-rendered plotly.js chart
-│       ├── PlotlyInfoCard.jsx      # reads back hover/click/etc. via useShinyInput
+│       ├── PlotlyInfoCard.jsx      # reads back hover/click/etc. via useShinyInputValue
 │       └── ui/                     # actual shadcn component files (cva + Tailwind)
 │           ├── badge.jsx
 │           ├── button.jsx
