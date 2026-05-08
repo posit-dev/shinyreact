@@ -14,6 +14,13 @@ export class OutputRegistryEntry<T> {
   id: string;
   private status: OutputStatus = "pending";
   private hasValue = false;
+  // Cached most-recent value and error so a late-mounting subscriber can be
+  // synced to the entry's current state without waiting for the next server
+  // update. Without these, `OutputRegistry.add` would push status (e.g.
+  // "ready" / "error") into the new subscriber while leaving its value/error
+  // useState slots at their initial defaults — divergent state.
+  private lastValue: T | undefined = undefined;
+  private lastError: ErrorsMessageValue | null = null;
   private useStateSetValueFns: Set<(value: T) => void>;
   private useStateSetStatusFns: Set<(status: OutputStatus) => void>;
   private useStateSetErrorFns: Set<(err: ErrorsMessageValue | null) => void>;
@@ -23,6 +30,18 @@ export class OutputRegistryEntry<T> {
     this.useStateSetValueFns = new Set();
     this.useStateSetStatusFns = new Set();
     this.useStateSetErrorFns = new Set();
+  }
+
+  hasReceivedValue(): boolean {
+    return this.hasValue;
+  }
+
+  getLastValue(): T | undefined {
+    return this.lastValue;
+  }
+
+  getLastError(): ErrorsMessageValue | null {
+    return this.lastError;
   }
 
   addUseStateSetValueFn(fn: (value: T) => void) {
@@ -61,9 +80,11 @@ export class OutputRegistryEntry<T> {
 
   setValue(value: T) {
     this.hasValue = true;
+    this.lastValue = value;
     this.useStateSetValueFns.forEach((fn) => fn(value));
     // Receiving a value clears any prior error.
     if (this.status === "error") {
+      this.lastError = null;
       this.useStateSetErrorFns.forEach((fn) => fn(null));
     }
     this.setStatus("ready");
@@ -75,6 +96,15 @@ export class OutputRegistryEntry<T> {
       // Before the first value arrives, the UI should keep showing the
       // pending/skeleton state — the server being busy doesn't change that.
       if (this.hasValue) {
+        // Entering recalculating means the server is computing a fresh
+        // result; any previous error is no longer relevant. Clear it so
+        // status and error stay consistent (an existing error subscriber
+        // shouldn't keep rendering the stale error while status says
+        // "recalculating").
+        if (this.status === "error") {
+          this.lastError = null;
+          this.useStateSetErrorFns.forEach((fn) => fn(null));
+        }
         this.setStatus("recalculating");
       }
     } else {
@@ -87,6 +117,7 @@ export class OutputRegistryEntry<T> {
   }
 
   setError(err: ErrorsMessageValue) {
+    this.lastError = err;
     this.useStateSetErrorFns.forEach((fn) => fn(err));
     this.setStatus("error");
   }
@@ -137,9 +168,17 @@ export class OutputRegistry {
     outputEntry.addUseStateSetStatusFn(setStatus);
     outputEntry.addUseStateSetErrorFn(setError);
 
-    // Sync new subscriber with current status (so a consumer mounting after
-    // the first server response sees "ready" immediately, not "pending").
+    // Sync new subscriber with the entry's current state. Without all three
+    // of these, a late-mounting subscriber would see status "ready" / "error"
+    // while its local value/error useState slots still hold their initial
+    // defaults — divergent state until the next server update.
+    if (outputEntry.hasReceivedValue()) {
+      setValue(outputEntry.getLastValue() as T);
+    }
     setStatus(outputEntry.getStatus());
+    if (outputEntry.getStatus() === "error") {
+      setError(outputEntry.getLastError());
+    }
 
     return () => {
       outputEntry.removeUseStateSetValueFn(setValue);

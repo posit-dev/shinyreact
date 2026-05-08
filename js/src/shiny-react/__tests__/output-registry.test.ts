@@ -124,6 +124,39 @@ describe("OutputRegistry", () => {
     registry.add("out1", vi.fn(), setStatus2, vi.fn());
     expect(setStatus2).toHaveBeenCalledWith("ready");
   });
+
+  it("add syncs new subscriber with the cached value on attach", () => {
+    const registry = new OutputRegistry();
+    registry.add("out1", vi.fn(), vi.fn(), vi.fn());
+    registry.get("out1")!.setValue("first");
+
+    // A subscriber mounting AFTER setValue should see the cached value
+    // synchronously, not the default.
+    const setVal2 = vi.fn();
+    registry.add("out1", setVal2, vi.fn(), vi.fn());
+    expect(setVal2).toHaveBeenCalledWith("first");
+  });
+
+  it("add does not push value to a new subscriber if no value has been delivered", () => {
+    const registry = new OutputRegistry();
+    const setVal = vi.fn();
+    registry.add("out1", setVal, vi.fn(), vi.fn());
+    // Entry exists but never had setValue called → setVal should not fire on attach
+    expect(setVal).not.toHaveBeenCalled();
+  });
+
+  it("add syncs new subscriber with the cached error on attach when in error state", () => {
+    const registry = new OutputRegistry();
+    registry.add("out1", vi.fn(), vi.fn(), vi.fn());
+    const err = { message: "boom", call: [] };
+    registry.get("out1")!.setError(err);
+
+    const setStatus2 = vi.fn();
+    const setErr2 = vi.fn();
+    registry.add("out1", vi.fn(), setStatus2, setErr2);
+    expect(setStatus2).toHaveBeenCalledWith("error");
+    expect(setErr2).toHaveBeenCalledWith(err);
+  });
 });
 
 describe("OutputRegistryEntry status lifecycle", () => {
@@ -208,6 +241,25 @@ describe("OutputRegistryEntry status lifecycle", () => {
 
     expect(entry.getStatus()).toBe("ready");
     expect(setError).toHaveBeenLastCalledWith(null);
+  });
+
+  it("setRecalculating(true) from error state clears the error", () => {
+    const entry = new OutputRegistryEntry("test");
+    entry.setValue("first"); // hasValue = true so the recalc transition is allowed
+    entry.setError({ message: "boom", call: [] });
+    expect(entry.getStatus()).toBe("error");
+    expect(entry.getLastError()).not.toBeNull();
+
+    const setError = vi.fn();
+    entry.addUseStateSetErrorFn(setError);
+
+    entry.setRecalculating(true);
+
+    expect(entry.getStatus()).toBe("recalculating");
+    // Error subscribers must see null so they don't render a stale error
+    // while the status is no longer "error".
+    expect(setError).toHaveBeenLastCalledWith(null);
+    expect(entry.getLastError()).toBeNull();
   });
 
   it("isEmpty considers status and error subscribers", () => {
