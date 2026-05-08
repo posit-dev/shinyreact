@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const { useShinyOutput } = window.shinyreact;
 
 export function RenderTextCard() {
-  const [value, recalculating] = useShinyOutput("render_text_demo", "");
+  const [value, status] = useShinyOutput("render_text_demo", "");
+  const recalculating = status === "recalculating";
 
   return (
     <Card>
