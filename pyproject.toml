@@ -35,11 +35,22 @@ dev = [
     "tox-uv>=1.0.0",
     "pre-commit>=4.0.0",
 ]
+tests-e2e = [
+    "pytest-playwright>=0.5.0",
+    "shiny[playwright]>=1.2.0",
+    "shinywidgets>=0.8.0",
+    "plotly>=6.7.0",
+    "pandas>=2.1.0",
+]
 
 [tool.pyright]
 include = ["pkg-py/src/shinyreact"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["pkg-py/tests"]
+addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.ruff]
 line-length = 88
