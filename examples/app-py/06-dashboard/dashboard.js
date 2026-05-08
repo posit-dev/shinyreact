@@ -178,9 +178,11 @@
   function MetricsCards(args) {
     var result = useShinyOutput(args.element.props.output_id, undefined);
     var metricsData = result[0];
-    var isLoading = result[1] !== "ready";
+    var status = result[1];
 
-    if (!metricsData || isLoading) {
+    // Show skeleton only on initial load (no data yet). During recalculation
+    // we keep the prior values mounted so the UI doesn't flicker.
+    if (!metricsData) {
       return h("div", { className: "metrics-grid" },
         [0, 1, 2, 3].map(function (i) {
           return h("div", { key: i, className: "card metric-card skeleton-card" },
@@ -200,7 +202,9 @@
       conversion: "\u26A1",
     };
 
-    return h("div", { className: "metrics-grid" },
+    var gridClass = "metrics-grid" + (status === "recalculating" ? " recalculating" : "");
+
+    return h("div", { className: gridClass },
       metricKeys.map(function (key) {
         var m = metricsData[key];
         return h("div", { key: key, className: "card metric-card" },
@@ -227,9 +231,9 @@
   function Charts(args) {
     var result = useShinyOutput(args.element.props.output_id, undefined);
     var chartColumnsData = result[0];
-    var isLoading = result[1] !== "ready";
+    var status = result[1];
 
-    if (!chartColumnsData || isLoading) {
+    if (!chartColumnsData) {
       return h("div", { className: "charts-container" },
         h("div", { className: "card chart-card" },
           h("div", { className: "card-header" }, "Revenue Trend"),
@@ -271,7 +275,9 @@
     // For category performance
     var maxCatRevenue = Math.max.apply(null, categoryPerf.map(function (d) { return d.revenue; }));
 
-    return h("div", { className: "charts-container" },
+    var containerClass = "charts-container" + (status === "recalculating" ? " recalculating" : "");
+
+    return h("div", { className: containerClass },
       // Revenue Trend (vertical bars)
       h("div", { className: "card chart-card" },
         h("div", { className: "card-header" }, "\u2197 Revenue Trend"),
@@ -312,9 +318,9 @@
   function DataTable(args) {
     var result = useShinyOutput(args.element.props.output_id, undefined);
     var tableData = result[0];
-    var isLoading = result[1] !== "ready";
+    var status = result[1];
 
-    if (!tableData || isLoading) {
+    if (!tableData) {
       return h("div", { className: "card table-card" },
         h("div", { className: "card-header" }, "Top Products"),
         h("div", { className: "skeleton-rows" },
@@ -346,7 +352,9 @@
       rows.push(i);
     }
 
-    return h("div", { className: "card table-card" },
+    var cardClass = "card table-card" + (status === "recalculating" ? " recalculating" : "");
+
+    return h("div", { className: cardClass },
       h("div", { className: "card-header" }, "Top Products"),
       h("div", { className: "table-wrapper" },
         h("table", { className: "data-table" },
