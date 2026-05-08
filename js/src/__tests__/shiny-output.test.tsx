@@ -256,6 +256,129 @@ describe("ShinyOutput", () => {
     expect(mockUnbindAll).toHaveBeenCalledWith(elA, true);
   });
 
+  describe("error handling", () => {
+    let errorSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      errorSpy.mockRestore();
+    });
+
+    it("logs and stays mounted when bindAll throws synchronously", () => {
+      const boom = new Error("boom");
+      mockBindAll.mockImplementationOnce(() => {
+        throw boom;
+      });
+
+      const { container } = render(<ShinyOutput id="my_plot" />);
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy.mock.calls[0][0]).toBe(
+        '[shinyreact] ShinyOutput "my_plot" bindAll failed:',
+      );
+      expect(errorSpy.mock.calls[0][1]).toEqual({
+        id: "my_plot",
+        phase: "bindAll",
+        error: boom,
+      });
+      expect(container.querySelector("#my_plot")).not.toBeNull();
+    });
+
+    it("logs and stays mounted when bindAll returns a rejecting promise", async () => {
+      const boom = new Error("async boom");
+      mockBindAll.mockReturnValueOnce(Promise.reject(boom));
+
+      const { container } = render(<ShinyOutput id="my_plot" />);
+
+      // Allow the rejection's .catch handler to run.
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy.mock.calls[0][0]).toBe(
+        '[shinyreact] ShinyOutput "my_plot" bindAll failed:',
+      );
+      expect(errorSpy.mock.calls[0][1]).toEqual({
+        id: "my_plot",
+        phase: "bindAll",
+        error: boom,
+      });
+      expect(container.querySelector("#my_plot")).not.toBeNull();
+    });
+
+    it("logs and does not re-throw when unbindAll throws on unmount", () => {
+      const boom = new Error("teardown boom");
+      mockUnbindAll.mockImplementationOnce(() => {
+        throw boom;
+      });
+
+      const { unmount } = render(<ShinyOutput id="my_plot" />);
+
+      expect(() => unmount()).not.toThrow();
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy.mock.calls[0][0]).toBe(
+        '[shinyreact] ShinyOutput "my_plot" unbindAll failed:',
+      );
+      expect(errorSpy.mock.calls[0][1]).toEqual({
+        id: "my_plot",
+        phase: "unbindAll",
+        error: boom,
+      });
+    });
+
+    it("isolates a failing bindAll to one sibling — others still render and bind", () => {
+      mockBindAll.mockImplementationOnce(() => {}); // a
+      mockBindAll.mockImplementationOnce(() => {
+        throw new Error("only b fails");
+      });
+      mockBindAll.mockImplementationOnce(() => {}); // c
+
+      const { container } = render(
+        <div>
+          <ShinyOutput id="a" />
+          <ShinyOutput id="b" />
+          <ShinyOutput id="c" />
+        </div>,
+      );
+
+      expect(container.querySelector("#a")).not.toBeNull();
+      expect(container.querySelector("#b")).not.toBeNull();
+      expect(container.querySelector("#c")).not.toBeNull();
+      expect(mockBindAll).toHaveBeenCalledTimes(3);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy.mock.calls[0][1]).toMatchObject({
+        id: "b",
+        phase: "bindAll",
+      });
+    });
+
+    it("logs the new id when re-binding after id change throws", () => {
+      const { rerender, container } = render(<ShinyOutput id="first" />);
+      expect(errorSpy).not.toHaveBeenCalled();
+
+      const boom = new Error("rebind boom");
+      mockBindAll.mockImplementationOnce(() => {
+        throw boom;
+      });
+
+      rerender(<ShinyOutput id="second" />);
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy.mock.calls[0][0]).toBe(
+        '[shinyreact] ShinyOutput "second" bindAll failed:',
+      );
+      expect(errorSpy.mock.calls[0][1]).toEqual({
+        id: "second",
+        phase: "bindAll",
+        error: boom,
+      });
+      expect(container.querySelector("#second")).not.toBeNull();
+    });
+  });
+
   it("ignores Shiny added to the window after mount", () => {
     // The effect captures Shiny synchronously on mount. If Shiny loads
     // later, this component does not retroactively bind — that's the
