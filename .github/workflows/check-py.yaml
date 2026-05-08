@@ -39,3 +39,46 @@ jobs:
 
       - name: 🧪 Check tests and types (Python 3.10–3.14)
         run: make py-check-tox
+
+  playwright-e2e:
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🚀 Install uv
+        uses: astral-sh/setup-uv@v6.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: 📦 Sync e2e deps
+        run: uv sync --group tests-e2e
+
+      - name: 🗂  Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: 🌐 Install Playwright browsers
+        run: uv run playwright install --with-deps chromium
+
+      - name: 🧪 Run Playwright e2e tests
+        run: |
+          uv run pytest pkg-py/tests/playwright \
+            --browser chromium \
+            --tracing=retain-on-failure \
+            --screenshot=only-on-failure \
+            -o addopts= \
+            -v
+
+      - name: 📤 Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-results
+          path: test-results/
+          retention-days: 5
