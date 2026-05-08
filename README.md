@@ -123,10 +123,14 @@ Downstream component authors can use these re-exported hooks from `@posit/shiny-
 
 | Hook | Purpose |
 |------|---------|
-| `useShinyInput(id, opts)` | Read/write a Shiny input from React |
-| `useShinyOutputValue(id)` | Consume arbitrary data sent by `@shinyreact.reactive_output` |
+| `useShinyInput(id, default, opts)` | Read/write a Shiny input — full `[value, setValue]` |
+| `useShinyInputValue(id)` | Read-only consumer for an input that another component produces |
+| `useSetShinyInput(id, default, opts)` | Write-only producer — registers an input and returns just the setter |
+| `useShinyOutputValue(id, default?)` | Consume arbitrary data sent by `@shinyreact.reactive_output` |
+| `useShinyOutputStatus(id)` | Output lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` |
 | `useShinyMessageHandler(type, fn)` | Handle server-to-client custom messages |
 | `useShinyInitialized()` | Check whether Shiny is connected |
+| `useShinyBusy()` | Whether the Shiny server is currently processing a request |
 
 Shared `React` and `ReactDOM` instances are also available at `window.shinyreact.React` / `window.shinyreact.ReactDOM` — externalize to these in your build to avoid duplicate React.
 
