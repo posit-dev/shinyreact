@@ -82,9 +82,9 @@ def greeting():
 
 ```js
 // www/app.js
-const { useShinyOutput } = window.shinyreact;
+const { useShinyOutputValue } = window.shinyreact;
 function App() {
-    const data = useShinyOutput("greeting");
+    const data = useShinyOutputValue("greeting");
     return React.createElement("p", null, data?.message ?? "...");
 }
 ```
@@ -117,7 +117,7 @@ Implications for the `ui.tsx` pattern:
 
 Within a `ui.tsx` app, there are two ways to ship server-side output to the page. Both are valid and they coexist in the same app.
 
-| | `@reactive_output` + `useShinyOutput` | `@render.<x>` + `<ShinyOutput>` |
+| | `@reactive_output` + `useShinyOutputValue` | `@render.<x>` + `<ShinyOutput>` |
 |---|---|---|
 | Wire payload | Pure data (JSON) | Whatever the binding sends — often pre-rendered HTML or widget state |
 | UI ownership | React | The traditional Shiny output binding |
@@ -133,7 +133,7 @@ const h = React.createElement;
 function App() {
     return h("div", null,
         // Custom UI rendered by React from JSON data
-        h(MyChart, { data: useShinyOutput("chart_data") }),
+        h(MyChart, { data: useShinyOutputValue("chart_data") }),
         // Existing data-frame binding owns this subtree
         h(ShinyOutput, { id: "my_table", tagName: "shiny-data-frame" }),
         // Plotly via shinywidgets
@@ -230,7 +230,7 @@ See [`examples/ui-tsx/03-columns-shadcn/`](../examples/ui-tsx/03-columns-shadcn/
 The two patterns coexist in `shinyreact`. You do not have to choose one for your entire codebase:
 
 - A `ui.tsx` app serves one Python (or R) module alongside one React client — but that module can still use `reactive.value`, `reactive.calc`, `@reactive.effect`, and all standard Shiny reactive primitives.
-- Within a `ui.tsx` app, you can mix `@reactive_output` + `useShinyOutput` with traditional `@render.<x>` + `<ShinyOutput>` (see section 4).
+- Within a `ui.tsx` app, you can mix `@reactive_output` + `useShinyOutputValue` with traditional `@render.<x>` + `<ShinyOutput>` (see section 4).
 - You can run an `app.py` `shinyreact` app today and migrate individual output slots to the `ui.tsx` pattern incrementally.
 - There is no deprecation of the `app.py` pattern. Both are first-class in `shinyreact`.
 

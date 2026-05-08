@@ -9,7 +9,7 @@ AI changes the equation. When Claude can generate a complete React app — with 
 This document was originally written to propose a ui.tsx-first architecture as a new direction. **As of May 2026, `shinyreact` ships both patterns as first-class peers:**
 
 - **app.py pattern** (`page_react` + `reactive_output`) — server describes UI as a JSON spec (`Spec`/`Element`/`Node`), the JS bundle renders it into a React tree. Authors work entirely in Python/R; no JS required.
-- **ui.tsx pattern** (`set_react_page()`) — server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutput` / `useShinyMessageHandler`. UI logic lives on the client.
+- **ui.tsx pattern** (`set_react_page()`) — server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler`. UI logic lives on the client.
 
 The tenets and analysis below describe the ui.tsx-first reasoning that motivated the architecture. Both patterns coexist and neither is deprecated. See [`docs/app-py-vs-ui-tsx.md`](docs/app-py-vs-ui-tsx.md) for guidance on choosing between them.
 
@@ -47,7 +47,7 @@ Shiny's core value is lazy, dependency-tracked, minimal recomputation — analog
 
 ### Tenet 7: The communication bridge is small and explicit
 
-Message passing between client and server should be targeted — addressed by element id, message type, and handler — not broadcast to the document. The bridge API surface should be minimal: a small set of React hooks (functions that let components interact with Shiny) on the client (`useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`) and corresponding server-side primitives. If the bridge grows large, something has gone wrong.
+Message passing between client and server should be targeted — addressed by element id, message type, and handler — not broadcast to the document. The bridge API surface should be minimal: a small set of React hooks (functions that let components interact with Shiny) on the client (`useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`) and corresponding server-side primitives. If the bridge grows large, something has gone wrong.
 
 ### Tenet 8: Pre-built component libraries are a parallel path
 
@@ -162,7 +162,7 @@ The client is a standard React app that:
 
 - Renders the full UI (layout, components, styling, client-side interactivity)
 - Connects to the Shiny server via websocket
-- Uses a small set of hooks (`useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`, ...) to communicate with the server
+- Uses a small set of hooks (`useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`, ...) to communicate with the server
 - Handles UI-only reactivity locally (show/hide panels, loading states, client-side filtering)
 
 The client is static — it can be served from a CDN, a `static/` directory, or any file server. It does not need a build step at runtime. Because the client has no server-generated state baked in, features like bookmarking will require the server to send an init message over the websocket on connection to hydrate (initialize) the client with the appropriate state.
@@ -174,7 +174,7 @@ The core communication layer is intentionally minimal:
 | Direction | Mechanism | Example |
 |-----------|-----------|---------|
 | Client → Server | `useShinyInput(id, defaultValue)` | User selects a filter option |
-| Server → Client | `useShinyOutput(id)` | Server sends computed plot data |
+| Server → Client | `useShinyOutputValue(id)` | Server sends computed plot data |
 | Server → Client (push) | `useShinyMessageHandler(id, messageType, handler)` | Server pushes a notification |
 
 ### Server-side primitives
@@ -183,7 +183,7 @@ The server file uses a constrained set of primitives for communicating with the 
 
 The supported primitives:
 
-**`@render.json`** — Sends a value to the client as JSON. The client subscribes via `useShinyOutput(id)` and receives the data. This is the primary mechanism for server → client data flow. The server computes the data; the client decides how to render it.
+**`@render.json`** — Sends a value to the client as JSON. The client subscribes via `useShinyOutputValue(id)` and receives the data. This is the primary mechanism for server → client data flow. The server computes the data; the client decides how to render it.
 
 ```python
 columns = reactive.value(initial_data)
@@ -323,7 +323,7 @@ The ui.tsx-first prototype proposed in this document has been built and validate
 1. **Design tenets (Section 2) are the guiding principles.** Both patterns respect them: the app file contains server logic; the framework handles reactivity; the app is a polished product.
 2. **Both patterns are implemented and working.** The ui.tsx pattern (`set_react_page()`, `reactive_output`) and the app.py pattern (`page_react`, `reactive_output`, `Spec`/`Element`/`Node`) ship from the same package.
 3. **The JSON spec transfer layer is retained for the app.py pattern.** The `Spec`/`Element`/`Node` data model and the in-house renderer walker serve the app.py use case well. For ui.tsx apps, the layer is bypassed — `reactive_output` sends raw JSON that the client renders directly.
-4. **The bridge library is stable.** `useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`, `ShinyModuleProvider`, and `ImageOutput` are vendored from `@posit/shiny-react` and re-exported on `window.shinyreact`.
+4. **The bridge library is stable.** `useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`, `ShinyModuleProvider`, and `ImageOutput` are vendored from `@posit/shiny-react` and re-exported on `window.shinyreact`.
 5. **Remaining open work** is tracked in [`docs/todos.md`](docs/todos.md) and the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues).
 
 ## Appendix: Previous Explorations — `@json-render/react` and Server-Driven UI
@@ -344,7 +344,7 @@ This approach is valuable when the UI must be defined on the server — for exam
 
 Not everything from this exploration is discarded:
 
-- **The `shiny-react` hooks** (`useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`, ...) are the communication bridge between the React app and the Shiny server. These carry forward directly.
+- **The `shiny-react` hooks** (`useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`, ...) are the communication bridge between the React app and the Shiny server. These carry forward directly.
 - **The understanding of Shiny's output binding lifecycle**, module namespacing, and initialization sequencing — all hard-won during `shinyreact` development — informs how the client bridge works.
 
 ### The shift

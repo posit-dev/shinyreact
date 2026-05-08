@@ -17,7 +17,7 @@ Not sure whether to use the `app.py` pattern or the `ui.tsx` pattern? See [`docs
 **`ui.tsx` pattern** — UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `App.jsx`, or `app.js` for no-build):
 1. Python server contains only reactive computation (no UI definitions); calls `set_react_page()`
 2. A static `www/index.html` + `www/app.js` (or built from `src/ui.tsx`) serve as the React client
-3. Client and server communicate via `useShinyInput` / `useShinyOutput` / `useShinyMessageHandler` hooks
+3. Client and server communicate via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler` hooks
 
 ## Installation
 
@@ -53,7 +53,7 @@ def server(input, output, session):
 app = App(app_ui, server)
 ```
 
-`@shinyreact.reactive_output` also accepts raw JSON-serializable values (dicts, lists, etc.) for use with `useShinyOutput()` hooks on the React side.
+`@shinyreact.reactive_output` also accepts raw JSON-serializable values (dicts, lists, etc.) for use with `useShinyOutputValue()` hooks on the React side.
 
 ### `ui.tsx` pattern
 
@@ -124,7 +124,7 @@ Downstream component authors can use these re-exported hooks from `@posit/shiny-
 | Hook | Purpose |
 |------|---------|
 | `useShinyInput(id, opts)` | Read/write a Shiny input from React |
-| `useShinyOutput(id)` | Consume arbitrary data sent by `@shinyreact.reactive_output` |
+| `useShinyOutputValue(id)` | Consume arbitrary data sent by `@shinyreact.reactive_output` |
 | `useShinyMessageHandler(type, fn)` | Handle server-to-client custom messages |
 | `useShinyInitialized()` | Check whether Shiny is connected |
 
