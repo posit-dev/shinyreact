@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { applyRestoredValues } from "./bookmark";
 import { getShiny } from "./get-shiny";
 import { type InputRegistryEntry } from "./input-registry";
 import {
@@ -540,8 +541,20 @@ function ensureShinyReactInitialized() {
   }
 
   initializeReactRegistry();
+  // Adopt any bookmark-restored input values BEFORE the output binding
+  // begins consuming server messages, so the registry already holds the
+  // restored values by the first useShinyInput mount.
+  applyRestoredValues(getReactRegistry().inputs);
   createReactOutputBinding();
   initializeMessageRegistry();
 
   shinyReactInitialized = true;
+}
+
+/**
+ * Reset the shinyReactInitialized flag. FOR TESTING ONLY.
+ * This allows tests to re-run initialization after clearing state.
+ */
+export function _resetShinyReactInitializedForTesting(): void {
+  shinyReactInitialized = false;
 }

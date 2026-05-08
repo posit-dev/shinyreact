@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, expect, it, beforeEach, vi } from "vitest";
+import { describe, expect, it, afterEach, beforeEach, vi } from "vitest";
 
 vi.mock("../get-shiny", () => ({
   getShiny: vi.fn(() => undefined),
@@ -7,6 +7,10 @@ vi.mock("../get-shiny", () => ({
 
 import { InputRegistry } from "../input-registry";
 import { applyRestoredValues } from "../bookmark";
+import * as React from "react";
+import { act, cleanup, render } from "@testing-library/react";
+import { _resetShinyReactInitializedForTesting, useShinyInput } from "../use-shiny";
+import { getReactRegistry } from "../react-registry";
 
 function freshWindow(): void {
   // jsdom provides window; clear any prior shinyreact state.
@@ -93,5 +97,83 @@ describe("applyRestoredValues", () => {
 
     expect(subscriber).toHaveBeenCalledWith("hello");
     unsub();
+  });
+});
+
+// Force `useShinyInitialized` to flip to true synchronously for these tests.
+vi.mock("../lifecycle-store", () => {
+  let initialized = true;
+  return {
+    subscribeLifecycle: (cb: () => void) => {
+      initialized = true;
+      cb();
+      return () => {};
+    },
+    getInitializedSnapshot: () => initialized,
+    getBusySnapshot: () => false,
+  };
+});
+
+function Probe({ id, defVal }: { id: string; defVal: string }) {
+  const [v] = useShinyInput<string>(id, defVal);
+  return <span data-testid="v">{v}</span>;
+}
+
+describe("useShinyInput + restore", () => {
+  beforeEach(() => {
+    freshWindow();
+    // Reset the module-level shinyReactInitialized flag so each test re-runs
+    // ensureShinyReactInitialized (and therefore applyRestoredValues).
+    _resetShinyReactInitializedForTesting();
+    // Reset the singleton react registry between tests.
+    // Guard against the first run where the registry may not yet be initialized.
+    try {
+      const reg = getReactRegistry();
+      Array.from(reg.inputs.keys()).forEach((k) => reg.inputs.remove(k));
+    } catch {
+      // Registry not yet initialized — nothing to clear.
+    }
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("adopts a restored value as initial render value, ignoring defaultValue", () => {
+    (window as any).shinyreact = { _restore: { foo: "hello" } };
+
+    let utils!: ReturnType<typeof render>;
+    act(() => {
+      utils = render(<Probe id="foo" defVal="default" />);
+    });
+
+    expect(utils.getByTestId("v").textContent).toBe("hello");
+  });
+
+  it("uses defaultValue when no restore data is present", () => {
+    (window as any).shinyreact = {};
+
+    let utils!: ReturnType<typeof render>;
+    act(() => {
+      utils = render(<Probe id="bar" defVal="default" />);
+    });
+
+    expect(utils.getByTestId("v").textContent).toBe("default");
+  });
+
+  it("namespaced ids: _restore = {'ns-foo': 'hello'} is adopted by useShinyInput('foo', _, {namespace:'ns'})", () => {
+    (window as any).shinyreact = { _restore: { "ns-foo": "hello" } };
+
+    function NsProbe() {
+      const [v] = useShinyInput<string>("foo", "default", { namespace: "ns" });
+      return <span data-testid="v">{v}</span>;
+    }
+
+    let utils!: ReturnType<typeof render>;
+    act(() => {
+      utils = render(<NsProbe />);
+    });
+
+    expect(utils.getByTestId("v").textContent).toBe("hello");
   });
 });
