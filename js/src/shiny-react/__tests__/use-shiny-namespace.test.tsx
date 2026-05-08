@@ -46,7 +46,13 @@ vi.mock("../message-registry", () => ({
   initializeMessageRegistry: vi.fn(),
 }));
 
-import { useShinyInput, useShinyOutput, useShinyInputValue } from "../use-shiny";
+import {
+  useSetShinyInput,
+  useShinyInput,
+  useShinyInputValue,
+  useShinyOutputStatus,
+  useShinyOutputValue,
+} from "../use-shiny";
 import { getReactRegistry } from "../react-registry";
 
 // Helper: flush microtasks so useShinyInitialized resolves via
@@ -132,20 +138,20 @@ describe("useShinyInput namespace suppression", () => {
   });
 });
 
-describe("useShinyOutput namespace", () => {
+describe("useShinyOutputValue namespace", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("uses plain outputId when no namespace is provided", () => {
-    renderHook(() => useShinyOutput("result"));
+    renderHook(() => useShinyOutputValue("result"));
     const registry = getReactRegistry();
     expect(registry).toBeDefined();
   });
 
   it("uses explicit namespace option for output", () => {
     renderHook(() =>
-      useShinyOutput("result", undefined, { namespace: "mod1" }),
+      useShinyOutputValue("result", undefined, { namespace: "mod1" }),
     );
     const registry = getReactRegistry();
     expect(registry).toBeDefined();
@@ -155,14 +161,76 @@ describe("useShinyOutput namespace", () => {
     const wrapper = ({ children }: { children: ReactNode }) => (
       <ShinyModuleProvider namespace="mod1">{children}</ShinyModuleProvider>
     );
-    // Verifies that passing namespace: null doesn't throw and renders
-    // successfully even inside a provider (Shiny not initialized so
-    // the effect doesn't fire, but the hook itself runs without error)
     const { result } = renderHook(
-      () => useShinyOutput("mod1-plot", undefined, { namespace: null }),
+      () => useShinyOutputValue("mod1-plot", undefined, { namespace: null }),
       { wrapper },
     );
-    expect(result.current).toBeDefined();
+    expect(result.current).toBeUndefined();
+  });
+});
+
+describe("useShinyOutputStatus namespace", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("uses plain outputId when no namespace is provided", () => {
+    const { result } = renderHook(() => useShinyOutputStatus("result"));
+    expect(result.current).toBe("pending");
+  });
+
+  it("uses explicit namespace option for output", () => {
+    const { result } = renderHook(() =>
+      useShinyOutputStatus("result", { namespace: "mod1" }),
+    );
+    expect(result.current).toBe("pending");
+  });
+
+  it("namespace: null suppresses context namespace for output", () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ShinyModuleProvider namespace="mod1">{children}</ShinyModuleProvider>
+    );
+    const { result } = renderHook(
+      () => useShinyOutputStatus("mod1-plot", { namespace: null }),
+      { wrapper },
+    );
+    expect(result.current).toBe("pending");
+  });
+});
+
+describe("useSetShinyInput namespace", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("registers with plain id when no namespace is provided", async () => {
+    renderHook(() => useSetShinyInput("count", 0));
+    await flushPromises();
+    const registry = getReactRegistry();
+    expect(registry.inputs.getOrCreate).toHaveBeenCalledWith("count", 0);
+  });
+
+  it("applies explicit namespace option", async () => {
+    renderHook(() => useSetShinyInput("count", 0, { namespace: "mod1" }));
+    await flushPromises();
+    const registry = getReactRegistry();
+    expect(registry.inputs.getOrCreate).toHaveBeenCalledWith("mod1-count", 0);
+  });
+
+  it("applies namespace from ShinyModuleProvider context", async () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ShinyModuleProvider namespace="ctxMod">{children}</ShinyModuleProvider>
+    );
+    renderHook(() => useSetShinyInput("count", 0), { wrapper });
+    await flushPromises();
+    const registry = getReactRegistry();
+    expect(registry.inputs.getOrCreate).toHaveBeenCalledWith("ctxMod-count", 0);
+  });
+
+  it("returns just a setter (no value)", async () => {
+    const { result } = renderHook(() => useSetShinyInput("count", 0));
+    await flushPromises();
+    expect(typeof result.current).toBe("function");
   });
 });
 

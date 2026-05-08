@@ -9,12 +9,14 @@ export type { MISSING as MISSINGType } from "./missing";
 export type { OutputStatus, ErrorsMessageValue } from "./output-registry";
 export { ShinyReactComponentElement } from "./ShinyReactComponentElement";
 export {
+  useSetShinyInput,
   useShinyBusy,
   useShinyInitialized,
   useShinyInput,
   useShinyInputValue,
   useShinyMessageHandler,
-  useShinyOutput,
+  useShinyOutputStatus,
+  useShinyOutputValue,
 } from "./use-shiny";
 export {
   ShinyModuleProvider,

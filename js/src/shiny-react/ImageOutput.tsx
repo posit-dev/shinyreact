@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MISSING, type MISSING as MISSINGType } from "./missing";
-import { useShinyInput, useShinyOutput } from "./use-shiny";
+import {
+  useShinyInput,
+  useShinyOutputStatus,
+  useShinyOutputValue,
+} from "./use-shiny";
 import { createDebouncedFn } from "./utils";
 import {
   applyNamespace,
@@ -177,7 +181,8 @@ export function ImageOutput({
     false,
     skipNs,
   );
-  const [imgData, imgStatus] = useShinyOutput<ImageData>(namespacedId, undefined, skipNs);
+  const imgData = useShinyOutputValue<ImageData>(namespacedId, undefined, skipNs);
+  const imgStatus = useShinyOutputStatus(namespacedId, skipNs);
 
   // Create a reference to the img element to access its properties
   const imgRef = useRef<HTMLImageElement>(null);

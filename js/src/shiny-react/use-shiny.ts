@@ -19,7 +19,6 @@ import { initializeMessageRegistry } from "./message-registry";
 import { MISSING } from "./missing";
 import {
   createReactOutputBinding,
-  type ErrorsMessageValue,
   type OutputStatus,
 } from "./output-registry";
 import { getReactRegistry, initializeReactRegistry } from "./react-registry";
@@ -172,23 +171,27 @@ export function useShinyInput<T>(
   return [value, setValueWrapped];
 }
 
+// A stable no-op for output-registry callbacks the hook doesn't care about.
+// Passing this instead of a real `useState` setter keeps unused channels from
+// triggering re-renders when the underlying entry's status/error changes.
+const NOOP_SETTER = () => {};
+
 /**
- * Hook to subscribe to a Shiny output value, with explicit lifecycle status.
+ * Hook to subscribe to a Shiny output value.
  *
- * Returns a `[value, status]` tuple where `status` is one of:
- *
- * - `"pending"` — server has not yet sent a value (initial mount).
- * - `"ready"` — server has sent a value and is not currently recalculating.
- * - `"recalculating"` — server is recomputing this output. `value` holds the
- *   previously delivered result.
- * - `"error"` — the server-side render raised an error. `value` is whatever
- *   was last delivered before the error (or `defaultValue`).
+ * Returns just the current value. Use this when you only need the data —
+ * which is most call sites. If you also need the lifecycle status (to drive
+ * a skeleton, spinner, or error UI), call `useShinyOutputStatus` alongside it.
  *
  * @param outputId The ID of the Shiny output to subscribe to.
- * @param defaultValue Optional value returned while `status === "pending"`.
- * @returns `[value, status]`.
+ * @param defaultValue Optional value returned while the server has not yet
+ * delivered the first response.
+ * @param options Optional configuration object.
+ * @param options.namespace Module namespace to apply (or `null` to suppress
+ * the surrounding `ShinyModuleProvider` namespace).
+ * @returns The current output value.
  */
-export function useShinyOutput<T>(
+export function useShinyOutputValue<T>(
   outputId: string,
   defaultValue: T | undefined = undefined,
   {
@@ -196,15 +199,8 @@ export function useShinyOutput<T>(
   }: {
     namespace?: string | null;
   } = {},
-): [T | undefined, OutputStatus] {
+): T | undefined {
   const [value, setValue] = useState<T | undefined>(defaultValue);
-  const [status, setStatus] = useState<OutputStatus>("pending");
-  // We accept and discard server error messages here; surfacing them to
-  // callers is intentionally deferred until a concrete API need shows up.
-  // Storing via setState ensures the registry's setError fan-out has a real
-  // sink so the entry's error subscribers stay in sync; the hook simply
-  // doesn't expose the value yet.
-  const [, setError] = useState<ErrorsMessageValue | null>(null);
   const shinyInitialized = useShinyInitialized();
 
   ensureShinyReactInitialized();
@@ -218,24 +214,72 @@ export function useShinyOutput<T>(
     if (!shinyInitialized) {
       return;
     }
-
     const reactRegistry = getReactRegistry();
-    const dispose = reactRegistry.outputs.add(
+    const dispose = reactRegistry.outputs.add<T>(
       namespacedOutputId,
       setValue,
-      setStatus,
-      setError,
+      NOOP_SETTER,
+      NOOP_SETTER,
     );
     return dispose;
   }, [namespacedOutputId, shinyInitialized]);
 
-  return [value, status];
+  return value;
 }
 
-// TODO: Also get error value?
+/**
+ * Hook to subscribe to the lifecycle status of a Shiny output.
+ *
+ * One of:
+ * - `"pending"` — server has not yet sent a value (initial mount).
+ * - `"ready"` — server has sent a value and is not currently recalculating.
+ * - `"recalculating"` — server is recomputing this output. The value held by
+ *   any sibling `useShinyOutputValue` is the previously delivered result.
+ * - `"error"` — the server-side render raised an error.
+ *
+ * Use this when you need to drive skeleton / spinner / error UI. For just
+ * the value, use `useShinyOutputValue`.
+ *
+ * @param outputId The ID of the Shiny output to subscribe to.
+ * @param options Optional configuration object.
+ * @param options.namespace Module namespace to apply (or `null` to suppress
+ * the surrounding `ShinyModuleProvider` namespace).
+ * @returns The current output status.
+ */
+export function useShinyOutputStatus(
+  outputId: string,
+  {
+    namespace: explicitNamespace,
+  }: {
+    namespace?: string | null;
+  } = {},
+): OutputStatus {
+  const [status, setStatus] = useState<OutputStatus>("pending");
+  const shinyInitialized = useShinyInitialized();
 
-// Note: useShinyOutputValue and useShinyOutputRecalculating are already supported
-// via destructuring: `let [value, status] = useShinyOutput(outputId, defaultValue)`
+  ensureShinyReactInitialized();
+
+  const contextNamespace = useShinyModuleNamespace();
+  const namespace =
+    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
+  const namespacedOutputId = applyNamespace(outputId, namespace);
+
+  useEffect(() => {
+    if (!shinyInitialized) {
+      return;
+    }
+    const reactRegistry = getReactRegistry();
+    const dispose = reactRegistry.outputs.add<unknown>(
+      namespacedOutputId,
+      NOOP_SETTER,
+      setStatus,
+      NOOP_SETTER,
+    );
+    return dispose;
+  }, [namespacedOutputId, shinyInitialized]);
+
+  return status;
+}
 
 /**
  * A read-only React hook that subscribes to a Shiny input value created by a
@@ -293,6 +337,42 @@ export function useShinyInputValue<T>(
   }, [namespacedId, shinyInitialized]);
 
   return value;
+}
+
+/**
+ * A write-only React hook that returns just the setter for a Shiny input.
+ *
+ * Use this when a component only needs to *write* an input value — typically
+ * a button, action handler, or anything that pushes events into the reactive
+ * graph but never reads the current value back. Mirrors Jotai's `useSetAtom`
+ * pattern: explicit at the call site that this is a producer, not a reader,
+ * and avoids the spurious re-renders that `useShinyInput` would incur from
+ * subscribing to its own value updates.
+ *
+ * Same `defaultValue` and options semantics as `useShinyInput` — this hook
+ * registers the input on mount, so its `defaultValue` seeds the registry the
+ * same way.
+ *
+ * @param id The Shiny input ID (`input$<id>`).
+ * @param defaultValue Initial value for the input, captured on first mount.
+ * @param options Optional configuration object.
+ * @param options.debounceMs Debounce delay in milliseconds for input updates
+ * (default: 100).
+ * @param options.priority Priority level for the input event.
+ * @param options.namespace Module namespace to apply (or `null` to suppress
+ * the surrounding `ShinyModuleProvider` namespace).
+ * @returns A function that writes the input value.
+ */
+export function useSetShinyInput<T>(
+  id: string,
+  defaultValue: T,
+  options: {
+    debounceMs?: number;
+    priority?: EventPriority;
+    namespace?: string | null;
+  } = {},
+): (value: T) => void {
+  return useShinyInput<T>(id, defaultValue, options)[1];
 }
 
 /**
