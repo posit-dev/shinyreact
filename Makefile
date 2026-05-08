@@ -107,7 +107,6 @@ r-update-dist: ## [r] Update shinyreact web assets
 	mkdir -p $(PATH_PKG_R)/inst/lib/shiny
 	cp $(PATH_PKG_JS)/dist/shinyreact.js $(PATH_PKG_R)/inst/lib/shiny/
 	cp $(PATH_PKG_JS)/dist/shinyreact.css $(PATH_PKG_R)/inst/lib/shiny/
-	(git rev-parse HEAD) > "$(PATH_PKG_R)/inst/lib/shiny/GIT_VERSION"
 
 .PHONY: r-docs-render
 r-docs-render: ## [r] Build R docs
@@ -224,7 +223,6 @@ py-update-dist: ## [py] Update shinyreact web assets
 	mkdir -p $(PATH_PKG_PY)/src/shinyreact/www
 	cp $(PATH_PKG_JS)/dist/shinyreact.js $(PATH_PKG_PY)/src/shinyreact/www/
 	cp $(PATH_PKG_JS)/dist/shinyreact.css $(PATH_PKG_PY)/src/shinyreact/www/
-	(git rev-parse HEAD) > "$(PATH_PKG_PY)/src/shinyreact/www/GIT_VERSION"
 
 
 .PHONY: pre-commit-setup
