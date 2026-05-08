@@ -167,6 +167,42 @@ def button_response():
 
 Inline arrow functions are safe to pass as the handler — the function is stored in a ref internally, avoiding unnecessary deregister/re-register cycles.
 
+### Avoiding flicker on input changes (use `OutputStatus`, don't conflate states)
+
+`useShinyOutput` returns `[value, status]` where `status` is `"pending" | "ready" | "recalculating" | "error"`. The four states exist for a reason — collapsing them into one boolean leaks DOM churn into the UI. Wrong:
+
+```jsx
+const [data, status] = useShinyOutput("foo");
+const isLoading = status !== "ready";        // conflates pending + recalculating
+if (!data || isLoading) return <Skeleton/>;  // unmounts the chart on every input change
+```
+
+This unmounts the populated card every time the server recomputes — destroying chart/table DOM, briefly showing a skeleton, then re-mounting fresh. Right:
+
+```jsx
+const [data, status] = useShinyOutput("foo");
+if (!data) return <Skeleton/>;               // skeleton only when no data has ever arrived
+return <Chart className={status === "recalculating" ? "recalculating" : ""} data={data}/>;
+```
+
+Plus a CSS rule like `.recalculating { opacity: 0.6; transition: opacity 200ms; }` so the user sees a stale-data cue without DOM tear-down. The chart node survives across input changes and React reconciles in place.
+
+`"pending"` is the only state where you don't have data yet. `"recalculating"` means the server is computing fresh data but the previous result is still mounted — keep showing it. `"error"` is rarely surfaced today; treat like `"ready"` unless you have a use case.
+
+### Producer/consumer split: use `useShinyInputValue` for read-only consumers
+
+When a component only *reads* an input (the setter is never called), use `useShinyInputValue(id)` instead of destructuring `useShinyInput(id, default)` and discarding `setValue`. The producer/consumer direction becomes visible at the call site, and the type system prevents accidental writes from a consumer. The hook handles mount-order safely — a consumer that mounts before the producer is queued and resumes when the producer registers.
+
+### Server pattern: fact table + shared `@reactive.calc` + per-output aggregations
+
+Dashboards with several cards driven by the same filter input should follow:
+
+1. **Generate or load a fact table** — long-format, one row per (date, entity) (or whatever the natural grain is).
+2. **A single `@reactive.calc filtered_data`** that applies all the inputs (date, search, categories, …) to the fact table.
+3. **One `@reactive_output` per card** that calls `filtered_data()` and aggregates to the shape that card needs.
+
+This is what Shiny's reactive graph is good at: each input change recomputes `filtered_data` once and fans out to all cards. Static pre-aggregated tables that some inputs can't touch produce broken-feeling examples — the demo claims to react to a filter that visibly does nothing for half the page. See `examples/app-py/06-dashboard/data.py` for the canonical layout.
+
 ## Testing policy
 
 When fixing a bug, add or update unit tests to cover the fix whenever possible. The test should fail without the fix and pass with it. If the fix is purely a type annotation or comment change with no runtime behavior difference, tests are not required.
