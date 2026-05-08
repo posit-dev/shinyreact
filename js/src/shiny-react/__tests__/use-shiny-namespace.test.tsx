@@ -13,17 +13,39 @@ vi.mock("../get-shiny", () => ({
   }),
 }));
 
+// Shared spies on the input entry returned by `getOrCreate`. Hoisted so they
+// are available when the mock factory runs (vi.mock is hoisted above
+// imports). We expose a single entry instance from the mock so tests can
+// assert what was (or wasn't) called on the entry across hook invocations —
+// particularly `addUseStateSetValueFn`, which `useSetShinyInput` must NOT call.
+const {
+  entryAddSetValue,
+  entryRemoveSetValue,
+  entrySetValue,
+  entryUpdateDebounceDelay,
+  entryUpdatePriority,
+  entryGetValue,
+} = vi.hoisted(() => ({
+  entryAddSetValue: vi.fn(),
+  entryRemoveSetValue: vi.fn(),
+  entrySetValue: vi.fn(),
+  entryUpdateDebounceDelay: vi.fn(),
+  entryUpdatePriority: vi.fn(),
+  entryGetValue: vi.fn(() => null),
+}));
+
 vi.mock("../react-registry", () => {
+  const inputEntry = {
+    updateDebounceDelay: entryUpdateDebounceDelay,
+    updatePriority: entryUpdatePriority,
+    addUseStateSetValueFn: entryAddSetValue,
+    removeUseStateSetValueFn: entryRemoveSetValue,
+    getValue: entryGetValue,
+    setValue: entrySetValue,
+  };
   const inputs = {
     get: vi.fn(() => null),
-    getOrCreate: vi.fn(() => ({
-      updateDebounceDelay: vi.fn(),
-      updatePriority: vi.fn(),
-      addUseStateSetValueFn: vi.fn(),
-      removeUseStateSetValueFn: vi.fn(),
-      getValue: vi.fn(() => null),
-      setValue: vi.fn(),
-    })),
+    getOrCreate: vi.fn(() => inputEntry),
     subscribe: vi.fn((_id: string, _fn: (v: unknown) => void) => () => {}),
   };
   const outputs = {
@@ -231,6 +253,23 @@ describe("useSetShinyInput namespace", () => {
     const { result } = renderHook(() => useSetShinyInput("count", 0));
     await flushPromises();
     expect(typeof result.current).toBe("function");
+  });
+
+  it("does NOT register a useState setter on the entry — write-only", async () => {
+    // The whole point of useSetShinyInput vs. useShinyInput()[1] is to skip
+    // the value subscription so the component doesn't re-render when the
+    // input value changes elsewhere. Pin that contract.
+    renderHook(() => useSetShinyInput("count", 0));
+    await flushPromises();
+    expect(entryAddSetValue).not.toHaveBeenCalled();
+  });
+
+  it("contrast: useShinyInput DOES register a useState setter", async () => {
+    // Mirror assertion to make the contrast explicit and catch regressions
+    // if the underlying registry contract ever changes.
+    renderHook(() => useShinyInput("count", 0));
+    await flushPromises();
+    expect(entryAddSetValue).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -366,13 +366,68 @@ export function useShinyInputValue<T>(
 export function useSetShinyInput<T>(
   id: string,
   defaultValue: T,
-  options: {
+  {
+    debounceMs = 100,
+    priority,
+    namespace: explicitNamespace,
+  }: {
     debounceMs?: number;
     priority?: EventPriority;
     namespace?: string | null;
   } = {},
 ): (value: T) => void {
-  return useShinyInput<T>(id, defaultValue, options)[1];
+  ensureShinyReactInitialized();
+
+  const contextNamespace = useShinyModuleNamespace();
+  const namespace =
+    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
+  const namespacedId = applyNamespace(id, namespace);
+
+  // Stabilize defaultValue — same reasoning as useShinyInput.
+  const stableDefaultRef = useRef<T>(defaultValue);
+  const stableDefault = stableDefaultRef.current;
+
+  const shinyInitialized = useShinyInitialized();
+
+  useEffect(() => {
+    if (!shinyInitialized) {
+      return;
+    }
+    const reactRegistry = getReactRegistry();
+    const inputRegistryEntry = reactRegistry.inputs.getOrCreate<T>(
+      namespacedId,
+      stableDefault,
+    );
+    if (debounceMs !== undefined) {
+      inputRegistryEntry.updateDebounceDelay(debounceMs);
+    }
+    if (priority) {
+      inputRegistryEntry.updatePriority(priority);
+    }
+    // Re-broadcast the current value through the registry so Shiny sees the
+    // input on first mount (matches useShinyInput's behavior).
+    inputRegistryEntry.setValue(inputRegistryEntry.getValue());
+
+    // Intentionally NO addUseStateSetValueFn — this is a write-only hook;
+    // value updates from elsewhere (other producers, server-side updates)
+    // must not re-render the component using this hook.
+  }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault]);
+
+  return useCallback(
+    (value: T) => {
+      if (!shinyInitialized) {
+        return;
+      }
+      const reactRegistry = getReactRegistry();
+      const inputRegistryEntry = reactRegistry.inputs.get(namespacedId);
+      if (!inputRegistryEntry) {
+        console.error(`Input ${namespacedId} not found`);
+        return;
+      }
+      inputRegistryEntry.setValue(value);
+    },
+    [namespacedId, shinyInitialized],
+  );
 }
 
 /**
