@@ -1,11 +1,14 @@
 import json
 import re
+from pathlib import Path
 
 from htmltools import HTMLDependency, TagList
 from shiny.bookmark._restore_state import RestoreContext, RestoreInputSet
 from shiny.bookmark._restore_state import restore_context as restore_context_cm
+from shinyreact import page_react, ui_output
 from shinyreact._bookmark import _read_restore_input_values, _restore_script_tag
 from shinyreact._output import _dep, _dep_page
+from shinyreact._page import _build_react_page_fn
 
 
 def _render_dep_to_head(dep: HTMLDependency) -> str:
@@ -133,15 +136,11 @@ def test_dep_page_with_active_context_returns_taglist() -> None:
     assert any(isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result)
 
 
-from pathlib import Path
-
-from shinyreact import page_react
-from shinyreact._page import _build_react_page_fn
-
-
 def _rendered_html(tag) -> str:
     rendered = tag.tagify().render()
-    head_html = "".join(d.as_html_tags().get_html_string() for d in rendered["dependencies"])
+    head_html = "".join(
+        d.as_html_tags().get_html_string() for d in rendered["dependencies"]
+    )
     return head_html + rendered["html"]
 
 
@@ -160,7 +159,9 @@ def test_page_react_no_restore_script_without_bookmark() -> None:
     assert "window.shinyreact._restore" not in html
 
 
-def test_set_react_page_emits_restore_script_when_bookmark_active(tmp_path: Path) -> None:
+def test_set_react_page_emits_restore_script_when_bookmark_active(
+    tmp_path: Path,
+) -> None:
     index = tmp_path / "index.html"
     index.write_text("<div id='root'></div>")
     page_fn = _build_react_page_fn(index)
@@ -183,8 +184,6 @@ def test_set_react_page_no_restore_script_without_bookmark(tmp_path: Path) -> No
 
 def test_ui_output_does_not_emit_restore_script_when_bookmark_active() -> None:
     """ui_output uses _dep(), not _dep_page() — no restore script."""
-    from shinyreact import ui_output
-
     ctx = RestoreContext()
     ctx.input = RestoreInputSet({"foo": "hello"})
     with restore_context_cm(ctx):
