@@ -24,6 +24,7 @@ vi.mock("../react-registry", () => {
       getValue: vi.fn(() => null),
       setValue: vi.fn(),
     })),
+    subscribe: vi.fn((_id: string, _fn: (v: unknown) => void) => () => {}),
   };
   const outputs = {
     add: vi.fn(),
@@ -45,7 +46,7 @@ vi.mock("../message-registry", () => ({
   initializeMessageRegistry: vi.fn(),
 }));
 
-import { useShinyInput, useShinyOutput } from "../use-shiny";
+import { useShinyInput, useShinyOutput, useShinyInputValue } from "../use-shiny";
 import { getReactRegistry } from "../react-registry";
 
 // Helper: flush microtasks so useShinyInitialized resolves via
@@ -162,5 +163,44 @@ describe("useShinyOutput namespace", () => {
       { wrapper },
     );
     expect(result.current).toBeDefined();
+  });
+});
+
+describe("useShinyInputValue namespace", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("subscribes with plain id when no namespace is provided", async () => {
+    renderHook(() => useShinyInputValue("hover"));
+    await flushPromises();
+    const registry = getReactRegistry();
+    expect(registry.inputs.subscribe).toHaveBeenCalledWith(
+      "hover",
+      expect.any(Function),
+    );
+  });
+
+  it("applies explicit namespace option", async () => {
+    renderHook(() => useShinyInputValue("hover", { namespace: "mod1" }));
+    await flushPromises();
+    const registry = getReactRegistry();
+    expect(registry.inputs.subscribe).toHaveBeenCalledWith(
+      "mod1-hover",
+      expect.any(Function),
+    );
+  });
+
+  it("applies namespace from ShinyModuleProvider context", async () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ShinyModuleProvider namespace="ctxMod">{children}</ShinyModuleProvider>
+    );
+    renderHook(() => useShinyInputValue("hover"), { wrapper });
+    await flushPromises();
+    const registry = getReactRegistry();
+    expect(registry.inputs.subscribe).toHaveBeenCalledWith(
+      "ctxMod-hover",
+      expect.any(Function),
+    );
   });
 });

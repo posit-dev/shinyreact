@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getShiny } from "./get-shiny";
 import { type InputRegistryEntry } from "./input-registry";
 import { initializeMessageRegistry } from "./message-registry";
+import { MISSING } from "./missing";
 import { createReactOutputBinding } from "./output-registry";
 import { getReactRegistry, initializeReactRegistry } from "./react-registry";
 import {
@@ -211,6 +212,62 @@ export function useShinyOutput<T>(
 
 // Note: useShinyOutputValue and useShinyOutputRecalculating are already supported
 // via destructuring: `let [value, recalculating] = useShinyOutput(outputId, defaultValue)`
+
+/**
+ * A read-only React hook that subscribes to a Shiny input value created by a
+ * separate producer component (typically one that calls `useShinyInput` and
+ * holds the setter).
+ *
+ * Use this when a component only needs to *read* an input value — it makes
+ * data flow direction visible at the call site and prevents accidental writes
+ * to inputs the component does not own.
+ *
+ * Mount ordering is handled: if this hook runs before the producer's
+ * `useShinyInput` effect attaches, the subscription is queued in the input
+ * registry and fires the moment the entry is created.
+ *
+ * @param id The Shiny input ID to subscribe to (`input$<id>`).
+ * @param options Optional configuration object.
+ * @param options.namespace Module namespace to apply (or `null` to suppress
+ * the surrounding `ShinyModuleProvider` namespace).
+ * @returns The current input value, or `undefined` if no producer has
+ * registered the ID yet.
+ */
+export function useShinyInputValue<T>(
+  id: string,
+  {
+    namespace: explicitNamespace,
+  }: {
+    namespace?: string | null;
+  } = {},
+): T | undefined {
+  ensureShinyReactInitialized();
+
+  const contextNamespace = useShinyModuleNamespace();
+  const namespace =
+    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
+  const namespacedId = applyNamespace(id, namespace);
+
+  const [value, setValue] = useState<T | undefined>(() => {
+    const entry = getReactRegistry().inputs.get<T>(namespacedId);
+    return entry ? entry.getValue() : undefined;
+  });
+  const shinyInitialized = useShinyInitialized();
+
+  useEffect(() => {
+    if (!shinyInitialized) {
+      return;
+    }
+    const reactRegistry = getReactRegistry();
+    const dispose = reactRegistry.inputs.subscribe<T>(namespacedId, (v) => {
+      // Map MISSING sentinel to undefined for consumer ergonomics.
+      setValue((v as unknown) === MISSING ? undefined : v);
+    });
+    return dispose;
+  }, [namespacedId, shinyInitialized]);
+
+  return value;
+}
 
 /**
  * A React hook for handling messages from the Shiny server.
