@@ -250,7 +250,9 @@ export function useShinyInputValue<T>(
 
   const [value, setValue] = useState<T | undefined>(() => {
     const entry = getReactRegistry().inputs.get<T>(namespacedId);
-    return entry ? entry.getValue() : undefined;
+    if (!entry) return undefined;
+    const v = entry.getValue();
+    return (v as unknown) === MISSING ? undefined : v;
   });
   const shinyInitialized = useShinyInitialized();
 

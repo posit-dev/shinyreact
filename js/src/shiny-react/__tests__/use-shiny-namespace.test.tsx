@@ -203,4 +203,39 @@ describe("useShinyInputValue namespace", () => {
       expect.any(Function),
     );
   });
+
+  it("explicit namespace overrides context namespace", async () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ShinyModuleProvider namespace="ctxMod">{children}</ShinyModuleProvider>
+    );
+    renderHook(
+      () => useShinyInputValue("hover", { namespace: "explicit" }),
+      { wrapper },
+    );
+    await flushPromises();
+    const registry = getReactRegistry();
+    expect(registry.inputs.subscribe).toHaveBeenCalledWith(
+      "explicit-hover",
+      expect.any(Function),
+    );
+  });
+
+  it("namespace: null suppresses context namespace", async () => {
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ShinyModuleProvider namespace="mod1">{children}</ShinyModuleProvider>
+    );
+    renderHook(
+      () =>
+        useShinyInputValue(".clientdata_output_mod1-plot_width", {
+          namespace: null,
+        }),
+      { wrapper },
+    );
+    await flushPromises();
+    const registry = getReactRegistry();
+    expect(registry.inputs.subscribe).toHaveBeenCalledWith(
+      ".clientdata_output_mod1-plot_width",
+      expect.any(Function),
+    );
+  });
 });
