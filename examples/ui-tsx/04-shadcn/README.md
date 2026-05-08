@@ -18,7 +18,7 @@ The two plots draw the same data so you can see the trade-off directly:
 | Path | Wire payload | Where rendering runs | Interactive zoom |
 |------|--------------|----------------------|------------------|
 | matplotlib + `ImageOutput` | ~50 kB PNG | server (Python) | requires server roundtrip (re-render at new size) |
-| plotly.js + `useShinyOutput` | ~120 B JSON | browser | instant, no server involvement |
+| plotly.js + `useShinyOutputValue` | ~120 B JSON | browser | instant, no server involvement |
 
 ## Layout
 
@@ -56,7 +56,7 @@ examples/ui-tsx/04-shadcn/
 The non-obvious bit is how the bundle stays compatible with the page-level `window.shinyreact` runtime:
 
 - `vite.config.js` is in **lib mode** with format `iife`, output filename `app.js`.
-- `react`, `react-dom`, and `react-dom/client` are listed as `external` and mapped via `rollupOptions.output.globals` to `window.shinyreact.React` / `window.shinyreact.ReactDOM`. The IIFE bundle reuses the React instance that owns the shinyreact hooks (mixing two React copies would break `useShinyInput`/`useShinyOutput`).
+- `react`, `react-dom`, and `react-dom/client` are listed as `external` and mapped via `rollupOptions.output.globals` to `window.shinyreact.React` / `window.shinyreact.ReactDOM`. The IIFE bundle reuses the React instance that owns the shinyreact hooks (mixing two React copies would break the hooks).
 - `react`/`react-dom` are still listed as `devDependencies` so `react/jsx-runtime` resolves at build time when Vite's automatic JSX transform inlines it.
 - Tailwind v4 is wired in through `@tailwindcss/vite`; the shadcn design tokens live in `src/index.css`.
 - `define: { "process.env.NODE_ENV": '"production"' }` is set in the Vite config because lib mode does not auto-replace it (it assumes a downstream bundler will). Without it, the bundled React jsx-runtime hits a `process is not defined` error in the browser.

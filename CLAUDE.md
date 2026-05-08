@@ -84,14 +84,14 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 
 **Global API exposed at `window.shinyreact`:**
 - `registerComponents(catalog, registry)` — downstream packages call this at page load to register their React components
-- `useShinyInput`, `useShinyOutput`, `useShinyMessageHandler`, `useShinyInitialized` — re-exported shiny-react hooks
+- `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy` — re-exported shiny-react hooks
 - `React`, `ReactDOM` — shared instances (downstream ESM builds should externalize to these to avoid duplicate React)
 
 ### Python package
 
 - `shinyreact.ui_output(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyreact-output">` with the shinyreact HTMLDependency
 - `shinyreact.page_react(...)` — full-page React app with `#root` + the shinyreact HTMLDependency
-- `@shinyreact.reactive_output` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutput()` hooks
+- `@shinyreact.reactive_output` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutputValue()` hooks
 - `shinyreact.Spec(root, elements)` / `shinyreact.Element(type, props, children)` — the data model sent to the browser (app.py pattern)
 - `shinyreact.Node` — nested tree API; `.to_spec()` auto-flattens to `Spec`
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
@@ -167,12 +167,25 @@ def button_response():
 
 Inline arrow functions are safe to pass as the handler — the function is stored in a ref internally, avoiding unnecessary deregister/re-register cycles.
 
-### Avoiding flicker on input changes (use `OutputStatus`, don't conflate states)
+### Hook decomposition
 
-`useShinyOutput` returns `[value, status]` where `status` is `"pending" | "ready" | "recalculating" | "error"`. The four states exist for a reason — collapsing them into one boolean leaks DOM churn into the UI. Wrong:
+The hook surface follows the Jotai/Recoil cadence — each hook has one responsibility:
+
+| | Full | Read-only | Write-only |
+|---|---|---|---|
+| **Input** | `useShinyInput(id, default)` → `[value, setValue]` | `useShinyInputValue(id)` → `value` | `useSetShinyInput(id, default)` → `setValue` |
+| **Output** | — (no compound) | `useShinyOutputValue(id, default?)` → `value` | — |
+| **Output status** | | `useShinyOutputStatus(id)` → `"pending" \| "ready" \| "recalculating" \| "error"` | |
+
+Pick the narrowest hook that fits the call site. A button that pushes events but never reads its own state should use `useSetShinyInput`, not `useShinyInput` with a discarded `[value]`. A display card that just reads should use `useShinyInputValue` / `useShinyOutputValue`. Narrow hooks make data-flow direction visible at the call site, prevent accidental writes from read-only components, and avoid spurious re-renders from subscribing to channels you don't observe.
+
+### Avoiding flicker on input changes (use status correctly, don't conflate states)
+
+The four output-status values exist for a reason — collapsing them into one boolean leaks DOM churn into the UI. Wrong:
 
 ```jsx
-const [data, status] = useShinyOutput("foo");
+const data = useShinyOutputValue("foo");
+const status = useShinyOutputStatus("foo");
 const isLoading = status !== "ready";        // conflates pending + recalculating
 if (!data || isLoading) return <Skeleton/>;  // unmounts the chart on every input change
 ```
@@ -180,18 +193,15 @@ if (!data || isLoading) return <Skeleton/>;  // unmounts the chart on every inpu
 This unmounts the populated card every time the server recomputes — destroying chart/table DOM, briefly showing a skeleton, then re-mounting fresh. Right:
 
 ```jsx
-const [data, status] = useShinyOutput("foo");
+const data = useShinyOutputValue("foo");
+const status = useShinyOutputStatus("foo");
 if (!data) return <Skeleton/>;               // skeleton only when no data has ever arrived
 return <Chart className={status === "recalculating" ? "recalculating" : ""} data={data}/>;
 ```
 
 Plus a CSS rule like `.recalculating { opacity: 0.6; transition: opacity 200ms; }` so the user sees a stale-data cue without DOM tear-down. The chart node survives across input changes and React reconciles in place.
 
-`"pending"` is the only state where you don't have data yet. `"recalculating"` means the server is computing fresh data but the previous result is still mounted — keep showing it. `"error"` is rarely surfaced today; treat like `"ready"` unless you have a use case.
-
-### Producer/consumer split: use `useShinyInputValue` for read-only consumers
-
-When a component only *reads* an input (the setter is never called), use `useShinyInputValue(id)` instead of destructuring `useShinyInput(id, default)` and discarding `setValue`. The producer/consumer direction becomes visible at the call site, and the type system prevents accidental writes from a consumer. The hook handles mount-order safely — a consumer that mounts before the producer is queued and resumes when the producer registers.
+`"pending"` is the only state where you don't have data yet. `"recalculating"` means the server is computing fresh data but the previous result is still mounted — keep showing it. `"error"` is rarely surfaced today; treat like `"ready"` unless you have a use case. If your card doesn't need any of this nuance, just call `useShinyOutputValue` and skip the status entirely.
 
 ### Server pattern: fact table + shared `@reactive.calc` + per-output aggregations
 
