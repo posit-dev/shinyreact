@@ -16,6 +16,7 @@ import "./shinyreact.css";
 import {
   useShinyBusy,
   useShinyInput,
+  useShinyInputValue,
   useShinyOutput,
   useShinyMessageHandler,
   useShinyInitialized,
@@ -35,6 +36,7 @@ declare global {
       ) => void;
       useShinyBusy: typeof useShinyBusy;
       useShinyInput: typeof useShinyInput;
+      useShinyInputValue: typeof useShinyInputValue;
       useShinyOutput: typeof useShinyOutput;
       useShinyMessageHandler: typeof useShinyMessageHandler;
       useShinyInitialized: typeof useShinyInitialized;
@@ -54,6 +56,7 @@ window.shinyreact = {
   registerComponents,
   useShinyBusy,
   useShinyInput,
+  useShinyInputValue,
   useShinyOutput,
   useShinyMessageHandler,
   useShinyInitialized,
