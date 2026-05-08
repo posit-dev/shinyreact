@@ -6,7 +6,11 @@ import { getShiny } from "./get-shiny";
 import { type InputRegistryEntry } from "./input-registry";
 import { initializeMessageRegistry } from "./message-registry";
 import { MISSING } from "./missing";
-import { createReactOutputBinding } from "./output-registry";
+import {
+  createReactOutputBinding,
+  type ErrorsMessageValue,
+  type OutputStatus,
+} from "./output-registry";
 import { getReactRegistry, initializeReactRegistry } from "./react-registry";
 import {
   applyNamespace,
@@ -158,17 +162,20 @@ export function useShinyInput<T>(
 }
 
 /**
- * Hook to receive and subscribe to Shiny output values from the server. Creates
- * a hidden DOM element and registers a custom Shiny output binding to receive
- * reactive data updates for the specified outputId.
+ * Hook to subscribe to a Shiny output value, with explicit lifecycle status.
+ *
+ * Returns a `[value, status]` tuple where `status` is one of:
+ *
+ * - `"pending"` — server has not yet sent a value (initial mount).
+ * - `"ready"` — server has sent a value and is not currently recalculating.
+ * - `"recalculating"` — server is recomputing this output. `value` holds the
+ *   previously delivered result.
+ * - `"error"` — the server-side render raised an error. `value` is whatever
+ *   was last delivered before the error (or `defaultValue`).
  *
  * @param outputId The ID of the Shiny output to subscribe to.
- * @param defaultValue Optional default value to use before the first server
- * update.
- * @returns A tuple containing [value, recalculating] where:
- *   - value: The current value of the Shiny output
- *   - recalculating: Boolean indicating if the server is currently
- *     recalculating this output
+ * @param defaultValue Optional value returned while `status === "pending"`.
+ * @returns `[value, status]`.
  */
 export function useShinyOutput<T>(
   outputId: string,
@@ -178,14 +185,19 @@ export function useShinyOutput<T>(
   }: {
     namespace?: string | null;
   } = {},
-): [T | undefined, boolean] {
+): [T | undefined, OutputStatus] {
   const [value, setValue] = useState<T | undefined>(defaultValue);
-  const [recalculating, setRecalculating] = useState<boolean>(false);
+  const [status, setStatus] = useState<OutputStatus>("pending");
+  // We accept and discard server error messages here; surfacing them to
+  // callers is intentionally deferred until a concrete API need shows up.
+  // Storing via setState ensures the registry's setError fan-out has a real
+  // sink so the entry's error subscribers stay in sync; the hook simply
+  // doesn't expose the value yet.
+  const [, setError] = useState<ErrorsMessageValue | null>(null);
   const shinyInitialized = useShinyInitialized();
 
   ensureShinyReactInitialized();
 
-  // Apply namespace: explicit option wins over context. Pass `false` to opt out.
   const contextNamespace = useShinyModuleNamespace();
   const namespace =
     explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
@@ -200,18 +212,19 @@ export function useShinyOutput<T>(
     const dispose = reactRegistry.outputs.add(
       namespacedOutputId,
       setValue,
-      setRecalculating,
+      setStatus,
+      setError,
     );
     return dispose;
   }, [namespacedOutputId, shinyInitialized]);
 
-  return [value, recalculating];
+  return [value, status];
 }
 
 // TODO: Also get error value?
 
 // Note: useShinyOutputValue and useShinyOutputRecalculating are already supported
-// via destructuring: `let [value, recalculating] = useShinyOutput(outputId, defaultValue)`
+// via destructuring: `let [value, status] = useShinyOutput(outputId, defaultValue)`
 
 /**
  * A read-only React hook that subscribes to a Shiny input value created by a

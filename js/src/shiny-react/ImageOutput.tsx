@@ -177,7 +177,7 @@ export function ImageOutput({
     false,
     skipNs,
   );
-  const [imgData, imgRecalculating] = useShinyOutput<ImageData>(namespacedId, undefined, skipNs);
+  const [imgData, imgStatus] = useShinyOutput<ImageData>(namespacedId, undefined, skipNs);
 
   // Create a reference to the img element to access its properties
   const imgRef = useRef<HTMLImageElement>(null);
@@ -198,9 +198,9 @@ export function ImageOutput({
   // Notify parent component when recalculation status changes
   useEffect(() => {
     if (onRecalculating) {
-      onRecalculating(imgRecalculating);
+      onRecalculating(imgStatus === "recalculating");
     }
-  }, [imgRecalculating, onRecalculating]);
+  }, [imgStatus, onRecalculating]);
 
   // Handle image load and dimension changes.
   // Skip 0×0 dimensions (element is hidden via display:none) to avoid
