@@ -57,9 +57,18 @@ describe("OutputRegistry", () => {
     expect(entry).toBeDefined();
     expect(entry!.isEmpty()).toBe(false);
 
+    setStatus1.mockClear();
+    setStatus2.mockClear();
+
     entry!.setValue("hello");
     expect(setVal1).not.toHaveBeenCalled();
     expect(setVal2).toHaveBeenCalledWith("hello");
+    expect(setStatus1).not.toHaveBeenCalled();
+    expect(setStatus2).toHaveBeenCalledWith("ready");
+
+    entry!.setError({ message: "boom", call: [] });
+    expect(setErr1).not.toHaveBeenCalled();
+    expect(setErr2).toHaveBeenCalledWith({ message: "boom", call: [] });
   });
 
   it("scheduleCleanup removes entry and DOM when empty after RAF", async () => {
