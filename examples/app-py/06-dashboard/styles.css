@@ -259,11 +259,15 @@ body {
 
 .bar-col {
   flex: 1;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   height: 100%;
   justify-content: flex-end;
+  /* reserve space for the absolutely-positioned label so the
+     bar-fill bottom is independent of the label's rendered height */
+  padding-bottom: 18px;
 }
 
 .bar-fill {
@@ -275,13 +279,16 @@ body {
 }
 
 .bar-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   font-size: 0.6rem;
+  line-height: 1.2;
   color: var(--text-muted);
-  margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
   text-align: center;
 }
 
@@ -569,3 +576,12 @@ body {
 .skeleton-chart { height: 200px; margin: 16px 20px; }
 .skeleton-row { height: 18px; width: 100%; margin-bottom: 12px; }
 .skeleton-rows { padding: 16px 20px; }
+
+/* Stale-data cue: shown while the server is recomputing an output but we
+   still have the previous value mounted. The DOM stays in place — only the
+   opacity changes — so React doesn't unmount/remount and the period switch
+   is flicker-free. */
+.recalculating {
+  opacity: 0.6;
+  transition: opacity 200ms ease;
+}

@@ -4,7 +4,7 @@
   var React = window.shinyreact.React;
   var h = React.createElement;
   var useShinyInput = window.shinyreact.useShinyInput;
-  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
   var ImageOutput = window.shinyreact.ImageOutput;
 
   // ---------------------------------------------------------------------------
@@ -48,11 +48,9 @@
     var inputText = inputResult[0];
     var setInputText = inputResult[1];
 
-    var processedResult = useShinyOutput(props.processed_output_id, "");
-    var processedText = processedResult[0];
+    var processedText = useShinyOutputValue(props.processed_output_id, "");
 
-    var lengthResult = useShinyOutput(props.length_output_id, "0");
-    var textLength = lengthResult[0];
+    var textLength = useShinyOutputValue(props.length_output_id, "0");
 
     function handleInputChange(event) {
       setInputText(event.target.value);
@@ -122,8 +120,7 @@
     var triggerCount = triggerResult[0];
     var setButtonTrigger = triggerResult[1];
 
-    var responseResult = useShinyOutput(props.output_id, "");
-    var buttonResponse = responseResult[0];
+    var buttonResponse = useShinyOutputValue(props.output_id, "");
 
     function handleClick() {
       setButtonTrigger(triggerCount + 1);

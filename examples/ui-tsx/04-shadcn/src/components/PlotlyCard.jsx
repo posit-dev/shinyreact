@@ -3,7 +3,7 @@ import Plotly from "plotly.js-basic-dist-min";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyInput, useShinyOutput } = window.shinyreact;
+const { useShinyInput, useShinyOutputValue } = window.shinyreact;
 
 function linearFit(xs, ys) {
   const n = xs.length;
@@ -18,7 +18,7 @@ function linearFit(xs, ys) {
 
 export function PlotlyCard() {
   const ref = useRef(null);
-  const [data] = useShinyOutput("scatter_data", null);
+  const data = useShinyOutputValue("scatter_data", null);
   const [, setHoverPoint] = useShinyInput("plotly_hover", null);
   const [, setClickPoint] = useShinyInput("plotly_click", null);
   const [, setDblClickPoint] = useShinyInput("plotly_dblclick", null);

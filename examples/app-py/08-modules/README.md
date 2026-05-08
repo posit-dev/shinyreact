@@ -7,7 +7,7 @@ Demonstrates Shiny's `@module.server` integration with the JSON-spec bridge. Mul
 ## What it shows
 
 - A `WidgetsGrid` containing three `ModuleCounter` instances, each tagged with a different `namespace` prop ("a", "b", "c").
-- `useShinyInput`/`useShinyOutput` calls inside the React component automatically prefix their IDs with the surrounding namespace, so `counter` becomes `a-counter`, `b-counter`, `c-counter` on the wire.
+- The shinyreact hooks (`useShinyInput`, `useShinyOutputValue`, etc.) called inside the React component automatically prefix their IDs with the surrounding namespace, so `counter` becomes `a-counter`, `b-counter`, `c-counter` on the wire.
 - Server-side: a single `@module.server` function defines the counter logic once and is invoked three times with matching namespace IDs.
 
 The point is that you can build a reusable React component that talks to Shiny without hard-coding output IDs — namespacing keeps multiple instances independent.

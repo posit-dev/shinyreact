@@ -1,4 +1,4 @@
-const { React, ReactDOM, useShinyInput, useShinyOutput, useShinyInitialized } =
+const { React, ReactDOM, useShinyInput, useShinyOutputValue, useShinyInitialized } =
   window.shinyreact;
 
 const h = React.createElement;
@@ -50,7 +50,7 @@ function Thermometer({ label, value, onChange, min, max, unit }) {
 function App() {
   const initialized = useShinyInitialized();
   const [celsius, setCelsius] = useShinyInput("celsius", 20, { debounceMs: 0 });
-  const [display] = useShinyOutput("display", null);
+  const display = useShinyOutputValue("display", null);
 
   if (!initialized) return null;
 

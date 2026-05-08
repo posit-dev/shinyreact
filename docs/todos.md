@@ -4,13 +4,13 @@ Known issues and open work items. See `features.md` for what already exists.
 
 ## Safeguard `reactive_output` against use outside the `ui.tsx` pattern
 
-`shinyreact.reactive_output` is designed to deliver values to `useShinyOutput()` hooks inside a `ui.tsx` app configured with `set_react_page()`. If used in a standard Shiny app (with `ui.output_text()` or other server-rendered UI elements), it will silently send a JSON payload that no client-side binding consumes. Add a runtime check (or session-level marker on `set_react_page()`) so `reactive_output` errors clearly when used outside the `ui.tsx` context.
+`shinyreact.reactive_output` is designed to deliver values to `useShinyOutputValue()` hooks inside a `ui.tsx` app configured with `set_react_page()`. If used in a standard Shiny app (with `ui.output_text()` or other server-rendered UI elements), it will silently send a JSON payload that no client-side binding consumes. Add a runtime check (or session-level marker on `set_react_page()`) so `reactive_output` errors clearly when used outside the `ui.tsx` context.
 
 ## Discourage non-`reactive_output` / non-plot renderers in `ui.tsx` apps
 
-`useShinyOutput` accepts whatever payload any Shiny renderer ships. For primitives (`@render.text` returning a string) this happens to work, but renderers like `@render.table` send pre-rendered HTML across the wire — wasteful and defeats the `ui.tsx` model. The principle is: **send the minimal data; let the client handle presentation**. For tabular data, the right pattern is `@reactive_output` returning rows/columns, then TanStack Table (or similar) on the client. Consider:
+`useShinyOutputValue` accepts whatever payload any Shiny renderer ships. For primitives (`@render.text` returning a string) this happens to work, but renderers like `@render.table` send pre-rendered HTML across the wire — wasteful and defeats the `ui.tsx` model. The principle is: **send the minimal data; let the client handle presentation**. For tabular data, the right pattern is `@reactive_output` returning rows/columns, then TanStack Table (or similar) on the client. Consider:
 
-- A warning or error when a non-`reactive_output` (and non-`render.plot`) renderer is bound to an output consumed by `useShinyOutput`.
+- A warning or error when a non-`reactive_output` (and non-`render.plot`) renderer is bound to an output consumed by `useShinyOutputValue`.
 - Documentation guidance on which renderers are appropriate in `ui.tsx` mode.
 - Possibly a registry of "approved" renderers (`reactive_output`, `render.plot`, future `render.image`, etc.) with everything else flagged.
 
@@ -18,7 +18,7 @@ Known issues and open work items. See `features.md` for what already exists.
 
 `ui.tsx` apps now have two distinct output mechanisms:
 
-- `@reactive_output` + `useShinyOutput(id)` — server sends pure data, React component renders it. Best for custom UI where the client owns presentation.
+- `@reactive_output` + `useShinyOutputValue(id)` — server sends pure data, React component renders it. Best for custom UI where the client owns presentation.
 - `<ShinyOutput id class />` — traditional Shiny output binding owns the container's DOM. Best for existing widget ecosystems (htmlwidgets, data-frame, etc.) where the binding handles rendering.
 
 Document guidance on when to use which. The principle remains: prefer `reactive_output` + client rendering when possible (avoids shipping pre-rendered HTML), but `ShinyOutput` is the legitimate path for leveraging existing output bindings without rewriting them as React components.
@@ -51,7 +51,7 @@ Define what a well-formed `shinyreact` UI component looks like from the downstre
 
 ## What render methods are useful?
 
-Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyreact.reactive_output` returns `Spec` or raw JSON for `useShinyOutput`. Are there other render shapes that would be useful — e.g., rendering a single element without a full Spec, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
+Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyreact.reactive_output` returns `Spec` or raw JSON for `useShinyOutputValue`. Are there other render shapes that would be useful — e.g., rendering a single element without a full Spec, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
 
 ## Nested bullet structure of every feature or benefit
 

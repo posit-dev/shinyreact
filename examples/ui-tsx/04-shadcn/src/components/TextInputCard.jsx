@@ -2,12 +2,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-const { useShinyInput, useShinyOutput } = window.shinyreact;
+const { useShinyInput, useShinyOutputValue } = window.shinyreact;
 
 export function TextInputCard() {
   const [inputText, setInputText] = useShinyInput("user_text", "");
-  const [processedText] = useShinyOutput("processed_text", "");
-  const [textLength] = useShinyOutput("text_length", 0);
+  const processedText = useShinyOutputValue("processed_text", "");
+  const textLength = useShinyOutputValue("text_length", 0);
 
   return (
     <Card>

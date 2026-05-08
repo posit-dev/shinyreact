@@ -141,7 +141,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         return fig
 
-    # Data Table - rendered as JSON for useShinyOutput
+    # Data Table - rendered as JSON for useShinyOutputValue
     @shinyreact.reactive_output
     def dataTable():
         return {

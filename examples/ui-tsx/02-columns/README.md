@@ -32,7 +32,7 @@ Same 4-file shape as [01-hello](../01-hello/). No `package.json`, no bundler.
 
 - `from shinyreact import reactive_output, set_react_page` (server)
 - `useShinyInput("move_item", null, { debounceMs: 0, priority: "event" })` — sends a `{item, from, to}` event payload on each click; `priority: "event"` is the Shiny pattern for action-button-style inputs.
-- `useShinyOutput("column_data", null)` — receives the latest `{A:[...], B:[...], C:[...]}` from the server and re-renders.
+- `useShinyOutputValue("column_data", null)` — receives the latest `{A:[...], B:[...], C:[...]}` from the server and re-renders.
 
 ## Run it
 

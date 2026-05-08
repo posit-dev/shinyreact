@@ -7,7 +7,7 @@
   var useState = React.useState;
   var useRef = React.useRef;
   var useShinyInput = window.shinyreact.useShinyInput;
-  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
 
   // ---------------------------------------------------------------------------
   // Card — simple wrapper with a title
@@ -70,8 +70,7 @@
     var txtin = inputResult[0];
     var setTxtin = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, undefined);
-    var txtout = outputResult[0];
+    var txtout = useShinyOutputValue(props.output_id, undefined);
 
     function handleInputChange(event) {
       setTxtin(event.target.value);
@@ -98,8 +97,7 @@
     var numberIn = inputResult[0];
     var setNumberIn = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, undefined);
-    var numberOut = outputResult[0];
+    var numberOut = useShinyOutputValue(props.output_id, undefined);
 
     function handleInputChange(event) {
       setNumberIn(Number(event.target.value));
@@ -128,8 +126,7 @@
     var checkboxIn = inputResult[0];
     var setCheckboxIn = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, undefined);
-    var checkboxOut = outputResult[0];
+    var checkboxOut = useShinyOutputValue(props.output_id, undefined);
 
     function handleInputChange(event) {
       setCheckboxIn(event.target.checked);
@@ -166,8 +163,7 @@
     var radioIn = inputResult[0];
     var setRadioIn = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, undefined);
-    var radioOut = outputResult[0];
+    var radioOut = useShinyOutputValue(props.output_id, undefined);
 
     function handleInputChange(event) {
       setRadioIn(event.target.value);
@@ -211,8 +207,7 @@
     var selectIn = inputResult[0];
     var setSelectIn = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, undefined);
-    var selectOut = outputResult[0];
+    var selectOut = useShinyOutputValue(props.output_id, undefined);
 
     function handleInputChange(event) {
       setSelectIn(event.target.value);
@@ -246,8 +241,7 @@
     var sliderIn = inputResult[0];
     var setSliderIn = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, undefined);
-    var sliderOut = outputResult[0];
+    var sliderOut = useShinyOutputValue(props.output_id, undefined);
 
     function handleInputChange(event) {
       setSliderIn(Number(event.target.value));
@@ -289,8 +283,7 @@
     var dateIn = inputResult[0];
     var setDateIn = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, undefined);
-    var dateOut = outputResult[0];
+    var dateOut = useShinyOutputValue(props.output_id, undefined);
 
     function handleInputChange(event) {
       setDateIn(event.target.value);
@@ -323,8 +316,7 @@
     var buttonIn = inputResult[0];
     var setButtonIn = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, 0);
-    var buttonOut = outputResult[0];
+    var buttonOut = useShinyOutputValue(props.output_id, 0);
 
     function handleButtonClick() {
       setButtonIn(buttonIn + 1);
@@ -374,8 +366,7 @@
     var props = args.element.props;
     var inputResult = useShinyInput(props.input_id, null, { debounceMs: 0 });
     var setFilein = inputResult[1];
-    var outputResult = useShinyOutput(props.output_id, undefined);
-    var fileout = outputResult[0];
+    var fileout = useShinyOutputValue(props.output_id, undefined);
 
     function handleFileList(fileList) {
       if (fileList && fileList.length > 0) {
@@ -529,8 +520,7 @@
     });
     var setBatchData = inputResult[1];
 
-    var outputResult = useShinyOutput(props.output_id, "");
-    var batchOutput = outputResult[0];
+    var batchOutput = useShinyOutputValue(props.output_id, "");
 
     function handleFeatureChange(feature) {
       setFeatures(function (prev) {

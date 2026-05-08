@@ -14,9 +14,12 @@ import "./shinyreact.css";
 // 2. Downstream component authors get hooks via window.shinyreact.*
 // 3. Downstream ESM builds can externalize React to window.shinyreact.React/ReactDOM
 import {
+  useSetShinyInput,
   useShinyBusy,
   useShinyInput,
-  useShinyOutput,
+  useShinyInputValue,
+  useShinyOutputStatus,
+  useShinyOutputValue,
   useShinyMessageHandler,
   useShinyInitialized,
   ImageOutput,
@@ -33,9 +36,12 @@ declare global {
         catalog: unknown,
         registry: ComponentRegistry,
       ) => void;
+      useSetShinyInput: typeof useSetShinyInput;
       useShinyBusy: typeof useShinyBusy;
       useShinyInput: typeof useShinyInput;
-      useShinyOutput: typeof useShinyOutput;
+      useShinyInputValue: typeof useShinyInputValue;
+      useShinyOutputStatus: typeof useShinyOutputStatus;
+      useShinyOutputValue: typeof useShinyOutputValue;
       useShinyMessageHandler: typeof useShinyMessageHandler;
       useShinyInitialized: typeof useShinyInitialized;
       ImageOutput: typeof ImageOutput;
@@ -52,9 +58,12 @@ declare global {
 // Expose global API — called by downstream packages at page load
 window.shinyreact = {
   registerComponents,
+  useSetShinyInput,
   useShinyBusy,
   useShinyInput,
-  useShinyOutput,
+  useShinyInputValue,
+  useShinyOutputStatus,
+  useShinyOutputValue,
   useShinyMessageHandler,
   useShinyInitialized,
   ImageOutput,

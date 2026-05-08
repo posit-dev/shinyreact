@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyInput } = window.shinyreact;
+const { useShinyInputValue } = window.shinyreact;
 
 function fmtPair(p) {
   if (!p) return "—";
@@ -15,15 +15,17 @@ function fmtRange(r) {
 }
 
 export function PlotlyInfoCard() {
-  // Reading the same input ids that PlotlyCard sets — the value we display is
-  // the local React state held by useShinyInput, not a server roundtrip.
-  // (The values are also shipped to Shiny so the server can react to them
-  // if it wants — see input.plotly_hover() etc. in app.py.)
-  const [hover] = useShinyInput("plotly_hover", null);
-  const [click] = useShinyInput("plotly_click", null);
-  const [dblclick] = useShinyInput("plotly_dblclick", null);
-  const [ranges] = useShinyInput("plotly_xy_ranges", null);
-  const [selection] = useShinyInput("plotly_selection", null);
+  // Read the input ids that PlotlyCard writes via useShinyInput. This card is
+  // a pure consumer — it never sets these values — so useShinyInputValue is
+  // the right hook: read-only, no setter. Updates flow through the local React
+  // state held by the input registry, not a server roundtrip. (The values are
+  // also shipped to Shiny so the server can react to them if it wants — see
+  // input.plotly_hover() etc. in app.py.)
+  const hover = useShinyInputValue("plotly_hover");
+  const click = useShinyInputValue("plotly_click");
+  const dblclick = useShinyInputValue("plotly_dblclick");
+  const ranges = useShinyInputValue("plotly_xy_ranges");
+  const selection = useShinyInputValue("plotly_selection");
 
   return (
     <Card>

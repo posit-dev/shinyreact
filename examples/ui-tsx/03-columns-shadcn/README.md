@@ -36,7 +36,7 @@ examples/ui-tsx/03-columns-shadcn/
 Worth understanding because every shadcn-style example in this repo uses the same setup:
 
 - `vite.config.js` is in **lib mode** with `format: "iife"`, output filename `app.js`. We can't use Vite's regular HTML pipeline because we need a single self-contained bundle that reuses the page's existing React.
-- `react`, `react-dom`, `react-dom/client` are listed as `external` and mapped via `rollupOptions.output.globals` to `window.shinyreact.React` / `window.shinyreact.ReactDOM`. The IIFE bundle reuses the React instance that owns the shinyreact hooks (mixing two React copies would break `useShinyInput`/`useShinyOutput`).
+- `react`, `react-dom`, `react-dom/client` are listed as `external` and mapped via `rollupOptions.output.globals` to `window.shinyreact.React` / `window.shinyreact.ReactDOM`. The IIFE bundle reuses the React instance that owns the shinyreact hooks (mixing two React copies would break the hooks).
 - `@tailwindcss/vite` wires Tailwind v4 in directly; the shadcn design tokens live in `src/index.css`.
 - `define: { "process.env.NODE_ENV": '"production"' }` is set because lib mode does not auto-replace it (it assumes a downstream bundler will). Without it the bundled React jsx-runtime hits a `process is not defined` error in the browser.
 - `lucide-react` is a runtime dependency. It transitively pulls in `react` so `react/jsx-runtime` resolves at build time.

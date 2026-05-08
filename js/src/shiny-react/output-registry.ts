@@ -8,15 +8,40 @@ export type ErrorsMessageValue = {
   type?: string[];
 };
 
+export type OutputStatus = "pending" | "ready" | "recalculating" | "error";
+
 export class OutputRegistryEntry<T> {
-  id: string; // Output ID
+  id: string;
+  private status: OutputStatus = "pending";
+  private hasValue = false;
+  // Cached most-recent value and error so a late-mounting subscriber can be
+  // synced to the entry's current state without waiting for the next server
+  // update. Without these, `OutputRegistry.add` would push status (e.g.
+  // "ready" / "error") into the new subscriber while leaving its value/error
+  // useState slots at their initial defaults — divergent state.
+  private lastValue: T | undefined = undefined;
+  private lastError: ErrorsMessageValue | null = null;
   private useStateSetValueFns: Set<(value: T) => void>;
-  private useStateSetRecalculatingFns: Set<(value: boolean) => void>;
+  private useStateSetStatusFns: Set<(status: OutputStatus) => void>;
+  private useStateSetErrorFns: Set<(err: ErrorsMessageValue | null) => void>;
 
   constructor(id: string) {
     this.id = id;
     this.useStateSetValueFns = new Set();
-    this.useStateSetRecalculatingFns = new Set();
+    this.useStateSetStatusFns = new Set();
+    this.useStateSetErrorFns = new Set();
+  }
+
+  hasReceivedValue(): boolean {
+    return this.hasValue;
+  }
+
+  getLastValue(): T | undefined {
+    return this.lastValue;
+  }
+
+  getLastError(): ErrorsMessageValue | null {
+    return this.lastError;
   }
 
   addUseStateSetValueFn(fn: (value: T) => void) {
@@ -27,26 +52,81 @@ export class OutputRegistryEntry<T> {
     this.useStateSetValueFns.delete(fn);
   }
 
-  addUseStateSetRecalculatingFn(fn: (value: boolean) => void) {
-    this.useStateSetRecalculatingFns.add(fn);
+  addUseStateSetStatusFn(fn: (status: OutputStatus) => void) {
+    this.useStateSetStatusFns.add(fn);
   }
 
-  removeUseStateSetRecalculatingFn(fn: (value: boolean) => void) {
-    this.useStateSetRecalculatingFns.delete(fn);
+  removeUseStateSetStatusFn(fn: (status: OutputStatus) => void) {
+    this.useStateSetStatusFns.delete(fn);
+  }
+
+  addUseStateSetErrorFn(fn: (err: ErrorsMessageValue | null) => void) {
+    this.useStateSetErrorFns.add(fn);
+  }
+
+  removeUseStateSetErrorFn(fn: (err: ErrorsMessageValue | null) => void) {
+    this.useStateSetErrorFns.delete(fn);
+  }
+
+  getStatus(): OutputStatus {
+    return this.status;
+  }
+
+  private setStatus(status: OutputStatus) {
+    if (this.status === status) return;
+    this.status = status;
+    this.useStateSetStatusFns.forEach((fn) => fn(status));
   }
 
   setValue(value: T) {
+    this.hasValue = true;
+    this.lastValue = value;
     this.useStateSetValueFns.forEach((fn) => fn(value));
+    // Receiving a value clears any prior error.
+    if (this.status === "error") {
+      this.lastError = null;
+      this.useStateSetErrorFns.forEach((fn) => fn(null));
+    }
+    this.setStatus("ready");
   }
 
-  setRecalculating(value: boolean) {
-    this.useStateSetRecalculatingFns.forEach((fn) => fn(value));
+  setRecalculating(recalculating: boolean) {
+    if (recalculating) {
+      // Only flip to "recalculating" if we have already shown a value.
+      // Before the first value arrives, the UI should keep showing the
+      // pending/skeleton state — the server being busy doesn't change that.
+      if (this.hasValue) {
+        // Entering recalculating means the server is computing a fresh
+        // result; any previous error is no longer relevant. Clear it so
+        // status and error stay consistent (an existing error subscriber
+        // shouldn't keep rendering the stale error while status says
+        // "recalculating").
+        if (this.status === "error") {
+          this.lastError = null;
+          this.useStateSetErrorFns.forEach((fn) => fn(null));
+        }
+        this.setStatus("recalculating");
+      }
+    } else {
+      // Done recalculating: return to "ready" if we have a value, otherwise
+      // stay in whatever state we were in (pending or error).
+      if (this.hasValue && this.status === "recalculating") {
+        this.setStatus("ready");
+      }
+    }
+  }
+
+  setError(err: ErrorsMessageValue) {
+    this.lastError = err;
+    this.useStateSetErrorFns.forEach((fn) => fn(err));
+    this.setStatus("error");
   }
 
   isEmpty(): boolean {
     return (
       this.useStateSetValueFns.size === 0 &&
-      this.useStateSetRecalculatingFns.size === 0
+      this.useStateSetStatusFns.size === 0 &&
+      this.useStateSetErrorFns.size === 0
     );
   }
 }
@@ -67,12 +147,11 @@ export class OutputRegistry {
   add<T>(
     outputId: string,
     setValue: (value: T) => void,
-    setRecalculating: (value: boolean) => void,
+    setStatus: (status: OutputStatus) => void,
+    setError: (err: ErrorsMessageValue | null) => void,
   ): () => void {
     let outputEntry = this.get(outputId);
     if (!outputEntry) {
-      // Need to create a dummy div element with the ID, so that we have
-      // something to bind to.
       const div = document.createElement("div");
       div.className = "shiny-react-output";
       div.id = outputId;
@@ -86,11 +165,25 @@ export class OutputRegistry {
     }
 
     outputEntry.addUseStateSetValueFn(setValue);
-    outputEntry.addUseStateSetRecalculatingFn(setRecalculating);
+    outputEntry.addUseStateSetStatusFn(setStatus);
+    outputEntry.addUseStateSetErrorFn(setError);
+
+    // Sync new subscriber with the entry's current state. Without all three
+    // of these, a late-mounting subscriber would see status "ready" / "error"
+    // while its local value/error useState slots still hold their initial
+    // defaults — divergent state until the next server update.
+    if (outputEntry.hasReceivedValue()) {
+      setValue(outputEntry.getLastValue() as T);
+    }
+    setStatus(outputEntry.getStatus());
+    if (outputEntry.getStatus() === "error") {
+      setError(outputEntry.getLastError());
+    }
 
     return () => {
       outputEntry.removeUseStateSetValueFn(setValue);
-      outputEntry.removeUseStateSetRecalculatingFn(setRecalculating);
+      outputEntry.removeUseStateSetStatusFn(setStatus);
+      outputEntry.removeUseStateSetErrorFn(setError);
       this.scheduleCleanup(outputId);
     };
   }
@@ -177,12 +270,11 @@ export function createReactOutputBinding() {
       console.error(`Error for ${el.id}:`, err);
       const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
       if (outputEntry) {
-        outputEntry.setValue({ __error: err.message });
+        outputEntry.setError(err);
       }
     }
 
     override showProgress(el: HTMLElement, show: boolean): void {
-      // console.log(`Progress for ${el.id}: ${show}`);
       const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
       if (!outputEntry) {
         console.error(`Output ${el.id} not found`);

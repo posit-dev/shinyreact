@@ -106,7 +106,7 @@ Examples currently use `React.createElement` directly (no JSX). A lightweight bu
 
 ## Current state (May 2026)
 
-- **JS core:** Working — hooks (useShinyInput, useShinyOutput, useShinyMessageHandler, useShinyInitialized), registerComponents, output binding all functional
+- **JS core:** Working — hooks (useShinyInput, useShinyOutputValue, useShinyMessageHandler, useShinyInitialized), registerComponents, output binding all functional
 - **Python package:** Working — ui_output(), reactive_output, Spec/Element, send_message all functional; both traditional and SPA patterns ship
 - **R package:** Placeholder — not yet implemented
 - **Examples:** Traditional (examples/traditional/) and SPA (examples/spa/) examples — target is 100 by conf

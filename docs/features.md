@@ -15,7 +15,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 | `shinyreact.ui_output()` | Working | Creates output div with HTMLDependency; accepts `extra_deps` |
 | `shinyreact.page_react()` | Working | Full-page React app with `#root` + the shinyreact HTMLDependency |
 | `shinyreact.page_bare()` | Working | Bare HTML page wrapper |
-| `@shinyreact.reactive_output` | Working | Renders `Spec` or passes raw JSON for `useShinyOutput` |
+| `@shinyreact.reactive_output` | Working | Renders `Spec` or passes raw JSON for `useShinyOutputValue` |
 | `shinyreact.Spec` / `Element` | Working | Flat-map data model for component trees |
 | `shinyreact.Node` | Working | Nested tree API; `.to_spec()` auto-flattens to `Spec` |
 | `shinyreact.send_message()` | Working | Server-to-client custom messages |
@@ -52,7 +52,7 @@ UI is defined in a client-side codebase (`www/index.html` + JS, or built from `s
 | Feature | Status | Notes |
 |---------|--------|-------|
 | `set_react_page(path="www/index.html")` | Working | Configures a Shiny Express app to serve a static `index.html`; auto-discovers HTMLDependencies from traditional Shiny renderers and injects the shinyreact dep |
-| `@reactive_output` | Working | Renderer for `ui.tsx` outputs — server returns any `Jsonifiable` value, the client picks it up via `useShinyOutput()` |
+| `@reactive_output` | Working | Renderer for `ui.tsx` outputs — server returns any `Jsonifiable` value, the client picks it up via `useShinyOutputValue()` |
 | `send_message(session, id, data)` | Working | Server-to-client custom message helper for `ui.tsx` apps |
 
 ### JS bridge hooks (`js/src/shiny-react/`)
@@ -61,8 +61,11 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| `useShinyInput` | Working | Stable defaultValue via `useRef`; debounce + priority options |
-| `useShinyOutput` | Working | Subscribes to a Shiny output binding; receives `Jsonifiable` values from `reactive_output` |
+| `useShinyInput` | Working | Full `[value, setValue]` — stable defaultValue via `useRef`; debounce + priority options |
+| `useShinyInputValue` | Working | Read-only consumer hook — returns just the current value, with mount-order-safe subscription to a producer registered elsewhere |
+| `useSetShinyInput` | Working | Write-only producer hook — returns just the setter; same `defaultValue` + options as `useShinyInput` |
+| `useShinyOutputValue` | Working | Subscribes to a Shiny output binding; receives `Jsonifiable` values from `reactive_output`. Returns just the value |
+| `useShinyOutputStatus` | Working | Returns the lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` — for a Shiny output binding |
 | `useShinyMessageHandler` | Working | Stable handler ref; no unnecessary re-registration on inline arrow functions |
 | `useShinyInitialized` | Working | Tracks Shiny client initialization state |
 | `useShinyBusy` | Working | App-wide busy/idle state hook |

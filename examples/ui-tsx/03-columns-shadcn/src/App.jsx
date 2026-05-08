@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyInput, useShinyOutput, useShinyInitialized } = window.shinyreact;
+const { useShinyInput, useShinyOutputValue, useShinyInitialized } = window.shinyreact;
 
 const COLUMNS = ["A", "B", "C"];
 
@@ -60,7 +60,7 @@ export default function App() {
     debounceMs: 0,
     priority: "event",
   });
-  const [data] = useShinyOutput("column_data", null);
+  const data = useShinyOutputValue("column_data", null);
 
   if (!initialized) return null;
 
