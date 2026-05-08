@@ -13,7 +13,10 @@ def test_custom_classname_lands_on_rendered_element(
     page.goto(classname_app.url)
 
     out = page.locator("#out")
-    expect(out).to_be_visible()
+    # `to_be_attached()` (not `to_be_visible()`): the rendered element has no
+    # content, so its box is 0×0 and Playwright would consider it "hidden".
+    # We only care about presence + classes + attributes here.
+    expect(out).to_be_attached()
 
     # `<ShinyOutput>` does not add classes of its own; only the caller-supplied
     # ones should be present.

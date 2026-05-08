@@ -10,7 +10,6 @@ function App() {
       id: "out",
       className: "custom-a custom-b",
       "data-test-marker": "x",
-      style: { minHeight: "1px" },
     }),
   );
 }

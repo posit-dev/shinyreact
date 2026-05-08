@@ -188,6 +188,7 @@ Expected: a `chromium-NNNN` directory exists.
 Create `pkg-py/tests/playwright/apps/classname/app.py` with exactly:
 
 ```python
+from shiny.express import render  # noqa: F401  # marks this file as Shiny Express
 from shinyreact import reactive_output, set_react_page
 
 set_react_page()
@@ -197,6 +198,11 @@ set_react_page()
 def out():
     return "hi"
 ```
+
+The unused `from shiny.express import render` is required: Shiny's CLI uses an
+import scan to recognise the file as Shiny Express; without that line,
+`set_react_page()` raises `RuntimeError: No top-level recall context manager
+has been set.` The same pattern is needed for the other two fixture apps.
 
 - [ ] **Step 2: Create the HTML bootstrap**
 
@@ -275,7 +281,10 @@ def test_custom_classname_lands_on_rendered_element(
     page.goto(classname_app.url)
 
     out = page.locator("#out")
-    expect(out).to_be_visible()
+    # `to_be_attached()` (not `to_be_visible()`): the rendered element has no
+    # content, so its box is 0×0 and Playwright would consider it "hidden".
+    # We only care about presence + classes + attributes here.
+    expect(out).to_be_attached()
 
     # `<ShinyOutput>` does not add classes of its own; only the caller-supplied
     # ones should be present.
@@ -393,7 +402,10 @@ def test_custom_classname_lands_on_rendered_element(
     page.goto(classname_app.url)
 
     out = page.locator("#out")
-    expect(out).to_be_visible()
+    # `to_be_attached()` (not `to_be_visible()`): the rendered element has no
+    # content, so its box is 0×0 and Playwright would consider it "hidden".
+    # We only care about presence + classes + attributes here.
+    expect(out).to_be_attached()
 
     # `<ShinyOutput>` does not add classes of its own; only the caller-supplied
     # ones should be present.
@@ -460,6 +472,7 @@ Create `pkg-py/tests/playwright/apps/plotly/app.py` with exactly:
 
 ```python
 import plotly.express as px
+from shiny.express import render  # noqa: F401  # marks this file as Shiny Express
 from shinyreact import set_react_page
 from shinywidgets import render_plotly
 
@@ -470,6 +483,10 @@ set_react_page()
 def scatter():
     return px.scatter(x=[1, 2, 3], y=[1, 4, 9])
 ```
+
+`@render_plotly` comes from `shinywidgets`, not `shiny.express`, so an explicit
+`from shiny.express import render` is needed to mark the file as Shiny Express
+(same reason as the classname fixture in Task 4).
 
 - [ ] **Step 2: Create the HTML bootstrap**
 
@@ -541,7 +558,10 @@ def test_custom_classname_lands_on_rendered_element(
     page.goto(classname_app.url)
 
     out = page.locator("#out")
-    expect(out).to_be_visible()
+    # `to_be_attached()` (not `to_be_visible()`): the rendered element has no
+    # content, so its box is 0×0 and Playwright would consider it "hidden".
+    # We only care about presence + classes + attributes here.
+    expect(out).to_be_attached()
 
     # `<ShinyOutput>` does not add classes of its own; only the caller-supplied
     # ones should be present.

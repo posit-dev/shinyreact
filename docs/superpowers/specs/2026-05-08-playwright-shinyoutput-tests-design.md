@@ -183,7 +183,7 @@ Uses `apps/plotly/`.
 
 Uses `apps/classname/`.
 
-- `expect(page.locator("#out")).to_be_visible()`
+- `expect(page.locator("#out")).to_be_attached()` — `to_be_visible()` would fail because the element has no content (0×0 box); presence is what we care about here.
 - Order-tolerant class assertions (only the classes the caller passed; `<ShinyOutput>` does not add any classes of its own):
   - `expect(loc).to_have_class(re.compile(r"\bcustom-a\b"))`
   - `expect(loc).to_have_class(re.compile(r"\bcustom-b\b"))`
