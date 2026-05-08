@@ -65,6 +65,7 @@ export class InputRegistryEntry<T> {
 
 export class InputRegistry {
   private inputs: Map<string, InputRegistryEntry<any>> = new Map();
+  private pendingSubscribers: Map<string, Set<(value: any) => void>> = new Map();
 
   /**
    * Get an input registry entry by ID
@@ -90,6 +91,17 @@ export class InputRegistry {
 
     const entry = new InputRegistryEntry<T>(inputId, value);
     this.inputs.set(inputId, entry);
+
+    // Drain any consumers that subscribed before the producer mounted.
+    const pending = this.pendingSubscribers.get(inputId);
+    if (pending) {
+      pending.forEach((fn) => {
+        entry.addUseStateSetValueFn(fn);
+        fn(entry.getValue());
+      });
+      this.pendingSubscribers.delete(inputId);
+    }
+
     return entry;
   }
 
@@ -105,6 +117,55 @@ export class InputRegistry {
       entry = this.add<T>(inputId, value);
     }
     return entry;
+  }
+
+  /**
+   * Read-only subscription to an input value.
+   *
+   * If the entry already exists, attaches the subscriber and immediately
+   * calls it with the current value (parity with `useState` initial mount
+   * semantics). If the entry does not yet exist (consumer mounted before
+   * producer), the subscriber is queued and attached when `add()` later
+   * creates the entry.
+   *
+   * @returns A dispose function that detaches the subscriber, whether or
+   * not the entry currently exists.
+   */
+  subscribe<T>(inputId: string, setFn: (value: T) => void): () => void {
+    const entry = this.get<T>(inputId);
+    if (entry) {
+      entry.addUseStateSetValueFn(setFn);
+      setFn(entry.getValue());
+      return () => {
+        const e = this.get<T>(inputId);
+        if (e) {
+          e.removeUseStateSetValueFn(setFn);
+        }
+      };
+    }
+
+    let pending = this.pendingSubscribers.get(inputId);
+    if (!pending) {
+      pending = new Set();
+      this.pendingSubscribers.set(inputId, pending);
+    }
+    pending.add(setFn as (v: any) => void);
+
+    return () => {
+      // Detach from whichever bucket holds us now.
+      const e = this.get<T>(inputId);
+      if (e) {
+        e.removeUseStateSetValueFn(setFn);
+        return;
+      }
+      const p = this.pendingSubscribers.get(inputId);
+      if (p) {
+        p.delete(setFn as (v: any) => void);
+        if (p.size === 0) {
+          this.pendingSubscribers.delete(inputId);
+        }
+      }
+    };
   }
 
   /**

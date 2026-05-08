@@ -216,3 +216,62 @@ describe("InputRegistry", () => {
     expect(registry.size()).toBe(1);
   });
 });
+
+describe("InputRegistry.subscribe (read-only consumer)", () => {
+  it("attaches subscriber immediately when entry exists", () => {
+    const registry = new InputRegistry();
+    registry.add("foo", 7);
+    const setFn = vi.fn();
+
+    const dispose = registry.subscribe("foo", setFn);
+
+    // Initial sync: subscriber receives current value on attach
+    expect(setFn).toHaveBeenCalledWith(7);
+
+    // Subsequent producer updates flow to subscriber
+    registry.get("foo")!.setValue(8);
+    expect(setFn).toHaveBeenLastCalledWith(8);
+
+    dispose();
+  });
+
+  it("queues subscriber when entry does not yet exist, then drains on add()", () => {
+    const registry = new InputRegistry();
+    const setFn = vi.fn();
+
+    const dispose = registry.subscribe("foo", setFn);
+    expect(setFn).not.toHaveBeenCalled();
+
+    // Producer arrives later
+    registry.add("foo", 42);
+    expect(setFn).toHaveBeenCalledWith(42);
+
+    registry.get("foo")!.setValue(43);
+    expect(setFn).toHaveBeenLastCalledWith(43);
+
+    dispose();
+  });
+
+  it("dispose() removes pending subscriber if entry was never created", () => {
+    const registry = new InputRegistry();
+    const setFn = vi.fn();
+    const dispose = registry.subscribe("foo", setFn);
+    dispose();
+
+    registry.add("foo", 1);
+    expect(setFn).not.toHaveBeenCalled();
+  });
+
+  it("dispose() removes attached subscriber from existing entry", () => {
+    const registry = new InputRegistry();
+    registry.add("foo", 1);
+    const setFn = vi.fn();
+    const dispose = registry.subscribe("foo", setFn);
+    setFn.mockClear();
+
+    dispose();
+
+    registry.get("foo")!.setValue(2);
+    expect(setFn).not.toHaveBeenCalled();
+  });
+});
