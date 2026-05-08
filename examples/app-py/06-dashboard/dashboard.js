@@ -5,7 +5,8 @@
   var h = React.createElement;
   var useState = React.useState;
   var useShinyInput = window.shinyreact.useShinyInput;
-  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
+  var useShinyOutputStatus = window.shinyreact.useShinyOutputStatus;
 
   // ---------------------------------------------------------------------------
   // Utility helpers
@@ -176,9 +177,8 @@
   // ---------------------------------------------------------------------------
 
   function MetricsCards(args) {
-    var result = useShinyOutput(args.element.props.output_id, undefined);
-    var metricsData = result[0];
-    var status = result[1];
+    var metricsData = useShinyOutputValue(args.element.props.output_id, undefined);
+    var status = useShinyOutputStatus(args.element.props.output_id);
 
     // Show skeleton only on initial load (no data yet). During recalculation
     // we keep the prior values mounted so the UI doesn't flicker.
@@ -229,9 +229,8 @@
   // ---------------------------------------------------------------------------
 
   function Charts(args) {
-    var result = useShinyOutput(args.element.props.output_id, undefined);
-    var chartColumnsData = result[0];
-    var status = result[1];
+    var chartColumnsData = useShinyOutputValue(args.element.props.output_id, undefined);
+    var status = useShinyOutputStatus(args.element.props.output_id);
 
     if (!chartColumnsData) {
       return h("div", { className: "charts-container" },
@@ -316,9 +315,8 @@
   // ---------------------------------------------------------------------------
 
   function DataTable(args) {
-    var result = useShinyOutput(args.element.props.output_id, undefined);
-    var tableData = result[0];
-    var status = result[1];
+    var tableData = useShinyOutputValue(args.element.props.output_id, undefined);
+    var status = useShinyOutputStatus(args.element.props.output_id);
 
     if (!tableData) {
       return h("div", { className: "card table-card" },

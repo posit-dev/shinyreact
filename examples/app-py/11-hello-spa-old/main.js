@@ -2,7 +2,7 @@ var React = window.shinyreact.React;
 var ReactDOM = window.shinyreact.ReactDOM;
 var h = React.createElement;
 var useShinyInput = window.shinyreact.useShinyInput;
-var useShinyOutput = window.shinyreact.useShinyOutput;
+var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
 var useShinyInitialized = window.shinyreact.useShinyInitialized;
 
 function Card(_ref) {
@@ -43,8 +43,7 @@ function TextInput(_ref) {
 function OutputDisplay(_ref) {
   var outputId = _ref.outputId;
   var label = _ref.label;
-  var result = useShinyOutput(outputId, undefined);
-  var value = result[0];
+  var value = useShinyOutputValue(outputId, undefined);
 
   return h(
     "div",

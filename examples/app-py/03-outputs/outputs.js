@@ -3,7 +3,7 @@
   var React = window.shinyreact.React;
   var h = React.createElement;
   var useShinyInput = window.shinyreact.useShinyInput;
-  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
   var ImageOutput = window.shinyreact.ImageOutput;
 
   // ---------------------------------------------------------------------------
@@ -67,12 +67,11 @@
   }
 
   // ---------------------------------------------------------------------------
-  // StatisticsCard — displays stats from useShinyOutput
+  // StatisticsCard — displays stats from useShinyOutputValue
   // ---------------------------------------------------------------------------
   function StatisticsCard(args) {
     var props = args.element.props;
-    var result = useShinyOutput(props.output_id, undefined);
-    var tableStats = result[0];
+    var tableStats = useShinyOutputValue(props.output_id, undefined);
 
     if (!tableStats) {
       return h(
@@ -168,12 +167,11 @@
   }
 
   // ---------------------------------------------------------------------------
-  // DataTableCard — renders table data from useShinyOutput
+  // DataTableCard — renders table data from useShinyOutputValue
   // ---------------------------------------------------------------------------
   function DataTableCard(args) {
     var props = args.element.props;
-    var result = useShinyOutput(props.output_id, undefined);
-    var tableData = result[0];
+    var tableData = useShinyOutputValue(props.output_id, undefined);
 
     var columnNames = tableData ? Object.keys(tableData) : [];
     var numRows =

@@ -1,4 +1,4 @@
-const { React, ReactDOM, useShinyInput, useShinyOutput, useShinyInitialized } =
+const { React, ReactDOM, useShinyInput, useShinyOutputValue, useShinyInitialized } =
   window.shinyreact;
 
 const h = React.createElement;
@@ -54,7 +54,7 @@ function App() {
     debounceMs: 0,
     priority: "event",
   });
-  const [data] = useShinyOutput("column_data", null);
+  const data = useShinyOutputValue("column_data", null);
 
   if (!initialized) return null;
 

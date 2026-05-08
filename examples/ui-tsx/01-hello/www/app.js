@@ -1,4 +1,4 @@
-const { React, ReactDOM, useShinyInput, useShinyOutput, useShinyInitialized } =
+const { React, ReactDOM, useShinyInput, useShinyOutputValue, useShinyInitialized } =
   window.shinyreact;
 
 const h = React.createElement;
@@ -47,8 +47,8 @@ function App() {
     debounceMs: 0,
     priority: "event",
   });
-  const [serverTitle] = useShinyOutput("txtout_title", null);
-  const [serverCount] = useShinyOutput("txtout_count", null);
+  const serverTitle = useShinyOutputValue("txtout_title", null);
+  const serverCount = useShinyOutputValue("txtout_count", null);
 
   if (!initialized) return null;
 

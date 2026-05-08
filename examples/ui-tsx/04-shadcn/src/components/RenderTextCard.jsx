@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const { useShinyOutput } = window.shinyreact;
+const { useShinyOutputValue, useShinyOutputStatus } = window.shinyreact;
 
 export function RenderTextCard() {
-  const [value, status] = useShinyOutput("render_text_demo", "");
+  const value = useShinyOutputValue("render_text_demo", "");
+  const status = useShinyOutputStatus("render_text_demo");
   const recalculating = status === "recalculating";
 
   return (
@@ -14,7 +15,7 @@ export function RenderTextCard() {
       <CardContent className="space-y-2">
         <p className="text-sm text-muted-foreground">
           This card consumes a plain <code>@render.text</code> output (no{" "}
-          <code>reactive_output</code>) via <code>useShinyOutput</code>.
+          <code>reactive_output</code>) via <code>useShinyOutputValue</code>.
         </p>
         <div className="bg-muted p-3 rounded-md">
           <pre className="text-sm whitespace-pre-wrap">

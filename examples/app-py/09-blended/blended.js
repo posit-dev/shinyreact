@@ -1,11 +1,11 @@
 // Blended example — sidebar layout with 3 tabbed panels mixing
-// React inputs (useShinyInput) and render values (useShinyOutput, ImageOutput).
+// React inputs (useShinyInput) and render values (useShinyOutputValue, ImageOutput).
 (function () {
   var React = window.shinyreact.React;
   var h = React.createElement;
   var useState = React.useState;
   var useShinyInput = window.shinyreact.useShinyInput;
-  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
   var ImageOutput = window.shinyreact.ImageOutput;
 
   // ── SVG Icons ──────────────────────────────────────────────────────────
@@ -123,15 +123,13 @@
   // ── Data Panel (registered) ────────────────────────────────────────────
   function DataPanel(args) {
     var props = args.element.props;
-    var tableResult = useShinyOutput(props.data_table_id, undefined);
-    var tableData = tableResult[0];
+    var tableData = useShinyOutputValue(props.data_table_id, undefined);
 
     var refreshResult = useShinyInput(props.refresh_id, 0, { debounceMs: 0, priority: "event" });
     var refreshCount = refreshResult[0];
     var setRefreshCount = refreshResult[1];
 
-    var refreshCountResult = useShinyOutput(props.refresh_count_id, undefined);
-    var refreshText = refreshCountResult[0];
+    var refreshText = useShinyOutputValue(props.refresh_count_id, undefined);
 
     function handleRefresh() {
       setRefreshCount(refreshCount + 1);
@@ -208,8 +206,7 @@
     var notifications = notificationsResult[0];
     var setNotifications = notificationsResult[1];
 
-    var settingsResult = useShinyOutput(props.settings_output_id, undefined);
-    var settingsText = settingsResult[0];
+    var settingsText = useShinyOutputValue(props.settings_output_id, undefined);
 
     return h(
       "div",

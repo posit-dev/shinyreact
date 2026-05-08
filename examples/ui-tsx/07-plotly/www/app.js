@@ -1,4 +1,4 @@
-const { React, ReactDOM, useShinyInput, useShinyOutput, useShinyInitialized, ShinyOutput } =
+const { React, ReactDOM, useShinyInput, useShinyOutputValue, useShinyInitialized, ShinyOutput } =
   window.shinyreact;
 
 const h = React.createElement;
@@ -6,7 +6,7 @@ const h = React.createElement;
 function App() {
   const initialized = useShinyInitialized();
   const [numPoints, setNumPoints] = useShinyInput("num_points", 50);
-  const [greeting] = useShinyOutput("greeting", null);
+  const greeting = useShinyOutputValue("greeting", null);
 
   if (!initialized) return null;
 

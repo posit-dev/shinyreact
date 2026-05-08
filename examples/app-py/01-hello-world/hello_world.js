@@ -5,7 +5,7 @@
   var React = window.shinyreact.React;
   var h = React.createElement;
   var useShinyInput = window.shinyreact.useShinyInput;
-  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
 
   // Card: styled container with optional title and children
   function Card(args) {
@@ -69,11 +69,10 @@
     );
   }
 
-  // OutputDisplay: labeled display area wired to Shiny via useShinyOutput
+  // OutputDisplay: labeled display area wired to Shiny via useShinyOutputValue
   function OutputDisplay(args) {
     var props = args.element.props;
-    var result = useShinyOutput(props.output_id, undefined);
-    var value = result[0];
+    var value = useShinyOutputValue(props.output_id, undefined);
 
     return h(
       "div",

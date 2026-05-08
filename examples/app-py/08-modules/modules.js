@@ -5,7 +5,7 @@
   var useState = React.useState;
   var useRef = React.useRef;
   var useShinyInput = window.shinyreact.useShinyInput;
-  var useShinyOutput = window.shinyreact.useShinyOutput;
+  var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
   var useShinyMessageHandler = window.shinyreact.useShinyMessageHandler;
   var ShinyModuleProvider = window.shinyreact.ShinyModuleProvider;
 
@@ -46,11 +46,9 @@
     var count = inputResult[0];
     var setCount = inputResult[1];
 
-    var outputResult = useShinyOutput("serverCount", 0);
-    var serverCount = outputResult[0];
+    var serverCount = useShinyOutputValue("serverCount", 0);
 
-    var doubledResult = useShinyOutput("serverDoubled", 0);
-    var serverDoubled = doubledResult[0];
+    var serverDoubled = useShinyOutputValue("serverDoubled", 0);
 
     var notificationState = useState(null);
     var notification = notificationState[0];
