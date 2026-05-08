@@ -141,4 +141,130 @@ describe("ShinyOutput", () => {
     expect(mockUnbindAll).toHaveBeenCalledTimes(1);
     expect(mockBindAll).toHaveBeenCalledTimes(2);
   });
+
+  it("does not re-bind when only unrelated props change", () => {
+    const { rerender } = render(
+      <ShinyOutput id="my_plot" className="a" />,
+    );
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    rerender(<ShinyOutput id="my_plot" className="b" />);
+    rerender(<ShinyOutput id="my_plot" className="b" style={{ color: "red" }} />);
+    rerender(<ShinyOutput id="my_plot" className="b" style={{ color: "red" }} />);
+
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+    expect(mockUnbindAll).toHaveBeenCalledTimes(0);
+  });
+
+  it("calls unbindAll before bindAll when id changes", () => {
+    const calls: string[] = [];
+    mockBindAll.mockImplementation(() => calls.push("bind"));
+    mockUnbindAll.mockImplementation(() => calls.push("unbind"));
+
+    const { rerender } = render(<ShinyOutput id="first" />);
+    rerender(<ShinyOutput id="second" />);
+
+    // Mount, then on rerender: cleanup (unbind) then effect (bind).
+    expect(calls).toEqual(["bind", "unbind", "bind"]);
+  });
+
+  it("unbinds the element that was previously bound when id changes", () => {
+    // The cleanup closure captures the ref to the *previous* element. When
+    // React updates props on the same DOM node, the captured element still
+    // refers to the now-renamed node. unbindAll must be called with that
+    // element (not a stale node from elsewhere).
+    const { container, rerender } = render(<ShinyOutput id="first" />);
+    const elBeforeRerender = container.querySelector("#first");
+
+    rerender(<ShinyOutput id="second" />);
+    const elAfterRerender = container.querySelector("#second");
+
+    // React reuses the DOM node, so both queries return the same element.
+    expect(elBeforeRerender).toBe(elAfterRerender);
+    expect(mockUnbindAll).toHaveBeenCalledWith(elAfterRerender, true);
+  });
+
+  it("forwards event handlers (e.g., onClick) to the rendered element", () => {
+    const onClick = vi.fn();
+    const { container } = render(
+      <ShinyOutput id="my_plot" onClick={onClick} />,
+    );
+    const el = container.querySelector("#my_plot") as HTMLElement;
+    el.click();
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("forwards children to the rendered element (e.g., as fallback content)", () => {
+    const { container } = render(
+      <ShinyOutput id="my_plot">
+        <span data-testid="fallback">loading…</span>
+      </ShinyOutput>,
+    );
+    const el = container.querySelector("#my_plot");
+    expect(el?.querySelector("[data-testid='fallback']")?.textContent).toBe(
+      "loading…",
+    );
+  });
+
+  it("does not throw when Shiny is present but bindAll is missing", () => {
+    (window as any).Shiny = { unbindAll: mockUnbindAll };
+    const { unmount } = render(<ShinyOutput id="my_plot" />);
+    // bindAll missing → effect early-returns, so unbindAll is also a no-op.
+    expect(mockUnbindAll).not.toHaveBeenCalled();
+    expect(() => unmount()).not.toThrow();
+  });
+
+  it("does not throw when Shiny is present but unbindAll is missing", () => {
+    (window as any).Shiny = { bindAll: mockBindAll };
+    const { unmount } = render(<ShinyOutput id="my_plot" />);
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+    expect(() => unmount()).not.toThrow();
+  });
+
+  it("binds each ShinyOutput independently when multiple are rendered", () => {
+    render(
+      <div>
+        <ShinyOutput id="a" />
+        <ShinyOutput id="b" />
+        <ShinyOutput id="c" />
+      </div>,
+    );
+    expect(mockBindAll).toHaveBeenCalledTimes(3);
+  });
+
+  it("unmounting one ShinyOutput unbinds only that element, not its siblings", () => {
+    // The functional payoff of `unbindAll(el, true)`: removing one output
+    // from a shared parent must not touch sibling outputs' bindings.
+    function App({ showA }: { showA: boolean }) {
+      return (
+        <div>
+          {showA && <ShinyOutput id="a" />}
+          <ShinyOutput id="b" />
+          <ShinyOutput id="c" />
+        </div>
+      );
+    }
+
+    const { container, rerender } = render(<App showA={true} />);
+    const elA = container.querySelector("#a");
+    expect(mockBindAll).toHaveBeenCalledTimes(3);
+
+    mockUnbindAll.mockClear();
+    rerender(<App showA={false} />);
+
+    expect(mockUnbindAll).toHaveBeenCalledTimes(1);
+    expect(mockUnbindAll).toHaveBeenCalledWith(elA, true);
+  });
+
+  it("ignores Shiny added to the window after mount", () => {
+    // The effect captures Shiny synchronously on mount. If Shiny loads
+    // later, this component does not retroactively bind — that's the
+    // documented behavior (the surrounding page-level bindAll handles it).
+    delete (window as any).Shiny;
+    const { unmount } = render(<ShinyOutput id="my_plot" />);
+    (window as any).Shiny = { bindAll: mockBindAll, unbindAll: mockUnbindAll };
+    unmount();
+    expect(mockBindAll).not.toHaveBeenCalled();
+    expect(mockUnbindAll).not.toHaveBeenCalled();
+  });
 });
