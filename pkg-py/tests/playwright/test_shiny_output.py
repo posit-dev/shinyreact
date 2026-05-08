@@ -5,6 +5,7 @@ from shiny.pytest import create_app_fixture
 from shiny.run import ShinyAppProc
 
 classname_app = create_app_fixture("apps/classname/app.py")
+data_frame_app = create_app_fixture("apps/data_frame/app.py")
 
 
 def test_custom_classname_lands_on_rendered_element(
@@ -28,3 +29,23 @@ def test_custom_classname_lands_on_rendered_element(
 
     # Direct-child assertion: `>` combinator fails if any wrapper sneaks in.
     expect(page.locator("[data-test=container] > #out")).to_be_attached()
+
+
+def test_data_frame_renders_inside_shiny_output(
+    page: Page, data_frame_app: ShinyAppProc
+) -> None:
+    page.goto(data_frame_app.url)
+
+    table = page.locator("shiny-data-frame#my_table")
+    expect(table).to_be_visible()
+
+    # Smoke check: the binding fired and at least one cell from the dataframe
+    # rendered. The frame is `{"a": [1, 2], "b": [3, 4]}` — "1" appears as the
+    # first value of column "a".
+    expect(table).to_contain_text("1")
+
+    # Direct-child assertion: no wrapper between `<div data-test="container">`
+    # and the rendered `<shiny-data-frame>` element.
+    expect(
+        page.locator("[data-test=container] > shiny-data-frame#my_table")
+    ).to_be_attached()
