@@ -5,8 +5,19 @@ import numpy as np
 import pandas as pd
 
 
-def generate_sample_data(n_days: int = 180, n_products: int = 20) -> Dict[str, Any]:
-    """Generate sample sales data"""
+def generate_sample_data(n_days: int = 365, n_products: int = 20) -> Dict[str, Any]:
+    """Generate sample sales data.
+
+    Returns two long-format frames keyed on date:
+    - revenue_trend: one row per day with site-wide revenue/orders/users.
+    - transactions: one row per (day, product) — the fact table the
+      dashboard's MetricsCards / Charts (category) / DataTable cards all
+      aggregate from inside ``filter_data``.
+
+    Demonstrates the canonical Shiny pattern of a single shared
+    ``@reactive.calc`` (``filtered_data``) deriving multiple outputs from
+    one fact table, so a date-range change ripples through every card.
+    """
     np.random.seed(42)  # For reproducible data
 
     # Date range
@@ -39,7 +50,8 @@ def generate_sample_data(n_days: int = 180, n_products: int = 20) -> Dict[str, A
         "Plant Pot",
     ]
 
-    # Generate time series data
+    # Site-wide time series (orders/users aren't tracked per-product, so this
+    # frame stays distinct from the transactions table below).
     revenue_base = (
         2000
         + 500 * np.sin(np.arange(len(dates)) * 0.3)
@@ -65,32 +77,51 @@ def generate_sample_data(n_days: int = 180, n_products: int = 20) -> Dict[str, A
         }
     )
 
-    # Generate product performance data
-    product_data = pd.DataFrame(
+    # Per-product baseline: rates and metadata.
+    product_baseline = pd.DataFrame(
         {
             "id": [f"prod_{i}" for i in range(1, n_products + 1)],
             "product": np.random.choice(products, n_products),
             "category": np.random.choice(categories, n_products),
-            "sales": np.random.randint(50, 501, n_products),
-            "revenue": np.round(np.random.uniform(1000, 10000, n_products), 2),
+            # Mean daily sales rate (units/day) — varies per product.
+            "daily_sales_rate": np.random.uniform(0.5, 3.0, n_products),
+            # Per-unit revenue ($/unit).
+            "unit_revenue": np.round(np.random.uniform(20, 100, n_products), 2),
+            # Static product attributes (independent of date).
             "growth": np.round(np.random.uniform(-15, 25, n_products), 1),
             "status": np.random.choice(
-                ["active", "inactive", "low_stock"], n_products, p=[0.6, 0.2, 0.2]
+                ["active", "inactive", "low_stock"],
+                n_products,
+                p=[0.6, 0.2, 0.2],
             ),
         }
     )
 
-    # Generate category performance data
-    category_performance = (
-        product_data.groupby("category")
-        .agg({"sales": "sum", "revenue": "sum"})
-        .reset_index()
+    # Transaction log: one row per (date, product). With n_days=365 and
+    # n_products=20, this is 7,300 rows — fine for a demo.
+    n_dates = len(dates)
+    daily_sales = np.random.poisson(
+        product_baseline["daily_sales_rate"].to_numpy()[:, None],
+        size=(n_products, n_dates),
+    )
+    daily_revenue = daily_sales * product_baseline["unit_revenue"].to_numpy()[:, None]
+
+    transactions = pd.DataFrame(
+        {
+            "date": np.tile(dates.strftime("%Y-%m-%d").to_numpy(), n_products),
+            "id": np.repeat(product_baseline["id"].to_numpy(), n_dates),
+            "product": np.repeat(product_baseline["product"].to_numpy(), n_dates),
+            "category": np.repeat(product_baseline["category"].to_numpy(), n_dates),
+            "sales": daily_sales.reshape(-1).astype(int),
+            "revenue": np.round(daily_revenue.reshape(-1), 2),
+            "growth": np.repeat(product_baseline["growth"].to_numpy(), n_dates),
+            "status": np.repeat(product_baseline["status"].to_numpy(), n_dates),
+        }
     )
 
     return {
         "revenue_trend": revenue_trend,
-        "products": product_data,
-        "category_performance": category_performance,
+        "transactions": transactions,
     }
 
 
@@ -100,40 +131,46 @@ def filter_data(
     search_term: str = "",
     selected_categories: List[str] = None,
 ) -> Dict[str, Any]:
-    """Filter data based on inputs"""
+    """Filter the fact tables by date / search / categories and return the
+    aggregates each dashboard card needs.
+
+    The transaction log is the single source of truth for products and
+    category_performance — both are derived here, so any change to the
+    date range, search, or category filter ripples to all three cards.
+    """
     if selected_categories is None:
         selected_categories = []
 
-    # Filter by date range (for time series data)
+    # Date window
     days_back = {
         "last_7_days": 7,
         "last_30_days": 30,
         "last_90_days": 90,
         "this_year": 365,
     }.get(date_range, 30)
-
     start_date = datetime.now().date() - timedelta(days=days_back - 1)
+
+    # Site-wide time series for the top chart.
     revenue_trend = data["revenue_trend"].copy()
     revenue_trend["date_parsed"] = pd.to_datetime(revenue_trend["date"]).dt.date
     filtered_revenue = revenue_trend[revenue_trend["date_parsed"] >= start_date].drop(
         "date_parsed", axis=1
     )
 
-    # Filter products
-    filtered_products = data["products"].copy()
+    # Slice the transaction log by date.
+    tx = data["transactions"].copy()
+    tx["date_parsed"] = pd.to_datetime(tx["date"]).dt.date
+    tx = tx[tx["date_parsed"] >= start_date].drop("date_parsed", axis=1)
 
-    # Filter by search term
+    # Search term: matches against product name or category.
     if search_term:
-        mask = filtered_products["product"].str.contains(
+        mask = tx["product"].str.contains(
             search_term, case=False, na=False
-        ) | filtered_products["category"].str.contains(
-            search_term, case=False, na=False
-        )
-        filtered_products = filtered_products[mask]
+        ) | tx["category"].str.contains(search_term, case=False, na=False)
+        tx = tx[mask]
 
-    # Filter by categories
+    # Category checkboxes use lowercase keys; map them to the data labels.
     if selected_categories:
-        # Map category values to labels
         category_map = {
             "electronics": "Electronics",
             "clothing": "Clothing",
@@ -142,25 +179,31 @@ def filter_data(
             "sports": "Sports",
         }
         selected_labels = [
-            category_map.get(cat) for cat in selected_categories if cat in category_map
+            category_map[c] for c in selected_categories if c in category_map
         ]
-        selected_labels = [label for label in selected_labels if label is not None]
-
         if selected_labels:
-            filtered_products = filtered_products[
-                filtered_products["category"].isin(selected_labels)
-            ]
+            tx = tx[tx["category"].isin(selected_labels)]
 
-    # Recalculate category performance based on filtered products
-    if len(filtered_products) > 0:
+    # Aggregate transactions → per-product rollup for the table card.
+    if not tx.empty:
+        filtered_products = (
+            tx.groupby(
+                ["id", "product", "category", "growth", "status"], as_index=False
+            )
+            .agg(sales=("sales", "sum"), revenue=("revenue", "sum"))
+            .sort_values("revenue", ascending=False)
+            .reset_index(drop=True)
+        )
         filtered_category_performance = (
-            filtered_products.groupby("category")
+            filtered_products.groupby("category", as_index=False)
             .agg({"sales": "sum", "revenue": "sum"})
-            .reset_index()
         )
     else:
+        filtered_products = pd.DataFrame(
+            columns=["id", "product", "category", "growth", "status", "sales", "revenue"]
+        )
         filtered_category_performance = pd.DataFrame(
-            {"category": [], "sales": [], "revenue": []}
+            columns=["category", "sales", "revenue"]
         )
 
     return {
