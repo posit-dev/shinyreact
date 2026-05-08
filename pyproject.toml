@@ -34,6 +34,8 @@ dev = [
     "tox>=4.0.0",
     "tox-uv>=1.0.0",
     "pre-commit>=4.0.0",
+    "playwright>=1.59.0",
+    "pytest-playwright>=0.7.2",
 ]
 
 [tool.pyright]
