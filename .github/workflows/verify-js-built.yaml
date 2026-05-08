@@ -5,10 +5,14 @@ on:
     branches: [main]
     paths:
       - "js/**/*"
+      - "pkg-py/src/shinyreact/www/**"
+      - "pkg-r/inst/lib/shiny/**"
       - ".github/workflows/verify-js-built.yaml"
   pull_request:
     paths:
       - "js/**/*"
+      - "pkg-py/src/shinyreact/www/**"
+      - "pkg-r/inst/lib/shiny/**"
       - ".github/workflows/verify-js-built.yaml"
 
 permissions:
@@ -39,14 +43,14 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🏭 Build
-        run: make js-build
+      - name: 🏭 Build and update package dists
+        run: make update-dist
 
       - name: 🧐 Check for uncommitted changes
         run: |
           if [[ `git status --porcelain` ]]; then
             git diff
-            echo "Uncommitted changes found. Please commit any changes that result from 'make js-setup-ci js-build'."
+            echo "Uncommitted changes found. Please commit any changes that result from 'make update-dist'."
             exit 1
           else
             echo "No uncommitted changes found."
