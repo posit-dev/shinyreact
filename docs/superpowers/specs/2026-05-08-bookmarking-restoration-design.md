@@ -188,41 +188,67 @@ underlying input map from `RestoreContext` without calling `restore_input()`.
 The exact attribute access (current candidate: `ctx.input._values`) is
 verified during implementation.
 
-### Wiring — `_dep()` emits the restore script
+### Wiring — `_dep_page()` for page-level entry points
 
-To avoid every entry point having to remember to include the restore
-script, `_dep()` (`pkg-py/src/shinyreact/_output.py`) returns the bundle
-`HTMLDependency` plus the restore script when one applies. `_dep()` is
-already called per-request by `page_react`, `_react_page_fn`, and
-`ui_output`, so wiring through it covers every path that loads the
-shinyreact bundle. Future entry points get restoration automatically
-just by depending on `_dep()`.
+Bookmark restoration is a **page-level** concern — there is one page,
+and it carries the restored input values. `ui_output()` is per-output
+and has no business emitting page-level restore state. We therefore
+split the dependency helper:
+
+- **`_dep()`** (unchanged) — returns the bundle `HTMLDependency` only.
+  `ui_output()` and any future per-component consumer continues to call
+  this. No behaviour change for existing callers.
+- **`_dep_page()`** (new, in `_output.py` next to `_dep()`) — returns
+  `_dep()` plus the restore script when a `RestoreContext` is active.
+  Used by `page_react` and `_react_page_fn`.
 
 ```python
-def _dep() -> TagChild:
-    base = HTMLDependency(
-        name="shinyreact",
-        version="0.1.0",
-        source={"subdir": str(Path(__file__).parent / "www")},
-        script={"src": "shinyreact.js", "defer": ""},
-        stylesheet={"href": "shinyreact.css"},
-    )
+def _dep_page() -> TagChild:
+    """Page-level shinyreact dependency: bundle + bookmark restore script.
+
+    Use from page entry points (`page_react`, `set_react_page`'s page
+    function). Per-output consumers should keep calling `_dep()` — they
+    don't carry page-level restore state.
+    """
     restore = _restore_script_tag()  # may be None
-    return TagList(base, restore) if restore is not None else base
+    return TagList(_dep(), restore) if restore is not None else _dep()
 ```
 
-`head_content()` (used inside `_restore_script_tag`) deduplicates by
-identical content, so multi-call render trees (e.g. a page with several
-`ui_output()` calls all calling `_dep()`) collapse to a single emitted
-script tag. The restore script's content is deterministic per-request
-because it's derived from the same `RestoreContext`, so dedupe is safe.
+```python
+# page_react
+def page_react(*args, title=None, lang="en"):
+    return page_bare(
+        _dep_page(),
+        tags.div(id="root"),
+        *args,
+        title=title,
+        lang=lang,
+    )
 
-`page_react`, `_react_page_fn`, and `ui_output` are **unchanged in their
-arg lists** — they keep calling `_dep()` exactly as today and pick up
-the restore behaviour for free.
+# _build_react_page_fn
+def _react_page_fn(*args):
+    deps: list[HTMLDependency] = []
+    for arg in args:
+        if isinstance(arg, Renderer):
+            ui = arg.auto_output_ui()
+            if isinstance(ui, (Tag, TagList)):
+                deps.extend(ui.get_dependencies())
+    return cast(Tag, TagList(
+        _dep_page(),
+        *deps,
+        HTML(index_html),
+    ))
+```
 
-`page_bare` is **unchanged** — the escape hatch does not call `_dep()`
-and carries no automatic behaviour.
+`ui_output()` is **unchanged** — it keeps calling `_dep()` and emits no
+restore script of its own.
+
+`page_bare` is **unchanged** — the escape hatch does not auto-emit.
+
+`head_content()` (used inside `_restore_script_tag`) still deduplicates
+by identical content, so even if a future page entry point emitted the
+script alongside another already-emitting source, the page would carry
+exactly one restore tag.
 
 ### Order guarantee
 
@@ -279,19 +305,22 @@ The security comment is co-located at:
 5. Reading does not mark values pending: after `_restore_script_tag()`, a
    server-side `restore_input("foo", "default")` still returns the restored
    value (not "default") and only *then* marks it pending.
-6. `_dep()` with no active `RestoreContext` returns just the
-   `HTMLDependency` (no `TagList` wrap).
-7. `_dep()` with an active `RestoreContext` containing input values returns
-   `TagList(htmldep, restore_script)`.
-8. `page_react()` with active bookmark → rendered HTML has the restore
+6. `_dep()` always returns the bundle `HTMLDependency` only — never a
+   `TagList`, never a restore script — regardless of `RestoreContext`
+   state.
+7. `_dep_page()` with no active `RestoreContext` returns the bundle
+   `HTMLDependency` only.
+8. `_dep_page()` with an active `RestoreContext` containing input values
+   returns `TagList(htmldep, restore_script)`.
+9. `page_react()` with active bookmark → rendered HTML has the restore
    script in `<head>` and the shinyreact bundle.
-9. `page_react()` without bookmark → no `_restore` script in the rendered
-   HTML.
-10. `_build_react_page_fn()` (covering `set_react_page`) — same two cases
-    as 8/9.
-11. `ui_output()` rendered alongside a `page_react()` does not emit a
-    duplicate restore script (head_content dedupe).
-12. URL bookmark mode and server-stored mode both produce the same
+10. `page_react()` without bookmark → no `_restore` script in the rendered
+    HTML.
+11. `_build_react_page_fn()` (covering `set_react_page`) — same two cases
+    as 9/10.
+12. `ui_output()` (which calls `_dep()`, not `_dep_page()`) emits no
+    restore script even when a `RestoreContext` is active.
+13. URL bookmark mode and server-stored mode both produce the same
     script-tag shape — drive both via `RestoreContext.from_query_string`
     against an in-memory state store.
 
@@ -366,12 +395,12 @@ the docs need it.
 
 ## Files affected
 
-- `pkg-py/src/shinyreact/_output.py` — `_dep()` returns the bundle
-  `HTMLDependency` plus the restore script when applicable.
+- `pkg-py/src/shinyreact/_output.py` — new `_dep_page()` helper alongside
+  the existing `_dep()` (which is unchanged).
+- `pkg-py/src/shinyreact/_page.py` — `page_react` and
+  `_build_react_page_fn` switch from `_dep()` to `_dep_page()`.
 - `pkg-py/src/shinyreact/_bookmark.py` (new) — `_restore_script_tag()` and
-  the `_read_restore_input_values()` helper. (Could live in `_page.py`
-  instead; new file is cleaner since neither `page_react` nor
-  `_build_react_page_fn` needs to call it directly anymore.)
+  the `_read_restore_input_values()` helper.
 - `js/src/shiny-react/use-shiny.ts` — call site in `ensureShinyReactInitialized()`.
 - `js/src/shiny-react/bookmark.ts` (new) — `applyRestoredValues()` helper.
 - `js/src/shiny-react/__tests__/use-shiny-restore.test.tsx` (new) — JS tests.
