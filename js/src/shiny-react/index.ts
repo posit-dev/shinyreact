@@ -6,6 +6,7 @@ import { type ShinyReactRegistry } from "./react-registry";
 export { ImageOutput } from "./ImageOutput";
 export { MISSING } from "./missing";
 export type { MISSING as MISSINGType } from "./missing";
+export type { OutputStatus, ErrorsMessageValue } from "./output-registry";
 export { ShinyReactComponentElement } from "./ShinyReactComponentElement";
 export {
   useShinyBusy,
