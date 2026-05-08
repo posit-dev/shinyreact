@@ -35,28 +35,28 @@ describe("OutputRegistry", () => {
 
   it("add returns a dispose function", () => {
     const registry = new OutputRegistry();
-    const dispose = registry.add("out1", vi.fn(), vi.fn());
+    const dispose = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
     expect(typeof dispose).toBe("function");
   });
 
   it("dispose removes only its own subscribers", () => {
     const registry = new OutputRegistry();
     const setVal1 = vi.fn();
-    const setRecalc1 = vi.fn();
+    const setStatus1 = vi.fn();
+    const setErr1 = vi.fn();
     const setVal2 = vi.fn();
-    const setRecalc2 = vi.fn();
+    const setStatus2 = vi.fn();
+    const setErr2 = vi.fn();
 
-    const dispose1 = registry.add("out1", setVal1, setRecalc1);
-    registry.add("out1", setVal2, setRecalc2);
+    const dispose1 = registry.add("out1", setVal1, setStatus1, setErr1);
+    registry.add("out1", setVal2, setStatus2, setErr2);
 
     dispose1();
 
-    // Entry should still exist because subscriber 2 is still there
     const entry = registry.get("out1");
     expect(entry).toBeDefined();
     expect(entry!.isEmpty()).toBe(false);
 
-    // Only subscriber 2 should receive values
     entry!.setValue("hello");
     expect(setVal1).not.toHaveBeenCalled();
     expect(setVal2).toHaveBeenCalledWith("hello");
@@ -64,37 +64,29 @@ describe("OutputRegistry", () => {
 
   it("scheduleCleanup removes entry and DOM when empty after RAF", async () => {
     const registry = new OutputRegistry();
-    const dispose = registry.add("out1", vi.fn(), vi.fn());
+    const dispose = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
     expect(registry.has("out1")).toBe(true);
     expect(document.getElementById("out1")).not.toBeNull();
 
     dispose();
 
-    // Entry still exists synchronously (RAF hasn't fired)
     expect(registry.has("out1")).toBe(true);
-
-    // Wait for RAF to fire
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    // Now the entry and DOM element should be cleaned up
     expect(registry.has("out1")).toBe(false);
     expect(document.getElementById("out1")).toBeNull();
   });
 
   it("scheduleCleanup preserves entry when re-subscribed before RAF", async () => {
     const registry = new OutputRegistry();
-    const dispose1 = registry.add("out1", vi.fn(), vi.fn());
-
+    const dispose1 = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
     dispose1();
 
-    // Simulate remount — new subscriber added before RAF fires
     const setVal2 = vi.fn();
-    registry.add("out1", setVal2, vi.fn());
+    registry.add("out1", setVal2, vi.fn(), vi.fn());
 
-    // Wait for RAF
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    // Entry should still exist — new subscriber saved it
     expect(registry.has("out1")).toBe(true);
     const entry = registry.get("out1");
     entry!.setValue("preserved");
@@ -103,14 +95,25 @@ describe("OutputRegistry", () => {
 
   it("add reuses existing entry and DOM element", () => {
     const registry = new OutputRegistry();
-    registry.add("out1", vi.fn(), vi.fn());
+    registry.add("out1", vi.fn(), vi.fn(), vi.fn());
     const domBefore = document.getElementById("out1");
 
-    registry.add("out1", vi.fn(), vi.fn());
+    registry.add("out1", vi.fn(), vi.fn(), vi.fn());
     const domAfter = document.getElementById("out1");
 
-    // Same DOM element, not a duplicate
     expect(domBefore).toBe(domAfter);
+  });
+
+  it("add syncs new subscriber with current status on attach", () => {
+    const registry = new OutputRegistry();
+    // First subscriber attaches and bumps the entry to "ready" via setValue
+    registry.add("out1", vi.fn(), vi.fn(), vi.fn());
+    registry.get("out1")!.setValue("first");
+
+    // Second subscriber should immediately receive the current status
+    const setStatus2 = vi.fn();
+    registry.add("out1", vi.fn(), setStatus2, vi.fn());
+    expect(setStatus2).toHaveBeenCalledWith("ready");
   });
 });
 

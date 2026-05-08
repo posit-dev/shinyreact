@@ -116,12 +116,11 @@ export class OutputRegistry {
   add<T>(
     outputId: string,
     setValue: (value: T) => void,
-    setRecalculating: (value: boolean) => void,
+    setStatus: (status: OutputStatus) => void,
+    setError: (err: ErrorsMessageValue | null) => void,
   ): () => void {
     let outputEntry = this.get(outputId);
     if (!outputEntry) {
-      // Need to create a dummy div element with the ID, so that we have
-      // something to bind to.
       const div = document.createElement("div");
       div.className = "shiny-react-output";
       div.id = outputId;
@@ -135,11 +134,17 @@ export class OutputRegistry {
     }
 
     outputEntry.addUseStateSetValueFn(setValue);
-    outputEntry.addUseStateSetRecalculatingFn(setRecalculating);
+    outputEntry.addUseStateSetStatusFn(setStatus);
+    outputEntry.addUseStateSetErrorFn(setError);
+
+    // Sync new subscriber with current status (so a consumer mounting after
+    // the first server response sees "ready" immediately, not "pending").
+    setStatus(outputEntry.getStatus());
 
     return () => {
       outputEntry.removeUseStateSetValueFn(setValue);
-      outputEntry.removeUseStateSetRecalculatingFn(setRecalculating);
+      outputEntry.removeUseStateSetStatusFn(setStatus);
+      outputEntry.removeUseStateSetErrorFn(setError);
       this.scheduleCleanup(outputId);
     };
   }
@@ -226,12 +231,11 @@ export function createReactOutputBinding() {
       console.error(`Error for ${el.id}:`, err);
       const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
       if (outputEntry) {
-        outputEntry.setValue({ __error: err.message });
+        outputEntry.setError(err);
       }
     }
 
     override showProgress(el: HTMLElement, show: boolean): void {
-      // console.log(`Progress for ${el.id}: ${show}`);
       const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
       if (!outputEntry) {
         console.error(`Output ${el.id} not found`);
