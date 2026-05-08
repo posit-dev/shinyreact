@@ -8,15 +8,21 @@ export type ErrorsMessageValue = {
   type?: string[];
 };
 
+export type OutputStatus = "pending" | "ready" | "recalculating" | "error";
+
 export class OutputRegistryEntry<T> {
-  id: string; // Output ID
+  id: string;
+  private status: OutputStatus = "pending";
+  private hasValue = false;
   private useStateSetValueFns: Set<(value: T) => void>;
-  private useStateSetRecalculatingFns: Set<(value: boolean) => void>;
+  private useStateSetStatusFns: Set<(status: OutputStatus) => void>;
+  private useStateSetErrorFns: Set<(err: ErrorsMessageValue | null) => void>;
 
   constructor(id: string) {
     this.id = id;
     this.useStateSetValueFns = new Set();
-    this.useStateSetRecalculatingFns = new Set();
+    this.useStateSetStatusFns = new Set();
+    this.useStateSetErrorFns = new Set();
   }
 
   addUseStateSetValueFn(fn: (value: T) => void) {
@@ -27,26 +33,69 @@ export class OutputRegistryEntry<T> {
     this.useStateSetValueFns.delete(fn);
   }
 
-  addUseStateSetRecalculatingFn(fn: (value: boolean) => void) {
-    this.useStateSetRecalculatingFns.add(fn);
+  addUseStateSetStatusFn(fn: (status: OutputStatus) => void) {
+    this.useStateSetStatusFns.add(fn);
   }
 
-  removeUseStateSetRecalculatingFn(fn: (value: boolean) => void) {
-    this.useStateSetRecalculatingFns.delete(fn);
+  removeUseStateSetStatusFn(fn: (status: OutputStatus) => void) {
+    this.useStateSetStatusFns.delete(fn);
+  }
+
+  addUseStateSetErrorFn(fn: (err: ErrorsMessageValue | null) => void) {
+    this.useStateSetErrorFns.add(fn);
+  }
+
+  removeUseStateSetErrorFn(fn: (err: ErrorsMessageValue | null) => void) {
+    this.useStateSetErrorFns.delete(fn);
+  }
+
+  getStatus(): OutputStatus {
+    return this.status;
+  }
+
+  private setStatus(status: OutputStatus) {
+    if (this.status === status) return;
+    this.status = status;
+    this.useStateSetStatusFns.forEach((fn) => fn(status));
   }
 
   setValue(value: T) {
+    this.hasValue = true;
     this.useStateSetValueFns.forEach((fn) => fn(value));
+    // Receiving a value clears any prior error.
+    if (this.status === "error") {
+      this.useStateSetErrorFns.forEach((fn) => fn(null));
+    }
+    this.setStatus("ready");
   }
 
-  setRecalculating(value: boolean) {
-    this.useStateSetRecalculatingFns.forEach((fn) => fn(value));
+  setRecalculating(recalculating: boolean) {
+    if (recalculating) {
+      // Only flip to "recalculating" if we have already shown a value.
+      // Before the first value arrives, the UI should keep showing the
+      // pending/skeleton state — the server being busy doesn't change that.
+      if (this.hasValue) {
+        this.setStatus("recalculating");
+      }
+    } else {
+      // Done recalculating: return to "ready" if we have a value, otherwise
+      // stay in whatever state we were in (pending or error).
+      if (this.hasValue && this.status === "recalculating") {
+        this.setStatus("ready");
+      }
+    }
+  }
+
+  setError(err: ErrorsMessageValue) {
+    this.useStateSetErrorFns.forEach((fn) => fn(err));
+    this.setStatus("error");
   }
 
   isEmpty(): boolean {
     return (
       this.useStateSetValueFns.size === 0 &&
-      this.useStateSetRecalculatingFns.size === 0
+      this.useStateSetStatusFns.size === 0 &&
+      this.useStateSetErrorFns.size === 0
     );
   }
 }

@@ -5,7 +5,12 @@ vi.mock("../get-shiny", () => ({
   getShiny: vi.fn(() => undefined),
 }));
 
-import { OutputRegistry, OutputRegistryEntry } from "../output-registry";
+import {
+  OutputRegistry,
+  OutputRegistryEntry,
+  type OutputStatus,
+  type ErrorsMessageValue,
+} from "../output-registry";
 
 describe("OutputRegistryEntry", () => {
   it("isEmpty returns true on fresh entry", () => {
@@ -17,24 +22,6 @@ describe("OutputRegistryEntry", () => {
     const entry = new OutputRegistryEntry("test");
     entry.addUseStateSetValueFn(vi.fn());
     expect(entry.isEmpty()).toBe(false);
-  });
-
-  it("isEmpty returns false after adding setRecalculating subscriber", () => {
-    const entry = new OutputRegistryEntry("test");
-    entry.addUseStateSetRecalculatingFn(vi.fn());
-    expect(entry.isEmpty()).toBe(false);
-  });
-
-  it("isEmpty returns true after removing all subscribers", () => {
-    const entry = new OutputRegistryEntry("test");
-    const setVal = vi.fn();
-    const setRecalc = vi.fn();
-    entry.addUseStateSetValueFn(setVal);
-    entry.addUseStateSetRecalculatingFn(setRecalc);
-
-    entry.removeUseStateSetValueFn(setVal);
-    entry.removeUseStateSetRecalculatingFn(setRecalc);
-    expect(entry.isEmpty()).toBe(true);
   });
 });
 
@@ -126,3 +113,106 @@ describe("OutputRegistry", () => {
     expect(domBefore).toBe(domAfter);
   });
 });
+
+describe("OutputRegistryEntry status lifecycle", () => {
+  it("starts in pending status", () => {
+    const entry = new OutputRegistryEntry("test");
+    expect(entry.getStatus()).toBe("pending");
+  });
+
+  it("setValue moves status to ready and fans out to subscribers", () => {
+    const entry = new OutputRegistryEntry("test");
+    const setVal = vi.fn();
+    const setStatus = vi.fn();
+    entry.addUseStateSetValueFn(setVal);
+    entry.addUseStateSetStatusFn(setStatus);
+
+    entry.setValue("hello");
+
+    expect(entry.getStatus()).toBe("ready");
+    expect(setVal).toHaveBeenCalledWith("hello");
+    expect(setStatus).toHaveBeenCalledWith("ready");
+  });
+
+  it("setRecalculating(true) on a ready entry transitions to recalculating", () => {
+    const entry = new OutputRegistryEntry("test");
+    entry.setValue("x");
+    const setStatus = vi.fn();
+    entry.addUseStateSetStatusFn(setStatus);
+
+    entry.setRecalculating(true);
+
+    expect(entry.getStatus()).toBe("recalculating");
+    expect(setStatus).toHaveBeenLastCalledWith("recalculating");
+  });
+
+  it("setRecalculating(false) after recalculating returns to ready", () => {
+    const entry = new OutputRegistryEntry("test");
+    entry.setValue("x");
+    entry.setRecalculating(true);
+    const setStatus = vi.fn();
+    entry.addUseStateSetStatusFn(setStatus);
+
+    entry.setRecalculating(false);
+
+    expect(entry.getStatus()).toBe("ready");
+    expect(setStatus).toHaveBeenLastCalledWith("ready");
+  });
+
+  it("setRecalculating(true) before any value keeps status pending", () => {
+    const entry = new OutputRegistryEntry("test");
+    const setStatus = vi.fn();
+    entry.addUseStateSetStatusFn(setStatus);
+
+    entry.setRecalculating(true);
+
+    // Server is recalculating but we have never received a value — UI
+    // should still be in the pending/skeleton state, not show stale "ready".
+    expect(entry.getStatus()).toBe("pending");
+  });
+
+  it("setError moves status to error and fans out error", () => {
+    const entry = new OutputRegistryEntry("test");
+    const setStatus = vi.fn();
+    const setError = vi.fn();
+    entry.addUseStateSetStatusFn(setStatus);
+    entry.addUseStateSetErrorFn(setError);
+
+    const err: ErrorsMessageValue = { message: "boom", call: [] };
+    entry.setError(err);
+
+    expect(entry.getStatus()).toBe("error");
+    expect(setStatus).toHaveBeenLastCalledWith("error");
+    expect(setError).toHaveBeenCalledWith(err);
+  });
+
+  it("setValue after setError clears the error and returns to ready", () => {
+    const entry = new OutputRegistryEntry("test");
+    entry.setError({ message: "boom", call: [] });
+    const setError = vi.fn();
+    entry.addUseStateSetErrorFn(setError);
+
+    entry.setValue("recovered");
+
+    expect(entry.getStatus()).toBe("ready");
+    expect(setError).toHaveBeenLastCalledWith(null);
+  });
+
+  it("isEmpty considers status and error subscribers", () => {
+    const entry = new OutputRegistryEntry("test");
+    expect(entry.isEmpty()).toBe(true);
+    const fn = vi.fn();
+    entry.addUseStateSetStatusFn(fn);
+    expect(entry.isEmpty()).toBe(false);
+    entry.removeUseStateSetStatusFn(fn);
+    expect(entry.isEmpty()).toBe(true);
+  });
+});
+
+const _checkStatusType: OutputStatus[] = [
+  "pending",
+  "ready",
+  "recalculating",
+  "error",
+];
+void _checkStatusType;
