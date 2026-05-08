@@ -20,8 +20,9 @@ def test_custom_classname_lands_on_rendered_element(
     # We only care about presence + classes + attributes here.
     expect(out).to_be_attached()
 
-    # `<ShinyOutput>` does not add classes of its own; only the caller-supplied
-    # ones should be present.
+    # `<ShinyOutput>` does not add classes of its own — caller-supplied classes
+    # must be present. (Shiny's binding pass adds `shiny-bound-output` after
+    # mount; the regexes below are deliberately tolerant of that extra class.)
     expect(out).to_have_class(re.compile(r"\bcustom-a\b"))
     expect(out).to_have_class(re.compile(r"\bcustom-b\b"))
 
