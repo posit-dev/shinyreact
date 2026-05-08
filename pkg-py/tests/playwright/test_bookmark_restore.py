@@ -5,7 +5,8 @@ bookmark URL, waits for Shiny to initialise, and asserts the React-rendered
 DOM reflects the restored input values.
 
 API notes (verified against py-shiny source):
-- ``create_app_fixture`` signature: ``(app: PurePath | str | list[...], scope='module', timeout_secs=30)``
+- ``create_app_fixture`` signature:
+  ``(app: PurePath | str | list[...], scope='module', timeout_secs=30)``
 - The fixture yields a ``ShinyAppProc`` whose ``.url`` attribute is
   ``http://127.0.0.1:{port}/`` (with a trailing slash).
 - The ``page`` fixture is provided by ``pytest-playwright``.
@@ -59,7 +60,7 @@ def test_url_mode_restores_inputs(page: Page, app: ShinyAppProc) -> None:
 
 
 def test_no_bookmark_renders_defaults(page: Page, app: ShinyAppProc) -> None:
-    """Navigate to the plain URL; inputs show defaults and _restore sentinel is applied."""
+    """Plain URL renders defaults and the _restore sentinel is applied."""
     page.goto(app.url)
     _wait_for_shiny_initialized(page)
 

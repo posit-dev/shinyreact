@@ -138,6 +138,12 @@ py-check-tests:  ## [py] Run python tests
 	@echo "🧪 Running tests with pytest"
 	uv run pytest
 
+.PHONY: py-check-playwright
+py-check-playwright:  ## [py] Run Playwright integration tests against the example apps
+	@echo ""
+	@echo "🎭 Running Playwright integration tests"
+	uv run pytest pkg-py/tests/playwright
+
 .PHONY: py-check-types
 py-check-types:  ## [py] Run python type checks
 	@echo ""

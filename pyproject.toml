@@ -38,6 +38,14 @@ dev = [
     "pytest-playwright>=0.7.2",
 ]
 
+[tool.pytest.ini_options]
+# Default test runs exclude the Playwright integration suite — it depends on
+# pytest-playwright spinning up a real browser and a real Shiny process, which
+# leaves the asyncio event loop in a state that confuses the unit tests that
+# follow it. Run the Playwright suite explicitly via `make py-check-playwright`.
+testpaths = ["pkg-py/tests"]
+addopts = "--ignore=pkg-py/tests/playwright"
+
 [tool.pyright]
 include = ["pkg-py/src/shinyreact"]
 pythonVersion = "3.10"

@@ -80,7 +80,6 @@ def test_restore_script_tag_escapes_closing_script_tag() -> None:
     # The literal "</script>" sequence inside the JSON payload must be escaped
     # so the browser does not see it as ending the script. The escaping replaces
     # "</" with "<\/", so no unescaped "</script" appears INSIDE the JSON.parse call.
-    json_start = head_html.index("JSON.parse('")
     # Allow only ONE actual </script> (the one closing our injected tag).
     assert head_html.count("</script>") == 1
 
