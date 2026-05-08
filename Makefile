@@ -155,6 +155,17 @@ py-format: ## [py] Format python code
 	uv run ruff check --fix pkg-py --config pyproject.toml
 	uv run ruff format pkg-py --config pyproject.toml
 
+.PHONY: py-install-e2e
+py-install-e2e:  ## [py] Install Playwright browsers for e2e tests
+	@echo "🆙 Installing Playwright browsers"
+	uv sync --group tests-e2e
+	uv run playwright install --with-deps chromium
+
+.PHONY: py-test-e2e
+py-test-e2e:  ## [py] Run Playwright e2e tests (chromium)
+	@echo "🧪 Running Playwright e2e tests"
+	uv run pytest pkg-py/tests/playwright --browser chromium -o addopts=
+
 .PHONY: py-coverage
 py-coverage: ## [py] Generate coverage report
 	@echo "📔 Generating coverage report"
@@ -237,7 +248,7 @@ ai-setup: setup  ## Setup environment for AI agents
 
 .PHONY: help
 help:  ## Show help messages for make targets
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; { \
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; { \
 		printf "\033[32m%-18s\033[0m", $$1; \
 		if ($$2 ~ /^\[docs\]/) { \
 			printf "\033[37m[docs]\033[0m%s\n", substr($$2, 7); \
