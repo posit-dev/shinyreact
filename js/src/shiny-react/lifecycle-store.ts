@@ -27,6 +27,12 @@ let busy = false;
 const listeners = new Set<() => void>();
 let started = false;
 
+// Handler refs are kept so `__resetLifecycleStoreForTests` can detach them
+// cleanly between tests. In production these never get removed.
+let onBusyEvent: (() => void) | undefined;
+let onIdleEvent: (() => void) | undefined;
+let onConnectedEvent: (() => void) | undefined;
+
 function emit(): void {
   for (const listener of listeners) {
     listener();
@@ -47,11 +53,15 @@ function setBusy(next: boolean): void {
 
 function start(): void {
   if (started) return;
-  started = true;
 
+  // Defer setting `started` until we have confirmed a DOM is available.
+  // Otherwise a non-DOM render in the same runtime (e.g. react-test-renderer)
+  // would latch the flag and prevent a later DOM-available render from ever
+  // installing listeners.
   if (typeof document === "undefined") {
     return;
   }
+  started = true;
 
   // Seed `busy` from the DOM. Shiny toggles `.shiny-busy` on <html> while a
   // request is in flight; if the first consumer mounts mid-request we want
@@ -59,8 +69,10 @@ function start(): void {
   if (document.documentElement.classList.contains("shiny-busy")) {
     busy = true;
   }
-  document.addEventListener("shiny:busy", () => setBusy(true));
-  document.addEventListener("shiny:idle", () => setBusy(false));
+  onBusyEvent = () => setBusy(true);
+  onIdleEvent = () => setBusy(false);
+  document.addEventListener("shiny:busy", onBusyEvent);
+  document.addEventListener("shiny:idle", onIdleEvent);
 
   const shiny = getShiny();
   if (shiny) {
@@ -69,17 +81,16 @@ function start(): void {
     return;
   }
 
-  document.addEventListener(
-    "shiny:connected",
-    () => {
-      const s = getShiny();
-      if (s) {
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        s.initializedPromise.then(markInitialized);
-      }
-    },
-    { once: true },
-  );
+  onConnectedEvent = () => {
+    const s = getShiny();
+    if (s) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      s.initializedPromise.then(markInitialized);
+    }
+  };
+  document.addEventListener("shiny:connected", onConnectedEvent, {
+    once: true,
+  });
 }
 
 export function subscribeLifecycle(listener: () => void): () => void {
@@ -99,14 +110,25 @@ export function getBusySnapshot(): boolean {
 }
 
 /**
- * Test-only: reset the module-level state so each test starts from a known
- * baseline. Intentionally not re-exported from `index.ts`.
- *
- * Note: we do not detach the DOM listeners installed by `start()`. They keep
- * pointing at `setBusy` / `markInitialized`, which read the (now-reset)
- * module variables, so behavior remains correct after reset.
+ * Test-only: reset module-level state and detach DOM listeners installed
+ * by `start()`. Intentionally not re-exported from `index.ts`.
  */
 export function __resetLifecycleStoreForTests(): void {
+  if (typeof document !== "undefined") {
+    if (onBusyEvent) {
+      document.removeEventListener("shiny:busy", onBusyEvent);
+    }
+    if (onIdleEvent) {
+      document.removeEventListener("shiny:idle", onIdleEvent);
+    }
+    if (onConnectedEvent) {
+      // No-op if `shiny:connected` already fired (registered with `once: true`).
+      document.removeEventListener("shiny:connected", onConnectedEvent);
+    }
+  }
+  onBusyEvent = undefined;
+  onIdleEvent = undefined;
+  onConnectedEvent = undefined;
   initialized = false;
   busy = false;
   listeners.clear();

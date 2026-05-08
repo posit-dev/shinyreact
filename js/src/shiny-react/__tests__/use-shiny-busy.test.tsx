@@ -103,6 +103,21 @@ describe("useShinyBusy", () => {
     expect(result.current).toBe(true);
   });
 
+  it("detaches DOM listeners on reset (no accumulation across tests)", () => {
+    const removeSpy = vi.spyOn(document, "removeEventListener");
+
+    // Trigger lazy subscription.
+    const { unmount } = renderHook(() => useShinyBusy());
+    unmount();
+
+    __resetLifecycleStoreForTests();
+
+    expect(removeSpy).toHaveBeenCalledWith("shiny:busy", expect.any(Function));
+    expect(removeSpy).toHaveBeenCalledWith("shiny:idle", expect.any(Function));
+
+    removeSpy.mockRestore();
+  });
+
   it("shares one DOM subscription across many consumers", () => {
     const addSpy = vi.spyOn(document, "addEventListener");
 
