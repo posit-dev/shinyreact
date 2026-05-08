@@ -62,7 +62,8 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | `useShinyInput` | Working | Stable defaultValue via `useRef`; debounce + priority options |
-| `useShinyOutput` | Working | Subscribes to a Shiny output binding; receives `Jsonifiable` values from `reactive_output` |
+| `useShinyInputValue` | Working | Read-only consumer hook — returns just the current value (no setter), with mount-order-safe subscription to a producer registered elsewhere via `useShinyInput` |
+| `useShinyOutput` | Working | Subscribes to a Shiny output binding; receives `Jsonifiable` values from `reactive_output`. Returns `[value, status]` where status is `"pending" \| "ready" \| "recalculating" \| "error"` |
 | `useShinyMessageHandler` | Working | Stable handler ref; no unnecessary re-registration on inline arrow functions |
 | `useShinyInitialized` | Working | Tracks Shiny client initialization state |
 | `useShinyBusy` | Working | App-wide busy/idle state hook |
