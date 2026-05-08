@@ -5,6 +5,7 @@ from htmltools import HTMLDependency, TagList
 from shiny.bookmark._restore_state import RestoreContext, RestoreInputSet
 from shiny.bookmark._restore_state import restore_context as restore_context_cm
 from shinyreact._bookmark import _read_restore_input_values, _restore_script_tag
+from shinyreact._output import _dep, _dep_page
 
 
 def _render_dep_to_head(dep: HTMLDependency) -> str:
@@ -92,3 +93,41 @@ def test_restore_script_tag_does_not_mark_pending() -> None:
         from shiny.module import ResolvedId
 
         assert ctx.input.get(ResolvedId("foo")) == "hello"
+
+
+def test_dep_returns_htmldependency_only_no_context() -> None:
+    result = _dep()
+    assert isinstance(result, HTMLDependency)
+    assert result.name == "shinyreact"
+
+
+def test_dep_returns_htmldependency_only_with_context() -> None:
+    ctx = RestoreContext()
+    ctx.input = RestoreInputSet({"foo": "hello"})
+    with restore_context_cm(ctx):
+        result = _dep()
+    # _dep() never wraps — it is the per-output helper.
+    assert isinstance(result, HTMLDependency)
+
+
+def test_dep_page_no_context_returns_htmldependency() -> None:
+    result = _dep_page()
+    assert isinstance(result, HTMLDependency)
+    assert result.name == "shinyreact"
+
+
+def test_dep_page_empty_context_returns_htmldependency() -> None:
+    ctx = RestoreContext()  # active=False, empty input
+    with restore_context_cm(ctx):
+        result = _dep_page()
+    assert isinstance(result, HTMLDependency)
+
+
+def test_dep_page_with_active_context_returns_taglist() -> None:
+    ctx = RestoreContext()
+    ctx.input = RestoreInputSet({"foo": "hello"})
+    with restore_context_cm(ctx):
+        result = _dep_page()
+    assert isinstance(result, TagList)
+    # First child is the bundle dep; second is the head_content restore script.
+    assert any(isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result)
