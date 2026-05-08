@@ -88,14 +88,16 @@ Implemented in `ensureShinyReactInitialized()` (`js/src/shiny-react/use-shiny.ts
 
 ```ts
 const restore = window.shinyreact?._restore;
-if (restore && typeof restore === "object" && !restore._applied) {
+const applied: Record<string, unknown> = {};
+if (restore && typeof restore === "object" && !restore["-applied"]) {
   const reactRegistry = getReactRegistry();
   for (const [id, value] of Object.entries(restore)) {
     reactRegistry.inputs.add(id, value);  // seeds; does NOT send to Shiny
+    applied[id] = value;
   }
 }
 window.shinyreact = window.shinyreact || {};
-window.shinyreact._restore = { _applied: true };
+window.shinyreact._restore = { "-applied": true, "-values": applied };
 ```
 
 Notes:
@@ -108,12 +110,24 @@ Notes:
 - **`pendingSubscribers` drained automatically.** `inputs.add(id, value)`
   fires queued read-only subscribers (`useShinyInputValue` consumers that
   mounted before the producer) with the restored value.
-- **Sentinel after batch.** Replacing `_restore` with `{ _applied: true }`
-  signals "restore was applied" in DevTools, distinct from "never set"
-  (`undefined`) and "data still present" (object with input keys). Apps
-  that try to read `_restore.foo` post-init see `undefined` — same outcome
-  as before, plus a useful debugging signal.
-- **Idempotent guard.** The `!restore._applied` check protects against
+- **Post-init shape.** After the batch, `_restore` always becomes
+  `{ "-applied": true, "-values": { ...what was applied... } }`. Two
+  invariants:
+  - **`-` prefix on the metadata keys** guarantees no collision with a
+    user-defined Shiny input id — Shiny input ids are valid identifiers
+    and cannot start with `-`. The keys themselves are quoted in JS
+    because they're not valid identifier syntax, which reinforces "you
+    probably shouldn't be reading these directly."
+  - **`-values` carries the applied map** so a developer can inspect
+    `window.shinyreact._restore["-values"]` in DevTools to see what was
+    restored without having to set a breakpoint inside the bundle. This
+    is debugging metadata, not part of the public API; the underscore
+    prefix on `_restore` itself still documents that as internal.
+- **Distinct from "never set".** When the page had no `_restore` script
+  emitted, the global is `undefined` going in and becomes
+  `{ "-applied": true, "-values": {} }` going out — empty applied map,
+  same sentinel shape, uniform post-init invariant.
+- **Idempotent guard.** The `!restore["-applied"]` check protects against
   re-entry. `ensureShinyReactInitialized()` itself short-circuits via its
   existing `shinyReactInitialized` flag, so this is belt-and-braces.
 - **No changes to `useShinyInput` / `useSetShinyInput` / `useShinyInputValue`
@@ -174,38 +188,41 @@ underlying input map from `RestoreContext` without calling `restore_input()`.
 The exact attribute access (current candidate: `ctx.input._values`) is
 verified during implementation.
 
-### Wiring
+### Wiring — `_dep()` emits the restore script
+
+To avoid every entry point having to remember to include the restore
+script, `_dep()` (`pkg-py/src/shinyreact/_output.py`) returns the bundle
+`HTMLDependency` plus the restore script when one applies. `_dep()` is
+already called per-request by `page_react`, `_react_page_fn`, and
+`ui_output`, so wiring through it covers every path that loads the
+shinyreact bundle. Future entry points get restoration automatically
+just by depending on `_dep()`.
 
 ```python
-def page_react(*args, title=None, lang="en"):
-    return page_bare(
-        _restore_script_tag(),  # head_content; <head>; non-defer
-        _dep(),                 # bundle: defer; runs after parsing
-        tags.div(id="root"),
-        *args,
-        title=title,
-        lang=lang,
+def _dep() -> TagChild:
+    base = HTMLDependency(
+        name="shinyreact",
+        version="0.1.0",
+        source={"subdir": str(Path(__file__).parent / "www")},
+        script={"src": "shinyreact.js", "defer": ""},
+        stylesheet={"href": "shinyreact.css"},
     )
+    restore = _restore_script_tag()  # may be None
+    return TagList(base, restore) if restore is not None else base
 ```
 
-```python
-def _react_page_fn(*args):
-    deps: list[HTMLDependency] = []
-    for arg in args:
-        if isinstance(arg, Renderer):
-            ui = arg.auto_output_ui()
-            if isinstance(ui, (Tag, TagList)):
-                deps.extend(ui.get_dependencies())
-    return cast(Tag, TagList(
-        _restore_script_tag(),
-        _dep(),
-        *deps,
-        HTML(index_html),
-    ))
-```
+`head_content()` (used inside `_restore_script_tag`) deduplicates by
+identical content, so multi-call render trees (e.g. a page with several
+`ui_output()` calls all calling `_dep()`) collapse to a single emitted
+script tag. The restore script's content is deterministic per-request
+because it's derived from the same `RestoreContext`, so dedupe is safe.
 
-`page_bare` is **unchanged** — the escape hatch carries no automatic
-behaviour.
+`page_react`, `_react_page_fn`, and `ui_output` are **unchanged in their
+arg lists** — they keep calling `_dep()` exactly as today and pick up
+the restore behaviour for free.
+
+`page_bare` is **unchanged** — the escape hatch does not call `_dep()`
+and carries no automatic behaviour.
 
 ### Order guarantee
 
@@ -262,23 +279,31 @@ The security comment is co-located at:
 5. Reading does not mark values pending: after `_restore_script_tag()`, a
    server-side `restore_input("foo", "default")` still returns the restored
    value (not "default") and only *then* marks it pending.
-6. `page_react()` with active bookmark → rendered HTML has the restore
-   script in `<head>` and the shinyreact `_dep()` bundle.
-7. `page_react()` without bookmark → no `_restore` script in the rendered
+6. `_dep()` with no active `RestoreContext` returns just the
+   `HTMLDependency` (no `TagList` wrap).
+7. `_dep()` with an active `RestoreContext` containing input values returns
+   `TagList(htmldep, restore_script)`.
+8. `page_react()` with active bookmark → rendered HTML has the restore
+   script in `<head>` and the shinyreact bundle.
+9. `page_react()` without bookmark → no `_restore` script in the rendered
    HTML.
-8. `_build_react_page_fn()` (covering `set_react_page`) — same two cases.
-9. URL bookmark mode and server-stored mode both produce the same
-   script-tag shape — drive both via `RestoreContext.from_query_string`
-   against an in-memory state store.
+10. `_build_react_page_fn()` (covering `set_react_page`) — same two cases
+    as 8/9.
+11. `ui_output()` rendered alongside a `page_react()` does not emit a
+    duplicate restore script (head_content dedupe).
+12. URL bookmark mode and server-stored mode both produce the same
+    script-tag shape — drive both via `RestoreContext.from_query_string`
+    against an in-memory state store.
 
 ### JS unit tests (`js/src/shiny-react/__tests__/use-shiny-restore.test.tsx`)
 
 1. `ensureShinyReactInitialized()` with `window.shinyreact._restore = {foo: "hello"}`
-   seeds the registry entry and replaces `_restore` with `{ _applied: true }`.
+   seeds the registry entry and replaces `_restore` with
+   `{ "-applied": true, "-values": {foo: "hello"} }`.
 2. With no `_restore` set, init runs without error and `_restore` ends up as
-   `{ _applied: true }`.
-3. Re-running `ensureShinyReactInitialized()` does not re-apply (`_applied`
-   guard).
+   `{ "-applied": true, "-values": {} }`.
+3. Re-running `ensureShinyReactInitialized()` does not re-apply (`-applied`
+   guard) and does not clobber the `-values` snapshot.
 4. `useShinyInput("foo", "default")` mounts after restore-batch — initial
    render returns `"hello"`, not `"default"`.
 5. `useSetShinyInput("foo", "default")` — registry entry holds `"hello"`;
@@ -311,8 +336,8 @@ where possible to avoid duplicate fixtures.
 - **No bookmark**:
   - Plain navigation to `<base>/`.
   - Assert React renders with default values; assert
-    `window.shinyreact._restore` evaluates to `{ _applied: true }` after
-    init.
+    `window.shinyreact._restore` evaluates to
+    `{ "-applied": true, "-values": {} }` after init.
 
 ## Public example
 
@@ -341,8 +366,12 @@ the docs need it.
 
 ## Files affected
 
-- `pkg-py/src/shinyreact/_page.py` (or new `_bookmark.py`) —
-  `_restore_script_tag()`, wiring into `page_react` and `_build_react_page_fn`.
+- `pkg-py/src/shinyreact/_output.py` — `_dep()` returns the bundle
+  `HTMLDependency` plus the restore script when applicable.
+- `pkg-py/src/shinyreact/_bookmark.py` (new) — `_restore_script_tag()` and
+  the `_read_restore_input_values()` helper. (Could live in `_page.py`
+  instead; new file is cleaner since neither `page_react` nor
+  `_build_react_page_fn` needs to call it directly anymore.)
 - `js/src/shiny-react/use-shiny.ts` — call site in `ensureShinyReactInitialized()`.
 - `js/src/shiny-react/bookmark.ts` (new) — `applyRestoredValues()` helper.
 - `js/src/shiny-react/__tests__/use-shiny-restore.test.tsx` (new) — JS tests.
