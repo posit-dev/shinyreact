@@ -37,6 +37,13 @@ dev = [
     "playwright>=1.59.0",
     "pytest-playwright>=0.7.2",
 ]
+tests-e2e = [
+    "pytest-playwright>=0.5.0",
+    "shiny[playwright]>=1.2.0",
+    "shinywidgets>=0.8.0",
+    "plotly>=6.7.0",
+    "pandas>=2.1.0",
+]
 
 [tool.pytest.ini_options]
 # Default test runs exclude the Playwright integration suite — it depends on
@@ -50,6 +57,10 @@ addopts = "--ignore=pkg-py/tests/playwright"
 include = ["pkg-py/src/shinyreact"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["pkg-py/tests"]
+addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.ruff]
 line-length = 88

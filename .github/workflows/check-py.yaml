@@ -7,11 +7,13 @@ on:
       - "pkg-py/**/*"
       - "pyproject.toml"
       - ".github/workflows/check-py.yaml"
+      - ".github/shinyreact/setup-playwright-remote/**"
   pull_request:
     paths:
       - "pkg-py/**/*"
       - "pyproject.toml"
       - ".github/workflows/check-py.yaml"
+      - ".github/shinyreact/setup-playwright-remote/**"
 
 permissions:
   contents: read
@@ -39,3 +41,39 @@ jobs:
 
       - name: 🧪 Check tests and types (Python 3.10–3.14)
         run: make py-check-tox
+
+  playwright-e2e:
+    if: github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🚀 Install uv
+        uses: astral-sh/setup-uv@v6.1.0
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: 📦 Sync e2e deps
+        run: uv sync --group tests-e2e
+
+      # Browsers run in a Docker container (mcr.microsoft.com/playwright:vX-noble);
+      # pytest-playwright on the host connects via $PW_TEST_CONNECT_WS_ENDPOINT.
+      # Avoids the ~5% chance of a 30-minute `playwright install` from the
+      # Playwright CDN. The conftest in pkg-py/tests/playwright bridges the env
+      # var into pytest-playwright's `connect_options` fixture.
+      - name: 🌐 Setup remote Playwright
+        uses: ./.github/shinyreact/setup-playwright-remote
+        with:
+          browser: chromium
+
+      - name: 🧪 Run Playwright e2e tests
+        run: make py-test-e2e
+
+      - name: 📤 Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-results
+          path: test-results/
+          retention-days: 5
