@@ -1,5 +1,8 @@
-# Adapted verbatim from posit-dev/py-shiny@main:.github/py-shiny/setup-playwright-remote/action.yaml
-# See py-shiny PRs #2208 (introduction) and #2228 (image cache) for the rationale.
+# Adapted from py-shiny:
+#   https://github.com/posit-dev/py-shiny/blob/c446400bb87c18fd8dccac8202965ca1a2774cd7/.github/py-shiny/setup-playwright-remote/action.yaml
+# Rationale lives in the PRs that introduced and refined it:
+#   https://github.com/posit-dev/py-shiny/pull/2208  (introduction)
+#   https://github.com/posit-dev/py-shiny/pull/2228  (Docker image cache)
 # The container runs `playwright run-server`; pytest-playwright on the host
 # connects via $PW_TEST_CONNECT_WS_ENDPOINT, so test code is unchanged.
 name: "Setup remote Playwright"
