@@ -40,9 +40,31 @@ export function ShinyOutput({
     const el = ref.current;
     const scope = el?.parentElement;
     if (!el || !scope || !window.Shiny?.bindAll) return;
-    void window.Shiny.bindAll(scope);
+
+    const logError = (err: unknown, phase: "bindAll" | "unbindAll") => {
+      // TODO(future): expose an `onError?: (err, phase) => void` prop so
+      // downstream callers can integrate telemetry or React error boundaries.
+      console.error(
+        `[shinyreact] ShinyOutput "${id}" ${phase} failed:`,
+        { id, phase, error: err },
+      );
+    };
+
+    try {
+      const result = window.Shiny.bindAll(scope);
+      if (result && typeof (result as Promise<unknown>).catch === "function") {
+        (result as Promise<unknown>).catch((err) => logError(err, "bindAll"));
+      }
+    } catch (err) {
+      logError(err, "bindAll");
+    }
+
     return () => {
-      window.Shiny?.unbindAll?.(el, true);
+      try {
+        window.Shiny?.unbindAll?.(el, true);
+      } catch (err) {
+        logError(err, "unbindAll");
+      }
     };
   }, [id, tagName]);
 
