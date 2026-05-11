@@ -213,6 +213,14 @@ __marimo__/
 # Playwright MCP
 .playwright-mcp/
 
+# Playwright e2e test artifacts (traces, screenshots, videos, HTML report)
+test-results/
+playwright-report/
+.playwright/
+
+# Claude Code local lock files
+.claude/*.lock
+
 # Node
 node_modules/
 
