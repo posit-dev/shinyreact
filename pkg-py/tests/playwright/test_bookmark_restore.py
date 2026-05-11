@@ -8,7 +8,6 @@ input values.
 
 from urllib.parse import urlencode
 
-import pytest
 from playwright.sync_api import Page, expect
 from shiny.pytest import create_app_fixture
 from shiny.run import ShinyAppProc
@@ -70,15 +69,16 @@ def test_no_bookmark_renders_defaults(
     assert sentinel == '{"-applied":true,"-values":{}}'
 
 
-def test_server_mode_round_trip(page: Page) -> None:
-    """Round-trip server-stored bookmarking through the app's bookmark button.
-
-    Skip until py-shiny fixture API supports overriding ``bookmark_store=``
-    per-test — a second fixture cannot be spawned mid-test against the same
-    ``create_app_fixture`` call.
-    """
-    pytest.skip(
-        "Server-mode round-trip requires a separate fixture "
-        "(skip until py-shiny fixture API supports overriding "
-        "bookmark_store= per-test)."
-    )
+# Round-trip server-stored bookmarking (set inputs → click bookmark → reload
+# at the new ``?_state_id_=...`` URL → assert restored React state) needs a
+# second fixture with ``bookmark_store="server"`` that can be spawned
+# alongside the existing URL-mode fixture. py-shiny's ``create_app_fixture``
+# does not yet expose a per-test override hook for app options, so the
+# test is omitted entirely until that lands. The Python-side emission for
+# server mode is already covered by ``test_bookmark_restore.py`` unit tests
+# (which drive the same ``RestoreContext`` machinery the server-stored path
+# would produce).
+#
+# def test_server_mode_round_trip(page: Page, server_bookmark_app: ShinyAppProc):
+#     page.goto(server_bookmark_app.url)
+#     ...inputs.fill, bookmark-btn click, capture _state_id_, reload, assert...
