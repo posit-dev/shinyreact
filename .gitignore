@@ -213,6 +213,11 @@ __marimo__/
 # Playwright MCP
 .playwright-mcp/
 
+# Playwright e2e test artifacts (traces, screenshots, videos, HTML report)
+test-results/
+playwright-report/
+.playwright/
+
 # Node
 node_modules/
 
