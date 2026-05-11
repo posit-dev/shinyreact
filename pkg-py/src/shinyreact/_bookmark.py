@@ -51,10 +51,20 @@ def _restore_script_tag() -> HTMLDependency | None:
     if not values:
         return None
 
-    # Escape "</" so the JSON cannot terminate the surrounding <script> tag.
+    # Embed the JSON as a JS expression — JSON is a syntactic subset of JS,
+    # so the browser parses it directly without needing JSON.parse() on a
+    # quoted string. This avoids the JS-string-literal escaping pitfall:
+    # if we wrote JSON.parse('...JSON...'), values like \"it's\" would
+    # terminate the JS string, and \n in JSON would be interpreted as a
+    # literal newline by the JS parser (invalid JSON for JSON.parse).
+    #
+    # json.dumps defaults to ensure_ascii=True, so non-ASCII (including the
+    # JS-only-illegal U+2028/U+2029) becomes \\uXXXX escapes — safe in both
+    # JSON and JS. The one transform we still need is "</" -> "<\\/" so the
+    # JSON content cannot prematurely close the surrounding <script> tag.
     safe_json = json.dumps(values).replace("</", "<\\/")
     js = (
         "window.shinyreact = window.shinyreact || {};"
-        f"window.shinyreact._restore = JSON.parse('{safe_json}');"
+        f"window.shinyreact._restore = {safe_json};"
     )
     return head_content(tags.script(HTML(js)))

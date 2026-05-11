@@ -51,6 +51,21 @@ def test_restore_script_tag_empty_input_returns_none() -> None:
         assert _restore_script_tag() is None
 
 
+def _extract_restore_payload(head_html: str) -> object:
+    """Round-trip the JSON object literal embedded by ``_restore_script_tag``.
+
+    The script body is shaped:
+
+        window.shinyreact = window.shinyreact || {};window.shinyreact._restore = <JSON>;
+
+    We pull out ``<JSON>``, undo the ``</`` -> ``<\\/`` escape we apply
+    before embedding, and parse it back with :func:`json.loads`.
+    """
+    match = re.search(r"window\.shinyreact\._restore = (.*);</script>", head_html)
+    assert match is not None, head_html
+    return json.loads(match.group(1).replace("<\\/", "</"))
+
+
 def test_restore_script_tag_emits_head_content_with_json() -> None:
     ctx = RestoreContext()
     ctx.input = RestoreInputSet({"foo": "hello", "num": 42})
@@ -60,14 +75,39 @@ def test_restore_script_tag_emits_head_content_with_json() -> None:
     assert dep is not None
     assert isinstance(dep, HTMLDependency)
     head_html = _render_dep_to_head(dep)
-    # The script body sets window.shinyreact._restore via JSON.parse.
     assert "window.shinyreact" in head_html
     assert "_restore" in head_html
-    # Round-trip the embedded JSON: extract the JSON.parse('...') argument.
-    match = re.search(r"JSON\.parse\('(.*)'\)", head_html)
-    assert match is not None
-    parsed = json.loads(match.group(1))
-    assert parsed == {"foo": "hello", "num": 42}
+    assert _extract_restore_payload(head_html) == {"foo": "hello", "num": 42}
+
+
+def test_restore_script_tag_values_with_single_quotes_are_safe() -> None:
+    # Regression: previously embedded inside JSON.parse('...') which would be
+    # terminated early by a literal single quote in a value.
+    ctx = RestoreContext()
+    ctx.input = RestoreInputSet({"foo": "it's me", "bar": "she said 'hi'"})
+    with restore_context_cm(ctx):
+        dep = _restore_script_tag()
+    assert dep is not None
+    head_html = _render_dep_to_head(dep)
+    assert _extract_restore_payload(head_html) == {
+        "foo": "it's me",
+        "bar": "she said 'hi'",
+    }
+
+
+def test_restore_script_tag_values_with_control_chars_are_safe() -> None:
+    # Regression: previously JSON.parse('"\n"') would have the JS parser
+    # interpret \n as a literal newline before reaching JSON.parse, and JSON
+    # forbids literal newlines inside string values.
+    ctx = RestoreContext()
+    ctx.input = RestoreInputSet({"text": "line1\nline2\twith\ttabs"})
+    with restore_context_cm(ctx):
+        dep = _restore_script_tag()
+    assert dep is not None
+    head_html = _render_dep_to_head(dep)
+    assert _extract_restore_payload(head_html) == {
+        "text": "line1\nline2\twith\ttabs"
+    }
 
 
 def test_restore_script_tag_escapes_closing_script_tag() -> None:
@@ -79,9 +119,13 @@ def test_restore_script_tag_escapes_closing_script_tag() -> None:
     head_html = _render_dep_to_head(dep)
     # The literal "</script>" sequence inside the JSON payload must be escaped
     # so the browser does not see it as ending the script. The escaping replaces
-    # "</" with "<\/", so no unescaped "</script" appears INSIDE the JSON.parse call.
+    # "</" with "<\/", so no unescaped "</script" appears INSIDE the embedded JSON.
     # Allow only ONE actual </script> (the one closing our injected tag).
     assert head_html.count("</script>") == 1
+    # And the value still round-trips correctly back through the escape.
+    assert _extract_restore_payload(head_html) == {
+        "foo": "</script><script>alert(1)</script>"
+    }
 
 
 def test_restore_script_tag_does_not_mark_pending() -> None:
