@@ -37,7 +37,10 @@ runs:
       run: |
         VERSION="${{ inputs.version }}"
         if [ -z "$VERSION" ]; then
-          VERSION=$(python3 -c "from importlib.metadata import version; print(version('playwright'))")
+          # `uv run python` so we read from the project venv. py-shiny uses
+          # plain `python3` because they install with UV_SYSTEM_PYTHON=1;
+          # we don't, so the system python has no `playwright` package.
+          VERSION=$(uv run python -c "from importlib.metadata import version; print(version('playwright'))")
         fi
 
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -148,7 +151,7 @@ runs:
     - name: Wait for Playwright server
       shell: bash
       run: |
-        python3 - <<'PY'
+        uv run python - <<'PY'
         from playwright.sync_api import Error, sync_playwright
         import socket
         import time
