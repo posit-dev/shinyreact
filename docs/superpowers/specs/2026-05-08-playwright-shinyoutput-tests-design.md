@@ -221,13 +221,13 @@ py-test-e2e:  ## [py] Run Playwright e2e tests (chromium)
 
 ### CI
 
-New job `playwright-e2e` in `.github/workflows/check-py.yaml`, mirroring py-shiny's structure but trimmed:
+New job `playwright-e2e` in `.github/workflows/check-py.yaml`, mirroring py-shiny:
 
 - `ubuntu-latest`, single Python (3.12), chromium only.
-- Cache `~/.cache/ms-playwright` keyed on `pyproject.toml` hash (no `uv.lock` committed) with a fallback `restore-keys` for partial hits.
-- Steps: checkout → uv setup → `uv sync --group tests-e2e` → restore browser cache → `playwright install --with-deps chromium` (no-op on cache hit) → run pytest with `--tracing=retain-on-failure --screenshot=only-on-failure`.
-
-Future hardening: py-shiny avoids the Playwright-CDN install path entirely by running the browser in a Docker container (`mcr.microsoft.com/playwright:vX-noble`) — see py-shiny PRs [#2208](https://github.com/posit-dev/py-shiny/pull/2208) and [#2228](https://github.com/posit-dev/py-shiny/pull/2228). Worth adopting if the local install proves flaky in CI. Requires a `pytest-playwright` conftest bridge to switch from `browser_type.launch()` to `browser_type.connect()` reading `PW_TEST_CONNECT_WS_ENDPOINT`; py-shiny ships that bridge in `tests/playwright/conftest.py`.
+- **Browsers run in a Docker container** (`mcr.microsoft.com/playwright:vX-noble`) rather than via `playwright install --with-deps`. Cribbed from py-shiny PRs [#2208](https://github.com/posit-dev/py-shiny/pull/2208) (introduction) and [#2228](https://github.com/posit-dev/py-shiny/pull/2228) (image cache). Rationale: the Playwright CDN has a ~5% chance of a 30-minute install hang on GH Actions runners. The pre-built MCR image avoids that path entirely.
+- Composite action at `.github/shinyreact/setup-playwright-remote/action.yaml` starts a `playwright run-server` container, caches the Docker image tar via `actions/cache` keyed on `playwright-docker-image-<os>-<arch>-vX-noble`, and exports `PW_TEST_CONNECT_WS_ENDPOINT` + `PW_TEST_CONNECT_EXPOSE_NETWORK=*`.
+- A `connect_options` fixture in `pkg-py/tests/playwright/conftest.py` bridges those env vars to `pytest-playwright`, which then calls `browser_type.connect()` rather than `browser_type.launch()`. Locally the env vars are unset and the fixture returns `None`, so the launch path is used unchanged.
+- Steps: checkout → uv setup → `uv sync --group tests-e2e` → `Setup remote Playwright` (composite action) → run pytest.
 - `actions/upload-artifact@v4` of `test-results/` on failure (Playwright traces + screenshots), 5-day retention.
 - Runs on PRs to main and pushes to main. Not on draft PRs (mirroring py-shiny's draft pruning).
 
