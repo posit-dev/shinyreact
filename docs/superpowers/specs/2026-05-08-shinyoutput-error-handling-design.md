@@ -93,7 +93,7 @@ useEffect(() => {
 
 ### Log shape
 
-`console.error` is called with two arguments: a readable prefixed string (greppable) and a structured object (browser devtools pretty-print). The error is included both in the message and in the structured payload so stack traces are preserved.
+`console.error` is called with two arguments: a readable prefixed string (greppable, identifying the id and phase) and a structured object (browser devtools pretty-print) carrying the original error so the stack trace is preserved.
 
 ```
 [shinyreact] ShinyOutput "my_plot" bindAll failed: { id: "my_plot", phase: "bindAll", error: Error }

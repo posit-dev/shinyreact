@@ -293,11 +293,8 @@ describe("ShinyOutput", () => {
 
       const { container } = render(<ShinyOutput id="my_plot" />);
 
-      // Allow the rejection's .catch handler to run.
-      await Promise.resolve();
-      await Promise.resolve();
+      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledTimes(1));
 
-      expect(errorSpy).toHaveBeenCalledTimes(1);
       expect(errorSpy.mock.calls[0][0]).toBe(
         '[shinyreact] ShinyOutput "my_plot" bindAll failed:',
       );
