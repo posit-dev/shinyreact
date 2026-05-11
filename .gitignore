@@ -218,6 +218,9 @@ test-results/
 playwright-report/
 .playwright/
 
+# Claude Code local lock files
+.claude/*.lock
+
 # Node
 node_modules/
 
