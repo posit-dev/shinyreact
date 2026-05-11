@@ -1,4 +1,4 @@
-# shinyreact
+# shinyreact — hello demo!
 
 JSON-driven React rendering infrastructure for [Shiny](https://shiny.posit.co/py/). `shinyreact` provides the plumbing that lets downstream packages (like `shinyshadcn`) deliver React component trees from Python — it ships zero UI components itself.
 
