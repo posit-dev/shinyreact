@@ -219,36 +219,7 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 
 - **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
 - **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
-- **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`.
-
-### Adding a Playwright e2e test
-
-Tests use `pytest-playwright` + py-shiny's `create_app_fixture`. Each test gets its own spartan Shiny app booted as a subprocess. Steps:
-
-1. **Spartan fixture app under `pkg-py/tests/playwright/apps/<name>/`:**
-   - `app.py` — the smallest Shiny Express app that exercises one assertion target. Decorate one server function with whatever you're testing (`@reactive_output`, `@render.data_frame`, `@render_plotly`, …) and call `set_react_page()`.
-   - **Every `app.py` MUST import something from `shiny.express`** (e.g. `from shiny.express import render`, with `# noqa: F401` if unused). Without that import, Shiny doesn't recognise the file as Express and `set_react_page()` raises `RuntimeError: No top-level recall context manager has been set`. `@render_plotly` (shinywidgets) and `@reactive_output` (shinyreact) do NOT trigger Express recognition on their own.
-   - `www/index.html` — minimal bootstrap: optional `<style>` block, `<div id="root"></div>`, `<script src="app.js" defer></script>`. `shinyreact.js` is auto-injected by `set_react_page()`; do **not** add a `<script>` tag for it.
-   - `www/app.js` — no-build no-JSX React. Gate render on `useShinyInitialized()`, wrap the `ShinyOutput` in `<div data-test="container">` for the direct-child assertions to bite.
-   - **`set_react_page()` caches `www/index.html` at process startup** (see #82). After editing `index.html`, stop and restart the Shiny server — a browser hard-refresh alone won't help.
-
-2. **Add a fixture line + test to `pkg-py/tests/playwright/test_shiny_output.py`:**
-   ```python
-   my_app = create_app_fixture("apps/<name>/app.py")  # path relative to this test file
-
-   def test_my_thing(page: Page, my_app: ShinyAppProc) -> None:
-       page.goto(my_app.url)
-       ...
-   ```
-
-3. **Assertion patterns proven out by the existing suite:**
-   - **No-wrapper guarantee** (the #61 / #75 regression guard): `expect(page.locator("[data-test=container] > #my_id")).to_be_attached()`. The `>` combinator fails if any wrapper sneaks back in between the container and the output.
-   - **Direct-child CSS check** for the same regression, demonstrable visually: paint a hot-pink outline on direct children only (`[data-test="container"] > * { outline: 3px solid hotpink; }`) and assert `to_have_css("outline-color", "rgb(255, 105, 180)")`. A wrapper would steal the match and leave the output at its default outline. Custom elements (`<shiny-data-frame>`) default to `display: inline`; add `display: inline-block` (or `block`) on the host or the outline visually collapses onto the rendered content.
-   - **Empty outputs:** use `to_be_attached()` instead of `to_be_visible()`. A `<div>` with no content has a 0×0 box and Playwright reports it "hidden".
-   - **Class assertions:** order-tolerant via `to_have_class(re.compile(r"\bclass-name\b"))`. Shiny adds `shiny-bound-output` after the binding pass, so exact-string matches are brittle.
-   - **`<ShinyOutput>` adds no classes of its own** — caller-supplied classes are the full set on the rendered element (plus whatever Shiny's binding adds later).
-
-4. **CI uses Docker for the browser** via the composite action at `.github/shinyreact/setup-playwright-remote/action.yaml` (cribbed from py-shiny PRs #2208 / #2228 — avoids the ~5% chance of a 30-minute `playwright install` hang from the CDN). The `connect_options` fixture in `pkg-py/tests/playwright/conftest.py` reads `PW_TEST_CONNECT_WS_ENDPOINT` and tells pytest-playwright to `browser_type.connect()` instead of `.launch()`. Locally the env var is unset and the launch path is used unchanged — no special setup beyond `make py-install-e2e`.
+- **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
 
 ## docs/todos.md, features.md
 
