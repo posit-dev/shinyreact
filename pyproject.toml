@@ -34,8 +34,6 @@ dev = [
     "tox>=4.0.0",
     "tox-uv>=1.0.0",
     "pre-commit>=4.0.0",
-    "playwright>=1.59.0",
-    "pytest-playwright>=0.7.2",
 ]
 tests-e2e = [
     "pytest-playwright>=0.5.0",
@@ -46,10 +44,10 @@ tests-e2e = [
 ]
 
 [tool.pytest.ini_options]
-# Default test runs exclude the Playwright integration suite — it depends on
-# pytest-playwright spinning up a real browser and a real Shiny process, which
-# leaves the asyncio event loop in a state that confuses the unit tests that
-# follow it. Run the Playwright suite explicitly via `make py-check-playwright`.
+# Default test runs exclude the Playwright integration suite — those tests
+# need the `tests-e2e` extras (browser, shiny[playwright]) and spin up a
+# real Shiny process per app, which is too heavy for the unit test loop.
+# Run the Playwright suite explicitly via `make py-test-e2e`.
 testpaths = ["pkg-py/tests"]
 addopts = "--ignore=pkg-py/tests/playwright"
 
@@ -57,10 +55,6 @@ addopts = "--ignore=pkg-py/tests/playwright"
 include = ["pkg-py/src/shinyreact"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
-
-[tool.pytest.ini_options]
-testpaths = ["pkg-py/tests"]
-addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.ruff]
 line-length = 88
