@@ -164,7 +164,12 @@ py-install-e2e:  ## [py] Install Playwright browsers for e2e tests
 .PHONY: py-test-e2e
 py-test-e2e:  ## [py] Run Playwright e2e tests (chromium)
 	@echo "🧪 Running Playwright e2e tests"
-	uv run pytest pkg-py/tests/playwright --browser chromium -o addopts=
+	uv run pytest pkg-py/tests/playwright \
+		--browser chromium \
+		--tracing=retain-on-failure \
+		--screenshot=only-on-failure \
+		-o addopts= \
+		-v
 
 .PHONY: py-coverage
 py-coverage: ## [py] Generate coverage report

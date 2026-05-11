@@ -68,13 +68,7 @@ jobs:
           browser: chromium
 
       - name: 🧪 Run Playwright e2e tests
-        run: |
-          uv run pytest pkg-py/tests/playwright \
-            --browser chromium \
-            --tracing=retain-on-failure \
-            --screenshot=only-on-failure \
-            -o addopts= \
-            -v
+        run: make py-test-e2e
 
       - name: 📤 Upload Playwright traces on failure
         if: failure()
