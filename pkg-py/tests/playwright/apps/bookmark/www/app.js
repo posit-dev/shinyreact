@@ -24,6 +24,19 @@ function App() {
   return h(
     "div",
     null,
+    h(
+      "p",
+      null,
+      "Bookmark-restoration fixture. Loading ",
+      h("code", null, "?_inputs_&txt=%22hello%22&num=42&chk=true"),
+      " should populate the three inputs from the URL and the echo line",
+      " below should read ",
+      h("code", null, "text='hello' num=42 checked=yes"),
+      ". Loading the plain URL should leave defaults in place and set",
+      " ",
+      h("code", null, 'window.shinyreact._restore = {"-applied":true,"-values":{}}'),
+      ".",
+    ),
     h("input", {
       type: "text",
       "data-testid": "txt",
