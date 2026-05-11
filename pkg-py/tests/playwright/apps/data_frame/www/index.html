@@ -1,2 +1,25 @@
+<style>
+  /* Hot-pink outline on direct children of the container demonstrates that
+     <ShinyOutput> renders without a wrapper div. If a wrapper sneaks in,
+     this selector matches the wrapper and the output element falls back
+     to its initial outline-color (rgb(0, 0, 0)). The e2e test asserts the
+     computed outline-color is rgb(255, 105, 180). */
+  [data-test="container"] > * {
+    outline: 3px solid hotpink;
+    outline-offset: 4px;
+  }
+  /* `<shiny-data-frame>` is a custom element; default display is `inline`,
+     which makes the outline visually collapse onto the rendered grid.
+     `inline-block` gives the host a real box (so the outline wraps the grid)
+     while shrink-wrapping to the grid's natural width. */
+  [data-test="container"] > shiny-data-frame {
+    display: inline-block;
+  }
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 2rem;
+    line-height: 1.4;
+  }
+</style>
 <div id="root"></div>
 <script src="app.js" defer></script>

@@ -32,6 +32,12 @@ def test_custom_classname_lands_on_rendered_element(
     # Direct-child assertion: `>` combinator fails if any wrapper sneaks in.
     expect(page.locator("[data-test=container] > #out")).to_be_attached()
 
+    # Computed-style guard for the same regression: the index.html `<style>`
+    # block paints `[data-test=container] > * { outline: 3px solid hotpink }`.
+    # A wrapper would steal that match, leaving `#out` at its default outline.
+    expect(out).to_have_css("outline-style", "solid")
+    expect(out).to_have_css("outline-color", "rgb(255, 105, 180)")
+
 
 def test_data_frame_renders_inside_shiny_output(
     page: Page, data_frame_app: ShinyAppProc
@@ -52,6 +58,12 @@ def test_data_frame_renders_inside_shiny_output(
         page.locator("[data-test=container] > shiny-data-frame#my_table")
     ).to_be_attached()
 
+    # Computed-style guard: the container CSS paints a hot-pink outline on
+    # direct children only. A wrapper regression would strand the table at
+    # the default outline.
+    expect(table).to_have_css("outline-style", "solid")
+    expect(table).to_have_css("outline-color", "rgb(255, 105, 180)")
+
 
 def test_plotly_renders_inside_shiny_output(
     page: Page, plotly_app: ShinyAppProc
@@ -68,3 +80,9 @@ def test_plotly_renders_inside_shiny_output(
 
     # Direct-child assertion: no wrapper between the container and `#scatter`.
     expect(page.locator("[data-test=container] > #scatter")).to_be_attached()
+
+    # Computed-style guard: the container CSS paints a hot-pink outline on
+    # direct children only. A wrapper regression would strand the host at
+    # the default outline.
+    expect(host).to_have_css("outline-style", "solid")
+    expect(host).to_have_css("outline-color", "rgb(255, 105, 180)")
