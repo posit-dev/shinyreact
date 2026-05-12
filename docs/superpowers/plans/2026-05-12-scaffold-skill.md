@@ -2,33 +2,72 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a Claude Code skill at `.claude/skills/scaffold-shinyreact-helper/` that, when invoked, scaffolds a new shinyreact downstream helper-package prototype mirroring `downstream-prototypes/shinymui/`'s layout — taking an upstream React library reference, a short name, and a target directory as inputs and producing a directory that builds and serves end-to-end.
+**Goal:** Build a self-contained Claude Code skill at `.claude/skills/scaffold-shinyreact-helper/` that scaffolds a new shinyreact downstream helper-package prototype mirroring the conventions in [the helper-packages RFC](../specs/2026-05-12-downstream-helper-packages-rfc-design.md). The skill takes an upstream React library reference, a short name, and a target directory; produces a working scaffold with one stub component that builds, lints, tests, and serves HTTP 200.
 
-**Architecture:** A single `SKILL.md` file (with YAML frontmatter) instructs Claude through the scaffolding procedure. Rather than duplicating shinymui's file contents inline, SKILL.md tells Claude to copy each file from `downstream-prototypes/shinymui/` and apply a substitution table. The skill produces a working scaffold with **one** stub component (Button-shaped) — the package author adds further components manually. Validated by an end-to-end smoke test that invokes the skill against a real upstream library and verifies the resulting scaffold builds, lints, tests, and serves HTTP 200.
+**Architecture:** The skill is a `SKILL.md` file (procedure + substitution rules) plus a `templates/` directory containing every file the scaffold will produce, with `{{placeholders}}` for the variable parts. SKILL.md instructs Claude to render each template by reading it, substituting placeholders, and writing the result to the target. **No reference to `downstream-prototypes/shinymui/` at runtime** — the skill is fully self-contained. Validated by an end-to-end smoke test that scaffolds a transient `_skill-test-mantine/` package and verifies it works.
 
-**Tech Stack:** Claude Code skills system (Skill tool + `.claude/skills/<name>/SKILL.md`), Markdown with YAML frontmatter.
+**Tech Stack:** Claude Code skills system (Skill tool + `.claude/skills/<name>/SKILL.md` + supporting files), Markdown with YAML frontmatter, mustache-style `{{placeholder}}` substitutions.
 
 **Non-goals (this plan):**
-- Auto-discovering all components in the upstream library — the skill scaffolds **one** stub component
+- Auto-discovering all components in the upstream library — the skill scaffolds one stub component
 - Theming / styling integration
 - PyPI/npm publishing setup, CI workflows
-- Per-category divergence handling — targets the MUI/category-1 baseline only
-- Self-validating the skill via subagent pressure tests (per superpowers:writing-skills — that's appropriate but out of scope for the prototype skill; the end-to-end smoke test in Task 6 is sufficient validation for now)
+- Per-category divergence handling — targets the category-1 baseline only
+- Self-validating the skill via subagent pressure tests (per superpowers:writing-skills) — out of scope for the prototype skill
 
 ---
 
 ## File structure
 
 ```
-.claude/
-  skills/
-    scaffold-shinyreact-helper/
-      SKILL.md                         # YAML frontmatter + full procedure
+.claude/skills/scaffold-shinyreact-helper/
+  SKILL.md                                 # procedure + substitution rules + smoke test
+  templates/
+    README.md.tpl
+    js/
+      package.json.tpl
+      tsconfig.json.tpl
+      vite.config.ts.tpl
+      .gitignore.tpl
+      src/
+        types.ts.tpl
+        index.ts.tpl
+        components/
+          Stub.tsx.tpl
+    pkg-py/
+      pyproject.toml.tpl
+      src/
+        __init__.py.tpl
+        _dep.py.tpl
+        _components.py.tpl
+      tests/
+        test_factories.py.tpl
+    example/
+      app.py.tpl
 ```
 
-That's it — one file. The skill references `downstream-prototypes/shinymui/` for templates, so no separate templates directory.
+The `.tpl` extension marks files that are templates (not executable as-is). They use `{{placeholder}}` markers for the substitution table.
 
-The end-to-end smoke test (Task 6) produces a temporary `downstream-prototypes/_skill-test-<name>/` directory that is verified, then deleted. It is **not** committed.
+End-to-end smoke test (Task 8) creates a transient `downstream-prototypes/_skill-test-mantine/` that is **not** committed and is deleted at the end of the task.
+
+---
+
+## Placeholder conventions
+
+Throughout the templates and SKILL.md:
+
+| Placeholder | Derived from | Example (for `mantine`) |
+|-------------|--------------|--------------------------|
+| `{{name}}` | short package name (lowercase) | `mantine` |
+| `{{pkg}}` | `shiny{{name}}` | `shinymantine` |
+| `{{Name}}` | short name, capitalized | `Mantine` |
+| `{{prefix}}` | catalog prefix | `mantine` |
+| `{{Stub}}` | stub component name, PascalCase | `Button` |
+| `{{stub}}` | stub component name, snake_case lowercase | `button` |
+| `{{target_dir}}` | target directory | `downstream-prototypes/shinymantine` |
+| `{{upstream_pkg}}` | upstream npm package | `@mantine/core` |
+
+`{{...}}` (double curly) was chosen because single `{` collides heavily with JSX/TS and Python f-strings.
 
 ---
 
@@ -40,22 +79,25 @@ The end-to-end smoke test (Task 6) produces a temporary `downstream-prototypes/_
 - [ ] **Step 1: Create the directory**
 
 ```bash
-mkdir -p .claude/skills/scaffold-shinyreact-helper
+mkdir -p .claude/skills/scaffold-shinyreact-helper/templates/js/src/components
+mkdir -p .claude/skills/scaffold-shinyreact-helper/templates/pkg-py/src
+mkdir -p .claude/skills/scaffold-shinyreact-helper/templates/pkg-py/tests
+mkdir -p .claude/skills/scaffold-shinyreact-helper/templates/example
 ```
 
-- [ ] **Step 2: Write the skeleton `SKILL.md` (frontmatter + overview only)**
+- [ ] **Step 2: Write the `SKILL.md` skeleton (frontmatter + overview only — procedure sections added in later tasks)**
 
 ```markdown
 ---
 name: scaffold-shinyreact-helper
-description: Scaffold a new shinyreact downstream helper-package prototype that mirrors the shinymui reference layout. Use when starting a new helper package for a React UI library (e.g., shinymantine, shinyradix, shinyaggrid). Asks for the upstream package, short name, and target directory; produces a working scaffold with one stub component that builds and loads end-to-end.
+description: Scaffold a new shinyreact downstream helper-package prototype with one stub component wired end-to-end. Use when starting a new helper package for a React UI library (e.g., shinymantine, shinyradix, shinyaggrid). Asks for the upstream package, short name, and target directory; renders templates with substitutions; verifies the scaffold builds, lints, tests, and serves HTTP 200.
 ---
 
 # Scaffold a shinyreact helper package
 
 ## Overview
 
-This skill produces a new helper-package prototype at a target directory, mirroring the layout established by `downstream-prototypes/shinymui/`. The output is **one stub component** wired end-to-end — the package author adds further components by following the established pattern (factory in Python + registered React component + entry-app wiring).
+This skill produces a new helper-package prototype at a target directory. The output is **one stub component** wired end-to-end — the package author adds further components by following the established pattern (factory in Python + registered React component + entry-app wiring).
 
 **Conventions enforced** (from [the helper-packages RFC](../../../docs/superpowers/specs/2026-05-12-downstream-helper-packages-rfc-design.md) §4):
 
@@ -65,11 +107,13 @@ This skill produces a new helper-package prototype at a target directory, mirror
 - `HTMLDependency` produced by a `dep()` helper, consumed via `shinyreact.ui_output(id, extra_deps=[dep()])`
 - Per-package directory layout: `js/` + `pkg-py/` + `example/`
 
-**Reference implementation:** `downstream-prototypes/shinymui/` is the working precedent. If anything in this skill is ambiguous, read the corresponding shinymui file directly.
-
 ## Non-goals
 
 This skill targets the category-1 styled-component-library baseline. It does not auto-discover all components in the upstream library, configure theming, set up CI/publishing, or handle per-category divergences (headless, copy-paste, specialized). Those are added by the package author after scaffolding.
+
+## How it works
+
+The skill is fully self-contained. All file contents live as templates under `.claude/skills/scaffold-shinyreact-helper/templates/`, each using `{{placeholder}}` markers. The procedure: collect inputs → render each template with substitutions → write to the target directory → build and verify.
 
 The rest of the procedure (inputs, substitution rules, scaffolding steps, verification) lands in subsequent tasks.
 ```
@@ -77,20 +121,23 @@ The rest of the procedure (inputs, substitution rules, scaffolding steps, verifi
 - [ ] **Step 3: Commit**
 
 ```bash
-git add .claude/skills/scaffold-shinyreact-helper/SKILL.md
-git commit -m "feat(skill): scaffold-shinyreact-helper SKILL.md skeleton"
+git add .claude/skills/scaffold-shinyreact-helper/SKILL.md \
+        .claude/skills/scaffold-shinyreact-helper/templates/
+git commit -m "feat(skill): scaffold-shinyreact-helper SKILL.md skeleton + empty templates/ tree"
 ```
+
+(The empty `templates/` directories will not be tracked by git unless they contain files — they will be populated in subsequent tasks. That's fine; this commit just establishes SKILL.md.)
 
 ---
 
-## Task 2: Add the "Inputs" and "Substitution rules" sections
+## Task 2: Add Inputs + Substitution rules sections to SKILL.md
 
 **Files:**
 - Modify: `.claude/skills/scaffold-shinyreact-helper/SKILL.md`
 
 - [ ] **Step 1: Append the Inputs section**
 
-Append to `SKILL.md` (immediately after the "## Non-goals" section):
+Append to `SKILL.md`:
 
 ```markdown
 ## Inputs
@@ -98,7 +145,7 @@ Append to `SKILL.md` (immediately after the "## Non-goals" section):
 Before scaffolding, collect these from the user one at a time. Validate each before moving on.
 
 1. **Short package name** (e.g., `mantine`, `radix`, `aggrid`). Lowercase, no separators, no `shiny` prefix — the skill prepends `shiny` to form the package name (e.g., `mantine` → `shinymantine`).
-2. **Upstream npm package(s)** that the helper will wrap (e.g., `@mantine/core`, `@radix-ui/react-dialog`, `ag-grid-react`). Accept either a single package or a comma-separated list. Used as a `dependencies` entry in the scaffold's `js/package.json`.
+2. **Upstream npm package** that the helper will wrap (e.g., `@mantine/core`, `@radix-ui/react-dialog`, `ag-grid-react`). Used as a `dependencies` entry in the scaffold's `js/package.json`. (For now, a single package; multiple packages can be added by hand after scaffolding.)
 3. **Catalog prefix** (defaults to the short package name). The string before `:` in catalog keys (e.g., `mantine` → `mantine:Button`).
 4. **Stub component name** (defaults to `Button`). The single component the skill wires up end-to-end as proof the scaffold loads. The package author replaces or extends after scaffolding.
 5. **Target directory** (defaults to `downstream-prototypes/shiny<name>/`). Where the scaffold lives.
@@ -114,109 +161,261 @@ After collecting all inputs, **echo them back to the user** and ask for confirma
 > Proceed? (yes / change)
 
 If they say "change", re-collect the affected input.
-
-## Substitution rules
-
-Throughout the procedure, the following placeholders are substituted with values derived from the inputs:
-
-| Placeholder | Derived from | Example value (for `mantine`) |
-|-------------|--------------|-------------------------------|
-| `{name}` | short package name | `mantine` |
-| `{pkg}` | `shiny{name}` | `shinymantine` |
-| `{Name}` | short package name, capitalized | `Mantine` |
-| `{prefix}` | catalog prefix | `mantine` |
-| `{Stub}` | stub component name, PascalCase | `Button` |
-| `{stub}` | stub component name, snake_case lowercase | `button` |
-| `{target_dir}` | target directory | `downstream-prototypes/shinymantine` |
-| `{upstream_pkg}` | upstream npm package | `@mantine/core` |
-
-These placeholders appear in templated files copied from `downstream-prototypes/shinymui/` and in the inline content below. The skill performs these substitutions textually when copying.
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 2: Append the Substitution rules section**
+
+Append to `SKILL.md`:
+
+```markdown
+## Substitution rules
+
+Templates under `templates/` use mustache-style `{{placeholder}}` markers. Substitute each occurrence with the corresponding value derived from the inputs:
+
+| Placeholder | Derived from | Example (for `mantine`) |
+|-------------|--------------|--------------------------|
+| `{{name}}` | short package name (lowercase) | `mantine` |
+| `{{pkg}}` | `shiny{{name}}` | `shinymantine` |
+| `{{Name}}` | short name, capitalized | `Mantine` |
+| `{{prefix}}` | catalog prefix | `mantine` |
+| `{{Stub}}` | stub component name, PascalCase | `Button` |
+| `{{stub}}` | stub component name, snake_case lowercase | `button` |
+| `{{target_dir}}` | target directory | `downstream-prototypes/shinymantine` |
+| `{{upstream_pkg}}` | upstream npm package | `@mantine/core` |
+
+Substitution is plain textual replacement — no escaping, no conditional logic. If a template doesn't contain a placeholder, write it verbatim.
+```
+
+- [ ] **Step 3: Commit**
 
 ```bash
 git add .claude/skills/scaffold-shinyreact-helper/SKILL.md
-git commit -m "feat(skill): add inputs + substitution rules to scaffold-shinyreact-helper"
+git commit -m "feat(skill): inputs + substitution rules sections"
 ```
 
 ---
 
-## Task 3: Add the "Procedure: directory + JS project" section
+## Task 3: Write README + JS config templates
 
 **Files:**
-- Modify: `.claude/skills/scaffold-shinyreact-helper/SKILL.md`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/README.md.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/js/package.json.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/js/tsconfig.json.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/js/vite.config.ts.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/js/.gitignore.tpl`
 
-- [ ] **Step 1: Append the procedure header and Steps 1-2**
+- [ ] **Step 1: Write `templates/README.md.tpl`**
 
-Append to `SKILL.md`:
+Use a HEREDOC to write the file exactly (the inner triple-backtick block must be preserved literally):
 
-````markdown
-## Procedure
-
-Run these steps in order. After each step, briefly confirm to the user what landed. Do not commit until Step 7.
-
-### Step 1: Create the directory layout
-
-```bash
-mkdir -p {target_dir}/js/src/components
-mkdir -p {target_dir}/pkg-py/src/{pkg}/www
-mkdir -p {target_dir}/pkg-py/tests
-mkdir -p {target_dir}/example
 ```
-
-Create `{target_dir}/README.md` with the following content (substituting placeholders):
-
-```markdown
-# {pkg} (prototype)
+# {{pkg}} (prototype)
 
 **Status:** scaffold from `scaffold-shinyreact-helper`. Validates conventions in the [helper-packages RFC](../../docs/superpowers/specs/2026-05-12-downstream-helper-packages-rfc-design.md).
 
-Exposes `{upstream_pkg}` components to `shinyreact`. Currently scaffolded with one stub component (`{Stub}`); add more by following the pattern in `downstream-prototypes/shinymui/`.
+Exposes `{{upstream_pkg}}` components to `shinyreact`. Currently scaffolded with one stub component (`{{Stub}}`); add more by following the pattern in `downstream-prototypes/shinymui/`.
 
 ## Run the example
 
 \`\`\`bash
-cd {target_dir}
+cd {{target_dir}}
 (cd js && npm install && npm run build)
-cp js/dist/{pkg}.js pkg-py/src/{pkg}/www/{pkg}.js
+cp js/dist/{{pkg}}.js pkg-py/src/{{pkg}}/www/{{pkg}}.js
 uv pip install -e pkg-py
 uv run shiny run --reload example/app.py
 \`\`\`
 ```
 
-(Note: the inner triple-backtick block is what the README needs — preserve it literally when writing the file.)
+Note: the `\`\`\`bash` and closing `\`\`\`` in the file source are LITERAL backslash-escaped backticks because this template content is itself inside a code block in this plan. The actual file should contain unescaped triple-backticks. When implementing, write triple-backticks (` ``` `), not backslash-escaped ones.
 
-### Step 2: JS project
+- [ ] **Step 2: Write `templates/js/package.json.tpl`**
 
-Copy each of these files from `downstream-prototypes/shinymui/js/` to `{target_dir}/js/` and apply substitutions. **Run substitutions as plain text replacement** (`shinymui` → `{pkg}`, `mui:` → `{prefix}:`, `@mui/material` → `{upstream_pkg}`, etc.).
-
-| Source file | Destination | Substitutions |
-|---|---|---|
-| `downstream-prototypes/shinymui/js/package.json` | `{target_dir}/js/package.json` | `@shinymui/js` → `@{pkg}/js`; remove the `@mui/material`, `@mui/x-data-grid`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled` entries from `dependencies`; add the user-supplied `{upstream_pkg}` (or each entry in the comma-separated list) at `^latest` or the version the user specified. Keep peerDependencies on react/react-dom and devDependencies unchanged. |
-| `downstream-prototypes/shinymui/js/tsconfig.json` | `{target_dir}/js/tsconfig.json` | None — file is generic. |
-| `downstream-prototypes/shinymui/js/vite.config.ts` | `{target_dir}/js/vite.config.ts` | `shinymui` → `{pkg}` (appears in `lib.name`, `fileName`, and `assetFileNames`). |
-| `downstream-prototypes/shinymui/js/.gitignore` | `{target_dir}/js/.gitignore` | None. |
-| `downstream-prototypes/shinymui/js/src/types.ts` | `{target_dir}/js/src/types.ts` | None — types are generic. |
-
-After copying, run `npm install` in `{target_dir}/js/`:
-
-```bash
-cd {target_dir}/js && npm install
+```json
+{
+  "name": "@{{pkg}}/js",
+  "private": true,
+  "version": "0.0.0-prototype",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "{{upstream_pkg}}": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}
 ```
 
-Wait for completion (1-3 minutes for a typical UI library).
+Note: `"latest"` for the upstream package is a deliberate weak pin — the user is expected to tighten it for a real package. For a styled-component library that needs emotion, the user may need to add `@emotion/react` and `@emotion/styled` manually after scaffolding. The SKILL.md procedure will mention this.
 
-### Step 3: JS entry + stub component
+- [ ] **Step 3: Write `templates/js/tsconfig.json.tpl`** — verbatim copy of shinymui's tsconfig.json (no placeholders):
 
-Create `{target_dir}/js/src/components/{Stub}.tsx` with this content:
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
+```
+
+- [ ] **Step 4: Write `templates/js/vite.config.ts.tpl`**
+
+```ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+  define: {
+    "process.env.NODE_ENV": JSON.stringify("production"),
+  },
+  build: {
+    lib: {
+      entry: "src/index.ts",
+      name: "{{pkg}}",
+      formats: ["iife"],
+      fileName: () => "{{pkg}}.js",
+    },
+    outDir: "dist",
+    rollupOptions: {
+      external: ["react", "react-dom", "react-dom/client"],
+      output: {
+        globals: {
+          react: "window.shinyreact.React",
+          "react-dom": "window.shinyreact.ReactDOM",
+          "react-dom/client": "window.shinyreact.ReactDOM",
+        },
+        assetFileNames: "{{pkg}}.[ext]",
+      },
+    },
+  },
+});
+```
+
+- [ ] **Step 5: Write `templates/js/.gitignore.tpl`**
+
+```
+node_modules/
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add .claude/skills/scaffold-shinyreact-helper/templates/
+git commit -m "feat(skill): README + JS config templates"
+```
+
+---
+
+## Task 4: Write JS source templates (types, index, stub component)
+
+**Files:**
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/js/src/types.ts.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/js/src/index.ts.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/js/src/components/Stub.tsx.tpl`
+
+- [ ] **Step 1: Write `templates/js/src/types.ts.tpl`** — copy from `downstream-prototypes/shinymui/js/src/types.ts` verbatim (no placeholders; this file is generic):
+
+```ts
+import type { ComponentType, ReactNode } from "react";
+
+// Mirrors shinyreact's RegisteredComponentProps and ComponentRegistry from
+// js/src/spec.ts. Kept local to avoid cross-project relative imports.
+
+export interface Element {
+  type: string;
+  props: Record<string, unknown>;
+  children?: string[];
+}
+
+export interface RegisteredComponentProps {
+  element: Element;
+  children: ReactNode;
+}
+
+export type ComponentRegistry = Record<
+  string,
+  ComponentType<RegisteredComponentProps>
+>;
+
+declare global {
+  interface Window {
+    shinyreact: {
+      registerComponents: (
+        catalog: unknown,
+        registry: ComponentRegistry,
+      ) => void;
+      // priority values match Shiny's input event priorities used by
+      // @posit/shiny-react. Stable strings in the wire protocol.
+      useShinyInput: <T>(
+        id: string,
+        defaultValue: T,
+        options?: { debounceMs?: number; priority?: "immediate" | "deferred" | "event" },
+      ) => [T, (value: T) => void];
+      useShinyOutputValue: <T>(id: string, defaultValue?: T) => T;
+      // Other hooks exist (useSetShinyInput, useShinyMessageHandler, ...) but
+      // are not used by the scaffold; add them as needed.
+      React: typeof import("react");
+      ReactDOM: unknown;
+    };
+  }
+}
+
+export {};
+```
+
+- [ ] **Step 2: Write `templates/js/src/index.ts.tpl`**
+
+```ts
+import type { ComponentRegistry } from "./types";
+import { {{Stub}} } from "./components/{{Stub}}";
+
+const registry: ComponentRegistry = {
+  "{{prefix}}:{{Stub}}": {{Stub}},
+};
+
+const catalog = { name: "{{pkg}}", version: "0.0.0-prototype" };
+
+window.shinyreact.registerComponents(catalog, registry);
+```
+
+- [ ] **Step 3: Write `templates/js/src/components/Stub.tsx.tpl`**
 
 ```tsx
 import type { RegisteredComponentProps } from "../types";
 
 const { useShinyInput } = window.shinyreact;
 
-export function {Stub}({ element }: RegisteredComponentProps) {
+export function {{Stub}}({ element }: RegisteredComponentProps) {
   const { label, input_id } = element.props as {
     label: string;
     input_id: string;
@@ -235,67 +434,95 @@ export function {Stub}({ element }: RegisteredComponentProps) {
 }
 ```
 
-This is intentionally a **plain HTML `<button>`**, not a styled component from the upstream library. The package author swaps in the real upstream component as the first edit after scaffolding. The stub exists to verify the scaffold loads end-to-end with the simplest possible component code.
+Note: the stub uses a plain HTML `<button>`, not a styled component from `{{upstream_pkg}}`. The package author's first edit after scaffolding should be swapping this to use the real upstream component. The stub exists to verify the scaffold loads end-to-end with the simplest possible component code.
 
-Create `{target_dir}/js/src/index.ts`:
-
-```ts
-import type { ComponentRegistry } from "./types";
-import { {Stub} } from "./components/{Stub}";
-
-const registry: ComponentRegistry = {
-  "{prefix}:{Stub}": {Stub},
-};
-
-const catalog = { name: "{pkg}", version: "0.0.0-prototype" };
-
-window.shinyreact.registerComponents(catalog, registry);
-```
-````
-
-- [ ] **Step 2: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add .claude/skills/scaffold-shinyreact-helper/SKILL.md
-git commit -m "feat(skill): add procedure §1-3 (directory + JS project + stub) to scaffold-shinyreact-helper"
+git add .claude/skills/scaffold-shinyreact-helper/templates/js/src/
+git commit -m "feat(skill): JS source templates (types, index, stub component)"
 ```
 
 ---
 
-## Task 4: Add the "Procedure: Python package" section
+## Task 5: Write Python templates
 
 **Files:**
-- Modify: `.claude/skills/scaffold-shinyreact-helper/SKILL.md`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/pyproject.toml.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/src/__init__.py.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/src/_dep.py.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/src/_components.py.tpl`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/tests/test_factories.py.tpl`
 
-- [ ] **Step 1: Append Steps 4-5**
+- [ ] **Step 1: Write `templates/pkg-py/pyproject.toml.tpl`**
 
-Append to `SKILL.md`:
+```toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-````markdown
-### Step 4: Python package
+[project]
+name = "{{pkg}}"
+version = "0.0.0.dev0"
+description = "Prototype helper package exposing {{upstream_pkg}} to shinyreact"
+requires-python = ">=3.10"
+dependencies = [
+    "shiny>=1.0.0",
+    "htmltools>=0.5.0",
+    "shinyreact",
+]
 
-Copy each of these files from `downstream-prototypes/shinymui/pkg-py/` to `{target_dir}/pkg-py/` and apply substitutions.
+[tool.hatch.build.targets.wheel]
+packages = ["src/{{pkg}}"]
 
-| Source file | Destination | Substitutions |
-|---|---|---|
-| `downstream-prototypes/shinymui/pkg-py/pyproject.toml` | `{target_dir}/pkg-py/pyproject.toml` | `shinymui` → `{pkg}` (appears in `name`, `packages`, and the `force-include` mapping). Keep `version = "0.0.0.dev0"` (hatchling requires PEP 440 — `0.0.0-prototype` is not valid). |
-| `downstream-prototypes/shinymui/pkg-py/src/shinymui/_dep.py` | `{target_dir}/pkg-py/src/{pkg}/_dep.py` | `shinymui` → `{pkg}` (appears in the filename in `bundle`, the HTMLDependency `name`, and the `script.src`). |
-
-Create `{target_dir}/pkg-py/src/{pkg}/__init__.py`:
-
-```python
-from ._components import {stub}
-from ._dep import dep
-
-__all__ = ["dep", "{stub}"]
+[tool.hatch.build.targets.wheel.force-include]
+"src/{{pkg}}/www/{{pkg}}.js" = "{{pkg}}/www/{{pkg}}.js"
 ```
 
-Create `{target_dir}/pkg-py/src/{pkg}/_components.py`:
+(Note: `0.0.0.dev0` is required by PEP 440 — `0.0.0-prototype` is rejected by hatchling. Found during shinymui prototype.)
+
+- [ ] **Step 2: Write `templates/pkg-py/src/__init__.py.tpl`**
 
 ```python
-"""Python factory functions for {Name} components.
+from ._components import {{stub}}
+from ._dep import dep
 
-Each factory returns a ``shinyreact.Node`` with a ``{prefix}:``-namespaced type
+__all__ = ["dep", "{{stub}}"]
+```
+
+- [ ] **Step 3: Write `templates/pkg-py/src/_dep.py.tpl`**
+
+```python
+from pathlib import Path
+
+from htmltools import HTMLDependency
+
+_www_dir = Path(__file__).parent / "www"
+
+
+def dep() -> HTMLDependency:
+    """HTMLDependency for the {{pkg}} JS bundle.
+
+    Versioned by mtime of the bundled JS file so browsers re-fetch when the
+    bundle is rebuilt during development. A real package would pin to its
+    release version.
+    """
+    bundle = _www_dir / "{{pkg}}.js"
+    version = str(int(bundle.stat().st_mtime)) if bundle.exists() else "0"
+    return HTMLDependency(
+        name="{{pkg}}",
+        version=version,
+        source={"subdir": str(_www_dir)},
+        script={"src": "{{pkg}}.js", "defer": ""},
+    )
+```
+
+- [ ] **Step 4: Write `templates/pkg-py/src/_components.py.tpl`**
+
+```python
+"""Python factory functions for {{Name}} components.
+
+Each factory returns a ``shinyreact.Node`` with a ``{{prefix}}:``-namespaced type
 string. Currently scaffolded with one stub factory; add more by following the
 pattern.
 """
@@ -303,10 +530,10 @@ pattern.
 import shinyreact
 
 
-def {stub}(label: str, *, input_id: str) -> shinyreact.Node:
-    """Render the stub {Stub} bound to a Shiny action-button input."""
+def {{stub}}(label: str, *, input_id: str) -> shinyreact.Node:
+    """Render the stub {{Stub}} bound to a Shiny action-button input."""
     return shinyreact.Node(
-        type="{prefix}:{Stub}",
+        type="{{prefix}}:{{Stub}}",
         props={"label": label, "input_id": input_id},
     )
 
@@ -323,59 +550,43 @@ def {stub}(label: str, *, input_id: str) -> shinyreact.Node:
 #         return value
 ```
 
-Touch the placeholder:
-
-```bash
-touch {target_dir}/pkg-py/src/{pkg}/www/.gitkeep
-```
-
-### Step 5: Stub factory test
-
-Create `{target_dir}/pkg-py/tests/test_factories.py`:
+- [ ] **Step 5: Write `templates/pkg-py/tests/test_factories.py.tpl`**
 
 ```python
-import {pkg}
+import {{pkg}}
 
 
-def test_{stub}_factory():
-    node = {pkg}.{stub}("Click me", input_id="b1")
-    assert node.type == "{prefix}:{Stub}"
+def test_{{stub}}_factory():
+    node = {{pkg}}.{{stub}}("Click me", input_id="b1")
+    assert node.type == "{{prefix}}:{{Stub}}"
     assert node.props["label"] == "Click me"
     assert node.props["input_id"] == "b1"
 ```
-````
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add .claude/skills/scaffold-shinyreact-helper/SKILL.md
-git commit -m "feat(skill): add procedure §4-5 (Python package + factory test) to scaffold-shinyreact-helper"
+git add .claude/skills/scaffold-shinyreact-helper/templates/pkg-py/
+git commit -m "feat(skill): Python package templates (pyproject, init, _dep, _components, test)"
 ```
 
 ---
 
-## Task 5: Add the "Procedure: example app, build, verify" sections
+## Task 6: Write example app template
 
 **Files:**
-- Modify: `.claude/skills/scaffold-shinyreact-helper/SKILL.md`
+- Create: `.claude/skills/scaffold-shinyreact-helper/templates/example/app.py.tpl`
 
-- [ ] **Step 1: Append Steps 6-9**
-
-Append to `SKILL.md`:
-
-````markdown
-### Step 6: Example app
-
-Create `{target_dir}/example/app.py`:
+- [ ] **Step 1: Write `templates/example/app.py.tpl`**
 
 ```python
-"""{pkg} prototype example app — scaffolded by scaffold-shinyreact-helper."""
+"""{{pkg}} prototype example app — scaffolded by scaffold-shinyreact-helper."""
 
-import {pkg}
+import {{pkg}}
 import shinyreact
 from shiny import App, Inputs, Outputs, Session
 
-app_ui = shinyreact.ui_output("main", extra_deps=[{pkg}.dep()])
+app_ui = shinyreact.ui_output("main", extra_deps=[{{pkg}}.dep()])
 
 
 def server(input: Inputs, output: Outputs, session: Session):
@@ -394,8 +605,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 }
             },
             children=[
-                shinyreact.Node(type="h1", props={"children": "{pkg} prototype"}),
-                {pkg}.{stub}("Click me", input_id="b1"),
+                shinyreact.Node(type="h1", props={"children": "{{pkg}} prototype"}),
+                {{pkg}}.{{stub}}("Click me", input_id="b1"),
                 shinyreact.Node(
                     type="div",
                     props={"children": f"Stub button clicks: {clicks}"},
@@ -407,85 +618,212 @@ def server(input: Inputs, output: Outputs, session: Session):
 app = App(app_ui, server)
 ```
 
-### Step 7: Build, install, verify
-
-Run these commands in order. If any fails, surface the error to the user and stop — do not paper over.
+- [ ] **Step 2: Commit**
 
 ```bash
-# Build the bundle
-cd {target_dir}/js && npm run build
-cd -
-
-# Lint
-cd {target_dir}/js && npm run lint
-cd -
-
-# Copy bundle to Python package
-cp {target_dir}/js/dist/{pkg}.js {target_dir}/pkg-py/src/{pkg}/www/{pkg}.js
-
-# Install the Python package as editable
-uv pip install -e {target_dir}/pkg-py
-
-# Run the factory test
-cd {target_dir}/pkg-py && uv run python -m pytest tests/test_factories.py -v
-cd -
+git add .claude/skills/scaffold-shinyreact-helper/templates/example/
+git commit -m "feat(skill): example app template"
 ```
 
-Expected outputs:
-- `npm run build` produces `{target_dir}/js/dist/{pkg}.js` (size varies by upstream; record it)
-- `npm run lint` exits 0 (no TypeScript errors)
-- `pytest` reports `1 passed`
+---
 
-### Step 8: Programmatic smoke test
+## Task 7: Write the Procedure section in SKILL.md
 
-Start the example app in the background, verify HTTP 200 + bundle loads, then stop.
+This is where SKILL.md tells Claude how to actually use the templates.
+
+**Files:**
+- Modify: `.claude/skills/scaffold-shinyreact-helper/SKILL.md`
+
+- [ ] **Step 1: Append the Procedure header and Step 1 (directory + template rendering)**
+
+Append to `SKILL.md`:
+
+````markdown
+## Procedure
+
+Run these steps in order. After each step, briefly confirm to the user what landed. Do not commit the scaffold — leave that to the package author.
+
+### Step 1: Create the directory layout
 
 ```bash
-uv run shiny run --port 8765 {target_dir}/example/app.py &
-SHINY_PID=$!
-sleep 4
-curl -s -o /tmp/scaffold_smoke.html -w "%{http_code}\n" http://localhost:8765/
-grep -c "{pkg}-" /tmp/scaffold_smoke.html
-# Bundle reachable check:
-BUNDLE_URL=$(grep -oE '/lib/{pkg}-[^"]+/{pkg}.js' /tmp/scaffold_smoke.html | head -1)
-curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:8765$BUNDLE_URL"
-# Cleanup
-kill $SHINY_PID 2>/dev/null || true
-pkill -f "shiny run --port 8765" 2>/dev/null || true
+mkdir -p {{target_dir}}/js/src/components
+mkdir -p {{target_dir}}/pkg-py/src/{{pkg}}/www
+mkdir -p {{target_dir}}/pkg-py/tests
+mkdir -p {{target_dir}}/example
 ```
 
-Expected:
-- First curl: `200`
-- grep count: ≥ 1
-- Second curl: `200`
+### Step 2: Render templates
 
-### Step 9: Final summary to user
+For each template under `.claude/skills/scaffold-shinyreact-helper/templates/`, read the file, perform every substitution from the table in the "Substitution rules" section above, and write to the corresponding location in `{{target_dir}}`. The mapping:
 
-Report back:
+| Template | Destination |
+|----------|-------------|
+| `templates/README.md.tpl` | `{{target_dir}}/README.md` |
+| `templates/js/package.json.tpl` | `{{target_dir}}/js/package.json` |
+| `templates/js/tsconfig.json.tpl` | `{{target_dir}}/js/tsconfig.json` |
+| `templates/js/vite.config.ts.tpl` | `{{target_dir}}/js/vite.config.ts` |
+| `templates/js/.gitignore.tpl` | `{{target_dir}}/js/.gitignore` |
+| `templates/js/src/types.ts.tpl` | `{{target_dir}}/js/src/types.ts` |
+| `templates/js/src/index.ts.tpl` | `{{target_dir}}/js/src/index.ts` |
+| `templates/js/src/components/Stub.tsx.tpl` | `{{target_dir}}/js/src/components/{{Stub}}.tsx` |
+| `templates/pkg-py/pyproject.toml.tpl` | `{{target_dir}}/pkg-py/pyproject.toml` |
+| `templates/pkg-py/src/__init__.py.tpl` | `{{target_dir}}/pkg-py/src/{{pkg}}/__init__.py` |
+| `templates/pkg-py/src/_dep.py.tpl` | `{{target_dir}}/pkg-py/src/{{pkg}}/_dep.py` |
+| `templates/pkg-py/src/_components.py.tpl` | `{{target_dir}}/pkg-py/src/{{pkg}}/_components.py` |
+| `templates/pkg-py/tests/test_factories.py.tpl` | `{{target_dir}}/pkg-py/tests/test_factories.py` |
+| `templates/example/app.py.tpl` | `{{target_dir}}/example/app.py` |
 
-- Files created (count by directory)
-- Bundle size from `ls -lh {target_dir}/js/dist/{pkg}.js`
-- All verifications that passed
-- Next steps for the package author: "edit `{target_dir}/js/src/components/{Stub}.tsx` to use the real `{upstream_pkg}` component; add more factories in `{target_dir}/pkg-py/src/{pkg}/_components.py` following the shinymui pattern"
+Also touch the placeholder for the empty `www/` directory:
 
-Do **not** commit the scaffold to git. Leave that decision to the package author — they may want to iterate on the stub component before committing.
+```bash
+touch {{target_dir}}/pkg-py/src/{{pkg}}/www/.gitkeep
+```
+
+### Step 3: Install JS dependencies
+
+```bash
+cd {{target_dir}}/js && npm install
+```
+
+Wait for completion (1-3 minutes for a typical UI library). If `npm install` warns about peer-dependency conflicts (e.g., `@mui/icons-material` requiring a different `@mui/material` major), surface the warning to the user — they may need to pin the upstream package version more tightly. Do not auto-fix.
+
+For styled-component libraries that need emotion (MUI, Mantine), the user may need to add these themselves after scaffolding:
+
+```bash
+cd {{target_dir}}/js && npm install @emotion/react @emotion/styled
+```
+
+Mention this if and only if the upstream package is in the MUI/Mantine family.
+
+### Step 4: Build the bundle
+
+```bash
+cd {{target_dir}}/js && npm run build
+```
+
+Expected: writes `{{target_dir}}/js/dist/{{pkg}}.js`. If the build fails because the upstream package isn't actually used in the stub (the stub uses a plain `<button>`), the build should still succeed because the import is only declared in `package.json`, not referenced in source. The user replaces the stub's plain button with the upstream component as their first manual edit.
+
+### Step 5: Lint
+
+```bash
+cd {{target_dir}}/js && npm run lint
+```
+
+Expected: exits 0 with no output. If lint fails, surface the error verbatim.
+
+### Step 6: Copy bundle to Python package www/
+
+```bash
+cp {{target_dir}}/js/dist/{{pkg}}.js {{target_dir}}/pkg-py/src/{{pkg}}/www/{{pkg}}.js
+```
+
+### Step 7: Install the Python package as editable
+
+```bash
+uv pip install -e {{target_dir}}/pkg-py
+```
+
+If this fails because `shinyreact` isn't resolvable (the prototype shinymui hit this), the workaround is to install into the parent repo's venv directly:
+
+```bash
+.venv/bin/pip install -e {{target_dir}}/pkg-py
+```
+
+### Step 8: Run the factory test
+
+```bash
+cd {{target_dir}}/pkg-py && uv run python -m pytest tests/test_factories.py -v
+```
+
+Or fall back to `.venv/bin/python -m pytest tests/test_factories.py -v` if `uv run` has venv-resolution issues.
+
+Expected: `1 passed` (the stub factory test).
 ````
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add .claude/skills/scaffold-shinyreact-helper/SKILL.md
-git commit -m "feat(skill): add procedure §6-9 (example, build, verify) to scaffold-shinyreact-helper"
+git commit -m "feat(skill): procedure §1-8 (render, install, build, lint, test)"
 ```
 
 ---
 
-## Task 6: End-to-end smoke test the skill
+## Task 8: Add Smoke-test + Final-summary sections to SKILL.md
 
 **Files:**
-- None permanently. Temporarily creates `downstream-prototypes/_skill-test-mantine/` which is deleted at the end.
+- Modify: `.claude/skills/scaffold-shinyreact-helper/SKILL.md`
 
-This task validates the skill works end-to-end by following its own procedure manually against a real upstream library. We use `@mantine/core` as the test target — Mantine is another category-1 styled-component library, a natural second test case.
+- [ ] **Step 1: Append the smoke-test and final-summary sections**
+
+Append to `SKILL.md`:
+
+````markdown
+### Step 9: Programmatic smoke test
+
+Start the example app, verify HTTP 200 + bundle loads, then stop. Use a port unlikely to collide (8765 is the convention used by the shinymui prototype's smoke tests).
+
+```bash
+uv run shiny run --port 8765 {{target_dir}}/example/app.py &
+SHINY_PID=$!
+sleep 4
+
+# Page returns 200
+curl -s -o /tmp/scaffold_smoke.html -w "%{http_code}\n" http://localhost:8765/
+
+# HTML references the bundle URL with the right name
+grep -c "{{pkg}}-" /tmp/scaffold_smoke.html
+
+# Bundle URL itself returns 200
+BUNDLE_URL=$(grep -oE '/lib/{{pkg}}-[^"]+/{{pkg}}\.js' /tmp/scaffold_smoke.html | head -1)
+curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:8765$BUNDLE_URL"
+
+# Cleanup
+kill $SHINY_PID 2>/dev/null || true
+pkill -f "shiny run --port 8765" 2>/dev/null || true
+```
+
+Expected outputs:
+- First curl: `200`
+- grep count: at least `1`
+- Second curl: `200`
+
+If any of these fail, surface the failure to the user and stop. Common causes: port 8765 in use (try 8766), `shinyreact` not installed in the venv, bundle copy failed.
+
+### Step 10: Final summary
+
+Report back to the user:
+
+- Number of files created (count by walking `{{target_dir}}`)
+- Bundle size from `ls -lh {{target_dir}}/js/dist/{{pkg}}.js`
+- All verifications that passed (build, lint, factory test, HTTP 200, bundle 200)
+- **Next steps for the package author:**
+  - Edit `{{target_dir}}/js/src/components/{{Stub}}.tsx` to use the real `{{upstream_pkg}}` component instead of the plain `<button>`
+  - Add more factories in `{{target_dir}}/pkg-py/src/{{pkg}}/_components.py` following the pattern
+  - Add tests in `{{target_dir}}/pkg-py/tests/test_factories.py` for each new factory
+  - For styled-component libraries: install peer deps like `@emotion/react @emotion/styled`
+  - Reference `downstream-prototypes/shinymui/` for examples of more complex patterns (children/composition, server-pushed data via `useShinyOutputValue`)
+  - When ready to commit: `git add {{target_dir}}/` then commit with a descriptive message
+
+Do **not** commit the scaffold — leave that decision to the package author.
+````
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add .claude/skills/scaffold-shinyreact-helper/SKILL.md
+git commit -m "feat(skill): procedure §9-10 (smoke test + final summary)"
+```
+
+---
+
+## Task 9: End-to-end smoke test the skill
+
+**Files:**
+- Modify: `docs/superpowers/specs/2026-05-12-downstream-helper-packages-rfc-design.md` (final acceptance status line at the end of Task 9)
+- Possibly modify: `.claude/skills/scaffold-shinyreact-helper/SKILL.md` (only if the test surfaces issues)
+
+This task validates the skill works end-to-end by running its own procedure against `@mantine/core` (a real category-1 styled library). The test scaffold is transient and is deleted at the end.
 
 - [ ] **Step 1: Read SKILL.md completely as if invoked**
 
@@ -493,9 +831,9 @@ This task validates the skill works end-to-end by following its own procedure ma
 cat .claude/skills/scaffold-shinyreact-helper/SKILL.md
 ```
 
-Treat the file as the source of truth. If anything is unclear or inconsistent, **stop and report a BLOCKED status** — the skill needs to be more precise.
+Treat the file as the source of truth. If anything is unclear or inconsistent, **stop and report a BLOCKED status** — the skill needs to be more precise before it can be exercised.
 
-- [ ] **Step 2: Run the procedure with these test inputs**
+- [ ] **Step 2: Run the procedure with these inputs**
 
 - short name: `mantine`
 - upstream npm package: `@mantine/core`
@@ -503,11 +841,24 @@ Treat the file as the source of truth. If anything is unclear or inconsistent, *
 - stub component name: `Button`
 - target directory: `downstream-prototypes/_skill-test-mantine`
 
-(The `_skill-test-` prefix marks this as transient, not a real prototype.)
+The `_skill-test-` prefix marks this as transient — not a real prototype.
 
-Follow each procedure step in `SKILL.md` exactly. Substitute all placeholders. After each step, briefly note completion.
+Substitution values for this run:
 
-- [ ] **Step 3: Run all verifications from Step 7-8 of the skill**
+| Placeholder | Value |
+|-------------|-------|
+| `{{name}}` | `mantine` |
+| `{{pkg}}` | `shinymantine` |
+| `{{Name}}` | `Mantine` |
+| `{{prefix}}` | `mantine` |
+| `{{Stub}}` | `Button` |
+| `{{stub}}` | `button` |
+| `{{target_dir}}` | `downstream-prototypes/_skill-test-mantine` |
+| `{{upstream_pkg}}` | `@mantine/core` |
+
+Follow each procedure step in `SKILL.md` exactly. Substitute all placeholders. After each step, briefly note completion to your own log.
+
+- [ ] **Step 3: Run all verifications (Steps 4, 5, 8, 9 of the skill procedure)**
 
 - Bundle builds (record size)
 - Lint passes
@@ -515,14 +866,15 @@ Follow each procedure step in `SKILL.md` exactly. Substitute all placeholders. A
 - HTTP 200 on `localhost:8765/`
 - Bundle URL reachable with `200`
 
-If any verification fails, **stop and report which step of `SKILL.md` was unclear or buggy**. The fix is to edit `SKILL.md`, not to paper over the failure in the test scaffold.
+If any verification fails, **stop and identify which step of `SKILL.md` was unclear, missing, or buggy**. The fix is to edit `SKILL.md`, not to paper over the failure in the test scaffold.
 
 - [ ] **Step 4: Capture findings**
 
-After verification passes, write a one-paragraph note covering:
+Write a short note (5-10 bullet points or a paragraph) covering:
 - Whether any step of `SKILL.md` required interpretation beyond what was written
-- Whether placeholders or substitutions were ambiguous
-- Bundle size for `shinymantine` (compare to shinymui's 4.3 MB — should be similar or smaller since only one component is wired)
+- Whether any placeholder or substitution was ambiguous
+- Whether `npm install @mantine/core` succeeded with the `"latest"` pin (and whether emotion peer-deps were needed)
+- Bundle size for `shinymantine` (note: should be small since the stub uses plain `<button>`, not Mantine; the `@mantine/core` dep declared in package.json but unreferenced should mostly be tree-shaken — record the actual size)
 - Any gotchas the package author would hit
 
 This note will inform any final edits to `SKILL.md` in Step 5.
@@ -531,44 +883,45 @@ This note will inform any final edits to `SKILL.md` in Step 5.
 
 If Step 4 surfaced anything that should be tightened in the skill, edit `SKILL.md` to fix it. Common categories of fix:
 - Substitution rule missing or ambiguous → add to the substitution table
+- A template file had an issue → fix the corresponding `.tpl` file
 - Step ordering issue → reorder
-- Command that didn't work on first try → document the gotcha
+- Command that didn't work on first try → document the workaround
 - Verification expected output that turned out wrong → correct it
 
-If no fixes needed, skip to Step 6.
+Commit any fixes:
+
+```bash
+git status                                                                       # verify scope
+git diff .claude/skills/scaffold-shinyreact-helper/                              # review
+git add .claude/skills/scaffold-shinyreact-helper/
+git commit -m "feat(skill): patch scaffold-shinyreact-helper based on end-to-end smoke test"
+```
+
+If no fixes needed, skip the commit — the skill works as written.
 
 - [ ] **Step 6: Clean up the test scaffold**
 
 ```bash
 # Stop any leftover server
 pkill -f "shiny run --port 8765" 2>/dev/null || true
+
 # Remove the test directory entirely
 rm -rf downstream-prototypes/_skill-test-mantine
+
 # Verify it's gone
-ls downstream-prototypes/ | grep -c "_skill-test" || echo "clean"
+ls downstream-prototypes/ | grep -c "_skill-test" && echo "LEFTOVER FOUND" || echo "clean"
 ```
+
+Expect: `clean`.
 
 The skill itself stays in `.claude/skills/`. The test scaffold is throwaway.
 
-- [ ] **Step 7: Commit any SKILL.md edits from Step 5 (if any)**
+- [ ] **Step 7: Update the RFC acceptance status**
 
-If `SKILL.md` was edited in Step 5:
-
-```bash
-git status                          # verify only SKILL.md is modified
-git diff .claude/skills/scaffold-shinyreact-helper/SKILL.md   # review the edits
-git add .claude/skills/scaffold-shinyreact-helper/SKILL.md
-git commit -m "feat(skill): patch scaffold-shinyreact-helper based on end-to-end smoke test"
-```
-
-If `SKILL.md` was not edited, skip the commit — the skill works as written.
-
-- [ ] **Step 8: Final RFC acceptance update**
-
-Edit `docs/superpowers/specs/2026-05-12-downstream-helper-packages-rfc-design.md`. Find the existing "Status (2026-05-12):" line near the bottom (the one added by the shinymui-prototype plan's Task 12). Update it to:
+Edit `docs/superpowers/specs/2026-05-12-downstream-helper-packages-rfc-design.md`. Find the existing "Status (2026-05-12):" line near the bottom (the one added at the end of the shinymui-prototype plan). Replace it with:
 
 ```markdown
-**Status (2026-05-12):** All four acceptance criteria satisfied. The MUI prototype lives at `downstream-prototypes/shinymui/` (5 components, all archetypes covered, validated via `downstream-prototypes/shinymui/example/app.py`). The scaffolding skill lives at `.claude/skills/scaffold-shinyreact-helper/SKILL.md` and has been validated end-to-end by scaffolding a transient `shinymantine` package that built, linted, tested, and served HTTP 200. The follow-up umbrella issue (§8) can now be filed.
+**Status (2026-05-12):** All four acceptance criteria satisfied. The MUI prototype lives at `downstream-prototypes/shinymui/` (5 components, all archetypes covered, validated via `downstream-prototypes/shinymui/example/app.py`). The scaffolding skill lives at `.claude/skills/scaffold-shinyreact-helper/` with `SKILL.md` plus `templates/` (14 template files); it was validated end-to-end by scaffolding a transient `shinymantine` package that built, linted, tested, and served HTTP 200. The follow-up umbrella issue (§8) can now be filed.
 ```
 
 Commit:
@@ -582,14 +935,31 @@ git commit -m "docs(rfc): mark all helper-packages RFC acceptance criteria satis
 
 ## Final verification
 
-- [ ] **Step 1: Confirm the skill file exists and looks complete**
+- [ ] **Step 1: Confirm the skill files exist**
 
 ```bash
-ls -la .claude/skills/scaffold-shinyreact-helper/SKILL.md
-wc -l .claude/skills/scaffold-shinyreact-helper/SKILL.md
+find .claude/skills/scaffold-shinyreact-helper -type f | sort
 ```
 
-Expect: file exists, roughly 200-400 lines (full procedure).
+Expect 15 entries: `SKILL.md` + 14 template files:
+
+```
+.claude/skills/scaffold-shinyreact-helper/SKILL.md
+.claude/skills/scaffold-shinyreact-helper/templates/README.md.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/example/app.py.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/js/.gitignore.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/js/package.json.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/js/src/components/Stub.tsx.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/js/src/index.ts.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/js/src/types.ts.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/js/tsconfig.json.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/js/vite.config.ts.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/pyproject.toml.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/src/__init__.py.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/src/_components.py.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/src/_dep.py.tpl
+.claude/skills/scaffold-shinyreact-helper/templates/pkg-py/tests/test_factories.py.tpl
+```
 
 - [ ] **Step 2: Confirm no test artifacts remain**
 
@@ -610,14 +980,12 @@ Expect: `nothing to commit, working tree clean`.
 - [ ] **Step 4: Confirm the RFC status line is updated**
 
 ```bash
-grep -A1 "Status (2026-05-12)" docs/superpowers/specs/2026-05-12-downstream-helper-packages-rfc-design.md
+grep "All four acceptance criteria satisfied" docs/superpowers/specs/2026-05-12-downstream-helper-packages-rfc-design.md
 ```
 
-Expect: the "All four acceptance criteria satisfied" version.
+Expect: at least one match (the updated status line).
 
-- [ ] **Step 5: Spot-check the skill is invocable**
-
-The skill is now discoverable by Claude Code's Skill tool. From a future session, `/scaffold-shinyreact-helper` (or invoking via the Skill tool) should load `SKILL.md`. We do not test this in-session — it requires a fresh agent — but verify the frontmatter parses by reading the first 5 lines:
+- [ ] **Step 5: Spot-check SKILL.md frontmatter parses**
 
 ```bash
 head -5 .claude/skills/scaffold-shinyreact-helper/SKILL.md
@@ -627,8 +995,8 @@ Expect:
 ```
 ---
 name: scaffold-shinyreact-helper
-description: Scaffold a new shinyreact downstream helper-package prototype that mirrors the shinymui reference layout. Use when starting a new helper package for a React UI library (e.g., shinymantine, shinyradix, shinyaggrid). Asks for the upstream package, short name, and target directory; produces a working scaffold with one stub component that builds and loads end-to-end.
+description: Scaffold a new shinyreact downstream helper-package prototype with one stub component wired end-to-end. Use when starting a new helper package for a React UI library (e.g., shinymantine, shinyradix, shinyaggrid). Asks for the upstream package, short name, and target directory; renders templates with substitutions; verifies the scaffold builds, lints, tests, and serves HTTP 200.
 ---
 ```
 
-If all five final-verification steps pass, the plan is complete. The repo now satisfies all four acceptance criteria of the helper-packages RFC.
+If all five final-verification steps pass, the plan is complete. The repo now satisfies all four acceptance criteria of the helper-packages RFC. The skill is fully self-contained — it does not depend on `downstream-prototypes/shinymui/` continuing to exist.
