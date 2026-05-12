@@ -4,7 +4,7 @@
 
 Define the shape of a "well-formed" `shinyreact` helper package — a downstream Python+JS package that exposes components from an existing React UI library to `shinyreact` users. Validate the conventions with a working MUI prototype, then use that spine to spawn per-category helper packages (`shinymui`, `shinyradix`, a copy-paste pick, `shinyaggrid`, ...) without re-litigating bundling, naming, and asset-injection conventions each time.
 
-This is a strategic RFC. The terminal artifact is a written conventions doc plus a 5-component MUI prototype. Per-package implementation issues are deliberately out of scope — they get filed in a follow-up umbrella issue once the conventions are validated.
+This is a strategic RFC. The terminal artifacts are (a) a written conventions doc, (b) a 5-component MUI prototype, and (c) a Claude Code skill that scaffolds a new helper package from a given upstream-library repo location. Per-package implementation issues are deliberately out of scope — they get filed in a follow-up umbrella issue once the conventions are validated.
 
 ## Motivation
 
@@ -184,6 +184,32 @@ Once the RFC is settled *and* the MUI prototype validates the conventions, file 
 
 The RFC document is linked from each child issue as the conventions reference. Each child issue scopes its own work: location (this repo's `downstream-prototypes/` graduation path, separate repo, or `shinyhelpers` monorepo) gets decided per-package based on team capacity at the time.
 
+## Follow-up: scaffolding Claude skill
+
+Once the conventions in §4 are stable and the MUI prototype validates them, build a Claude Code skill — working name `scaffold-shinyreact-helper` — that takes a repo location for an upstream React library and produces a scaffolded helper package matching this RFC.
+
+**Why it belongs in this RFC's orbit.** Codifying conventions in prose is necessary but not sufficient; a skill that *enacts* the conventions catches drift the prose misses, and makes the RFC's value concrete (new package in minutes, not days). It also forces the conventions to be precise enough to mechanically apply — a useful pressure on §4.
+
+**Inputs.**
+- Path (local) or URL (GitHub) to the upstream React library's source repo, or an npm package name.
+- Short package name to use for namespacing and Python module name (e.g., `mantine` → `shinymantine`, catalog prefix `mantine:`).
+- Target location on disk (defaults to `downstream-prototypes/<name>/`).
+
+**Outputs.**
+- Directory matching the `downstream-prototypes/shinymui/` layout established by the MUI prototype.
+- `js/` with Vite IIFE config, externalized React, a `registerComponents()` entry point, and one stub component registration so the bundle is verifiable end-to-end.
+- `pkg-py/` with package skeleton, one example factory function, `_dep()` constructor wired to the built JS, and a `reactive_output` subclass stub commented out (per §4.4 — only if needed).
+- A minimal example app under `<scaffold>/example/` that mounts the stub component, used as a smoke test that the new package loads.
+- A `README.md` pointing at this RFC as the conventions reference.
+
+**Explicit non-goals (deferred).**
+- Auto-discovering all components in the upstream library and generating per-component factories. The skill scaffolds *one* example component; populating the rest is the package author's job (and the right hook for an LLM-assisted second pass, but not in this skill's first version).
+- Theming/styling integration — depends on per-category answers from §5.
+- PyPI/npm publishing setup, CI workflows — deferred until the repo-vs-monorepo choice is made (§4.6).
+- Per-category divergence handling. The skill targets the MUI-baseline shape (category 1). Headless / copy-paste / specialized packages will need either skill flags or separate skills once their shapes are pinned down (§7).
+
+**Lifecycle.** The skill lives at `.claude/skills/scaffold-shinyreact-helper/` in this repo. As §4 evolves, the skill is updated in the same PR — keeping prose and tool in lockstep is the whole point. When the conventions stabilize, the skill can be promoted to a shareable plugin.
+
 ## Risks
 
 - **Conventions ossify before the prototype reveals problems.** Mitigation: §5 (open questions) is explicitly designed for revision after the prototype lands. The RFC is a living document until the first real per-package issue is filed.
@@ -197,3 +223,4 @@ The RFC document is linked from each child issue as the conventions reference. E
 - Conventions in §4 are stable enough that a contributor can read the RFC + look at `downstream-prototypes/shinymui/` and build a second helper package without further consultation.
 - Each open question in §5 has a concrete answer (or a documented decision to defer to per-package issues).
 - The MUI prototype demonstrates at least one component per archetype (basic factory, controlled input, layout/children, specialized) wired end-to-end against a working example app.
+- The `scaffold-shinyreact-helper` skill, run against a fresh upstream-library repo location, produces a new `downstream-prototypes/<name>/` directory whose example app loads in a browser without manual edits.
