@@ -165,3 +165,51 @@ cd {{target_dir}}/pkg-py && uv run python -m pytest tests/test_factories.py -v
 Or fall back to `.venv/bin/python -m pytest tests/test_factories.py -v` if `uv run` has venv-resolution issues.
 
 Expected: `1 passed` (the stub factory test).
+
+### Step 9: Programmatic smoke test
+
+Start the example app, verify HTTP 200 + bundle loads, then stop. Use a port unlikely to collide (8765 is the convention used by the shinymui prototype's smoke tests).
+
+```bash
+uv run shiny run --port 8765 {{target_dir}}/example/app.py &
+SHINY_PID=$!
+sleep 4
+
+# Page returns 200
+curl -s -o /tmp/scaffold_smoke.html -w "%{http_code}\n" http://localhost:8765/
+
+# HTML references the bundle URL with the right name
+grep -c "{{pkg}}-" /tmp/scaffold_smoke.html
+
+# Bundle URL itself returns 200
+BUNDLE_URL=$(grep -oE '/lib/{{pkg}}-[^"]+/{{pkg}}\.js' /tmp/scaffold_smoke.html | head -1)
+curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:8765$BUNDLE_URL"
+
+# Cleanup
+kill $SHINY_PID 2>/dev/null || true
+pkill -f "shiny run --port 8765" 2>/dev/null || true
+```
+
+Expected outputs:
+- First curl: `200`
+- grep count: at least `1`
+- Second curl: `200`
+
+If any of these fail, surface the failure to the user and stop. Common causes: port 8765 in use (try 8766), `shinyreact` not installed in the venv, bundle copy failed.
+
+### Step 10: Final summary
+
+Report back to the user:
+
+- Number of files created (count by walking `{{target_dir}}`)
+- Bundle size from `ls -lh {{target_dir}}/js/dist/{{pkg}}.js`
+- All verifications that passed (build, lint, factory test, HTTP 200, bundle 200)
+- **Next steps for the package author:**
+  - Edit `{{target_dir}}/js/src/components/{{Stub}}.tsx` to use the real `{{upstream_pkg}}` component instead of the plain `<button>`
+  - Add more factories in `{{target_dir}}/pkg-py/src/{{pkg}}/_components.py` following the pattern
+  - Add tests in `{{target_dir}}/pkg-py/tests/test_factories.py` for each new factory
+  - For styled-component libraries: install peer deps like `@emotion/react @emotion/styled`
+  - Reference `downstream-prototypes/shinymui/` for examples of more complex patterns (children/composition, server-pushed data via `useShinyOutputValue`)
+  - When ready to commit: `git add {{target_dir}}/` then commit with a descriptive message
+
+Do **not** commit the scaffold — leave that decision to the package author.
