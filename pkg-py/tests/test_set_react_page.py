@@ -61,7 +61,12 @@ def test_build_page_fn_reads_index_html(tmp_path: Path) -> None:
 
 
 def test_build_page_fn_reads_index_html_once(tmp_path: Path) -> None:
-    """index.html is read at construction time, not per page render."""
+    """index.html is read at construction time, not per page render.
+
+    See issue #82 — re-reading from inside the page_fn closure would not
+    actually help, because Shiny Express only invokes this closure once at
+    app startup. The fix requires upstream Shiny support.
+    """
     index = tmp_path / "index.html"
     index.write_text("<div>original</div>")
 

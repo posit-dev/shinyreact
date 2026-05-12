@@ -8,7 +8,7 @@ from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList, tags
 from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 
-from ._output import _dep_page
+from ._output import _dep_page, _file_mtime_int
 
 
 def page_bare(
@@ -128,7 +128,8 @@ def page_react_dep(
     dep_name = src_dir.name
 
     js_path = src_dir / js_file
-    version = str(int(js_path.stat().st_mtime)) if js_path.exists() else "0"
+    mtime = _file_mtime_int(js_path)
+    version = str(mtime) if mtime is not None else "0"
 
     return HTMLDependency(
         name=dep_name,
@@ -146,6 +147,12 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
     the page body. Dependencies from traditional Shiny renderers (e.g.
     ``@render.data_frame``) are discovered automatically and injected into
     the page head.
+
+    .. note::
+
+       Edits to ``index.html`` require restarting the Shiny server — see the
+       comment in :func:`_build_react_page_fn` for the upstream Shiny Express
+       constraint that prevents per-request re-reads.
 
     Path resolution
     ---------------
@@ -204,6 +211,24 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
 def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
+
+    # `index.html` is read once at construction time and closed over.
+    # See issue #82 (https://github.com/posit-dev/shinyreact/issues/82) for
+    # why a per-request re-read can't be implemented from inside this package
+    # alone:
+    #
+    # Shiny Express's `shiny/express/_run.py` calls `run_express(...).tagify()`
+    # ONCE at app startup. The resulting `app_ui` is a static `RenderedHTML`
+    # whose bytes are served verbatim for every `/` request (see
+    # `shiny/_app.py` around `if callable(self.ui): ... else: ui = self.ui`).
+    # Express only wraps `app_ui` in a per-request callable when
+    # `app_opts(bookmark_store=...)` is set to something other than `"disable"`
+    # — the only knob exposed today that flips static → callable.
+    #
+    # So this closure could re-read on mtime change all it wants; it's only
+    # invoked once. A real fix needs an upstream py-shiny change adding an
+    # opt-in for per-request `app_ui` independent of bookmarking. Until then,
+    # editing `www/index.html` requires restarting the Shiny server.
     index_html = index_path.read_text()
 
     def _react_page_fn(*args: Any) -> Tag:
