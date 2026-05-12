@@ -85,3 +85,14 @@ def slider(
             "debounce_ms": debounce_ms,
         },
     )
+
+
+def card(
+    title: str | None = None,
+    *children: shinyreact.Node,
+) -> shinyreact.Node:
+    """Render an MUI Card. Children become the card body."""
+    props: dict[str, object] = {}
+    if title is not None:
+        props["title"] = title
+    return shinyreact.Node(type="mui:Card", props=props, children=list(children))

@@ -25,12 +25,16 @@ def server(input: Inputs, output: Outputs, session: Session):
             },
             children=[
                 shinyreact.Node(type="h1", props={"children": "shinymui prototype"}),
-                shinymui.button("Save with icon", input_id="btn1", start_icon="Save"),
-                shinyreact.Node(type="div", props={"children": f"Button btn1 clicks: {clicks}"}),
-                shinymui.slider(input_id="age", label="Age", default_value=25, min=0, max=100),
-                shinyreact.Node(type="div", props={"children": f"Age value: {age}"}),
-                shinymui.text_field(input_id="name", label="Your name", default_value="World"),
-                shinyreact.Node(type="div", props={"children": f"Hello, {name}!"}),
+                shinymui.card(
+                    "Demo Card",
+                    shinymui.text_field(input_id="name", label="Your name", default_value="World"),
+                    shinymui.slider(input_id="age", label="Age", default_value=25, min=0, max=100),
+                    shinymui.button("Save", input_id="btn1", start_icon="Save"),
+                    shinyreact.Node(
+                        type="div",
+                        props={"children": f"Hello, {name}! Age: {age}. Clicks: {clicks}."},
+                    ),
+                ),
             ],
         )
 

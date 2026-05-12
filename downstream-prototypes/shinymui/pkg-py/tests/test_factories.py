@@ -44,3 +44,12 @@ def test_slider_factory():
     assert node.props["min"] == 0
     assert node.props["max"] == 100
     assert node.props["step"] == 1
+
+
+def test_card_factory_with_children():
+    child = shinymui.button("X", input_id="x")
+    node = shinymui.card("My title", child)
+    assert node.type == "mui:Card"
+    assert node.props["title"] == "My title"
+    assert len(node.children) == 1
+    assert node.children[0].type == "mui:Button"
