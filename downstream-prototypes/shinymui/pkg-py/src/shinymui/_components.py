@@ -96,3 +96,21 @@ def card(
     if title is not None:
         props["title"] = title
     return shinyreact.Node(type="mui:Card", props=props, children=list(children))
+
+
+def data_grid(
+    *,
+    output_id: str,
+    height: int = 400,
+) -> shinyreact.Node:
+    """Render an MUI DataGrid consuming an output via useShinyOutputValue.
+
+    The server-side renderer for ``output_id`` must return a dict shaped
+    ``{"rows": [...], "columns": [{"field": str, "headerName": str, ...}]}``.
+    All other DataGrid props are deferred — the prototype exposes only the
+    minimum needed to validate the specialized-category pattern.
+    """
+    return shinyreact.Node(
+        type="mui:DataGrid",
+        props={"output_id": output_id, "height": height},
+    )

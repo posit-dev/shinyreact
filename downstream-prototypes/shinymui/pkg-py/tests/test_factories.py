@@ -53,3 +53,10 @@ def test_card_factory_with_children():
     assert node.props["title"] == "My title"
     assert len(node.children) == 1
     assert node.children[0].type == "mui:Button"
+
+
+def test_data_grid_factory():
+    node = shinymui.data_grid(output_id="grid1", height=400)
+    assert node.type == "mui:DataGrid"
+    assert node.props["output_id"] == "grid1"
+    assert node.props["height"] == 400
