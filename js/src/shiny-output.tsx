@@ -1,9 +1,20 @@
 import React, { useEffect, useRef } from "react";
+import { useNamespacedId } from "./shiny-react/ShinyModuleContext";
 
 export interface ShinyOutputProps
   extends React.HTMLAttributes<HTMLElement> {
   id: string;
   tagName?: string;
+  /**
+   * Namespace to prefix `id` with on the rendered element.
+   *
+   * - `undefined` (default): use the namespace from the enclosing
+   *   `ShinyModuleProvider`, or no prefix if there isn't one.
+   * - A string: override the context namespace.
+   * - `null`: opt out of context — render the bare `id`. Useful when `id`
+   *   already contains a prefix (e.g. ImageOutput's clientdata IDs).
+   */
+  namespace?: string | null;
 }
 
 /**
@@ -32,8 +43,11 @@ export interface ShinyOutputProps
 export function ShinyOutput({
   id,
   tagName = "div",
+  namespace: explicitNamespace,
   ...rest
 }: ShinyOutputProps): React.JSX.Element {
+  const namespacedId = useNamespacedId(id, explicitNamespace);
+
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -45,8 +59,8 @@ export function ShinyOutput({
       // TODO(future): expose an `onError?: (err, phase) => void` prop so
       // downstream callers can integrate telemetry or React error boundaries.
       console.error(
-        `[shinyreact] ShinyOutput "${id}" ${phase} failed:`,
-        { id, phase, error: err },
+        `[shinyreact] ShinyOutput "${namespacedId}" ${phase} failed:`,
+        { id: namespacedId, phase, error: err },
       );
     };
 
@@ -66,7 +80,7 @@ export function ShinyOutput({
         logError(err, "unbindAll");
       }
     };
-  }, [id, tagName]);
+  }, [namespacedId, tagName]);
 
-  return React.createElement(tagName, { id, ref, ...rest });
+  return React.createElement(tagName, { id: namespacedId, ref, ...rest });
 }
