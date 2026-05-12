@@ -115,6 +115,8 @@ How does MUI's `ThemeProvider` get configured? Where does the theme object live 
 
 The MUI prototype will pick one approach; the RFC reports what worked and flags whether the same shape transfers to other libraries (Mantine, Chakra also have `Provider` patterns; Radix has `Theme`; specialized libs vary widely).
 
+**Prototype finding:** The prototype did NOT integrate theming. Each MUI component renders with MUI's default theme; no `ThemeProvider` wraps the React tree. This is deferred until a real `shinymui` package. The MUI pattern would require wrapping the entire React tree inside `ShinyreactRenderer` with `<ThemeProvider theme={...}>`, which is a `shinyreact`-level concern (likely a per-page-react hook or a "provider chain" registration mechanism). **New open question raised:** where do `Provider`-style wrappers register in `shinyreact`? Mantine, Chakra, and Radix have analogous `Provider` patterns; the answer should generalize across categories.
+
 ### Slot / compound-component APIs
 
 MUI's `Button` accepts `startIcon` / `endIcon` props that are React nodes. Radix uses compound components (`Dialog.Root`, `Dialog.Trigger`, `Dialog.Content`). How do these map to the Spec model where `props` is JSON?
@@ -124,9 +126,13 @@ Candidate answers to test in the prototype:
 - Reserve special prop names (`startIcon` becomes a child slot, not a JSON prop).
 - For Radix-style compound APIs, expose each piece as its own factory.
 
+**Prototype finding:** Slot props for MUI Buttons (`startIcon`, `endIcon`) were passed as icon-name strings (e.g. `start_icon="Save"`) and resolved client-side via `@mui/icons-material`. This avoided the alternative of teaching the renderer to walk `Element`-valued props. The convention generalizes: prefer string-keyed slot lookups when the library exposes a finite, named catalog (icons, variants, theme tokens); fall back to allowing nested `Element` references in props when the slot accepts arbitrary user-defined React content. The latter pattern was NOT exercised in the prototype — it remains an open question for compound-component libraries like Radix where `Dialog.Trigger`/`Dialog.Content` siblings would need to compose as named slots in a single factory or as separate factories returning matching `Element` types.
+
 ### Controlled inputs vs server-pushed values
 
 When MUI's `<Slider value={x} onChange={...} />` wraps `useShinyInput`, what's the contract? Does the helper package provide a single `mui.slider(id, ...)` factory that handles both directions, or does the consumer wire `useShinyInput` themselves?
+
+**Prototype finding:** Three patterns surfaced cleanly across the 5 components. (1) **Action-button events** (Button): `useShinyInput<number>(input_id, 0, { debounceMs: 0, priority: "event" })` + `onClick` increments a counter; server-side uses `@reactive.event(input.<id>, ignore_init=True)`. (2) **Value-tracking inputs** (TextField, Slider): `useShinyInput` with library-appropriate `debounceMs` (250ms for text, 100ms for slider drags); the component is fully controlled. (3) **Server-pushed outputs** (DataGrid): `useShinyOutputValue<Payload | null>(output_id, null)` with a `"Loading…"` fallback while the value is null. The factory naming convention (`input_id` for inputs, `output_id` for outputs) reads clearly at the call site and should be codified as the contract.
 
 ### Per-category divergences
 
@@ -135,6 +141,8 @@ The prototype is MUI (category 1). The RFC will flag what's expected to *differ*
 - **Headless (category 2)** — no CSS in the bundle; consumer ships their own styles. Likely needs documented styling integration patterns rather than a styling story baked into the helper package.
 - **Copy-paste (category 3)** — the consumer owns the component source. The helper package may ship *no JS bundle at all* — just Python factories that target the consumer's already-copied components. This is a meaningfully different shape and may need its own RFC follow-up.
 - **Specialized (category 5)** — AG Grid has hundreds of props. Per-prop Python typing isn't tractable; the package probably exposes a thin pass-through (`aggrid.grid(props_dict)`) plus a few common-case helpers.
+
+**Prototype finding:** All five components fit the same shape — Python factory returns `shinyreact.Node(type="mui:<Name>", props=...)`, JS component reads `element.props` after registration. DataGrid stretched but did not break the shape: its `output_id` + server-side payload (`{rows, columns}`) is the per-prop-typing workaround flagged in §4.3 — the factory exposes only `output_id` and `height`, deferring MUI DataGrid's hundreds of props to the server payload. Bundle size grew substantially with each MUI dependency (see §6 "Bundle size baseline" for numbers). Real-world specialized-category packages should consider tree-shakable imports (named imports rather than `import * as MuiIcons`) and lazy-loading heavy components (e.g., DataGrid behind a dynamic import) to keep the baseline payload reasonable.
 
 ## MUI prototype
 
@@ -156,6 +164,26 @@ The prototype is MUI (category 1). The RFC will flag what's expected to *differ*
 - Built alongside the RFC; findings folded back into §4 and §5 as discoveries land.
 - Throwaway — gets superseded by the real `shinymui` package once the umbrella issue (see §8) spawns per-package work.
 - Not published to PyPI/npm; no CI gating; lives in `downstream-prototypes/` indefinitely as a reference until removed.
+
+### Bundle size baseline
+
+The built `dist/shinymui.js` totaled 4.3 MB minified (876 KB gzipped) covering all 5 components. Growth across tasks:
+
+| Step | Components added | Raw size | Gzip | Delta (raw) |
+|------|------------------|----------|------|-------------|
+| Task 3 | empty registry  | 129 B    | n/a  | baseline    |
+| Task 6 | Button + `@mui/material` core + `@mui/icons-material` | 3,942 KB | 707 KB | +~3.8 MB |
+| Task 7 | TextField | 4,021 KB | 729 KB | +~80 KB |
+| Task 8 | Slider    | 4,045 KB | 737 KB | +~24 KB |
+| Task 9 | Card      | 4,048 KB | —    | +~3 KB |
+| Task 10 | DataGrid + `@mui/x-data-grid` | 4,514 KB | 876 KB | +~466 KB |
+
+Most of the weight is in three places: `@mui/material` core (~3 MB, paid on the first component), `@mui/icons-material` (large because the prototype uses `import * as MuiIcons` for runtime icon-name lookup), and `@mui/x-data-grid` (~466 KB).
+
+Implications for real packages:
+- **Tree-shake icons.** The prototype trades bundle size for slot-API simplicity (string icon names look up against a wildcard import). A real package should import only the icons it ships, or expose a separate icon catalog so the consumer's bundler can tree-shake.
+- **Lazy-load heavy widgets.** Specialized-category components (DataGrid, charts, rich editors) should be reachable via dynamic `import()` so the baseline payload doesn't include them when unused.
+- **Provider centralization.** If theming integration adds a `ThemeProvider` wrapper, it should be the only theme-related code shipped in the base bundle; component-specific styling overrides belong with their components.
 
 ## Per-category notes
 
@@ -224,3 +252,5 @@ Once the conventions in §4 are stable and the MUI prototype validates them, bui
 - Each open question in §5 has a concrete answer (or a documented decision to defer to per-package issues).
 - The MUI prototype demonstrates at least one component per archetype (basic factory, controlled input, layout/children, specialized) wired end-to-end against a working example app.
 - The `scaffold-shinyreact-helper` skill, run against a fresh upstream-library repo location, produces a new `downstream-prototypes/<name>/` directory whose example app loads in a browser without manual edits.
+
+**Status (2026-05-12):** First three criteria satisfied by `downstream-prototypes/shinymui/` (5 components, all archetypes covered, validated via `downstream-prototypes/shinymui/example/app.py`). The scaffolding-skill criterion remains open and is the subject of the follow-up plan.
