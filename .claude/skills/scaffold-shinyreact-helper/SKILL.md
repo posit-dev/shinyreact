@@ -150,10 +150,27 @@ cp {{target_dir}}/js/dist/{{pkg}}.js {{target_dir}}/pkg-py/src/{{pkg}}/www/{{pkg
 uv pip install -e {{target_dir}}/pkg-py
 ```
 
-If this fails because `shinyreact` isn't resolvable (the prototype shinymui hit this), the workaround is to install into the parent repo's venv directly:
+If this fails (the prototype shinymui hit this; in sandboxed environments `uv pip` may panic), try these fallbacks in order:
 
 ```bash
+# Fallback 1: use venv pip directly
 .venv/bin/pip install -e {{target_dir}}/pkg-py
+
+# Fallback 2: venv Python with pip module
+.venv/bin/python -m pip install -e {{target_dir}}/pkg-py
+```
+
+If all pip-based installs fail (e.g., pip is not installed in the uv-managed venv), you can manually create the editable install by adding a `.pth` file:
+
+```bash
+SITE=$(python -c "import site; print(site.getsitepackages()[0])" 2>/dev/null \
+  || .venv/bin/python -c "import site; print(site.getsitepackages()[0])")
+echo "{{target_dir}}/pkg-py/src" > "$SITE/_editable_impl_{{pkg}}.pth"
+```
+
+Verify the install succeeded with:
+```bash
+.venv/bin/python -c "import {{pkg}}; print('{{pkg}} ok')"
 ```
 
 ### Step 8: Run the factory test
@@ -171,7 +188,9 @@ Expected: `1 passed` (the stub factory test).
 Start the example app, verify HTTP 200 + bundle loads, then stop. Use a port unlikely to collide (8765 is the convention used by the shinymui prototype's smoke tests).
 
 ```bash
+# Start the app (fall back to .venv/bin/python -m shiny run if uv run panics)
 uv run shiny run --port 8765 {{target_dir}}/example/app.py &
+# OR: .venv/bin/python -m shiny run --port 8765 {{target_dir}}/example/app.py &
 SHINY_PID=$!
 sleep 4
 
@@ -182,8 +201,9 @@ curl -s -o /tmp/scaffold_smoke.html -w "%{http_code}\n" http://localhost:8765/
 grep -c "{{pkg}}-" /tmp/scaffold_smoke.html
 
 # Bundle URL itself returns 200
-BUNDLE_URL=$(grep -oE '/lib/{{pkg}}-[^"]+/{{pkg}}\.js' /tmp/scaffold_smoke.html | head -1)
-curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:8765$BUNDLE_URL"
+# Note: Shiny renders src="lib/..." (no leading slash) — strip the leading / from the pattern
+BUNDLE_URL=$(grep -oE 'lib/{{pkg}}-[^"]+/{{pkg}}\.js' /tmp/scaffold_smoke.html | head -1)
+curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:8765/$BUNDLE_URL"
 
 # Cleanup
 kill $SHINY_PID 2>/dev/null || true
