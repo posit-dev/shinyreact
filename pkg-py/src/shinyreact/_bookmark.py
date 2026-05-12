@@ -51,20 +51,29 @@ def _restore_script_tag() -> HTMLDependency | None:
     if not values:
         return None
 
-    # Embed the JSON as a JS expression — JSON is a syntactic subset of JS,
-    # so the browser parses it directly without needing JSON.parse() on a
-    # quoted string. This avoids the JS-string-literal escaping pitfall:
-    # if we wrote JSON.parse('...JSON...'), values like \"it's\" would
-    # terminate the JS string, and \n in JSON would be interpreted as a
-    # literal newline by the JS parser (invalid JSON for JSON.parse).
+    # Wrap the JSON in JSON.parse(<js-string-literal>) so values whose
+    # keys happen to be "__proto__" or "constructor" survive intact.
+    # A bare JS object literal ``{"__proto__": ...}`` treats "__proto__"
+    # as the prototype setter rather than a data property; JSON.parse
+    # creates them as ordinary own properties.
     #
-    # json.dumps defaults to ensure_ascii=True, so non-ASCII (including the
-    # JS-only-illegal U+2028/U+2029) becomes \\uXXXX escapes — safe in both
-    # JSON and JS. The one transform we still need is "</" -> "<\\/" so the
-    # JSON content cannot prematurely close the surrounding <script> tag.
-    safe_json = json.dumps(values).replace("</", "<\\/")
+    # Two layers of escaping:
+    #   1. Inside the JSON payload: replace "</" with "<\\/" so the
+    #      embedded JSON can't prematurely close the surrounding <script>
+    #      tag.
+    #   2. Outside, wrapping the JSON as a JS string literal: a second
+    #      json.dumps double-encodes (quotes + escapes) the JSON text so
+    #      it parses as a normal JS string — avoiding the trap where
+    #      raw \\n / single-quote characters in JSON would be interpreted
+    #      by the JS parser before JSON.parse sees them.
+    #
+    # ``json.dumps`` defaults to ensure_ascii=True, so non-ASCII
+    # (including the JS-only-illegal U+2028 / U+2029) is emitted as
+    # \\uXXXX escapes — safe in both layers.
+    json_payload = json.dumps(values).replace("</", "<\\/")
+    js_string_literal = json.dumps(json_payload)
     js = (
         "window.shinyreact = window.shinyreact || {};"
-        f"window.shinyreact._restore = {safe_json};"
+        f"window.shinyreact._restore = JSON.parse({js_string_literal});"
     )
     return head_content(tags.script(HTML(js)))

@@ -56,14 +56,22 @@ def _extract_restore_payload(head_html: str) -> object:
 
     The script body is shaped:
 
-        window.shinyreact = window.shinyreact || {};window.shinyreact._restore = <JSON>;
+        window.shinyreact._restore = JSON.parse(<js-string-literal>);
 
-    We pull out ``<JSON>``, undo the ``</`` -> ``<\\/`` escape we apply
-    before embedding, and parse it back with :func:`json.loads`.
+    Two unescape layers:
+
+    1. ``json.loads`` on the JS string literal — JS string-literal escapes
+       (``\\\\``, ``\\"``, ``\\/``, ``\\u…``) are a subset of JSON's, so
+       ``json.loads`` reads it correctly.
+    2. ``json.loads`` again on the inner JSON text to recover the value.
     """
-    match = re.search(r"window\.shinyreact\._restore = (.*);</script>", head_html)
+    match = re.search(
+        r'window\.shinyreact\._restore = JSON\.parse\((".+?")\);',
+        head_html,
+    )
     assert match is not None, head_html
-    return json.loads(match.group(1).replace("<\\/", "</"))
+    inner_json_text = json.loads(match.group(1))
+    return json.loads(inner_json_text)
 
 
 def test_restore_script_tag_emits_head_content_with_json() -> None:
@@ -108,6 +116,26 @@ def test_restore_script_tag_values_with_control_chars_are_safe() -> None:
     assert _extract_restore_payload(head_html) == {
         "text": "line1\nline2\twith\ttabs"
     }
+
+
+def test_restore_script_tag_handles_proto_keys_safely() -> None:
+    # Regression: a bare JS object literal ``{"__proto__": value}`` would
+    # interpret "__proto__" as the prototype setter rather than a data
+    # property. We emit ``JSON.parse(...)`` so JSON's literal interpretation
+    # wins — keys named "__proto__" or "constructor" round-trip as ordinary
+    # own properties.
+    ctx = RestoreContext()
+    ctx.input = RestoreInputSet({"__proto__": "evil", "constructor": "x", "ok": 1})
+    with restore_context_cm(ctx):
+        dep = _restore_script_tag()
+    assert dep is not None
+    head_html = _render_dep_to_head(dep)
+    payload = _extract_restore_payload(head_html)
+    assert payload == {"__proto__": "evil", "constructor": "x", "ok": 1}
+    # Confirm the wire format uses JSON.parse, not a bare object literal.
+    assert "JSON.parse(" in head_html
+    assert "window.shinyreact._restore =" in head_html
+    assert "window.shinyreact._restore = {" not in head_html
 
 
 def test_restore_script_tag_escapes_closing_script_tag() -> None:
@@ -193,8 +221,7 @@ def test_page_react_emits_restore_script_when_bookmark_active() -> None:
     with restore_context_cm(ctx):
         html = _rendered_html(page_react(title="t"))
     assert "window.shinyreact._restore" in html
-    assert '"txt"' in html
-    assert '"hello"' in html
+    assert _extract_restore_payload(html) == {"txt": "hello"}
 
 
 def test_page_react_no_restore_script_without_bookmark() -> None:
@@ -214,7 +241,7 @@ def test_set_react_page_emits_restore_script_when_bookmark_active(
     with restore_context_cm(ctx):
         html = _rendered_html(page_fn())
     assert "window.shinyreact._restore" in html
-    assert '"a"' in html
+    assert _extract_restore_payload(html) == {"a": 1}
 
 
 def test_set_react_page_no_restore_script_without_bookmark(tmp_path: Path) -> None:
