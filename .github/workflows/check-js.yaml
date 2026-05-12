@@ -1,4 +1,4 @@
-name: verify-js-built
+name: check-js
 
 on:
   push:
@@ -7,19 +7,19 @@ on:
       - "js/**/*"
       - "pkg-py/src/shinyreact/www/**"
       - "pkg-r/inst/lib/shiny/**"
-      - ".github/workflows/verify-js-built.yaml"
+      - ".github/workflows/check-js.yaml"
   pull_request:
     paths:
       - "js/**/*"
       - "pkg-py/src/shinyreact/www/**"
       - "pkg-r/inst/lib/shiny/**"
-      - ".github/workflows/verify-js-built.yaml"
+      - ".github/workflows/check-js.yaml"
 
 permissions:
   contents: read
 
 jobs:
-  verify_js_built:
+  check_js:
     runs-on: ubuntu-latest
 
     steps:
