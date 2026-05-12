@@ -23,7 +23,13 @@ export function applyRestoredValues(registry: InputRegistry): void {
   const ns = (win.shinyreact = win.shinyreact || {});
   const restore = ns._restore;
 
-  const applied: Record<string, unknown> = {};
+  // Null-prototype object for the debug snapshot so an assignment with key
+  // "__proto__" or "constructor" cannot clobber the prototype chain. Even
+  // though Python emits the payload via `JSON.parse(...)` (which already
+  // treats those keys as ordinary properties), the snapshot exposed on
+  // `window.shinyreact._restore["-values"]` is constructed from untrusted
+  // input ids — defend in depth at the assignment site as well.
+  const applied = Object.create(null) as Record<string, unknown>;
   if (restore && typeof restore === "object" && !restore["-applied"]) {
     for (const [id, value] of Object.entries(restore)) {
       registry.add(id, value);
@@ -39,5 +45,5 @@ export function applyRestoredValues(registry: InputRegistry): void {
   }
 
   // No restore data at all — establish the uniform post-init sentinel.
-  ns._restore = { "-applied": true, "-values": {} };
+  ns._restore = { "-applied": true, "-values": applied };
 }

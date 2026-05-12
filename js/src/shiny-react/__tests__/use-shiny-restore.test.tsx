@@ -98,6 +98,32 @@ describe("applyRestoredValues", () => {
     expect(subscriber).toHaveBeenCalledWith("hello");
     unsub();
   });
+
+  it("uses a null-prototype object for the -values snapshot to prevent prototype pollution", () => {
+    // Mirror the wire shape that Python emits via `JSON.parse(...)` — that
+    // path turns "__proto__" / "constructor" into own data properties, not
+    // prototype setters. We construct the restore object the same way so
+    // the test stresses the assignment side of applyRestoredValues, not
+    // the JS object-literal quirk.
+    const restore: Record<string, unknown> = JSON.parse(
+      '{"__proto__":"evil","constructor":"x","foo":"ok"}',
+    );
+    (window as any).shinyreact = { _restore: restore };
+    const registry = new InputRegistry();
+
+    applyRestoredValues(registry);
+
+    const values = (window as any).shinyreact._restore["-values"];
+    // Null prototype: Object.getPrototypeOf returns null.
+    expect(Object.getPrototypeOf(values)).toBeNull();
+    // The "__proto__" key landed as a real own property, did not become the prototype.
+    expect(Object.prototype.hasOwnProperty.call(values, "__proto__")).toBe(true);
+    expect(values["__proto__"]).toBe("evil");
+    expect(values["constructor"]).toBe("x");
+    expect(values["foo"]).toBe("ok");
+    // Object.prototype was not polluted by this run.
+    expect(({} as Record<string, unknown>).evil).toBeUndefined();
+  });
 });
 
 // Force `useShinyInitialized` to flip to true synchronously for these tests.
