@@ -60,3 +60,28 @@ def text_field(
             "debounce_ms": debounce_ms,
         },
     )
+
+
+def slider(
+    *,
+    input_id: str,
+    label: str = "",
+    default_value: float = 0,
+    min: float = 0,
+    max: float = 100,
+    step: float = 1,
+    debounce_ms: int = 100,
+) -> shinyreact.Node:
+    """Render an MUI Slider bound to a Shiny input."""
+    return shinyreact.Node(
+        type="mui:Slider",
+        props={
+            "input_id": input_id,
+            "label": label,
+            "default_value": default_value,
+            "min": min,
+            "max": max,
+            "step": step,
+            "debounce_ms": debounce_ms,
+        },
+    )

@@ -9,6 +9,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @shinyreact.reactive_output
     def main():
         name = input.name() or ""
+        age = input.age() or 0
         clicks = input.btn1() or 0
         return shinyreact.Node(
             type="div",
@@ -26,6 +27,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 shinyreact.Node(type="h1", props={"children": "shinymui prototype"}),
                 shinymui.button("Save with icon", input_id="btn1", start_icon="Save"),
                 shinyreact.Node(type="div", props={"children": f"Button btn1 clicks: {clicks}"}),
+                shinymui.slider(input_id="age", label="Age", default_value=25, min=0, max=100),
+                shinyreact.Node(type="div", props={"children": f"Age value: {age}"}),
                 shinymui.text_field(input_id="name", label="Your name", default_value="World"),
                 shinyreact.Node(type="div", props={"children": f"Hello, {name}!"}),
             ],

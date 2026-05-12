@@ -27,3 +27,20 @@ def test_text_field_factory():
     assert node.props["label"] == "Your name"
     assert node.props["default_value"] == "Anonymous"
     assert node.props["helper_text"] == "Required"
+
+
+def test_slider_factory():
+    node = shinymui.slider(
+        input_id="age",
+        label="Age",
+        default_value=25,
+        min=0,
+        max=100,
+        step=1,
+    )
+    assert node.type == "mui:Slider"
+    assert node.props["input_id"] == "age"
+    assert node.props["default_value"] == 25
+    assert node.props["min"] == 0
+    assert node.props["max"] == 100
+    assert node.props["step"] == 1
