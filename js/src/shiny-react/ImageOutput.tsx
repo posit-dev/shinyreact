@@ -158,9 +158,13 @@ export function ImageOutput({
   onRecalculating?: (isRecalculating: boolean) => void;
   namespace?: string | null;
 }) {
-  // Apply namespace from context or explicit option
+  // Apply namespace: explicit option wins over context. Pass `null` to opt
+  // out of the provider context entirely (mirrors useShinyInput / ShinyOutput
+  // — `??` would conflate `null` with `undefined` and silently fall through
+  // to the context).
   const contextNamespace = useShinyModuleNamespace();
-  const namespace = explicitNamespace ?? contextNamespace;
+  const namespace =
+    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
   const namespacedId = applyNamespace(id, namespace);
 
   // IDs below already have the namespace embedded (via namespacedId), so we
