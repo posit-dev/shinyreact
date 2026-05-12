@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from htmltools import HTMLDependency, Tag
-from shinyreact._output import ui_output
+from shinyreact._output import _SHINYREACT_JS_PATH, _dep, ui_output
 
 
 def test_ui_output_returns_tag():
@@ -31,6 +31,18 @@ def test_ui_output_accepts_extra_deps():
 def test_ui_output_no_extra_deps_by_default():
     result = ui_output("my-output")
     assert isinstance(result, Tag)
+
+
+def test_dep_version_tracks_bundle_mtime():
+    """The shinyreact HTMLDependency version reflects the bundle's mtime.
+
+    Cache-busts the browser whenever ``make update-dist`` rewrites the bundle.
+    """
+    assert _SHINYREACT_JS_PATH.exists(), (
+        "shinyreact.js missing — run `make update-dist`"
+    )
+    expected = str(int(_SHINYREACT_JS_PATH.stat().st_mtime))
+    assert str(_dep().version) == expected
 
 
 def test_ui_output_script_has_defer():
