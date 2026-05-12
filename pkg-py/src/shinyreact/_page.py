@@ -8,7 +8,7 @@ from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList, tags
 from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 
-from ._output import _dep
+from ._output import _dep, _file_mtime_int
 
 
 def page_bare(
@@ -128,7 +128,8 @@ def page_react_dep(
     dep_name = src_dir.name
 
     js_path = src_dir / js_file
-    version = str(int(js_path.stat().st_mtime)) if js_path.exists() else "0"
+    mtime = _file_mtime_int(js_path)
+    version = str(mtime) if mtime is not None else "0"
 
     return HTMLDependency(
         name=dep_name,
@@ -142,10 +143,10 @@ def page_react_dep(
 def set_react_page(path: str | Path = "www/index.html") -> None:
     """Set the page for this Express app to an HTML file hosting a React app.
 
-    Reads the specified HTML file once (cached at call time) and uses it as
-    the page body. Dependencies from traditional Shiny renderers (e.g.
-    ``@render.data_frame``) are discovered automatically and injected into
-    the page head.
+    Reads the specified HTML file on every page render so edits to the file
+    show up after a plain browser refresh — no Python restart required.
+    Dependencies from traditional Shiny renderers (e.g. ``@render.data_frame``)
+    are discovered automatically and injected into the page head.
 
     Path resolution
     ---------------
@@ -204,9 +205,21 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
 def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
-    index_html = index_path.read_text()
+
+    cached_mtime: int | None = None
+    cached_html: str = ""
 
     def _react_page_fn(*args: Any) -> Tag:
+        nonlocal cached_mtime, cached_html
+
+        # Re-read only when the file's mtime changes, so users editing
+        # www/index.html see their changes after a browser refresh without
+        # restarting the server, but unchanged files don't get re-read.
+        mtime = _file_mtime_int(index_path)
+        if mtime != cached_mtime:
+            cached_mtime = mtime
+            cached_html = index_path.read_text() if mtime is not None else ""
+
         deps: list[HTMLDependency] = []
         for arg in args:
             if isinstance(arg, Renderer):
@@ -215,6 +228,6 @@ def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
                     deps.extend(ui.get_dependencies())
 
         # page_opts types page_fn as -> Tag, but TagList works at runtime
-        return cast(Tag, TagList(_dep(), *deps, HTML(index_html)))
+        return cast(Tag, TagList(_dep(), *deps, HTML(cached_html)))
 
     return _react_page_fn
