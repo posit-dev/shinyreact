@@ -1,5 +1,13 @@
 import { act, render } from "@testing-library/react";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 // Mock getShiny so useShinyInitialized resolves immediately and child
 // hooks' init-gated effects can run.
@@ -40,6 +48,7 @@ vi.mock("../message-registry", () => ({
 }));
 
 import { ImageOutput } from "../ImageOutput";
+import { __resetLifecycleStoreForTests } from "../lifecycle-store";
 import { ShinyModuleProvider } from "../ShinyModuleContext";
 import { getReactRegistry } from "../react-registry";
 
@@ -54,7 +63,15 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  // useShinyInitialized reads from the module-scoped lifecycle store, which
+  // latches `initialized = true` after the first hook resolves. Reset so each
+  // test starts from a known state and is independent of test order.
+  __resetLifecycleStoreForTests();
   vi.clearAllMocks();
+});
+
+afterEach(() => {
+  __resetLifecycleStoreForTests();
 });
 
 async function flushPromises() {
