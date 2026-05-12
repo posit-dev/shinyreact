@@ -40,6 +40,10 @@ function App() {
 ReactDOM.createRoot(document.getElementById("root")).render(h(App));
 ```
 
+**Render a short "expected behaviour" paragraph at the top of the app.** One or two sentences in a `<p>` (or rendered `<code>` for URL fragments / expected values) describing what the page should look like after the test runs successfully. When a Playwright assertion fails and you need to debug by booting the fixture (`uv run shiny run --port 8101 …`), the rendered explainer tells you in seconds what should be on screen — far faster than rereading the test source to reverse-engineer the contract. Keep it terse; this is for the person at the keyboard, not for end users.
+
+Rules-of-Hooks reminder: every hook the component calls (`useShinyInput`, `useShinyOutputValue`, `useSetShinyInput`, …) MUST run on every render. Calling `useShinyInitialized()` and then `return null` is only safe when no other hooks are called afterward — i.e. all you do is render a `<ShinyOutput>` (whose hooks live in its own component). If `App` itself calls additional hooks, drop the `useShinyInitialized()` early-return and let those hooks short-circuit internally on the not-yet-initialised state.
+
 ## 2. Add a fixture line + test to `test_shiny_output.py`
 
 ```python

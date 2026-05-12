@@ -1,0 +1,8 @@
+body { font-family: system-ui, sans-serif; padding: 24px; max-width: 720px; }
+.card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+label { display: block; margin-bottom: 4px; font-weight: 600; }
+input[type=text], input[type=number] { width: 100%; padding: 6px; }
+.row { display: flex; gap: 16px; align-items: center; }
+.output { color: #555; font-family: monospace; }
+button { padding: 8px 16px; cursor: pointer; }
+.note { font-size: 0.875rem; color: #666; }

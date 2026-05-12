@@ -43,14 +43,18 @@ tests-e2e = [
     "pandas>=2.1.0",
 ]
 
+[tool.pytest.ini_options]
+# Default test runs exclude the Playwright integration suite — those tests
+# need the `tests-e2e` extras (browser, shiny[playwright]) and spin up a
+# real Shiny process per app, which is too heavy for the unit test loop.
+# Run the Playwright suite explicitly via `make py-test-e2e`.
+testpaths = ["pkg-py/tests"]
+addopts = "--ignore=pkg-py/tests/playwright"
+
 [tool.pyright]
 include = ["pkg-py/src/shinyreact"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
-
-[tool.pytest.ini_options]
-testpaths = ["pkg-py/tests"]
-addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.ruff]
 line-length = 88

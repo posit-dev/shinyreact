@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import Sequence
 
-from htmltools import HTMLDependency, Tag, div
+from htmltools import HTMLDependency, Tag, TagChild, TagList, div
+
+from ._bookmark import _restore_script_tag
 
 _WWW_DIR = Path(__file__).parent / "www"
 _SHINYREACT_JS_PATH = _WWW_DIR / "shinyreact.js"
@@ -28,6 +30,17 @@ def _dep() -> HTMLDependency:
         script={"src": "shinyreact.js", "defer": ""},
         stylesheet={"href": "shinyreact.css"},
     )
+
+
+def _dep_page() -> TagChild:
+    """Page-level shinyreact dependency: bundle + bookmark restore script.
+
+    Use from page entry points (``page_react``, ``set_react_page``'s page
+    function). Per-output consumers (``ui_output``) should keep calling
+    ``_dep()`` — they do not carry page-level restore state.
+    """
+    restore = _restore_script_tag()  # may be None
+    return TagList(_dep(), restore) if restore is not None else _dep()
 
 
 def ui_output(id: str, extra_deps: Sequence[HTMLDependency] | None = None) -> Tag:
