@@ -1,3 +1,9 @@
+"""shinymui prototype example app.
+
+Exercises all 5 components in one page. This is the integration test for the
+prototype — if every interaction below works, the conventions hold.
+"""
+
 import shinymui
 import shinyreact
 from shiny import App, Inputs, Outputs, Session
@@ -17,7 +23,7 @@ SAMPLE_ROWS = [
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyreact.reactive_output
     def main():
-        name = input.name() or ""
+        name = input.name() or "World"
         age = input.age() or 0
         clicks = input.btn1() or 0
         return shinyreact.Node(
@@ -30,16 +36,32 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "flexDirection": "column",
                     "gap": "16px",
                     "maxWidth": "800px",
+                    "margin": "0 auto",
                 }
             },
             children=[
                 shinyreact.Node(type="h1", props={"children": "shinymui prototype"}),
                 shinymui.card(
                     "Controls",
-                    shinymui.text_field(input_id="name", label="Your name", default_value="World"),
-                    shinymui.slider(input_id="age", label="Min age filter", default_value=25, min=0, max=50),
-                    shinymui.button("Save", input_id="btn1", start_icon="Save"),
-                    shinyreact.Node(type="div", props={"children": f"Hello, {name}! Age filter: {age}. Clicks: {clicks}."}),
+                    shinymui.text_field(
+                        input_id="name", label="Name", default_value="World"
+                    ),
+                    shinymui.slider(
+                        input_id="age",
+                        label="Min age filter",
+                        default_value=25,
+                        min=0,
+                        max=50,
+                    ),
+                    shinymui.button(
+                        "Click me", input_id="btn1", start_icon="TouchApp"
+                    ),
+                    shinyreact.Node(
+                        type="div",
+                        props={
+                            "children": f"Hello, {name}! Age filter: {age}. Clicks: {clicks}."
+                        },
+                    ),
                 ),
                 shinymui.card(
                     "Filtered data (DataGrid)",
