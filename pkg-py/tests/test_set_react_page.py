@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Any, Callable
 from unittest.mock import patch
@@ -61,48 +60,22 @@ def test_build_page_fn_reads_index_html(tmp_path: Path) -> None:
     assert marker in rendered["html"]
 
 
-def test_build_page_fn_rereads_index_html_when_mtime_changes(tmp_path: Path) -> None:
-    """index.html is re-read across renders when the file's mtime changes."""
+def test_build_page_fn_reads_index_html_once(tmp_path: Path) -> None:
+    """index.html is read at construction time, not per page render.
+
+    See issue #82 — re-reading from inside the page_fn closure would not
+    actually help, because Shiny Express only invokes this closure once at
+    app startup. The fix requires upstream Shiny support.
+    """
     index = tmp_path / "index.html"
     index.write_text("<div>original</div>")
 
     page_fn = _build_react_page_fn(index)
+    index.write_text("<div>changed</div>")
 
     rendered = _render(page_fn)
     assert "original" in rendered["html"]
-
-    # Bump mtime explicitly so the test isn't sensitive to sub-second timing.
-    index.write_text("<div>changed</div>")
-    stat = index.stat()
-    os.utime(index, (stat.st_atime, stat.st_mtime + 5))
-
-    rendered = _render(page_fn)
-    assert "changed" in rendered["html"]
-    assert "original" not in rendered["html"]
-
-
-def test_build_page_fn_skips_reread_when_mtime_unchanged(tmp_path: Path) -> None:
-    """Repeated renders with no file change don't re-read index.html."""
-    index = tmp_path / "index.html"
-    index.write_text("<div>cached</div>")
-
-    page_fn = _build_react_page_fn(index)
-
-    reads = 0
-    real_read_text = Path.read_text
-
-    def counting_read_text(self: Path, *a: Any, **kw: Any) -> str:
-        nonlocal reads
-        if self == index:
-            reads += 1
-        return real_read_text(self, *a, **kw)
-
-    with patch.object(Path, "read_text", counting_read_text):
-        _render(page_fn)
-        _render(page_fn)
-        _render(page_fn)
-
-    assert reads == 1
+    assert "changed" not in rendered["html"]
 
 
 def test_set_react_page_resolves_path_relative_to_caller(tmp_path: Path) -> None:
