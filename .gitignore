@@ -12,6 +12,7 @@ build/
 develop-eggs/
 dist/
 !js/dist/
+!downstream-prototypes/*/js/dist/
 downloads/
 eggs/
 .eggs/
