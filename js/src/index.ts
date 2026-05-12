@@ -55,8 +55,10 @@ declare global {
   }
 }
 
-// Expose global API — called by downstream packages at page load
-window.shinyreact = {
+// Expose global API — called by downstream packages at page load.
+// Preserve any pre-bundle assignment (e.g. window.shinyreact._restore set
+// by the head <script> emitted from Python's _restore_script_tag).
+window.shinyreact = Object.assign(window.shinyreact || {}, {
   registerComponents,
   useSetShinyInput,
   useShinyBusy,
@@ -73,7 +75,7 @@ window.shinyreact = {
   ShinyOutput,
   React,
   ReactDOM,
-};
+});
 
 // React root cache: one React root per output DOM element
 const roots = new WeakMap<Element, Root>();

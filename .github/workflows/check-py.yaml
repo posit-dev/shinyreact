@@ -42,7 +42,7 @@ jobs:
       - name: 🧪 Check tests and types (Python 3.10–3.14)
         run: make py-check-tox
 
-  playwright-e2e:
+  py-test-e2e:
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
 

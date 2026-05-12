@@ -8,7 +8,7 @@ from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList, tags
 from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 
-from ._output import _dep
+from ._output import _dep_page
 
 
 def page_bare(
@@ -64,7 +64,7 @@ def page_react(
         lang: HTML ``lang`` attribute.
     """
     return page_bare(
-        _dep(),
+        _dep_page(),
         tags.div(id="root"),
         *args,
         title=title,
@@ -215,6 +215,6 @@ def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
                     deps.extend(ui.get_dependencies())
 
         # page_opts types page_fn as -> Tag, but TagList works at runtime
-        return cast(Tag, TagList(_dep(), *deps, HTML(index_html)))
+        return cast(Tag, TagList(_dep_page(), *deps, HTML(index_html)))
 
     return _react_page_fn

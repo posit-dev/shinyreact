@@ -19,6 +19,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 | `shinyreact.Spec` / `Element` | Working | Flat-map data model for component trees |
 | `shinyreact.Node` | Working | Nested tree API; `.to_spec()` auto-flattens to `Spec` |
 | `shinyreact.send_message()` | Working | Server-to-client custom messages |
+| Bookmark restoration | Working | `page_react()` and `set_react_page()` emit a head `<script>` carrying restored input values; `useShinyInput` adopts them as initial values. URL and server-stored bookmark modes both supported |
 
 ### Examples
 
@@ -34,6 +35,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 | [08-modules](../examples/app-py/08-modules/) | Working | Three counter widgets using ShinyModuleProvider namespacing |
 | [09-blended](../examples/app-py/09-blended/) | Working | Tabbed sidebar layout, matplotlib plot, data table, settings panel |
 | [10-columns](../examples/app-py/10-columns/) | Working | Drag-between-columns demo; `render.ui`-driven approach |
+| [13-bookmarking](../examples/app-py/13-bookmarking/) | Working | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via a head `<script>` emitted by `page_react()` |
 
 ### Design decisions
 
