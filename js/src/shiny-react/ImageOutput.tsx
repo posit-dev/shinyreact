@@ -6,10 +6,7 @@ import {
   useShinyOutputValue,
 } from "./use-shiny";
 import { createDebouncedFn } from "./utils";
-import {
-  applyNamespace,
-  useShinyModuleNamespace,
-} from "./ShinyModuleContext";
+import { useNamespacedId } from "./ShinyModuleContext";
 
 export type ImageData = {
   src: string;
@@ -158,14 +155,7 @@ export function ImageOutput({
   onRecalculating?: (isRecalculating: boolean) => void;
   namespace?: string | null;
 }) {
-  // Apply namespace: explicit option wins over context. Pass `null` to opt
-  // out of the provider context entirely (mirrors useShinyInput / ShinyOutput
-  // — `??` would conflate `null` with `undefined` and silently fall through
-  // to the context).
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace =
-    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
-  const namespacedId = applyNamespace(id, namespace);
+  const namespacedId = useNamespacedId(id, explicitNamespace);
 
   // IDs below already have the namespace embedded (via namespacedId), so we
   // suppress the hooks' own context-based namespacing to avoid double-prefixing.

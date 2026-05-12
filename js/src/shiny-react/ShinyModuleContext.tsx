@@ -61,3 +61,28 @@ export function applyNamespace(
   }
   return id;
 }
+
+/**
+ * Hook: resolve `id` against the provider context and an optional explicit
+ * override, then return the namespaced id.
+ *
+ * Precedence: an explicit value (including `null`) wins over the provider
+ * context. `undefined` falls through to the context.
+ *
+ * - `explicit === undefined`: use the surrounding `ShinyModuleProvider`
+ *   namespace, or no prefix if there isn't one.
+ * - `explicit === "ns"`: prefix with `"ns-"`, ignoring any provider.
+ * - `explicit === null`: opt out — render the bare `id`. Useful when `id`
+ *   already contains a prefix (e.g. ImageOutput's clientdata IDs).
+ *
+ * Centralising this here keeps `null` from being conflated with `undefined`
+ * (a `??` would silently fall through to the context).
+ */
+export function useNamespacedId(
+  id: string,
+  explicit: string | null | undefined,
+): string {
+  const context = useShinyModuleNamespace();
+  const namespace = explicit !== undefined ? explicit : context;
+  return applyNamespace(id, namespace);
+}

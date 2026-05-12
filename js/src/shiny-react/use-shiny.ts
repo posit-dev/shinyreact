@@ -23,10 +23,7 @@ import {
   type OutputStatus,
 } from "./output-registry";
 import { getReactRegistry, initializeReactRegistry } from "./react-registry";
-import {
-  applyNamespace,
-  useShinyModuleNamespace,
-} from "./ShinyModuleContext";
+import { useNamespacedId } from "./ShinyModuleContext";
 
 /**
  * A React hook for managing a Shiny input value.
@@ -76,11 +73,7 @@ export function useShinyInput<T>(
 ): [T, (value: T) => void] {
   ensureShinyReactInitialized();
 
-  // Apply namespace: explicit option wins over context. Pass `false` to opt out.
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace =
-    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
-  const namespacedId = applyNamespace(id, namespace);
+  const namespacedId = useNamespacedId(id, explicitNamespace);
 
   // NOTE: It's a little odd that debounceMs and priority passed this way; the
   // debounceMs is associated with the specific input name, and in Shiny's API,
@@ -206,10 +199,7 @@ export function useShinyOutputValue<T>(
 
   ensureShinyReactInitialized();
 
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace =
-    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
-  const namespacedOutputId = applyNamespace(outputId, namespace);
+  const namespacedOutputId = useNamespacedId(outputId, explicitNamespace);
 
   useEffect(() => {
     if (!shinyInitialized) {
@@ -260,10 +250,7 @@ export function useShinyOutputStatus(
 
   ensureShinyReactInitialized();
 
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace =
-    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
-  const namespacedOutputId = applyNamespace(outputId, namespace);
+  const namespacedOutputId = useNamespacedId(outputId, explicitNamespace);
 
   useEffect(() => {
     if (!shinyInitialized) {
@@ -312,10 +299,7 @@ export function useShinyInputValue<T>(
 ): T | undefined {
   ensureShinyReactInitialized();
 
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace =
-    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
-  const namespacedId = applyNamespace(id, namespace);
+  const namespacedId = useNamespacedId(id, explicitNamespace);
 
   const [value, setValue] = useState<T | undefined>(() => {
     const entry = getReactRegistry().inputs.get<T>(namespacedId);
@@ -379,10 +363,7 @@ export function useSetShinyInput<T>(
 ): (value: T) => void {
   ensureShinyReactInitialized();
 
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace =
-    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
-  const namespacedId = applyNamespace(id, namespace);
+  const namespacedId = useNamespacedId(id, explicitNamespace);
 
   // Stabilize defaultValue — same reasoning as useShinyInput.
   const stableDefaultRef = useRef<T>(defaultValue);
@@ -462,11 +443,7 @@ export function useShinyMessageHandler<T = any>(
 
   ensureShinyReactInitialized();
 
-  // Apply namespace: explicit option wins over context. Pass `false` to opt out.
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace =
-    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
-  const namespacedMessageType = applyNamespace(messageType, namespace);
+  const namespacedMessageType = useNamespacedId(messageType, explicitNamespace);
 
   // Stabilize handler reference: callers often pass inline arrow functions
   // which create a new reference every render, causing unnecessary

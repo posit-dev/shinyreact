@@ -1,8 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import {
-  applyNamespace,
-  useShinyModuleNamespace,
-} from "./shiny-react/ShinyModuleContext";
+import { useNamespacedId } from "./shiny-react/ShinyModuleContext";
 
 export interface ShinyOutputProps
   extends React.HTMLAttributes<HTMLElement> {
@@ -49,10 +46,7 @@ export function ShinyOutput({
   namespace: explicitNamespace,
   ...rest
 }: ShinyOutputProps): React.JSX.Element {
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace =
-    explicitNamespace !== undefined ? explicitNamespace : contextNamespace;
-  const namespacedId = applyNamespace(id, namespace);
+  const namespacedId = useNamespacedId(id, explicitNamespace);
 
   const ref = useRef<HTMLElement>(null);
 
