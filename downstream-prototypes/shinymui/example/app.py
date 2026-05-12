@@ -8,6 +8,7 @@ app_ui = shinyreact.ui_output("main", extra_deps=[shinymui.dep()])
 def server(input: Inputs, output: Outputs, session: Session):
     @shinyreact.reactive_output
     def main():
+        name = input.name() or ""
         clicks = input.btn1() or 0
         return shinyreact.Node(
             type="div",
@@ -18,15 +19,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "display": "flex",
                     "flexDirection": "column",
                     "gap": "16px",
+                    "maxWidth": "600px",
                 }
             },
             children=[
                 shinyreact.Node(type="h1", props={"children": "shinymui prototype"}),
                 shinymui.button("Save with icon", input_id="btn1", start_icon="Save"),
-                shinyreact.Node(
-                    type="div",
-                    props={"children": f"Button btn1 has been clicked {clicks} times."},
-                ),
+                shinyreact.Node(type="div", props={"children": f"Button btn1 clicks: {clicks}"}),
+                shinymui.text_field(input_id="name", label="Your name", default_value="World"),
+                shinyreact.Node(type="div", props={"children": f"Hello, {name}!"}),
             ],
         )
 

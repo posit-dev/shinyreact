@@ -37,3 +37,26 @@ def button(
     if end_icon is not None:
         props["end_icon"] = end_icon
     return shinyreact.Node(type="mui:Button", props=props)
+
+
+def text_field(
+    *,
+    input_id: str,
+    label: str = "",
+    default_value: str = "",
+    placeholder: str = "",
+    helper_text: str = "",
+    debounce_ms: int = 250,
+) -> shinyreact.Node:
+    """Render an MUI TextField bound to a Shiny input."""
+    return shinyreact.Node(
+        type="mui:TextField",
+        props={
+            "input_id": input_id,
+            "label": label,
+            "default_value": default_value,
+            "placeholder": placeholder,
+            "helper_text": helper_text,
+            "debounce_ms": debounce_ms,
+        },
+    )
