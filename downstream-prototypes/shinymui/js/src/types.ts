@@ -26,6 +26,8 @@ declare global {
         catalog: unknown,
         registry: ComponentRegistry,
       ) => void;
+      // priority values match Shiny's input event priorities used by
+      // @posit/shiny-react. Stable strings in the wire protocol.
       useShinyInput: <T>(
         id: string,
         defaultValue: T,
