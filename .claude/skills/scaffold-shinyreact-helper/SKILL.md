@@ -65,3 +65,103 @@ Templates under `templates/` use mustache-style `{{placeholder}}` markers. Subst
 | `{{upstream_pkg}}` | upstream npm package | `@mantine/core` |
 
 Substitution is plain textual replacement — no escaping, no conditional logic. If a template doesn't contain a placeholder, write it verbatim.
+
+## Procedure
+
+Run these steps in order. After each step, briefly confirm to the user what landed. Do not commit the scaffold — leave that to the package author.
+
+### Step 1: Create the directory layout
+
+```bash
+mkdir -p {{target_dir}}/js/src/components
+mkdir -p {{target_dir}}/pkg-py/src/{{pkg}}/www
+mkdir -p {{target_dir}}/pkg-py/tests
+mkdir -p {{target_dir}}/example
+```
+
+### Step 2: Render templates
+
+For each template under `.claude/skills/scaffold-shinyreact-helper/templates/`, read the file, perform every substitution from the table in the "Substitution rules" section above, and write to the corresponding location in `{{target_dir}}`. The mapping:
+
+| Template | Destination |
+|----------|-------------|
+| `templates/README.md.tpl` | `{{target_dir}}/README.md` |
+| `templates/js/package.json.tpl` | `{{target_dir}}/js/package.json` |
+| `templates/js/tsconfig.json.tpl` | `{{target_dir}}/js/tsconfig.json` |
+| `templates/js/vite.config.ts.tpl` | `{{target_dir}}/js/vite.config.ts` |
+| `templates/js/.gitignore.tpl` | `{{target_dir}}/js/.gitignore` |
+| `templates/js/src/types.ts.tpl` | `{{target_dir}}/js/src/types.ts` |
+| `templates/js/src/index.ts.tpl` | `{{target_dir}}/js/src/index.ts` |
+| `templates/js/src/components/Stub.tsx.tpl` | `{{target_dir}}/js/src/components/{{Stub}}.tsx` |
+| `templates/pkg-py/pyproject.toml.tpl` | `{{target_dir}}/pkg-py/pyproject.toml` |
+| `templates/pkg-py/src/__init__.py.tpl` | `{{target_dir}}/pkg-py/src/{{pkg}}/__init__.py` |
+| `templates/pkg-py/src/_dep.py.tpl` | `{{target_dir}}/pkg-py/src/{{pkg}}/_dep.py` |
+| `templates/pkg-py/src/_components.py.tpl` | `{{target_dir}}/pkg-py/src/{{pkg}}/_components.py` |
+| `templates/pkg-py/tests/test_factories.py.tpl` | `{{target_dir}}/pkg-py/tests/test_factories.py` |
+| `templates/example/app.py.tpl` | `{{target_dir}}/example/app.py` |
+
+Also touch the placeholder for the empty `www/` directory:
+
+```bash
+touch {{target_dir}}/pkg-py/src/{{pkg}}/www/.gitkeep
+```
+
+### Step 3: Install JS dependencies
+
+```bash
+cd {{target_dir}}/js && npm install
+```
+
+Wait for completion (1-3 minutes for a typical UI library). If `npm install` warns about peer-dependency conflicts (e.g., `@mui/icons-material` requiring a different `@mui/material` major), surface the warning to the user — they may need to pin the upstream package version more tightly. Do not auto-fix.
+
+For styled-component libraries that need emotion (MUI, Mantine), the user may need to add these themselves after scaffolding:
+
+```bash
+cd {{target_dir}}/js && npm install @emotion/react @emotion/styled
+```
+
+Mention this if and only if the upstream package is in the MUI/Mantine family.
+
+### Step 4: Build the bundle
+
+```bash
+cd {{target_dir}}/js && npm run build
+```
+
+Expected: writes `{{target_dir}}/js/dist/{{pkg}}.js`. If the build fails because the upstream package isn't actually used in the stub (the stub uses a plain `<button>`), the build should still succeed because the import is only declared in `package.json`, not referenced in source. The user replaces the stub's plain button with the upstream component as their first manual edit.
+
+### Step 5: Lint
+
+```bash
+cd {{target_dir}}/js && npm run lint
+```
+
+Expected: exits 0 with no output. If lint fails, surface the error verbatim.
+
+### Step 6: Copy bundle to Python package www/
+
+```bash
+cp {{target_dir}}/js/dist/{{pkg}}.js {{target_dir}}/pkg-py/src/{{pkg}}/www/{{pkg}}.js
+```
+
+### Step 7: Install the Python package as editable
+
+```bash
+uv pip install -e {{target_dir}}/pkg-py
+```
+
+If this fails because `shinyreact` isn't resolvable (the prototype shinymui hit this), the workaround is to install into the parent repo's venv directly:
+
+```bash
+.venv/bin/pip install -e {{target_dir}}/pkg-py
+```
+
+### Step 8: Run the factory test
+
+```bash
+cd {{target_dir}}/pkg-py && uv run python -m pytest tests/test_factories.py -v
+```
+
+Or fall back to `.venv/bin/python -m pytest tests/test_factories.py -v` if `uv run` has venv-resolution issues.
+
+Expected: `1 passed` (the stub factory test).
