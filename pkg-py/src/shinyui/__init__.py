@@ -9,6 +9,7 @@ from ._base import UiComponent
 from ._bookmark import lookup_component
 from ._card import UiCard, card
 from ._children import AllowsChildren
+from ._input_action_button import UiInputActionButton, input_action_button
 from ._input_select import UiInputSelect, input_select
 from ._input_slider import UiInputSlider, input_slider
 from ._input_value import HasInputValue
@@ -25,6 +26,7 @@ __all__ = [
     "UiCard",
     "UiComponent",
     "UiInput",
+    "UiInputActionButton",
     "UiInputSelect",
     "UiInputSlider",
     "UiLayout",
@@ -35,6 +37,7 @@ __all__ = [
     "accordion",
     "accordion_panel",
     "card",
+    "input_action_button",
     "input_select",
     "input_slider",
     "lookup_component",

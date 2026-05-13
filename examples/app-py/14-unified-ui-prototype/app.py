@@ -33,6 +33,8 @@ dist_select = su.input_select(
     {"normal": "Normal", "uniform": "Uniform"},
 )
 plot_handle = su.output_plot("plot", click=True, brush=True)
+open_all_btn = su.input_action_button("open_all", "Open all panels")
+close_all_btn = su.input_action_button("close_all", "Close all panels")
 acc = su.accordion(
     su.accordion_panel("Settings", n_slider, dist_select, seed_slider),
     su.accordion_panel(
@@ -44,11 +46,7 @@ acc = su.accordion(
     open="Settings",
 )
 main_card = su.card(
-    ui.layout_column_wrap(
-        ui.input_action_button("open_all", "Open all panels"),
-        ui.input_action_button("close_all", "Close all panels"),
-        width=1 / 2,
-    ),
+    ui.layout_column_wrap(open_all_btn, close_all_btn, width=1 / 2),
     acc,
     plot_handle,
     id="main_card",
@@ -106,16 +104,16 @@ def server(input: Inputs, output: Outputs, session: Session):
         return fig
 
     # Server-driven .update() on the layout-with-state accordion.
-    # Each button click is an event input (action button → counter); we use
-    # @reactive.event so a click runs the effect exactly once, not on every
-    # other input change.
+    # Each button instance exposes a typed `.count()` reactive accessor
+    # (click counter); @reactive.event fires the effect once per click,
+    # not on every other input change.
     @reactive.effect
-    @reactive.event(input.open_all, ignore_init=True)
+    @reactive.event(open_all_btn.count, ignore_init=True)
     def _open_all_panels():
         acc.update(open=("Settings", "Diagnostics"))
 
     @reactive.effect
-    @reactive.event(input.close_all, ignore_init=True)
+    @reactive.event(close_all_btn.count, ignore_init=True)
     def _close_all_panels():
         # update_accordion's `show=` takes a panel value list, OR True/False.
         # False closes all panels in the set.
