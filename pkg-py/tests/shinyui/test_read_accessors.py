@@ -10,7 +10,7 @@ from shiny import reactive
     [
         (lambda: sui.input_slider("n", "N", 1, 10, 5), "value", "", 7),
         (lambda: sui.input_select("c", "C", {"a": "A"}), "value", "", "a"),
-        (lambda: sui.card("b", id="m"), "full_screen_value", "", True),
+        (lambda: sui.card("b", id="m"), "full_screen_value", "_full_screen", True),
         (
             lambda: sui.accordion(sui.accordion_panel("A"), id="acc"),
             "open_panels",

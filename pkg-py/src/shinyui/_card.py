@@ -55,8 +55,13 @@ class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
 
     @reactive_calc_method
     def full_screen_value(self) -> bool:
-        """Return whether the card is currently in full-screen mode."""
-        return bool(self._read_input())
+        """Return whether the card is currently in full-screen mode.
+
+        Shiny's card binding pushes the full-screen state to
+        ``input.<id>_full_screen`` (not ``input.<id>()`` — the id itself has
+        no primary value).
+        """
+        return bool(self._read_input("_full_screen"))
 
     def tagify(self) -> Tag:
         import shiny.ui as _sui

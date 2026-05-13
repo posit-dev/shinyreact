@@ -19,7 +19,7 @@ from abc import ABC, abstractmethod
 from copy import copy
 from typing import Any, ClassVar
 
-from htmltools import HTMLDependency, Tag, TagList, Tagifiable
+from htmltools import HTMLDependency, Tag, Tagifiable, TagList
 from shiny.session import Session, get_current_session
 from typing_extensions import Self
 
@@ -66,9 +66,7 @@ class UiComponent(ABC):
         # Recurse into Tag children.
         if isinstance(node, Tag):
             cp = copy(node)
-            cp.children = TagList(
-                *(UiComponent._deep_tagify(c) for c in node.children)
-            )
+            cp.children = TagList(*(UiComponent._deep_tagify(c) for c in node.children))
             return cp
         # Recurse into TagList items.
         if isinstance(node, TagList):

@@ -34,7 +34,7 @@ def test_full_screen_value(mock_session):
     mock_session.input.__getitem__.return_value = lambda: True
     with reactive.isolate():
         assert c.full_screen_value() is True
-    mock_session.input.__getitem__.assert_called_with("main")
+    mock_session.input.__getitem__.assert_called_with("main_full_screen")
 
 
 def test_update_outside_session_raises():
