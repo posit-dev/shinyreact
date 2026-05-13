@@ -58,10 +58,11 @@ import { useNamespacedId } from "./ShinyModuleContext";
  * @param options.type Optional input-handler name appended as `${id}:${type}`
  * when sending to Shiny. Use to route values through a Shiny input handler
  * such as `"shiny.datetime"`. Must be non-empty and contain no whitespace or
- * `:`. Once a given id has been registered with a `type` (or with no `type`),
- * subsequent mounts of the same id with a *different* `type` throw — the
- * handler name is a server-side semantic and must be consistent across all
- * mounts of the same id.
+ * `:`. The first mount of a given id finalizes the policy (an explicit `type`
+ * or the absence of one); a later mount that omits `type` is a no-op, but a
+ * later mount that supplies a `type` disagreeing with the finalized policy
+ * throws — the handler name is a server-side semantic and must be consistent
+ * across every `useShinyInput` / `useSetShinyInput` call for the same id.
  * @returns A tuple containing the current value and a function to set the
  * value: `[value, setValue]`.
  */
@@ -366,10 +367,11 @@ export function useShinyInputValue<T>(
  * @param options.type Optional input-handler name appended as `${id}:${type}`
  * when sending to Shiny. Use to route values through a Shiny input handler
  * such as `"shiny.datetime"`. Must be non-empty and contain no whitespace or
- * `:`. Once a given id has been registered with a `type` (or with no `type`),
- * subsequent mounts of the same id with a *different* `type` throw — the
- * handler name is a server-side semantic and must be consistent across all
- * mounts of the same id.
+ * `:`. The first mount of a given id finalizes the policy (an explicit `type`
+ * or the absence of one); a later mount that omits `type` is a no-op, but a
+ * later mount that supplies a `type` disagreeing with the finalized policy
+ * throws — the handler name is a server-side semantic and must be consistent
+ * across every `useShinyInput` / `useSetShinyInput` call for the same id.
  * @returns A function that writes the input value.
  */
 export function useSetShinyInput<T>(
