@@ -4,6 +4,7 @@ Each test that needs `get_current_session()` to return something uses
 the `mock_session` fixture, which yields a controllable Session-like object
 and binds it as the current session for the duration of the test.
 """
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -29,5 +30,6 @@ def mock_session() -> Iterator[Any]:
 def no_session() -> Iterator[None]:
     """Helper: confirm no session is bound. Use for explicit clarity in tests."""
     from shiny.session import get_current_session
+
     assert get_current_session() is None, "Test expected no active session"
     yield
