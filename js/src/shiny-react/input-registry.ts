@@ -12,6 +12,10 @@ export class InputRegistryEntry<T> {
   opts: { priority?: EventPriority; debounceMs: number } = {
     debounceMs: 100,
   };
+  // Input-handler type suffix. Set once via updateType(); subsequent
+  // mismatches throw. `undefined` is a valid finalized state ("no suffix").
+  private type?: string;
+  private typeFinalized = false;
 
   constructor(id: string, value: T) {
     this.id = id;
@@ -28,7 +32,8 @@ export class InputRegistryEntry<T> {
   }
 
   private setShinyInputValue(value: T) {
-    getShiny()?.setInputValue?.(this.id, value, this.opts);
+    const wireId = this.type ? `${this.id}:${this.type}` : this.id;
+    getShiny()?.setInputValue?.(wireId, value, this.opts);
   }
 
   updateDebounceDelay(debounceMs: number) {
@@ -37,6 +42,23 @@ export class InputRegistryEntry<T> {
 
   updatePriority(priority: EventPriority) {
     this.opts.priority = priority;
+  }
+
+  updateType(type: string | undefined): void {
+    if (!this.typeFinalized) {
+      this.type = type;
+      this.typeFinalized = true;
+      return;
+    }
+    if (type === undefined) return;
+    if (this.type !== type) {
+      throw new Error(
+        `Input "${this.id}" is already registered with type=${this.type === undefined ? "undefined" : JSON.stringify(this.type)}. ` +
+          `A second mount requested type=${JSON.stringify(type)}. ` +
+          `An input's handler type changes server-side semantics and must be consistent ` +
+          `across every useShinyInput / useSetShinyInput call for the same id.`,
+      );
+    }
   }
 
   addUseStateSetValueFn(fn: (value: T) => void) {

@@ -24,6 +24,7 @@ const {
   entrySetValue,
   entryUpdateDebounceDelay,
   entryUpdatePriority,
+  entryUpdateType,
   entryGetValue,
 } = vi.hoisted(() => ({
   entryAddSetValue: vi.fn(),
@@ -31,6 +32,7 @@ const {
   entrySetValue: vi.fn(),
   entryUpdateDebounceDelay: vi.fn(),
   entryUpdatePriority: vi.fn(),
+  entryUpdateType: vi.fn(),
   entryGetValue: vi.fn(() => null),
 }));
 
@@ -38,6 +40,7 @@ vi.mock("../react-registry", () => {
   const inputEntry = {
     updateDebounceDelay: entryUpdateDebounceDelay,
     updatePriority: entryUpdatePriority,
+    updateType: entryUpdateType,
     addUseStateSetValueFn: entryAddSetValue,
     removeUseStateSetValueFn: entryRemoveSetValue,
     getValue: entryGetValue,

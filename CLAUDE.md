@@ -179,6 +179,24 @@ The hook surface follows the Jotai/Recoil cadence — each hook has one responsi
 
 Pick the narrowest hook that fits the call site. A button that pushes events but never reads its own state should use `useSetShinyInput`, not `useShinyInput` with a discarded `[value]`. A display card that just reads should use `useShinyInputValue` / `useShinyOutputValue`. Narrow hooks make data-flow direction visible at the call site, prevent accidental writes from read-only components, and avoid spurious re-renders from subscribing to channels you don't observe.
 
+### Routing input values through Shiny input handlers (`type=`)
+
+`useShinyInput` and `useSetShinyInput` accept an optional `type` that appends `:type` to the wire id, opting into Shiny's server-side input-handler dispatch:
+
+```js
+const [when, setWhen] = useShinyInput("when", Math.floor(Date.now() / 1000), {
+  type: "shiny.datetime",
+});
+```
+
+```python
+@reactive.effect
+def _():
+    print(type(input.when()))  # datetime.datetime
+```
+
+The handler name is a server-side contract: once an input id has been registered with a `type` (or with no `type`), a later mount disagreeing with that policy throws. Validation rejects empty strings, whitespace, and `:` characters at hook mount.
+
 ### Avoiding flicker on input changes (use status correctly, don't conflate states)
 
 The four output-status values exist for a reason — collapsing them into one boolean leaks DOM churn into the UI. Wrong:
