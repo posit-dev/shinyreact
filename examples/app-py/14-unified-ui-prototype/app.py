@@ -34,17 +34,20 @@ dist_select = su.input_select(
 )
 plot_handle = su.output_plot("plot", click=True, brush=True)
 acc = su.accordion(
-    su.accordion_panel("Settings", seed_slider),
+    su.accordion_panel("Settings", n_slider, dist_select, seed_slider),
     su.accordion_panel("Diagnostics", su.output_code("diag")),
     id="acc",
     open="Settings",
 )
 main_card = su.card(
-    n_slider,
-    dist_select,
+    ui.layout_column_wrap(
+        ui.input_action_button("open_all", "Open all panels"),
+        ui.input_action_button("close_all", "Close all panels"),
+        width=1 / 2,
+    ),
+    acc,
     su.output_code("summary"),
     plot_handle,
-    acc,
     id="main_card",
     full_screen=False,
 )
@@ -93,20 +96,27 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.scatter(x, y, s=12, alpha=0.6)
-        ax.set_title(
-            f"{dist_select.value()} sample, n={n}, seed={seed_slider.value()}"
-        )
+        ax.set_title(f"{dist_select.value()} sample, n={n}, seed={seed_slider.value()}")
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.grid(True, alpha=0.3)
         return fig
 
-    # Server-driven updates on layouts-with-state:
+    # Server-driven .update() on the layout-with-state accordion.
+    # Each button click is an event input (action button → counter); we use
+    # @reactive.event so a click runs the effect exactly once, not on every
+    # other input change.
     @reactive.effect
-    def _auto_expand_at_high_n():
-        if n_slider.value() > 800:
-            main_card.update(full_screen=True)
-            acc.update(open=("Settings", "Diagnostics"))
+    @reactive.event(input.open_all, ignore_init=True)
+    def _open_all_panels():
+        acc.update(open=("Settings", "Diagnostics"))
+
+    @reactive.effect
+    @reactive.event(input.close_all, ignore_init=True)
+    def _close_all_panels():
+        # update_accordion's `show=` takes a panel value list, OR True/False.
+        # False closes all panels in the set.
+        acc.update(open=False)
 
 
 app = App(app_ui, server)
