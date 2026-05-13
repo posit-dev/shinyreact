@@ -35,7 +35,11 @@ dist_select = su.input_select(
 plot_handle = su.output_plot("plot", click=True, brush=True)
 acc = su.accordion(
     su.accordion_panel("Settings", n_slider, dist_select, seed_slider),
-    su.accordion_panel("Diagnostics", su.output_code("diag")),
+    su.accordion_panel(
+        "Diagnostics",
+        su.output_code("summary"),
+        su.output_code("diag"),
+    ),
     id="acc",
     open="Settings",
 )
@@ -46,7 +50,6 @@ main_card = su.card(
         width=1 / 2,
     ),
     acc,
-    su.output_code("summary"),
     plot_handle,
     id="main_card",
     full_screen=False,
