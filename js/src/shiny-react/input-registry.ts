@@ -12,9 +12,9 @@ export class InputRegistryEntry<T> {
   opts: { priority?: EventPriority; debounceMs: number } = {
     debounceMs: 100,
   };
-  // NEW: input-handler type suffix. Set once via updateType(); subsequent
+  // Input-handler type suffix. Set once via updateType(); subsequent
   // mismatches throw. `undefined` is a valid finalized state ("no suffix").
-  type?: string;
+  private type?: string;
   private typeFinalized = false;
 
   constructor(id: string, value: T) {
