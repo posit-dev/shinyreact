@@ -18,13 +18,13 @@ extras group).
 
 | Archetype | Class | Demonstrated by |
 |---|---|---|
-| Simple input | `UiInputSlider` | `n` and `seed` sliders |
-| Structured input | `UiInputSelect` | `dist` selector |
-| Plain output | `UiOutputCode` | `summary` and `diag` outputs |
-| Output with read-only signals | `UiOutputPlot` | `plot` with `click=True, brush=True` |
-| Layout with children + state | `UiCard` | `main_card.full_screen_value()`, `main_card.update(full_screen=...)` |
-| Layout with state + children | `UiAccordion` | `acc.open_panels()`, `acc.update(open=...)` |
-| Layout-as-child | `UiAccordionPanel` | Two panels inside `acc` |
+| Simple input | `input_slider` | `n` and `seed` sliders |
+| Structured input | `input_select` | `dist` selector |
+| Plain output | `output_code` | `summary` and `diag` outputs |
+| Output with read-only signals | `output_plot` | `plot` with `click=True, brush=True` |
+| Layout with children + state | `card` | `main_card.full_screen_value()`, `main_card.update(full_screen=...)` |
+| Layout with state + children | `accordion` | `acc.open_panels()`, `acc.update(open=...)` |
+| Layout-as-child | `accordion_panel` | Two panels inside `acc` |
 
 ## Class-per-component patterns in the server code
 
@@ -33,7 +33,7 @@ each component constructed in `app_ui(request)`. Through those handles, server
 code reads input values:
 
 ```python
-n_slider = cast(su.UiInputSlider, su.lookup_component(session, "n"))
+n_slider = cast(su.input_slider, su.lookup_component(session, "n"))
 
 @render.code
 def summary():
@@ -64,7 +64,7 @@ reactive contexts establish dependencies correctly.
 
 ## Notes on real-app fidelity
 
-- `UiCard.full_screen_value()` reads `input.<card_id>()` — Stage A doesn't wire
+- `card.full_screen_value()` reads `input.<card_id>()` — Stage A doesn't wire
   the browser-side push for `full_screen` state, so the value stays `False` in
   a live browser session until the JS binding is added. Unit tests exercise the
   full path with a mocked session.

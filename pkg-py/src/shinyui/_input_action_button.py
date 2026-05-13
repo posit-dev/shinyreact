@@ -1,4 +1,4 @@
-"""UiInputActionButton — class-based input_action_button with a clicked accessor.
+"""input_action_button — class-based input_action_button with a clicked accessor.
 
 Demonstrates the ``__init_subclass__`` registration pattern: by declaring
 ``input_handler_name`` and ``_input_handler`` on the class, the handler is
@@ -27,7 +27,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class UiInputActionButton(UiInput, Updatable):
+class input_action_button(UiInput, Updatable):  # noqa: N801
     """Server-readable button.
 
     ``input.<id>()`` is an integer counter that starts at 0 and increments on
@@ -99,11 +99,3 @@ class UiInputActionButton(UiInput, Updatable):
         if disabled is not _MISSING:
             kwargs["disabled"] = disabled
         _sui.update_action_button(self.id, session=sess, **kwargs)
-
-
-def input_action_button(
-    id: str,
-    label: TagChild,
-    **kwargs: Any,
-) -> UiInputActionButton:
-    return UiInputActionButton(id, label, **kwargs)

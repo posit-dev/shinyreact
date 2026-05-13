@@ -1,4 +1,4 @@
-"""UiAccordion — layout with collapsible panels; open-panel set exposed as input value.
+"""accordion — layout with collapsible panels; open-panel set exposed as input value.
 
 Implementation note: shiny's accordion already registers its own input binding that
 pushes the open-panel list to the server as a list.  No custom input handler is
@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 from htmltools import Tag
 
-from ._accordion_panel import UiAccordionPanel
+from ._accordion_panel import accordion_panel
 from ._children import AllowsChildren
 from ._input_value import HasInputValue
 from ._reactive import reactive_calc_method
@@ -21,7 +21,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
+class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
     """Accordion container; open-panel set is available via open_panels().
 
     No custom input handler is registered — shiny's own accordion binding handles
@@ -30,7 +30,7 @@ class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
 
     def __init__(
         self,
-        *args: UiAccordionPanel,
+        *args: accordion_panel,
         id: str,
         open: Optional[str | tuple[str, ...] | bool] = None,
         multiple: bool = True,
@@ -54,7 +54,7 @@ class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
         import shiny.ui as _sui
 
         # `shiny.ui.accordion` does an explicit isinstance(panel, AccordionPanel)
-        # check, so children must be pre-resolved (UiAccordionPanel.tagify()
+        # check, so children must be pre-resolved (accordion_panel.tagify()
         # returns an AccordionPanel). A single .tagify() on the result lets
         # htmltools' walker resolve any remaining Tagifiable descendants
         # inside the panels (e.g. an input_slider inside a panel).
@@ -109,20 +109,3 @@ class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
             targets = [hide] if isinstance(hide, str) else list(hide)
             for target in targets:
                 _sui.update_accordion_panel(self.id, target, show=False, session=sess)
-
-
-def accordion(*args: UiAccordionPanel, id: str, **kwargs: Any) -> UiAccordion:
-    """Create a UiAccordion.
-
-    Parameters
-    ----------
-    *args
-        :class:`UiAccordionPanel` children.
-    id
-        Input id; available as ``input.id()`` in the server, or via
-        ``accordion_obj.open_panels()``.
-    **kwargs
-        Forwarded to :class:`UiAccordion` (``open``, ``multiple``, ``class_``,
-        ``width``, ``height``).
-    """
-    return UiAccordion(*args, id=id, **kwargs)

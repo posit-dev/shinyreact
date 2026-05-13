@@ -1,4 +1,4 @@
-"""UiCard — layout with optional full-screen toggle exposed as input value.
+"""card — layout with optional full-screen toggle exposed as input value.
 
 NOTE: real wire-level `full_screen` input is out of scope for the Stage A
 prototype (would require client-side JS). The `full_screen_value()` accessor
@@ -26,7 +26,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
+class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
     """Card container; full-screen state is available via full_screen_value().
 
     No custom input handler is registered — shiny's own card binding handles
@@ -81,7 +81,7 @@ class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
             kwargs["class_"] = self.class_
 
         # `shiny.ui.card` accepts arbitrary TagChild members — including our
-        # Tagifiable UiAccordion / UiInputSlider / etc. — so we hand them in
+        # Tagifiable accordion / input_slider / etc. — so we hand them in
         # unchanged. A single .tagify() on the result lets htmltools' walker
         # resolve our Tagifiable descendants chain-style. (Card has no
         # isinstance check on children, unlike accordion's AccordionPanel.)
@@ -104,20 +104,3 @@ class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
             return
         # There is no shiny.ui.update_card today; use send_input_message directly.
         sess.send_input_message(self.id, {"full_screen": full_screen})
-
-
-def card(*args: TagChild, id: str, **kwargs: Any) -> UiCard:
-    """Create a :class:`UiCard`.
-
-    Parameters
-    ----------
-    *args
-        UI children.
-    id
-        Input id; available as ``input.id()`` in the server, or via
-        ``card_obj.full_screen_value()``.
-    **kwargs
-        Forwarded to :class:`UiCard` (``full_screen``, ``height``,
-        ``max_height``, ``min_height``, ``fill``, ``class_``).
-    """
-    return UiCard(*args, id=id, **kwargs)

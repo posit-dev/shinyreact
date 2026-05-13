@@ -1,8 +1,6 @@
-"""UiAccordionPanel — layout child of UiAccordion."""
+"""accordion_panel — layout child of accordion."""
 
 from __future__ import annotations
-
-from typing import Any
 
 from htmltools import TagChild
 from shiny.types import MISSING, MISSING_TYPE
@@ -12,7 +10,7 @@ from ._children import AllowsChildren
 from ._roles import UiLayout
 
 
-class UiAccordionPanel(UiLayout, AllowsChildren):
+class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
     def __init__(
         self,
         title: str,
@@ -40,7 +38,3 @@ class UiAccordionPanel(UiLayout, AllowsChildren):
             value=self._value,
             icon=self.icon,
         )
-
-
-def accordion_panel(title: str, *args: TagChild, **kwargs: Any) -> UiAccordionPanel:
-    return UiAccordionPanel(title, *args, **kwargs)

@@ -1,14 +1,14 @@
-"""UiOutputPlot — output with read-only client-side interaction signals.
+"""output_plot — output with read-only client-side interaction signals.
 
 Derived input ids (the four that ``shiny.ui.output_plot`` actually pushes):
 
   ===================  ============================================
   Wire id              Accessor (reactive read)
   ===================  ============================================
-  input.<id>_click     :meth:`UiOutputPlot.click_value`
-  input.<id>_dblclick  :meth:`UiOutputPlot.dbl_value`
-  input.<id>_hover     :meth:`UiOutputPlot.hover_value`
-  input.<id>_brush     :meth:`UiOutputPlot.brush_value`
+  input.<id>_click     :meth:`output_plot.click_value`
+  input.<id>_dblclick  :meth:`output_plot.dbl_value`
+  input.<id>_hover     :meth:`output_plot.hover_value`
+  input.<id>_brush     :meth:`output_plot.brush_value`
   ===================  ============================================
 
 No HasInputValue, no Updatable. Derived inputs flow through Shiny's
@@ -31,7 +31,7 @@ from ._reactive import reactive_calc_method
 from ._roles import UiOutput
 
 
-class UiOutputPlot(UiOutput):
+class output_plot(UiOutput):  # noqa: N801
     def __init__(
         self,
         id: str,
@@ -86,7 +86,3 @@ class UiOutputPlot(UiOutput):
             brush=self.brush_enabled,
             fill=self.fill,
         )
-
-
-def output_plot(id: str, **kwargs: Any) -> UiOutputPlot:
-    return UiOutputPlot(id, **kwargs)

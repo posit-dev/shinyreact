@@ -3,12 +3,12 @@ from __future__ import annotations
 import pytest
 import shiny.ui as sui
 from shiny import reactive
-from shinyui._input_select import UiInputSelect, input_select
+from shinyui._input_select import input_select
 
 
 def test_factory_returns_instance():
     s = input_select("col", "Column", {"a": "A", "b": "B"})
-    assert isinstance(s, UiInputSelect)
+    assert isinstance(s, input_select)
 
 
 def test_tagify_matches_shiny_ui_input_select():

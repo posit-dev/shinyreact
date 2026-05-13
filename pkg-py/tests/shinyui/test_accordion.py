@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from shiny import reactive
-from shinyui._accordion import UiAccordion, accordion
+from shinyui._accordion import accordion
 from shinyui._accordion_panel import accordion_panel
 from shinyui._children import AllowsChildren
 from shinyui._input_value import HasInputValue
@@ -11,7 +11,7 @@ from shinyui._updatable import Updatable
 
 def test_factory_returns_instance():
     a = accordion(accordion_panel("A"), accordion_panel("B"), id="acc")
-    assert isinstance(a, UiAccordion)
+    assert isinstance(a, accordion)
     assert isinstance(a, HasInputValue)
     assert isinstance(a, AllowsChildren)
     assert isinstance(a, Updatable)

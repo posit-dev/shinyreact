@@ -25,13 +25,13 @@ pkg-py/src/shinyui/
   _updatable.py                      # CREATE: Updatable mixin (ABC)
   _roles.py                          # CREATE: UiInput, UiOutput, UiLayout
   _reactive.py                       # CREATE: reactive_calc_method (~15-line decorator)
-  _input_slider.py                   # CREATE: UiInputSlider + input_slider()
-  _input_select.py                   # CREATE: UiInputSelect + input_select()
-  _output_code.py                    # CREATE: UiOutputCode + output_code()
-  _output_plot.py                    # CREATE: UiOutputPlot + output_plot()
-  _accordion_panel.py                # CREATE: UiAccordionPanel + accordion_panel()
-  _accordion.py                      # CREATE: UiAccordion + accordion()
-  _card.py                           # CREATE: UiCard + card()
+  _input_slider.py                   # CREATE: input_slider + input_slider()
+  _input_select.py                   # CREATE: input_select + input_select()
+  _output_code.py                    # CREATE: output_code + output_code()
+  _output_plot.py                    # CREATE: output_plot + output_plot()
+  _accordion_panel.py                # CREATE: accordion_panel + accordion_panel()
+  _accordion.py                      # CREATE: accordion + accordion()
+  _card.py                           # CREATE: card + card()
   _bookmark.py                       # CREATE: id→instance session map + class-owned serializer hook
 
 pkg-py/tests/shinyui/
@@ -995,7 +995,7 @@ git commit -m "feat(shinyui): local reactive_calc_method helper"
 
 ---
 
-## Task 9: `UiInputSlider`
+## Task 9: `input_slider`
 
 **Files:**
 - Create: `pkg-py/src/shinyui/_input_slider.py`
@@ -1016,12 +1016,12 @@ import pytest
 import shiny.ui as sui
 from htmltools import Tag
 
-from shinyui._input_slider import UiInputSlider, input_slider
+from shinyui._input_slider import input_slider, input_slider
 
 
 def test_factory_returns_instance():
     s = input_slider("n", "N", 1, 100, 50)
-    assert isinstance(s, UiInputSlider)
+    assert isinstance(s, input_slider)
     assert s.id == "n"
 
 
@@ -1042,7 +1042,7 @@ def test_value_accessor_reads_input(mock_session):
 
 def test_update_outside_session_raises():
     s = input_slider("n", "N", 1, 100, 50)  # no session at construction
-    with pytest.raises(RuntimeError, match=r"UiInputSlider\.update\(\) requires an active session"):
+    with pytest.raises(RuntimeError, match=r"input_slider\.update\(\) requires an active session"):
         s.update(value=42)
 
 
@@ -1060,7 +1060,7 @@ def test_update_uses_captured_session(mock_session):
 Run: `uv run pytest pkg-py/tests/shinyui/test_input_slider.py -v`
 Expected: All fail with `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement UiInputSlider**
+- [ ] **Step 3: Implement input_slider**
 
 Read `shiny/ui/_input_slider.py` (run: `uv run python -c "import shiny.ui._input_slider as m; print(m.__file__)"`) to find the markup-construction logic. Copy the Tag-construction body into `tagify()` below, mapping each function argument to `self.<attr>`.
 
@@ -1069,7 +1069,7 @@ Read `shiny/ui/_input_update.py` (the `update_slider` function) to find the `sen
 Create `pkg-py/src/shinyui/_input_slider.py`:
 
 ```python
-"""UiInputSlider — class-based input_slider with typed update() and value() accessor."""
+"""input_slider — class-based input_slider with typed update() and value() accessor."""
 from __future__ import annotations
 
 from typing import Any
@@ -1083,7 +1083,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class UiInputSlider(UiInput, Updatable):
+class input_slider(UiInput, Updatable):
     def __init__(
         self,
         id: str,
@@ -1164,8 +1164,8 @@ def input_slider(
     max: float,
     value: float | tuple[float, float],
     **kwargs: Any,
-) -> UiInputSlider:
-    return UiInputSlider(id, label, min, max, value, **kwargs)
+) -> input_slider:
+    return input_slider(id, label, min, max, value, **kwargs)
 ```
 
 **Implementer note:** the `tagify()` body above delegates to `shiny.ui.input_slider` as a temporary measure so the snapshot test passes immediately. Replace with a copy-pasted construction body once the test is green (this keeps the prototype dep-free per spec). The snapshot test is the regression net — when you swap the body, re-run the test to confirm equivalence.
@@ -1177,7 +1177,7 @@ Expected: All pass.
 
 - [ ] **Step 5: Inline the tagify markup**
 
-Read `shiny/ui/_input_slider.py` and copy the Tag construction body into `UiInputSlider.tagify()`, replacing the delegation. Re-run the snapshot test:
+Read `shiny/ui/_input_slider.py` and copy the Tag construction body into `input_slider.tagify()`, replacing the delegation. Re-run the snapshot test:
 
 Run: `uv run pytest pkg-py/tests/shinyui/test_input_slider.py::test_tagify_matches_shiny_ui_input_slider -v`
 Expected: PASS.
@@ -1186,12 +1186,12 @@ Expected: PASS.
 
 ```bash
 git add pkg-py/src/shinyui/_input_slider.py pkg-py/tests/shinyui/test_input_slider.py
-git commit -m "feat(shinyui): UiInputSlider + input_slider() factory"
+git commit -m "feat(shinyui): input_slider + input_slider() factory"
 ```
 
 ---
 
-## Task 10: `UiInputSelect`
+## Task 10: `input_select`
 
 **Files:**
 - Create: `pkg-py/src/shinyui/_input_select.py`
@@ -1209,12 +1209,12 @@ from __future__ import annotations
 import pytest
 import shiny.ui as sui
 
-from shinyui._input_select import UiInputSelect, input_select
+from shinyui._input_select import input_select, input_select
 
 
 def test_factory_returns_instance():
     s = input_select("col", "Column", {"a": "A", "b": "B"})
-    assert isinstance(s, UiInputSelect)
+    assert isinstance(s, input_select)
 
 
 def test_tagify_matches_shiny_ui_input_select():
@@ -1251,12 +1251,12 @@ def test_update_sends_message(mock_session):
 Run: `uv run pytest pkg-py/tests/shinyui/test_input_select.py -v`
 Expected: All fail with `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement UiInputSelect**
+- [ ] **Step 3: Implement input_select**
 
 Create `pkg-py/src/shinyui/_input_select.py`:
 
 ```python
-"""UiInputSelect — class-based input_select."""
+"""input_select — class-based input_select."""
 from __future__ import annotations
 
 from typing import Any, Mapping
@@ -1272,7 +1272,7 @@ _MISSING = object()
 SelectChoices = Mapping[str, str] | Mapping[str, Mapping[str, str]]
 
 
-class UiInputSelect(UiInput, Updatable):
+class input_select(UiInput, Updatable):
     def __init__(
         self,
         id: str,
@@ -1330,8 +1330,8 @@ def input_select(
     label: str,
     choices: SelectChoices,
     **kwargs: Any,
-) -> UiInputSelect:
-    return UiInputSelect(id, label, choices, **kwargs)
+) -> input_select:
+    return input_select(id, label, choices, **kwargs)
 ```
 
 - [ ] **Step 4: Run tests — verify they pass**
@@ -1347,12 +1347,12 @@ Same procedure as Task 9 Step 5.
 
 ```bash
 git add pkg-py/src/shinyui/_input_select.py pkg-py/tests/shinyui/test_input_select.py
-git commit -m "feat(shinyui): UiInputSelect + input_select() factory"
+git commit -m "feat(shinyui): input_select + input_select() factory"
 ```
 
 ---
 
-## Task 11: `UiOutputCode`
+## Task 11: `output_code`
 
 **Files:**
 - Create: `pkg-py/src/shinyui/_output_code.py`
@@ -1369,12 +1369,12 @@ from __future__ import annotations
 
 import shiny.ui as sui
 
-from shinyui._output_code import UiOutputCode, output_code
+from shinyui._output_code import output_code, output_code
 
 
 def test_factory_returns_instance():
     o = output_code("summary")
-    assert isinstance(o, UiOutputCode)
+    assert isinstance(o, output_code)
     assert o.id == "summary"
 
 
@@ -1389,12 +1389,12 @@ def test_tagify_matches_shiny_ui_output_code():
 Run: `uv run pytest pkg-py/tests/shinyui/test_output_code.py -v`
 Expected: All fail with `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement UiOutputCode**
+- [ ] **Step 3: Implement output_code**
 
 Create `pkg-py/src/shinyui/_output_code.py`:
 
 ```python
-"""UiOutputCode — class-based output_code."""
+"""output_code — class-based output_code."""
 from __future__ import annotations
 
 from typing import Any
@@ -1404,7 +1404,7 @@ from htmltools import Tag
 from ._roles import UiOutput
 
 
-class UiOutputCode(UiOutput):
+class output_code(UiOutput):
     def __init__(self, id: str, *, placeholder: bool = False) -> None:
         self.id = id
         self.placeholder = placeholder
@@ -1415,8 +1415,8 @@ class UiOutputCode(UiOutput):
         return _sui.output_code(self.id, placeholder=self.placeholder)  # Implementer: inline markup
 
 
-def output_code(id: str, *, placeholder: bool = False) -> UiOutputCode:
-    return UiOutputCode(id, placeholder=placeholder)
+def output_code(id: str, *, placeholder: bool = False) -> output_code:
+    return output_code(id, placeholder=placeholder)
 ```
 
 - [ ] **Step 4: Run tests — verify they pass**
@@ -1430,12 +1430,12 @@ Expected: All pass.
 
 ```bash
 git add pkg-py/src/shinyui/_output_code.py pkg-py/tests/shinyui/test_output_code.py
-git commit -m "feat(shinyui): UiOutputCode + output_code() factory"
+git commit -m "feat(shinyui): output_code + output_code() factory"
 ```
 
 ---
 
-## Task 12: `UiOutputPlot`
+## Task 12: `output_plot`
 
 **Files:**
 - Create: `pkg-py/src/shinyui/_output_plot.py`
@@ -1454,12 +1454,12 @@ import pytest
 import shiny.ui as sui
 from shiny import reactive
 
-from shinyui._output_plot import UiOutputPlot, output_plot
+from shinyui._output_plot import output_plot, output_plot
 
 
 def test_factory_returns_instance():
     p = output_plot("p", click=True, brush=True)
-    assert isinstance(p, UiOutputPlot)
+    assert isinstance(p, output_plot)
     assert p.id == "p"
 
 
@@ -1512,12 +1512,12 @@ def test_no_input_handlers_registered_for_plot(monkeypatch):
 Run: `uv run pytest pkg-py/tests/shinyui/test_output_plot.py -v`
 Expected: All fail with `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement UiOutputPlot**
+- [ ] **Step 3: Implement output_plot**
 
 Create `pkg-py/src/shinyui/_output_plot.py`:
 
 ```python
-"""UiOutputPlot — output with read-only client-side interaction signals.
+"""output_plot — output with read-only client-side interaction signals.
 
 Derived input ids:
   input.<id>_click       — {x, y} | None
@@ -1539,7 +1539,7 @@ from ._reactive import reactive_calc_method
 from ._roles import UiOutput
 
 
-class UiOutputPlot(UiOutput):
+class output_plot(UiOutput):
     def __init__(
         self,
         id: str,
@@ -1585,8 +1585,8 @@ class UiOutputPlot(UiOutput):
         )
 
 
-def output_plot(id: str, **kwargs: Any) -> UiOutputPlot:
-    return UiOutputPlot(id, **kwargs)
+def output_plot(id: str, **kwargs: Any) -> output_plot:
+    return output_plot(id, **kwargs)
 ```
 
 - [ ] **Step 4: Run tests — verify they pass**
@@ -1600,12 +1600,12 @@ Expected: All pass.
 
 ```bash
 git add pkg-py/src/shinyui/_output_plot.py pkg-py/tests/shinyui/test_output_plot.py
-git commit -m "feat(shinyui): UiOutputPlot with read-only signal accessors"
+git commit -m "feat(shinyui): output_plot with read-only signal accessors"
 ```
 
 ---
 
-## Task 13: `UiAccordionPanel`
+## Task 13: `accordion_panel`
 
 **Files:**
 - Create: `pkg-py/src/shinyui/_accordion_panel.py`
@@ -1623,13 +1623,13 @@ from __future__ import annotations
 import shiny.ui as sui
 from htmltools import tags
 
-from shinyui._accordion_panel import UiAccordionPanel, accordion_panel
+from shinyui._accordion_panel import accordion_panel, accordion_panel
 from shinyui._children import AllowsChildren
 
 
 def test_factory_returns_instance():
     p = accordion_panel("Settings", "body")
-    assert isinstance(p, UiAccordionPanel)
+    assert isinstance(p, accordion_panel)
     assert isinstance(p, AllowsChildren)
 
 
@@ -1655,12 +1655,12 @@ def test_with_block_appends():
 Run: `uv run pytest pkg-py/tests/shinyui/test_accordion_panel.py -v`
 Expected: All fail with `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement UiAccordionPanel**
+- [ ] **Step 3: Implement accordion_panel**
 
 Create `pkg-py/src/shinyui/_accordion_panel.py`:
 
 ```python
-"""UiAccordionPanel — layout child of UiAccordion."""
+"""accordion_panel — layout child of accordion."""
 from __future__ import annotations
 
 from typing import Any
@@ -1671,7 +1671,7 @@ from ._children import AllowsChildren
 from ._roles import UiLayout
 
 
-class UiAccordionPanel(UiLayout, AllowsChildren):
+class accordion_panel(UiLayout, AllowsChildren):
     def __init__(
         self,
         title: str,
@@ -1695,8 +1695,8 @@ class UiAccordionPanel(UiLayout, AllowsChildren):
         )
 
 
-def accordion_panel(title: str, *args: TagChild, **kwargs: Any) -> UiAccordionPanel:
-    return UiAccordionPanel(title, *args, **kwargs)
+def accordion_panel(title: str, *args: TagChild, **kwargs: Any) -> accordion_panel:
+    return accordion_panel(title, *args, **kwargs)
 ```
 
 - [ ] **Step 4: Run tests — verify they pass**
@@ -1710,12 +1710,12 @@ Expected: All pass.
 
 ```bash
 git add pkg-py/src/shinyui/_accordion_panel.py pkg-py/tests/shinyui/test_accordion_panel.py
-git commit -m "feat(shinyui): UiAccordionPanel + accordion_panel() factory"
+git commit -m "feat(shinyui): accordion_panel + accordion_panel() factory"
 ```
 
 ---
 
-## Task 14: `UiAccordion`
+## Task 14: `accordion`
 
 **Files:**
 - Create: `pkg-py/src/shinyui/_accordion.py`
@@ -1736,7 +1736,7 @@ import pytest
 import shiny.ui as sui
 from shiny import reactive
 
-from shinyui._accordion import UiAccordion, accordion
+from shinyui._accordion import accordion, accordion
 from shinyui._accordion_panel import accordion_panel
 from shinyui._children import AllowsChildren
 from shinyui._input_value import HasInputValue
@@ -1745,7 +1745,7 @@ from shinyui._updatable import Updatable
 
 def test_factory_returns_instance():
     a = accordion(accordion_panel("A"), accordion_panel("B"), id="acc")
-    assert isinstance(a, UiAccordion)
+    assert isinstance(a, accordion)
     assert isinstance(a, HasInputValue)
     assert isinstance(a, AllowsChildren)
     assert isinstance(a, Updatable)
@@ -1785,7 +1785,7 @@ def test_update_sends_message(mock_session):
 def test_input_handler_is_registered_after_import():
     from shiny._input_handler import input_handlers
     # input_handler_name is the wire-type for accordion (verify against shiny source).
-    assert UiAccordion.input_handler_name in input_handlers._handlers
+    assert accordion.input_handler_name in input_handlers._handlers
 ```
 
 - [ ] **Step 2: Run tests — verify they fail**
@@ -1793,12 +1793,12 @@ def test_input_handler_is_registered_after_import():
 Run: `uv run pytest pkg-py/tests/shinyui/test_accordion.py -v`
 Expected: All fail with `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement UiAccordion**
+- [ ] **Step 3: Implement accordion**
 
 Create `pkg-py/src/shinyui/_accordion.py`:
 
 ```python
-"""UiAccordion — layout with multiple panels; exposes open-panel set as input value."""
+"""accordion — layout with multiple panels; exposes open-panel set as input value."""
 from __future__ import annotations
 
 from typing import Any
@@ -1819,7 +1819,7 @@ def _accordion_input_handler(value: Any, name: Any, session: Any) -> Any:
     return tuple(value) if value is not None else ()
 
 
-class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
+class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
     # IMPLEMENTER: Confirm the exact wire-type string by reading shiny.ui._accordion.py
     # for `register_input_handler("...", ...)`. Adjust the literal below if wrong;
     # the test_input_handler_is_registered_after_import test pins it.
@@ -1871,11 +1871,11 @@ class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
         sess.send_input_message(self.id, msg)
 
 
-UiAccordion._register_input_handler()
+accordion._register_input_handler()
 
 
-def accordion(*args: Any, id: str, **kwargs: Any) -> UiAccordion:
-    return UiAccordion(*args, id=id, **kwargs)
+def accordion(*args: Any, id: str, **kwargs: Any) -> accordion:
+    return accordion(*args, id=id, **kwargs)
 ```
 
 Add the missing `ClassVar` import:
@@ -1895,12 +1895,12 @@ Expected: All pass. If `input_handler_name` is wrong, read `shiny/ui/_accordion.
 
 ```bash
 git add pkg-py/src/shinyui/_accordion.py pkg-py/tests/shinyui/test_accordion.py
-git commit -m "feat(shinyui): UiAccordion + accordion() factory"
+git commit -m "feat(shinyui): accordion + accordion() factory"
 ```
 
 ---
 
-## Task 15: `UiCard`
+## Task 15: `card`
 
 **Files:**
 - Create: `pkg-py/src/shinyui/_card.py`
@@ -1921,7 +1921,7 @@ import pytest
 import shiny.ui as sui
 from shiny import reactive
 
-from shinyui._card import UiCard, card
+from shinyui._card import card, card
 from shinyui._children import AllowsChildren
 from shinyui._input_value import HasInputValue
 from shinyui._updatable import Updatable
@@ -1929,7 +1929,7 @@ from shinyui._updatable import Updatable
 
 def test_factory_returns_instance():
     c = card("body", id="main")
-    assert isinstance(c, UiCard)
+    assert isinstance(c, card)
     assert isinstance(c, HasInputValue)
     assert isinstance(c, AllowsChildren)
     assert isinstance(c, Updatable)
@@ -1966,12 +1966,12 @@ def test_update_sends_message(mock_session):
 Run: `uv run pytest pkg-py/tests/shinyui/test_card.py -v`
 Expected: All fail with `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement UiCard**
+- [ ] **Step 3: Implement card**
 
 Create `pkg-py/src/shinyui/_card.py`:
 
 ```python
-"""UiCard — layout with optional full-screen toggle exposed as input value."""
+"""card — layout with optional full-screen toggle exposed as input value."""
 from __future__ import annotations
 
 from typing import Any
@@ -1987,7 +1987,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
+class card(UiLayout, AllowsChildren, HasInputValue, Updatable):
     # No input_handler_name / _input_handler — card's full_screen is a plain JSON bool.
 
     def __init__(
@@ -2032,8 +2032,8 @@ class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
         sess.send_input_message(self.id, msg)
 
 
-def card(*args: TagChild, id: str, **kwargs: Any) -> UiCard:
-    return UiCard(*args, id=id, **kwargs)
+def card(*args: TagChild, id: str, **kwargs: Any) -> card:
+    return card(*args, id=id, **kwargs)
 ```
 
 - [ ] **Step 4: Run tests — verify they pass**
@@ -2047,7 +2047,7 @@ Expected: All pass.
 
 ```bash
 git add pkg-py/src/shinyui/_card.py pkg-py/tests/shinyui/test_card.py
-git commit -m "feat(shinyui): UiCard with full_screen_value() and update()"
+git commit -m "feat(shinyui): card with full_screen_value() and update()"
 ```
 
 ---
@@ -2069,9 +2069,9 @@ def test_public_exports():
     assert sui.UiComponent
     assert sui.UiInput and sui.UiOutput and sui.UiLayout
     assert sui.HasInputValue and sui.Updatable and sui.AllowsChildren
-    assert sui.UiInputSlider and sui.UiInputSelect
-    assert sui.UiOutputCode and sui.UiOutputPlot
-    assert sui.UiCard and sui.UiAccordion and sui.UiAccordionPanel
+    assert sui.input_slider and sui.input_select
+    assert sui.output_code and sui.output_plot
+    assert sui.card and sui.accordion and sui.accordion_panel
 
     # Factory names
     assert callable(sui.input_slider)
@@ -2097,16 +2097,16 @@ Replace `pkg-py/src/shinyui/__init__.py` with:
 
 See docs/superpowers/specs/2026-05-13-shinyui-metadata-consolidation-design.md.
 """
-from ._accordion import UiAccordion, accordion
-from ._accordion_panel import UiAccordionPanel, accordion_panel
+from ._accordion import accordion, accordion
+from ._accordion_panel import accordion_panel, accordion_panel
 from ._base import UiComponent
-from ._card import UiCard, card
+from ._card import card, card
 from ._children import AllowsChildren
-from ._input_select import UiInputSelect, input_select
-from ._input_slider import UiInputSlider, input_slider
+from ._input_select import input_select, input_select
+from ._input_slider import input_slider, input_slider
 from ._input_value import HasInputValue
-from ._output_code import UiOutputCode, output_code
-from ._output_plot import UiOutputPlot, output_plot
+from ._output_code import output_code, output_code
+from ._output_plot import output_plot, output_plot
 from ._roles import UiInput, UiLayout, UiOutput
 from ._updatable import Updatable
 
@@ -2115,9 +2115,9 @@ __all__ = [
     "UiComponent", "UiInput", "UiOutput", "UiLayout",
     "HasInputValue", "Updatable", "AllowsChildren",
     # Concrete classes
-    "UiInputSlider", "UiInputSelect",
-    "UiOutputCode", "UiOutputPlot",
-    "UiCard", "UiAccordion", "UiAccordionPanel",
+    "input_slider", "input_select",
+    "output_code", "output_plot",
+    "card", "accordion", "accordion_panel",
     # Factories
     "input_slider", "input_select",
     "output_code", "output_plot",
@@ -2162,20 +2162,20 @@ import shinyui as sui
 
 def _maker(cls):
     """Build a representative instance of `cls` with whatever args its factory needs."""
-    if cls is sui.UiInputSlider:    return sui.input_slider("n", "N", 1, 10, 5)
-    if cls is sui.UiInputSelect:    return sui.input_select("c", "C", {"a": "A"})
-    if cls is sui.UiOutputCode:     return sui.output_code("o")
-    if cls is sui.UiOutputPlot:     return sui.output_plot("p")
-    if cls is sui.UiCard:           return sui.card("b", id="m")
-    if cls is sui.UiAccordion:      return sui.accordion(sui.accordion_panel("A"), id="acc")
-    if cls is sui.UiAccordionPanel: return sui.accordion_panel("X", "y")
+    if cls is sui.input_slider:    return sui.input_slider("n", "N", 1, 10, 5)
+    if cls is sui.input_select:    return sui.input_select("c", "C", {"a": "A"})
+    if cls is sui.output_code:     return sui.output_code("o")
+    if cls is sui.output_plot:     return sui.output_plot("p")
+    if cls is sui.card:           return sui.card("b", id="m")
+    if cls is sui.accordion:      return sui.accordion(sui.accordion_panel("A"), id="acc")
+    if cls is sui.accordion_panel: return sui.accordion_panel("X", "y")
     raise AssertionError(f"no maker for {cls}")
 
 
 ALL_CLASSES = [
-    sui.UiInputSlider, sui.UiInputSelect,
-    sui.UiOutputCode, sui.UiOutputPlot,
-    sui.UiCard, sui.UiAccordion, sui.UiAccordionPanel,
+    sui.input_slider, sui.input_select,
+    sui.output_code, sui.output_plot,
+    sui.card, sui.accordion, sui.accordion_panel,
 ]
 
 
@@ -2185,13 +2185,13 @@ def test_is_uicomponent(cls):
 
 
 @pytest.mark.parametrize("cls,expected", [
-    (sui.UiInputSlider,    {sui.UiInput, sui.HasInputValue, sui.Updatable}),
-    (sui.UiInputSelect,    {sui.UiInput, sui.HasInputValue, sui.Updatable}),
-    (sui.UiOutputCode,     {sui.UiOutput}),
-    (sui.UiOutputPlot,     {sui.UiOutput}),
-    (sui.UiCard,           {sui.UiLayout, sui.AllowsChildren, sui.HasInputValue, sui.Updatable}),
-    (sui.UiAccordion,      {sui.UiLayout, sui.AllowsChildren, sui.HasInputValue, sui.Updatable}),
-    (sui.UiAccordionPanel, {sui.UiLayout, sui.AllowsChildren}),
+    (sui.input_slider,    {sui.UiInput, sui.HasInputValue, sui.Updatable}),
+    (sui.input_select,    {sui.UiInput, sui.HasInputValue, sui.Updatable}),
+    (sui.output_code,     {sui.UiOutput}),
+    (sui.output_plot,     {sui.UiOutput}),
+    (sui.card,           {sui.UiLayout, sui.AllowsChildren, sui.HasInputValue, sui.Updatable}),
+    (sui.accordion,      {sui.UiLayout, sui.AllowsChildren, sui.HasInputValue, sui.Updatable}),
+    (sui.accordion_panel, {sui.UiLayout, sui.AllowsChildren}),
 ])
 def test_expected_bases(cls, expected):
     inst = _maker(cls)
@@ -2200,13 +2200,13 @@ def test_expected_bases(cls, expected):
 
 
 @pytest.mark.parametrize("cls,allows_children", [
-    (sui.UiInputSlider,    False),
-    (sui.UiInputSelect,    False),
-    (sui.UiOutputCode,     False),
-    (sui.UiOutputPlot,     False),
-    (sui.UiCard,           True),
-    (sui.UiAccordion,      True),
-    (sui.UiAccordionPanel, True),
+    (sui.input_slider,    False),
+    (sui.input_select,    False),
+    (sui.output_code,     False),
+    (sui.output_plot,     False),
+    (sui.card,           True),
+    (sui.accordion,      True),
+    (sui.accordion_panel, True),
 ])
 def test_with_block_protocol(cls, allows_children):
     inst = _maker(cls)
@@ -2271,17 +2271,17 @@ import shinyui as sui
 
 
 def test_accordion_handler_registered_after_import():
-    assert sui.UiAccordion.input_handler_name in input_handlers._handlers
+    assert sui.accordion.input_handler_name in input_handlers._handlers
 
 
 def test_slider_does_not_register_handler():
     """Slider has no custom server-side wire coercion."""
-    assert sui.UiInputSlider.input_handler_name == ""
-    assert sui.UiInputSlider._input_handler is None
+    assert sui.input_slider.input_handler_name == ""
+    assert sui.input_slider._input_handler is None
 
 
 def test_card_does_not_register_handler():
-    assert sui.UiCard.input_handler_name == ""
+    assert sui.card.input_handler_name == ""
 ```
 
 - [ ] **Step 4: Write test_update_resolution.py**
@@ -2466,11 +2466,11 @@ Create `examples/app-py/14-unified-ui-prototype/app.py`:
 """End-to-end demo of shinyui's class-per-component hierarchy.
 
 Exercises every reference class in one page:
-  - UiInputSlider, UiInputSelect  (simple + structured inputs)
-  - UiOutputCode                  (output)
-  - UiOutputPlot                  (output with read-only signals)
-  - UiCard                        (layout with state)
-  - UiAccordion + UiAccordionPanel (layout-with-state + layout-as-child)
+  - input_slider, input_select  (simple + structured inputs)
+  - output_code                  (output)
+  - output_plot                  (output with read-only signals)
+  - card                        (layout with state)
+  - accordion + accordion_panel (layout-with-state + layout-as-child)
 
 The `app_ui` is a function (not a module-level Tag) so a session is in scope
 when components are constructed — this is what enables class-owned bookmark
@@ -2596,13 +2596,13 @@ Run:
 
 | Archetype | Class | Demonstrated by |
 |---|---|---|
-| Simple input | `UiInputSlider` | `n` and `seed` sliders |
-| Structured input | `UiInputSelect` | `dist` selector |
-| Plain output | `UiOutputCode` | `summary` and `diag` |
-| Output with read-only signals | `UiOutputPlot` | `plot` with `click=True, brush=True` |
-| Layout with children | `UiCard` | `main_card` |
-| Layout with state + children | `UiCard` + `UiAccordion` | `main_card.full_screen_value()`, `accordion.open_panels()` |
-| Layout-as-child | `UiAccordionPanel` | Two panels inside `accordion` |
+| Simple input | `input_slider` | `n` and `seed` sliders |
+| Structured input | `input_select` | `dist` selector |
+| Plain output | `output_code` | `summary` and `diag` |
+| Output with read-only signals | `output_plot` | `plot` with `click=True, brush=True` |
+| Layout with children | `card` | `main_card` |
+| Layout with state + children | `card` + `accordion` | `main_card.full_screen_value()`, `accordion.open_panels()` |
+| Layout-as-child | `accordion_panel` | Two panels inside `accordion` |
 
 ## What to try
 
@@ -2615,7 +2615,7 @@ Run:
 ## Bookmark round-trip
 
 Append `?_inputs_=...` to the URL or use Shiny's built-in URL bookmark. Class-owned
-serializers (e.g. `UiAccordion`'s) restore correctly because the components
+serializers (e.g. `accordion`'s) restore correctly because the components
 register themselves with the session during `app_ui(request)` construction.
 ```
 
@@ -2663,7 +2663,7 @@ Walk the acceptance list from the spec and confirm each is met:
 - [ ] `examples/app-py/14-unified-ui-prototype/` runs and demonstrates bookmark + `.update()`
 - [ ] All test files exist and pass
 - [ ] `tagify()` snapshots match `shiny.ui.*` markup for every concrete class
-- [ ] `with UiInputSlider(...):` raises with clear message
+- [ ] `with input_slider(...):` raises with clear message
 - [ ] No new top-level dependency in `pyproject.toml`
 
 Report status back to the user with the final commit SHA and a summary of what shipped.

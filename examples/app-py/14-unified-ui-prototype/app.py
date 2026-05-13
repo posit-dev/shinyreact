@@ -1,11 +1,11 @@
 """End-to-end demo of shinyui's class-per-component hierarchy (Shiny Express).
 
 Exercises every reference class in one page:
-  - UiInputSlider, UiInputSelect, UiInputActionButton  (inputs)
-  - UiOutputCode                                       (output)
-  - UiOutputPlot                                       (output with read-only signals)
-  - UiCard                                             (layout with state)
-  - UiAccordion + UiAccordionPanel                     (layout + layout-as-child)
+  - input_slider, input_select, input_action_button  (inputs)
+  - output_code                                      (output)
+  - output_plot                                      (output with read-only signals)
+  - card                                             (layout with state)
+  - accordion + accordion_panel                      (layout + layout-as-child)
 
 This is the Express variant of the demo. In Express the script runs once per
 session — ``get_current_session()`` is bound while the module's top-level

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import shiny.ui as sui
 from shiny import reactive
-from shinyui._output_plot import UiOutputPlot, output_plot
+from shinyui._output_plot import output_plot
 
 
 def test_factory_returns_instance():
     p = output_plot("p", click=True, brush=True)
-    assert isinstance(p, UiOutputPlot)
+    assert isinstance(p, output_plot)
     assert p.id == "p"
 
 

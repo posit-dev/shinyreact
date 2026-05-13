@@ -1,19 +1,17 @@
 def test_public_exports():
     import shinyui as sui
 
-    # Class names
+    # Base/mixin class names (PascalCase, same as shiny.render.Renderer)
     assert sui.UiComponent
     assert sui.UiInput and sui.UiOutput and sui.UiLayout
     assert sui.HasInputValue and sui.Updatable and sui.AllowsChildren
-    assert sui.UiInputSlider and sui.UiInputSelect
-    assert sui.UiOutputCode and sui.UiOutputPlot
-    assert sui.UiCard and sui.UiAccordion and sui.UiAccordionPanel
 
-    # Factory names
-    assert callable(sui.input_slider)
-    assert callable(sui.input_select)
-    assert callable(sui.output_code)
-    assert callable(sui.output_plot)
-    assert callable(sui.card)
-    assert callable(sui.accordion)
-    assert callable(sui.accordion_panel)
+    # Concrete classes (snake_case, same as shiny.render.data_frame)
+    assert isinstance(sui.input_slider, type)
+    assert isinstance(sui.input_select, type)
+    assert isinstance(sui.input_action_button, type)
+    assert isinstance(sui.output_code, type)
+    assert isinstance(sui.output_plot, type)
+    assert isinstance(sui.card, type)
+    assert isinstance(sui.accordion, type)
+    assert isinstance(sui.accordion_panel, type)

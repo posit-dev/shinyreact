@@ -1,4 +1,4 @@
-"""UiOutputCode — class-based output_code."""
+"""output_code — class-based output_code."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from htmltools import Tag
 from ._roles import UiOutput
 
 
-class UiOutputCode(UiOutput):
+class output_code(UiOutput):  # noqa: N801
     def __init__(self, id: str, *, placeholder: bool = True) -> None:
         self.id = id
         self.placeholder = placeholder
@@ -17,7 +17,3 @@ class UiOutputCode(UiOutput):
         import shiny.ui as _sui
 
         return _sui.output_code(self.id, placeholder=self.placeholder)
-
-
-def output_code(id: str, *, placeholder: bool = True) -> UiOutputCode:
-    return UiOutputCode(id, placeholder=placeholder)

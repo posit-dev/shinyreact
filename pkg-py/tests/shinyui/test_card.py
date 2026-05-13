@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import shiny.ui as sui
 from shiny import reactive
-from shinyui._card import UiCard, card
+from shinyui._card import card
 from shinyui._children import AllowsChildren
 from shinyui._input_value import HasInputValue
 from shinyui._updatable import Updatable
@@ -11,7 +11,7 @@ from shinyui._updatable import Updatable
 
 def test_factory_returns_instance():
     c = card("body", id="main")
-    assert isinstance(c, UiCard)
+    assert isinstance(c, card)
     assert isinstance(c, HasInputValue)
     assert isinstance(c, AllowsChildren)
     assert isinstance(c, Updatable)

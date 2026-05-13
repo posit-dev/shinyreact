@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import shiny.ui as sui
 from htmltools import tags
-from shinyui._accordion_panel import UiAccordionPanel, accordion_panel
+from shinyui._accordion_panel import accordion_panel
 from shinyui._children import AllowsChildren
 
 
 def test_factory_returns_instance():
     p = accordion_panel("Settings", "body")
-    assert isinstance(p, UiAccordionPanel)
+    assert isinstance(p, accordion_panel)
     assert isinstance(p, AllowsChildren)
 
 

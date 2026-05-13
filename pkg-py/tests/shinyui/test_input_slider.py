@@ -3,12 +3,12 @@ from __future__ import annotations
 import pytest
 import shiny.ui as sui
 from shiny import reactive
-from shinyui._input_slider import UiInputSlider, input_slider
+from shinyui._input_slider import input_slider
 
 
 def test_factory_returns_instance():
     s = input_slider("n", "N", 1, 100, 50)
-    assert isinstance(s, UiInputSlider)
+    assert isinstance(s, input_slider)
     assert s.id == "n"
 
 
@@ -28,7 +28,7 @@ def test_value_accessor_reads_input(mock_session):
 
 def test_update_outside_session_raises():
     s = input_slider("n", "N", 1, 100, 50)  # no session
-    match = r"UiInputSlider\.update\(\) requires an active session"
+    match = r"input_slider\.update\(\) requires an active session"
     with pytest.raises(RuntimeError, match=match):
         s.update(value=42)
 

@@ -1,4 +1,4 @@
-"""UiInputSelect — class-based input_select."""
+"""input_select — class-based input_select."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ SelectChoicesArg = Union[
 ]
 
 
-class UiInputSelect(UiInput, Updatable):
+class input_select(UiInput, Updatable):  # noqa: N801
     def __init__(
         self,
         id: str,
@@ -77,12 +77,3 @@ class UiInputSelect(UiInput, Updatable):
         if selected is not _MISSING:
             kwargs["selected"] = selected
         _sui.update_select(self.id, session=sess, **kwargs)
-
-
-def input_select(
-    id: str,
-    label: TagChild,
-    choices: SelectChoicesArg,
-    **kwargs: Any,
-) -> UiInputSelect:
-    return UiInputSelect(id, label, choices, **kwargs)

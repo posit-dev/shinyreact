@@ -20,7 +20,7 @@ Three open questions from the umbrella are resolved in this spec:
 
 A fourth refinement that emerged during design:
 
-- The umbrella's `UiInput`/`UiLayout`/`UiOutput` straddler pattern (e.g. `UiAccordion(UiInput, AllowsChildren)`) is replaced. "Has an input value" and "is updatable" become orthogonal mixins (`HasInputValue`, `Updatable`); the three role classes stay as semantic markers. This avoids the awkwardness of calling a card or an accordion "an input."
+- The umbrella's `UiInput`/`UiLayout`/`UiOutput` straddler pattern (e.g. `accordion(UiInput, AllowsChildren)`) is replaced. "Has an input value" and "is updatable" become orthogonal mixins (`HasInputValue`, `Updatable`); the three role classes stay as semantic markers. This avoids the awkwardness of calling a card or an accordion "an input."
 
 ## Motivation (delta from umbrella)
 
@@ -28,7 +28,7 @@ The umbrella spec answers *why* this work matters and *what* the hierarchy looks
 
 Three concrete pressures shaped the divergences below:
 
-- **Layouts can have input values.** Accordion's open-panel set, card's full-screen toggle, sidebar's open/closed state, navset's active tab — all are layouts whose primary user-facing purpose is structure, but which expose server-readable state. The umbrella's `UiAccordion(UiInput, AllowsChildren)` straddler doesn't generalize gracefully to `UiCard` ("a card is an input?"). Factoring `HasInputValue` out as a mixin removes the awkwardness and reads honestly.
+- **Layouts can have input values.** Accordion's open-panel set, card's full-screen toggle, sidebar's open/closed state, navset's active tab — all are layouts whose primary user-facing purpose is structure, but which expose server-readable state. The umbrella's `accordion(UiInput, AllowsChildren)` straddler doesn't generalize gracefully to `card` ("a card is an input?"). Factoring `HasInputValue` out as a mixin removes the awkwardness and reads honestly.
 - **Outputs can have read-only multi-signals.** A plot exposes `<id>_click`, `<id>_brush`, `<id>_hover`, `<id>_dblclick`. None are updatable from the server. Forcing these through `HasInputValue` (multi-id generalization) inflates a single-id abstraction for one rare use case; making them a separate mechanism keeps the common case clean.
 - **Server-side read accessors are a real ergonomic win.** Shiny's `@render.data_frame` already exposes `df.cell_selection()`, `df.sort()`, etc. as reactive methods on the renderer instance. The class-per-component design makes the same idiom available across the board: `slider.value()`, `card.full_screen_value()`, `accordion.open_panels()`, `plot.click_value()`.
 
@@ -115,19 +115,19 @@ AllowsChildren (mixin)         # children, append(), __enter__ returns self, __e
 
 | Class | Bases | Has input value? | Updatable? | Read accessors |
 |---|---|---|---|---|
-| `UiInputSlider` | `UiInput, Updatable` | ✓ | ✓ | `value() -> float` |
-| `UiInputSelect` | `UiInput, Updatable` | ✓ | ✓ | `value() -> str \| tuple[str, ...]` |
-| `UiOutputCode` | `UiOutput` | — | — | — |
-| `UiOutputPlot` | `UiOutput` | ✓ (derived ids; not `HasInputValue`) | — | `click_value()`, `dblclick_value()`, `hover_value()`, `brush_value()` |
-| `UiCard` | `UiLayout, AllowsChildren, HasInputValue, Updatable` | ✓ — `full_screen` (empty suffix; `input.<id>()` is the boolean) | ✓ | `full_screen_value() -> bool` |
-| `UiAccordion` | `UiLayout, AllowsChildren, HasInputValue, Updatable` | ✓ — open panel set | ✓ | `open_panels() -> tuple[str, ...]` |
-| `UiAccordionPanel` | `UiLayout, AllowsChildren` | — | — | — |
+| `input_slider` | `UiInput, Updatable` | ✓ | ✓ | `value() -> float` |
+| `input_select` | `UiInput, Updatable` | ✓ | ✓ | `value() -> str \| tuple[str, ...]` |
+| `output_code` | `UiOutput` | — | — | — |
+| `output_plot` | `UiOutput` | ✓ (derived ids; not `HasInputValue`) | — | `click_value()`, `dblclick_value()`, `hover_value()`, `brush_value()` |
+| `card` | `UiLayout, AllowsChildren, HasInputValue, Updatable` | ✓ — `full_screen` (empty suffix; `input.<id>()` is the boolean) | ✓ | `full_screen_value() -> bool` |
+| `accordion` | `UiLayout, AllowsChildren, HasInputValue, Updatable` | ✓ — open panel set | ✓ | `open_panels() -> tuple[str, ...]` |
+| `accordion_panel` | `UiLayout, AllowsChildren` | — | — | — |
 
-Each class is paired with a lowercase factory function (`input_slider`, `input_select`, `output_code`, `output_plot`, `card`, `accordion`, `accordion_panel`) that returns the instance. Both names are public exports from `shinyui`.
+Concrete classes use snake_case names (matching `shiny.render.data_frame` convention). The class name IS the call site — no separate factory function. Public exports from `shinyui`.
 
 ### Why this departs from the umbrella
 
-The umbrella spec models `UiAccordion` as `UiInput, AllowsChildren` (a "straddler"). That works for accordion in isolation but doesn't generalize to `UiCard`: a card whose full-screen state is exposed as an input wouldn't naturally be called "an input." Once we admit that *any* layout can expose state, the cleanest factoring is to make state-bearing a mixin orthogonal to the role split. The role categories (`UiInput`/`UiOutput`/`UiLayout`) become semantic markers; the mixins (`HasInputValue`/`Updatable`/`AllowsChildren`) describe capabilities.
+The umbrella spec models `accordion` as `UiInput, AllowsChildren` (a "straddler"). That works for accordion in isolation but doesn't generalize to `card`: a card whose full-screen state is exposed as an input wouldn't naturally be called "an input." Once we admit that *any* layout can expose state, the cleanest factoring is to make state-bearing a mixin orthogonal to the role split. The role categories (`UiInput`/`UiOutput`/`UiLayout`) become semantic markers; the mixins (`HasInputValue`/`Updatable`/`AllowsChildren`) describe capabilities.
 
 This refactor doesn't change the umbrella's other commitments: HTML deps still live as ClassVar, `tagify()` is still pure, the input handler registry is unchanged, and the umbrella's "you can `with X(...)` iff `X` declares `AllowsChildren`" rule still holds.
 
@@ -201,7 +201,7 @@ class HasInputValue:
 Subclasses declare both attributes and call `_register_input_handler()` at module level:
 
 ```python
-class UiInputDate(UiInput):
+class input_date(UiInput):  # noqa: N801
     input_handler_name = "shiny.date"
 
     @staticmethod
@@ -209,7 +209,7 @@ class UiInputDate(UiInput):
         return parse_iso_date(value)
 
 
-UiInputDate._register_input_handler()
+input_date._register_input_handler()
 ```
 
 Most simple inputs (slider, select, code, card, accordion, plot, etc.) don't override `_input_handler` and don't call `_register_input_handler()` — the default `None` means "Shiny's existing wire layer passes the value through as-is."
@@ -230,7 +230,7 @@ class Updatable(ABC):
     def update(self, **kwargs) -> None: ...
 
 
-class UiInputSlider(UiInput, Updatable):
+class input_slider(UiInput, Updatable):  # noqa: N801
     def update(
         self, *,
         value: float | tuple[float, float] = MISSING,
@@ -255,28 +255,28 @@ The data_frame renderer pattern: instance methods wrapped in `@reactive_calc_met
 For `HasInputValue` (single-id):
 
 ```python
-class UiInputSlider(UiInput, Updatable):
+class input_slider(UiInput, Updatable):  # noqa: N801
     @reactive_calc_method
     def value(self) -> float:
         return self._read_input()
 
 
-class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
+class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
     @reactive_calc_method
     def full_screen_value(self) -> bool:
         return bool(self._read_input())
 
 
-class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
+class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
     @reactive_calc_method
     def open_panels(self) -> tuple[str, ...]:
         return tuple(self._read_input() or ())
 ```
 
-For `UiOutputPlot` (multi-signal, not `HasInputValue`):
+For `output_plot` (multi-signal, not `HasInputValue`):
 
 ```python
-class UiOutputPlot(UiOutput):
+class output_plot(UiOutput):  # noqa: N801
     def __init__(
         self, id: str, *,
         click: bool = False, dblclick: bool = False,
@@ -391,9 +391,9 @@ Each test file targets one layer. Tests use a controllable session via Shiny's s
 
 | Test file | What it pins |
 |---|---|
-| `test_hierarchy.py` | MRO of every concrete class; `isinstance(slider, UiInput)`, `isinstance(card, AllowsChildren)`, etc.; `with UiInputSlider(...):` raises `TypeError` with the right message; `with UiOutputCode(...):` likewise; `with UiCard(...):` does not. |
+| `test_hierarchy.py` | MRO of every concrete class; `isinstance(slider, UiInput)`, `isinstance(card, AllowsChildren)`, etc.; `with input_slider(...):` raises `TypeError` with the right message; `with output_code(...):` likewise; `with card(...):` does not. |
 | `test_tagify_snapshots.py` | `tagify()` output for each class compared to the equivalent `shiny.ui.*(...)` `Tag` — Tag equality + HTML-dep set equality. Catches drift from upstream markup. |
-| `test_input_handler_registration.py` | After importing `shinyui`, the handler registry contains the expected `input_handler_name` → callable mappings (e.g. for `UiAccordion`); classes without `_input_handler` don't register anything. |
+| `test_input_handler_registration.py` | After importing `shinyui`, the handler registry contains the expected `input_handler_name` → callable mappings (e.g. for `accordion`); classes without `_input_handler` don't register anything. |
 | `test_bookmark_roundtrip.py` | Within a session, construct an input, serialize via the class-owned serializer (or per-instance override), restore in a fresh session, assert value parity. |
 | `test_update_resolution.py` | `update()` outside a session raises `RuntimeError` with class name + method name; with init-captured session it uses that session; with no init session but a current session it uses the current; `update()` accepts no `session=` kwarg (type-checked via pyright fixture). |
 | `test_read_accessors.py` | `slider.value()`, `card.full_screen_value()`, `accordion.open_panels()`, `plot.click_value()` each return the value from the appropriate `session.input[derived_id]`; called outside a session, each raises. |
@@ -410,7 +410,7 @@ Mirroring the issue's checklist:
 - [ ] `examples/app-py/14-unified-ui-prototype/` runs end-to-end with bookmark round-trip and at least one `.update()` from the server.
 - [ ] All seven test files exist and pass; `make py-check` is green.
 - [ ] `tagify()` snapshots match `shiny.ui.*` markup for every concrete class.
-- [ ] `with UiInputSlider(...):` (and any non-`AllowsChildren` instance) raises with a clear message naming the class.
+- [ ] `with input_slider(...):` (and any non-`AllowsChildren` instance) raises with a clear message naming the class.
 - [ ] No new top-level dependency added to `pyproject.toml`.
 
 ## Open questions deferred
@@ -418,11 +418,11 @@ Mirroring the issue's checklist:
 - **Sub-issue 2 (Core/Express overload signatures)** — out of scope here. Will be designed in a follow-up brainstorm; depends on this prototype landing.
 - **Sub-issue 3 (Tag-as-context-manager / parent-tag stack)** — out of scope here. `AllowsChildren.__enter__` returns `self` and `with card(): h1("x")` does *not* auto-collect.
 - **How `server()` captures component instances** — closure capture, lookup-by-id from a session-attached registry, or another path. Settled in the implementation plan, not this design.
-- **`UiOutputCode` rendering** — whether `shinyui` ships its own `@render_code` decorator or relies on `shiny.render.code`. Settled in the implementation plan.
+- **`output_code` rendering** — whether `shinyui` ships its own `@render_code` decorator or relies on `shiny.render.code`. Settled in the implementation plan.
 
 ## Risks
 
-- **MRO discipline.** `UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable)` is four-base inheritance. Each mixin must `super().__init__(**kw)` first, then do its own work. Documented in code comments; pinned by `test_hierarchy.py`. If a mixin omits `super()`, errors surface immediately because `self._session` won't be set when `HasInputValue` reads it.
+- **MRO discipline.** `card(UiLayout, AllowsChildren, HasInputValue, Updatable)` is four-base inheritance. Each mixin must `super().__init__(**kw)` first, then do its own work. Documented in code comments; pinned by `test_hierarchy.py`. If a mixin omits `super()`, errors surface immediately because `self._session` won't be set when `HasInputValue` reads it.
 - **Snapshot drift.** Upstream `shiny.ui` markup can change between releases. Snapshot test runs against the installed `shiny`, so changes are caught on dependency bumps. Mitigation: pin `shiny>=1.2.0` (already done) and regenerate snapshots when bumping.
 - **Bookmark coupling to private session state.** Attaching `_shinyui_instances` to `Session` via `setattr` is a private-attribute pattern. Acceptable for a prototype; Stage B can negotiate a public hook in `py-shiny`.
 - **`@reactive_calc_method` local fork.** Drift from `shiny.render._data_frame_utils._reactive_method` is possible. Mitigation: 15-line implementation, comment pointing at the source, easy to compare during Stage B.

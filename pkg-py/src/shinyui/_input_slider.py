@@ -1,4 +1,4 @@
-"""UiInputSlider — class-based input_slider with typed update() and value() accessor."""
+"""input_slider — class-based input_slider with typed update() and value() accessor."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class UiInputSlider(UiInput, Updatable):
+class input_slider(UiInput, Updatable):  # noqa: N801
     def __init__(
         self,
         id: str,
@@ -97,14 +97,3 @@ class UiInputSlider(UiInput, Updatable):
         if label is not _MISSING:
             msg["label"] = label
         sess.send_input_message(self.id, msg)
-
-
-def input_slider(
-    id: str,
-    label: str,
-    min: float,
-    max: float,
-    value: float | tuple[float, float],
-    **kwargs: Any,
-) -> UiInputSlider:
-    return UiInputSlider(id, label, min, max, value, **kwargs)
