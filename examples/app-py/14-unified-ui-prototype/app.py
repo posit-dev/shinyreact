@@ -75,21 +75,31 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @render.plot
     def plot():
-        # Placeholder figure so the `output_plot` div has visible bounds for
-        # click and brush events. The point of this example is the class
-        # hierarchy, not the rendered figure. Uses PIL (no matplotlib dep).
-        from PIL import Image, ImageDraw
+        # Real scatter plot driven by the slider/select/seed inputs.
+        # Demonstrates the read-accessor chain ending in @render.plot:
+        # all three reads establish reactive deps so the plot recomputes
+        # on input changes.
+        import matplotlib.pyplot as plt
+        import numpy as np
 
-        img = Image.new("RGB", (640, 400), (250, 245, 230))  # warm off-white
-        d = ImageDraw.Draw(img)
-        # Border so the click/brush target is visible against the card.
-        d.rectangle([0, 0, 639, 399], outline=(100, 100, 100), width=2)
-        # Crosshair so the demo feels alive.
-        d.line([0, 200, 640, 200], fill=(200, 200, 200), width=1)
-        d.line([320, 0, 320, 400], fill=(200, 200, 200), width=1)
-        d.text((20, 20), "Click or brush — diag panel echoes the signal.",
-               fill=(40, 40, 40))
-        return img
+        rng = np.random.default_rng(seed_slider.value())
+        n = n_slider.value()
+        if dist_select.value() == "normal":
+            x = rng.standard_normal(n)
+            y = rng.standard_normal(n)
+        else:
+            x = rng.uniform(-2, 2, n)
+            y = rng.uniform(-2, 2, n)
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.scatter(x, y, s=12, alpha=0.6)
+        ax.set_title(
+            f"{dist_select.value()} sample, n={n}, seed={seed_slider.value()}"
+        )
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.grid(True, alpha=0.3)
+        return fig
 
     # Server-driven updates on layouts-with-state:
     @reactive.effect
