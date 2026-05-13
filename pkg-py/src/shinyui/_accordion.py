@@ -53,8 +53,10 @@ class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
     def tagify(self) -> Tag:
         import shiny.ui as _sui
 
-        # Each child's tagify() returns an AccordionPanel object.
-        panels = [child.tagify() for child in self.children]
+        # Each child's tagify() returns an AccordionPanel object that shiny.ui.accordion
+        # accepts directly. The list comprehension's element type is TagChild's union,
+        # so we widen with type: ignore at both the tagify call and the *unpack.
+        panels: list = [child.tagify() for child in self.children]  # type: ignore[union-attr]
         return _sui.accordion(
             *panels,
             id=self.id,
