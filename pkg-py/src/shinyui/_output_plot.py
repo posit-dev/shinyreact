@@ -1,13 +1,23 @@
 """UiOutputPlot — output with read-only client-side interaction signals.
 
-Derived input ids:
-  input.<id>_click       — {x, y} | None
-  input.<id>_dblclick    — {x, y} | None
-  input.<id>_hover       — {x, y} | None
-  input.<id>_brush       — {xmin, xmax, ymin, ymax, ...} | None
+Derived input ids (the four that ``shiny.ui.output_plot`` actually pushes):
+
+  ===================  ============================================
+  Wire id              Accessor (reactive read)
+  ===================  ============================================
+  input.<id>_click     :meth:`UiOutputPlot.click_value`
+  input.<id>_dblclick  :meth:`UiOutputPlot.dbl_value`
+  input.<id>_hover     :meth:`UiOutputPlot.hover_value`
+  input.<id>_brush     :meth:`UiOutputPlot.brush_value`
+  ===================  ============================================
 
 No HasInputValue, no Updatable. Derived inputs flow through Shiny's
-auto-created Value[Any] mechanism on first session.input[...] access.
+auto-created Value[Any] mechanism on first ``session.input[...]`` access.
+
+Two interactions that shinyui does NOT expose because the shiny binding
+does not push them: ``_limits`` (zoom bounds) and ``_selection`` (lasso /
+selected-points). If shiny grows those signals upstream, add the matching
+``limits_value`` / ``selection_value`` accessors here.
 """
 
 from __future__ import annotations
@@ -51,7 +61,7 @@ class UiOutputPlot(UiOutput):
         return self._read_input("_click")
 
     @reactive_calc_method
-    def dblclick_value(self) -> Any:
+    def dbl_value(self) -> Any:
         return self._read_input("_dblclick")
 
     @reactive_calc_method

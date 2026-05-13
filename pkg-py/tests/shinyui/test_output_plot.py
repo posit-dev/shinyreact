@@ -33,13 +33,13 @@ def test_brush_value_reads_correct_id(mock_session):
     mock_session.input.__getitem__.assert_called_with("p_brush")
 
 
-def test_hover_and_dblclick_values(mock_session):
+def test_hover_and_dbl_values(mock_session):
     p = output_plot("p", hover=True, dblclick=True)
     seq = iter([{"x": 1}, {"x": 2}])
     mock_session.input.__getitem__.return_value = lambda: next(seq)
     with reactive.isolate():
         assert p.hover_value() == {"x": 1}
-        assert p.dblclick_value() == {"x": 2}
+        assert p.dbl_value() == {"x": 2}
 
 
 def test_no_update_method():
