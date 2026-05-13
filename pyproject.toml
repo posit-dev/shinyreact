@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pkg-py/src/shinyreact"]
+packages = ["pkg-py/src/shinyreact", "pkg-py/src/shinyui"]
 
 [dependency-groups]
 examples = [
@@ -52,7 +52,7 @@ testpaths = ["pkg-py/tests"]
 addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.pyright]
-include = ["pkg-py/src/shinyreact"]
+include = ["pkg-py/src/shinyreact", "pkg-py/src/shinyui"]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
