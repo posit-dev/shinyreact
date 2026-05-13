@@ -18,18 +18,18 @@ def test_tagify_matches_shiny_ui_input_action_button():
     assert ours.get_html_string() == theirs.get_html_string()
 
 
-def test_count_zero_when_input_is_none(mock_session):
+def test_clicked_zero_when_input_is_none(mock_session):
     b = input_action_button("go", "Go")
     mock_session.input.__getitem__.return_value = lambda: None
     with reactive.isolate():
-        assert b.count() == 0
+        assert b.clicked() == 0
 
 
-def test_count_returns_int_value(mock_session):
+def test_clicked_returns_int_value(mock_session):
     b = input_action_button("go", "Go")
     mock_session.input.__getitem__.return_value = lambda: 3
     with reactive.isolate():
-        assert b.count() == 3
+        assert b.clicked() == 3
     mock_session.input.__getitem__.assert_called_with("go")
 
 

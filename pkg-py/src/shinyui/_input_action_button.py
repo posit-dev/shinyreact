@@ -17,8 +17,8 @@ class UiInputActionButton(UiInput, Updatable):
     """Server-readable button.
 
     ``input.<id>()`` is an integer counter that starts at 0 and increments on
-    each click. The class accessor :meth:`count` returns the current value as a
-    reactive read; pair with :func:`shiny.reactive.event` to run code on each
+    each click. The class accessor :meth:`clicked` returns the current value as
+    a reactive read; pair with :func:`shiny.reactive.event` to run code on each
     click without firing on the initial value.
     """
 
@@ -38,7 +38,7 @@ class UiInputActionButton(UiInput, Updatable):
         super().__init__(id=id)
 
     @reactive_calc_method
-    def count(self) -> int:
+    def clicked(self) -> int:
         """Click counter; 0 before the first click, +1 per click."""
         return int(self._read_input() or 0)
 

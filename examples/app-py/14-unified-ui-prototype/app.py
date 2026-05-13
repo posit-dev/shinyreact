@@ -114,13 +114,13 @@ with ui.hold():
 
 # --- Reactive effects ------------------------------------------------------
 @reactive.effect
-@reactive.event(open_all_btn.count, ignore_init=True)
+@reactive.event(open_all_btn.clicked, ignore_init=True)
 def _open_all_panels():
     acc.update(open=("Settings", "Diagnostics"))
 
 
 @reactive.effect
-@reactive.event(close_all_btn.count, ignore_init=True)
+@reactive.event(close_all_btn.clicked, ignore_init=True)
 def _close_all_panels():
     # update_accordion's `show=` takes a panel value list, OR True/False.
     # False closes all panels in the set.
