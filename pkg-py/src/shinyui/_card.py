@@ -13,7 +13,7 @@ that browser JS is not wired in the prototype. This class uses the plain
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, overload
 
 from htmltools import Tag, TagChild
 
@@ -33,6 +33,36 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
     the wire format when client JS is present. full_screen_value() reads the
     input keyed by self.id (mocked in tests).
     """
+
+    # Express overload: `with card(id="m"): child_a; child_b` — no positional
+    # children. Listed first so IDEs prefer it for the `with ...:` idiom.
+    @overload
+    def __init__(
+        self,
+        *,
+        id: str,
+        full_screen: bool = False,
+        height: Optional[str] = None,
+        max_height: Optional[str] = None,
+        min_height: Optional[str] = None,
+        fill: bool = True,
+        class_: Optional[str] = None,
+    ) -> None: ...
+
+    # Core overload: `card(child_a, child_b, id="m", ...)` — inline positional
+    # children, the classic Shiny Core pattern.
+    @overload
+    def __init__(
+        self,
+        *args: TagChild,
+        id: str,
+        full_screen: bool = False,
+        height: Optional[str] = None,
+        max_height: Optional[str] = None,
+        min_height: Optional[str] = None,
+        fill: bool = True,
+        class_: Optional[str] = None,
+    ) -> None: ...
 
     def __init__(
         self,

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import overload
+
 from htmltools import TagChild
 from shiny.types import MISSING, MISSING_TYPE
 from shiny.ui._accordion import AccordionPanel
@@ -11,6 +13,26 @@ from ._roles import UiLayout
 
 
 class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
+    # Express overload: `with accordion_panel("Settings"): input_slider(...)`.
+    @overload
+    def __init__(
+        self,
+        title: str,
+        *,
+        value: str | MISSING_TYPE = MISSING,
+        icon: TagChild | None = None,
+    ) -> None: ...
+
+    # Core overload: `accordion_panel("Settings", input_slider(...), ...)`.
+    @overload
+    def __init__(
+        self,
+        title: str,
+        *args: TagChild,
+        value: str | MISSING_TYPE = MISSING,
+        icon: TagChild | None = None,
+    ) -> None: ...
+
     def __init__(
         self,
         title: str,

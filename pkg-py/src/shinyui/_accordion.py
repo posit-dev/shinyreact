@@ -7,7 +7,7 @@ registered here (approach A); open_panels() coerces list -> tuple at read time.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, overload
 
 from htmltools import Tag
 
@@ -27,6 +27,32 @@ class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N8
     No custom input handler is registered — shiny's own accordion binding handles
     the wire format.  open_panels() coerces the received list to a tuple at read time.
     """
+
+    # Express overload: `with accordion(id="acc"): accordion_panel(...)`.
+    @overload
+    def __init__(
+        self,
+        *,
+        id: str,
+        open: Optional[str | tuple[str, ...] | bool] = None,
+        multiple: bool = True,
+        class_: Optional[str] = None,
+        width: Optional[str] = None,
+        height: Optional[str] = None,
+    ) -> None: ...
+
+    # Core overload: `accordion(panel_a, panel_b, id="acc", open="A")`.
+    @overload
+    def __init__(
+        self,
+        *args: accordion_panel,
+        id: str,
+        open: Optional[str | tuple[str, ...] | bool] = None,
+        multiple: bool = True,
+        class_: Optional[str] = None,
+        width: Optional[str] = None,
+        height: Optional[str] = None,
+    ) -> None: ...
 
     def __init__(
         self,
