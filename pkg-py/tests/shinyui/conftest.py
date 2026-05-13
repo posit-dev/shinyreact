@@ -22,6 +22,9 @@ def mock_session() -> Iterator[Any]:
     session.input = MagicMock(name="MockInput")
     # session_context calls namespace_context(session.ns), which requires a str
     session.ns = ""
+    # Pre-initialize the shinyui instance registry to a real dict so that
+    # _bookmark.get_session_instances() doesn't pick up a MagicMock auto-attribute.
+    session._shinyui_instances = {}
     with session_context(session):
         yield session
 
