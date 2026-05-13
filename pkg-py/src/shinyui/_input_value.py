@@ -4,7 +4,11 @@ Provides:
   - `id: str` (stored on instance)
   - `input_handler_name` and `_input_handler` ClassVars (default to empty / None)
   - `bookmark_serializer` ClassVar default + per-instance override
-  - `_register_input_handler()` classmethod for explicit module-load registration
+  - `_register_input_handler()` classmethod, auto-fired on subclass creation
+    via ``__init_subclass__``. Subclasses that declare a non-empty
+    ``input_handler_name`` plus an ``_input_handler`` get registered with
+    Shiny's ``input_handlers`` registry at class-definition time. Classes
+    with the default `None` handler are no-op.
   - id->instance registration on construction (no-op if no session)
 
 Mixin protocol: subclasses MUST call `super().__init__(id=..., **kw)` first.
@@ -31,9 +35,16 @@ class HasInputValue:
 
     @classmethod
     def _register_input_handler(cls) -> None:
-        """Idempotent. Call once at module load if this class declares a handler."""
+        """Idempotent: registers cls's input handler if both fields are set."""
         if cls.input_handler_name and cls._input_handler is not None:
             register_input_handler(cls.input_handler_name, cls._input_handler)
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        # Fires automatically whenever any HasInputValue subclass is defined.
+        # No-op for classes that leave the defaults (input_handler_name == ""
+        # and _input_handler is None).
+        cls._register_input_handler()
 
     def __init__(
         self,

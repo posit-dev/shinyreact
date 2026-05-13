@@ -1,20 +1,17 @@
 """UiInputActionButton — class-based input_action_button with a clicked accessor.
 
-Also serves as the prototype's one **`__init_subclass__` demo**. Most shinyui
-classes register their input handler via an explicit
-``cls._register_input_handler()`` call at module load. This file uses the
-alternative approach: a small ``_InputHandlerAutoRegister`` mixin whose
-``__init_subclass__`` hook calls ``_register_input_handler`` automatically when
-a subclass is defined — exactly the magic the umbrella spec normally avoids,
-included here so the trade-off can be evaluated against the explicit pattern
-side-by-side.
+Demonstrates the ``__init_subclass__`` registration pattern: by declaring
+``input_handler_name`` and ``_input_handler`` on the class, the handler is
+auto-registered with Shiny's ``input_handlers`` registry when the class is
+defined. The hook lives on :class:`shinyui.HasInputValue` so every
+``UiInput`` subclass benefits from it — most classes leave the defaults and
+the registration is a no-op for them.
 
 Note: the wire ``type`` attribute on shiny's action-button markup is
-``"shiny.action"``, so the *registered-for-real-wire-traffic* handler is the
-one in ``shiny.input_handler``. Our handler is registered under
-``"shinyui.action"`` and serves the demo purpose only — proves the
-``__init_subclass__`` mechanism does fire, without colliding with shiny's
-built-in.
+``"shiny.action"``, so real wire traffic is processed by the handler in
+``shiny.input_handler``. Our handler is registered under ``"shinyui.action"``
+and serves the demo purpose only — proves ``__init_subclass__`` does fire,
+without colliding with shiny's built-in.
 """
 
 from __future__ import annotations
@@ -23,7 +20,6 @@ from typing import Any, Optional
 
 from htmltools import Tag, TagChild
 
-from ._input_value import HasInputValue
 from ._reactive import reactive_calc_method
 from ._roles import UiInput
 from ._updatable import Updatable
@@ -31,43 +27,17 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class _InputHandlerAutoRegister:
-    """Mixin: subclasses fire ``_register_input_handler()`` at class-def time.
-
-    Alternative to the default explicit ``cls._register_input_handler()`` line
-    used elsewhere in shinyui. Lives here as a single-class demo of the
-    ``__init_subclass__`` pattern — see the module docstring above for the
-    trade-off discussion.
-    """
-
-    def __init_subclass__(cls, **kw: Any) -> None:
-        super().__init_subclass__(**kw)
-        # `_register_input_handler` is a no-op when input_handler_name is empty
-        # or _input_handler is None, so this is safe for any subclass — only
-        # subclasses that declare a handler actually register. The
-        # HasInputValue check both narrows the type for pyright and protects
-        # against accidental use outside the input hierarchy.
-        if issubclass(cls, HasInputValue):  # type: ignore[arg-type]
-            cls._register_input_handler()  # type: ignore[attr-defined]
-
-
-class UiInputActionButton(UiInput, Updatable, _InputHandlerAutoRegister):
+class UiInputActionButton(UiInput, Updatable):
     """Server-readable button.
 
     ``input.<id>()`` is an integer counter that starts at 0 and increments on
     each click. The class accessor :meth:`clicked` returns the current value as
     a reactive read; pair with :func:`shiny.reactive.event` to run code on each
     click without firing on the initial value.
-
-    Demo of ``__init_subclass__`` registration — declaring the class
-    auto-fires ``_register_input_handler()`` via the
-    ``_InputHandlerAutoRegister`` parent. The handler below is registered
-    under ``"shinyui.action"`` (NOT ``"shiny.action"``) to avoid colliding
-    with shiny's own action-button handler; shiny's wire markup still
-    routes through that one.
     """
 
-    # Auto-registered via _InputHandlerAutoRegister.__init_subclass__ below.
+    # Auto-registered via HasInputValue.__init_subclass__ when this class
+    # body finishes executing. See the module docstring for the trade-off.
     input_handler_name = "shinyui.action"
 
     @staticmethod
@@ -75,7 +45,7 @@ class UiInputActionButton(UiInput, Updatable, _InputHandlerAutoRegister):
         """Coerce wire value to a plain int.
 
         (shiny's built-in handler returns an ActionButtonValue; we keep it
-        simpler here as the demo doesn't actually receive wire traffic.)
+        simpler here since the demo doesn't actually receive wire traffic.)
         """
         return int(value or 0)
 
