@@ -17,13 +17,22 @@ function App() {
   return h(
     "div",
     { className: "card" },
-    h("h2", null, "Input handler — `shiny.datetime`"),
+    h(
+      "h2",
+      null,
+      "Input handler — ",
+      h("code", null, "shiny.datetime"),
+    ),
     h(
       "p",
       null,
-      "The client sends a unix-seconds number. The server's `shiny.datetime` handler ",
-      "coerces it to a Python `datetime` before `input.when()` resolves. Toggle the ",
-      "input or change the number to see the round-trip.",
+      "The client sends a unix-seconds number. The server's ",
+      h("code", null, "shiny.datetime"),
+      " handler coerces it to a Python ",
+      h("code", null, "datetime"),
+      " before ",
+      h("code", null, "input.when()"),
+      " resolves. Change the number to see the round-trip.",
     ),
     h(
       "label",
@@ -44,4 +53,5 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(h(App));
