@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 import shiny.ui as sui
 from shiny import reactive
+from shiny.input_handler import input_handlers
 from shinyui._input_action_button import UiInputActionButton, input_action_button
 
 
@@ -37,6 +38,22 @@ def test_update_outside_session_raises():
     b = input_action_button("go", "Go")
     with pytest.raises(RuntimeError, match=r"requires an active session"):
         b.update(label="New")
+
+
+def test_input_handler_auto_registered_via_init_subclass():
+    """The class is registered under 'shinyui.action' at class-definition
+    time via the _InputHandlerAutoRegister mixin's __init_subclass__ hook.
+    """
+    assert UiInputActionButton.input_handler_name == "shinyui.action"
+    # `input_handlers` is dict-like.
+    assert "shinyui.action" in input_handlers
+
+
+def test_input_handler_coerces_to_int():
+    h = UiInputActionButton._input_handler
+    assert h(None, None, None) == 0
+    assert h(3, None, None) == 3
+    assert h("5", None, None) == 5
 
 
 def test_update_sends_input_message(mock_session):
