@@ -22,11 +22,14 @@ from typing_extensions import Self
 class UiComponent(ABC):
     html_dependencies: ClassVar[tuple[HTMLDependency, ...]] = ()
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Capture session BEFORE super() so mixins can read self._session
         # in their own __init__ after they call super().__init__(**kw).
+        # Forward *args cooperatively so AllowsChildren (next in MRO when the
+        # class is declared as MyComp(UiComponent, AllowsChildren)) receives
+        # positional children arguments.
         self._session: Session | None = get_current_session()
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
 
     def _require_session(self, *, for_op: str) -> Session:
         sess = self._session or get_current_session()
@@ -45,6 +48,13 @@ class UiComponent(ABC):
     def tagify(self) -> Tag: ...
 
     def __enter__(self) -> Self:
+        # AllowsChildren overrides __enter__ to return self.  When the MRO
+        # places UiComponent before AllowsChildren (the typical mixin order),
+        # we must explicitly delegate so the mixin wins.
+        from shinyui._children import AllowsChildren  # local import avoids circular
+
+        if isinstance(self, AllowsChildren):
+            return AllowsChildren.__enter__(self)  # type: ignore[return-value]
         raise TypeError(
             f"{type(self).__name__} does not accept children; "
             f"only components declaring `AllowsChildren` may be used as `with` blocks."
