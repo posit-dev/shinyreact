@@ -1,28 +1,26 @@
-"""End-to-end demo of shinyui's class-per-component hierarchy.
+"""End-to-end demo of shinyui's class-per-component hierarchy (Shiny Express).
 
 Exercises every reference class in one page:
-  - UiInputSlider, UiInputSelect    (simple + structured inputs)
-  - UiOutputCode                    (output)
-  - UiOutputPlot                    (output with read-only signals)
-  - UiCard                          (layout with state)
-  - UiAccordion + UiAccordionPanel  (layout-with-state + layout-as-child)
+  - UiInputSlider, UiInputSelect, UiInputActionButton  (inputs)
+  - UiOutputCode                                       (output)
+  - UiOutputPlot                                       (output with read-only signals)
+  - UiCard                                             (layout with state)
+  - UiAccordion + UiAccordionPanel                     (layout + layout-as-child)
 
-Components are constructed at module level. In Shiny Core, ``app_ui(request)``
-runs during the HTTP phase — before any WebSocket session exists — so a
-session-time id→instance registry would be empty when ``server()`` later runs.
-Module-level construction sidesteps that timing issue: ``app_ui`` and
-``server`` share the same instances via closure. The per-session bookmark
-serializer registry is therefore a no-op in this example; the class accessors
-(``.value()``, ``.full_screen_value()``, ``.open_panels()``, ``.click_value()``,
-``.brush_value()``) and ``.update(...)`` work because ``_require_session``
-falls back to ``get_current_session()`` at call time, which is bound while
-``server()`` runs.
+This is the Express variant of the demo. In Express the script runs once per
+session — ``get_current_session()`` is bound while the module's top-level
+statements execute, so the components register themselves on the session at
+construction time. shinyui containers are still built programmatically (passing
+children to the factories) because the parent-tag stack / ``with`` integration
+is umbrella sub-issue 3, deferred from this prototype.
 """
 
 from __future__ import annotations
 
 import shinyui as su
-from shiny import App, Inputs, Outputs, Session, reactive, render, ui
+from shiny import reactive
+from shiny import ui as _sui
+from shiny.express import render, ui
 
 # --- Components -------------------------------------------------------------
 n_slider = su.input_slider("n", "Sample size", 10, 1000, 100)
@@ -46,19 +44,32 @@ acc = su.accordion(
     open="Settings",
 )
 main_card = su.card(
-    ui.layout_column_wrap(open_all_btn, close_all_btn, width=1 / 2),
+    # Use plain shiny.ui.layout_column_wrap here, not shiny.express.ui's
+    # recall-context-managed version (the express one takes 0 positional args).
+    _sui.layout_column_wrap(open_all_btn, close_all_btn, width=1 / 2),
     acc,
     plot_handle,
     id="main_card",
     full_screen=False,
 )
 
+# --- Page ------------------------------------------------------------------
+ui.page_opts(title="shinyui Stage A prototype")
 
-def app_ui(request):
-    return ui.page_fluid(main_card, title="shinyui Stage A prototype")
+# Top-level expression: Express's `@expressify`-driven runtime appends the
+# value to the current page container. shinyui factories are NOT Express-aware,
+# so we hand the constructed instance to Express via this expression statement.
+main_card
 
 
-def server(input: Inputs, output: Outputs, session: Session):
+# --- Renderers -------------------------------------------------------------
+# `ui.hold()` suppresses Express's default auto-placement so each renderer
+# binds to its id-matching output element that we placed inside the
+# accordion / card above. Without `hold()`, Express would insert a SECOND
+# `<pre id="summary">` at the page tail, duplicating the id and breaking
+# the in-place output binding.
+with ui.hold():
+
     @render.code
     def summary():
         # Reads via class accessors — no `input.n()` / `input.dist()` needed.
@@ -80,9 +91,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot
     def plot():
         # Real scatter plot driven by the slider/select/seed inputs.
-        # Demonstrates the read-accessor chain ending in @render.plot:
-        # all three reads establish reactive deps so the plot recomputes
-        # on input changes.
         import matplotlib.pyplot as plt
         import numpy as np
 
@@ -103,21 +111,17 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.grid(True, alpha=0.3)
         return fig
 
-    # Server-driven .update() on the layout-with-state accordion.
-    # Each button instance exposes a typed `.count()` reactive accessor
-    # (click counter); @reactive.event fires the effect once per click,
-    # not on every other input change.
-    @reactive.effect
-    @reactive.event(open_all_btn.count, ignore_init=True)
-    def _open_all_panels():
-        acc.update(open=("Settings", "Diagnostics"))
 
-    @reactive.effect
-    @reactive.event(close_all_btn.count, ignore_init=True)
-    def _close_all_panels():
-        # update_accordion's `show=` takes a panel value list, OR True/False.
-        # False closes all panels in the set.
-        acc.update(open=False)
+# --- Reactive effects ------------------------------------------------------
+@reactive.effect
+@reactive.event(open_all_btn.count, ignore_init=True)
+def _open_all_panels():
+    acc.update(open=("Settings", "Diagnostics"))
 
 
-app = App(app_ui, server)
+@reactive.effect
+@reactive.event(close_all_btn.count, ignore_init=True)
+def _close_all_panels():
+    # update_accordion's `show=` takes a panel value list, OR True/False.
+    # False closes all panels in the set.
+    acc.update(open=False)
