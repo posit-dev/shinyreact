@@ -75,7 +75,7 @@ class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
         if self.class_ is not None:
             kwargs["class_"] = self.class_
 
-        return _sui.card(*self.children, **kwargs)
+        return self._deep_tagify(_sui.card(*self.children, **kwargs))
 
     def update(
         self,

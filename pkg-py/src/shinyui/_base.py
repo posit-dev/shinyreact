@@ -5,6 +5,10 @@ Single source of truth for:
   - `_require_session(for_op=...)`: resolves a session at call time, with a fallback
     to the current session, raising RuntimeError if none is reachable.
   - `_read_input(suffix="")`: reads `session.input[f"{self.id}{suffix}"]()`.
+  - `_deep_tagify(node)`: recursively resolves a node tree to fully-rendered
+    Tag/TagList output. Required because htmltools' built-in Tag.tagify only
+    walks one level deep; containers whose children are themselves Tagifiable
+    must pre-resolve their subtrees.
 
 `tagify()` is abstract. `__enter__` raises by default; `AllowsChildren` overrides.
 """
@@ -12,9 +16,10 @@ Single source of truth for:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import copy
 from typing import Any, ClassVar
 
-from htmltools import HTMLDependency, Tag
+from htmltools import HTMLDependency, Tag, TagList, Tagifiable
 from shiny.session import Session, get_current_session
 from typing_extensions import Self
 
@@ -43,6 +48,33 @@ class UiComponent(ABC):
     def _read_input(self, suffix: str = "") -> Any:
         sess = self._require_session(for_op="_read_input")
         return sess.input[f"{self.id}{suffix}"]()  # type: ignore[attr-defined]
+
+    @staticmethod
+    def _deep_tagify(node: Any) -> Any:
+        """Recursively resolve any Tagifiable descendants of `node`.
+
+        htmltools' built-in `Tag.tagify` only walks one level: it replaces
+        Tagifiable direct children, but doesn't recurse into the resulting
+        Tag's own children. When our container classes wrap children that
+        are themselves Tagifiable, we must pre-resolve the subtree before
+        returning from `tagify()` — otherwise htmltools' renderer hits a
+        "non-tagified object" RuntimeError at HTML generation time.
+        """
+        # Resolve a Tagifiable (non-Tag) by calling its tagify().
+        if isinstance(node, Tagifiable) and not isinstance(node, Tag):
+            node = node.tagify()
+        # Recurse into Tag children.
+        if isinstance(node, Tag):
+            cp = copy(node)
+            cp.children = TagList(
+                *(UiComponent._deep_tagify(c) for c in node.children)
+            )
+            return cp
+        # Recurse into TagList items.
+        if isinstance(node, TagList):
+            return TagList(*(UiComponent._deep_tagify(c) for c in node))
+        # Leaves (strings, MetadataNode, HTML, None, etc.) pass through.
+        return node
 
     @abstractmethod
     def tagify(self) -> Tag: ...

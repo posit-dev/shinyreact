@@ -53,18 +53,21 @@ class UiAccordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
     def tagify(self) -> Tag:
         import shiny.ui as _sui
 
-        # Each child's tagify() returns an AccordionPanel object that shiny.ui.accordion
-        # accepts directly. The list comprehension's element type is TagChild's union,
-        # so we widen with type: ignore at both the tagify call and the *unpack.
+        # Each child's tagify() returns an AccordionPanel that shiny.ui.accordion
+        # accepts directly. Deep-resolve the result so any Tagifiable descendants
+        # within the panels' content (e.g. an input_slider inside a panel) are
+        # fully expanded before htmltools renders.
         panels: list = [child.tagify() for child in self.children]  # type: ignore[union-attr]
-        return _sui.accordion(
-            *panels,
-            id=self.id,
-            open=self._open,
-            multiple=self.multiple,
-            class_=self.class_,
-            width=self.width,
-            height=self.height,
+        return self._deep_tagify(
+            _sui.accordion(
+                *panels,
+                id=self.id,
+                open=self._open,
+                multiple=self.multiple,
+                class_=self.class_,
+                width=self.width,
+                height=self.height,
+            )
         )
 
     def update(
