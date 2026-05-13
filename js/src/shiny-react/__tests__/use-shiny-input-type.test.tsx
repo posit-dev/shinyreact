@@ -2,7 +2,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act, cleanup, render } from "@testing-library/react";
 import * as React from "react";
-import type { ReactNode } from "react";
 
 // Mock getShiny so the hook's useShinyInitialized resolves to true via
 // `initializedPromise`, and so we can capture setInputValue calls.
@@ -39,8 +38,6 @@ import {
   useShinyInput,
 } from "../use-shiny";
 import { ShinyModuleProvider } from "../ShinyModuleContext";
-import { InputRegistry } from "../input-registry";
-import { getReactRegistry } from "../react-registry";
 
 function freshState(): void {
   (globalThis as any).window = (globalThis as any).window || {};
@@ -274,7 +271,3 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
   });
 });
 
-// Avoid the unused-import warning if the test file ends up not referencing
-// these directly. They're used implicitly via getReactRegistry()/registry.
-void InputRegistry;
-void getReactRegistry;
