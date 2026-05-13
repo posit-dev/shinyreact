@@ -80,7 +80,12 @@ class UiCard(UiLayout, AllowsChildren, HasInputValue, Updatable):
         if self.class_ is not None:
             kwargs["class_"] = self.class_
 
-        return self._deep_tagify(_sui.card(*self.children, **kwargs))
+        # `shiny.ui.card` accepts arbitrary TagChild members — including our
+        # Tagifiable UiAccordion / UiInputSlider / etc. — so we hand them in
+        # unchanged. A single .tagify() on the result lets htmltools' walker
+        # resolve our Tagifiable descendants chain-style. (Card has no
+        # isinstance check on children, unlike accordion's AccordionPanel.)
+        return _sui.card(*self.children, **kwargs).tagify()
 
     def update(
         self,
