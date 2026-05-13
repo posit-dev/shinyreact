@@ -31,3 +31,8 @@ def register_instance(session: "Session", id: str, instance: "HasInputValue") ->
 
 def lookup_instance(session: "Session", id: str) -> "HasInputValue | None":
     return get_session_instances(session).get(id)
+
+
+def lookup_component(session: "Session", id: str) -> "HasInputValue | None":
+    """Public helper: find a HasInputValue instance registered on this session."""
+    return lookup_instance(session, id)

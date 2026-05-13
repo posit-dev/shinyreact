@@ -6,6 +6,7 @@ See docs/superpowers/specs/2026-05-13-shinyui-metadata-consolidation-design.md.
 from ._accordion import UiAccordion, accordion
 from ._accordion_panel import UiAccordionPanel, accordion_panel
 from ._base import UiComponent
+from ._bookmark import lookup_component
 from ._card import UiCard, card
 from ._children import AllowsChildren
 from ._input_select import UiInputSelect, input_select
@@ -36,6 +37,7 @@ __all__ = [
     "card",
     "input_select",
     "input_slider",
+    "lookup_component",
     "output_code",
     "output_plot",
 ]
