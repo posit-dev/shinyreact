@@ -75,13 +75,21 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @render.plot
     def plot():
-        # No matplotlib dependency — return a 1x1 transparent PIL image as a
-        # placeholder so the `output_plot` div has visible bounds for click
-        # and brush events. The point of this example is the class hierarchy,
-        # not the rendered figure.
-        from PIL import Image
+        # Placeholder figure so the `output_plot` div has visible bounds for
+        # click and brush events. The point of this example is the class
+        # hierarchy, not the rendered figure. Uses PIL (no matplotlib dep).
+        from PIL import Image, ImageDraw
 
-        return Image.new("RGBA", (320, 200), (245, 245, 245, 255))
+        img = Image.new("RGB", (640, 400), (250, 245, 230))  # warm off-white
+        d = ImageDraw.Draw(img)
+        # Border so the click/brush target is visible against the card.
+        d.rectangle([0, 0, 639, 399], outline=(100, 100, 100), width=2)
+        # Crosshair so the demo feels alive.
+        d.line([0, 200, 640, 200], fill=(200, 200, 200), width=1)
+        d.line([320, 0, 320, 400], fill=(200, 200, 200), width=1)
+        d.text((20, 20), "Click or brush — diag panel echoes the signal.",
+               fill=(40, 40, 40))
+        return img
 
     # Server-driven updates on layouts-with-state:
     @reactive.effect
