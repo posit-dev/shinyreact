@@ -1,4 +1,4 @@
-from shiny.express import input, render  # noqa: F401  # marks this file as Shiny Express
+from shiny.express import input
 from shinyreact import reactive_output, set_react_page
 
 set_react_page()
