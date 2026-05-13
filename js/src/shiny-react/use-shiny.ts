@@ -55,6 +55,13 @@ import { useNamespacedId } from "./ShinyModuleContext";
  * (default: 100).
  * @param options.priority Priority level for the input event (from Shiny's
  * EventPriority enum).
+ * @param options.type Optional input-handler name appended as `${id}:${type}`
+ * when sending to Shiny. Use to route values through a Shiny input handler
+ * such as `"shiny.datetime"`. Must be non-empty and contain no whitespace or
+ * `:`. Once a given id has been registered with a `type` (or with no `type`),
+ * subsequent mounts of the same id with a *different* `type` throw — the
+ * handler name is a server-side semantic and must be consistent across all
+ * mounts of the same id.
  * @returns A tuple containing the current value and a function to set the
  * value: `[value, setValue]`.
  */
@@ -65,13 +72,22 @@ export function useShinyInput<T>(
     debounceMs = 100,
     priority,
     namespace: explicitNamespace,
+    type,
   }: {
     debounceMs?: number;
     priority?: EventPriority;
     namespace?: string | null;
+    type?: string;
   } = {},
 ): [T, (value: T) => void] {
   ensureShinyReactInitialized();
+
+  if (type !== undefined && !/^[^\s:]+$/.test(type)) {
+    throw new Error(
+      `useShinyInput("${id}"): invalid type=${JSON.stringify(type)}. ` +
+        `Must be non-empty and contain no whitespace or ':' characters.`,
+    );
+  }
 
   const namespacedId = useNamespacedId(id, explicitNamespace);
 
@@ -129,6 +145,7 @@ export function useShinyInput<T>(
     if (priority) {
       inputRegistryEntry.updatePriority(priority);
     }
+    inputRegistryEntry.updateType(type);
 
     inputRegistryEntry.addUseStateSetValueFn(setValue);
     // TODO: This is awkward. Maybe just add a trigger method?
@@ -143,7 +160,7 @@ export function useShinyInput<T>(
       // useEffect will be called again. If someone wants to really get rid of
       // the registry entry, they will have to do so manually.
     };
-  }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault]);
+  }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault, type]);
 
   const setValueWrapped = useCallback(
     (value: T) => {
@@ -346,6 +363,13 @@ export function useShinyInputValue<T>(
  * @param options.priority Priority level for the input event.
  * @param options.namespace Module namespace to apply (or `null` to suppress
  * the surrounding `ShinyModuleProvider` namespace).
+ * @param options.type Optional input-handler name appended as `${id}:${type}`
+ * when sending to Shiny. Use to route values through a Shiny input handler
+ * such as `"shiny.datetime"`. Must be non-empty and contain no whitespace or
+ * `:`. Once a given id has been registered with a `type` (or with no `type`),
+ * subsequent mounts of the same id with a *different* `type` throw — the
+ * handler name is a server-side semantic and must be consistent across all
+ * mounts of the same id.
  * @returns A function that writes the input value.
  */
 export function useSetShinyInput<T>(
@@ -355,13 +379,22 @@ export function useSetShinyInput<T>(
     debounceMs = 100,
     priority,
     namespace: explicitNamespace,
+    type,
   }: {
     debounceMs?: number;
     priority?: EventPriority;
     namespace?: string | null;
+    type?: string;
   } = {},
 ): (value: T) => void {
   ensureShinyReactInitialized();
+
+  if (type !== undefined && !/^[^\s:]+$/.test(type)) {
+    throw new Error(
+      `useSetShinyInput("${id}"): invalid type=${JSON.stringify(type)}. ` +
+        `Must be non-empty and contain no whitespace or ':' characters.`,
+    );
+  }
 
   const namespacedId = useNamespacedId(id, explicitNamespace);
 
@@ -386,6 +419,7 @@ export function useSetShinyInput<T>(
     if (priority) {
       inputRegistryEntry.updatePriority(priority);
     }
+    inputRegistryEntry.updateType(type);
     // Re-broadcast the current value through the registry so Shiny sees the
     // input on first mount (matches useShinyInput's behavior).
     inputRegistryEntry.setValue(inputRegistryEntry.getValue());
@@ -393,7 +427,7 @@ export function useSetShinyInput<T>(
     // Intentionally NO addUseStateSetValueFn — this is a write-only hook;
     // value updates from elsewhere (other producers, server-side updates)
     // must not re-render the component using this hook.
-  }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault]);
+  }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault, type]);
 
   return useCallback(
     (value: T) => {
