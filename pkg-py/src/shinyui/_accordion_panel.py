@@ -11,7 +11,7 @@ from ._children import AllowsChildren
 from ._roles import UiLayout
 
 
-class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
+class accordion_panel(UiLayout, AllowsChildren):
     """A single collapsible panel within an :class:`accordion`.
 
     ``accordion_panel`` has no wire id of its own. The parent

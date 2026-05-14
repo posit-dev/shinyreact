@@ -22,7 +22,7 @@ SelectChoicesArg = Union[
 ]
 
 
-class input_select(UiInput, Updatable):  # noqa: N801
+class input_select(UiInput, Updatable):
     """Dropdown / multi-select input.
 
     Wire id: ``input.<id>()`` is the selected key string, or a ``list[str]``

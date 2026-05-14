@@ -31,7 +31,7 @@ from ._reactive import reactive_calc_method
 from ._roles import UiOutput
 
 
-class output_plot(UiOutput):  # noqa: N801
+class output_plot(UiOutput):
     """Plot output with optional client-side interaction signals.
 
     No primary ``input.<id>()`` value. When interaction flags are enabled,

@@ -26,7 +26,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
+class card(UiLayout, AllowsChildren, HasInputValue, Updatable):
     """Card container with optional full-screen toggle.
 
     Wire id: ``input.<id>_full_screen`` is a boolean pushed by shiny's card

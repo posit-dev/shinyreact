@@ -27,7 +27,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class input_action_button(UiInput, Updatable):  # noqa: N801
+class input_action_button(UiInput, Updatable):
     """Server-readable action button.
 
     Wire id: ``input.<id>()`` is an integer click counter that starts at ``0``

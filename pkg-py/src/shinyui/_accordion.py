@@ -21,7 +21,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
+class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
     """Accordion container with collapsible panels.
 
     Wire id: ``input.<id>()`` is a list of the currently-open panel values,

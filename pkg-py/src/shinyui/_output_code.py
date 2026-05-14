@@ -7,7 +7,7 @@ from htmltools import Tag
 from ._roles import UiOutput
 
 
-class output_code(UiOutput):  # noqa: N801
+class output_code(UiOutput):
     """Verbatim-text output placeholder.
 
     No wire input value — this is a pure output element. The server populates

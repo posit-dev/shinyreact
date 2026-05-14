@@ -13,7 +13,7 @@ from ._updatable import Updatable
 _MISSING = object()
 
 
-class input_slider(UiInput, Updatable):  # noqa: N801
+class input_slider(UiInput, Updatable):
     """Numeric slider input.
 
     Wire id: ``input.<id>()`` is the current slider value (a ``float``, or a
