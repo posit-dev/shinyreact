@@ -18,9 +18,6 @@ on:
 permissions:
   contents: read
 
-env:
-  UV_VERSION: "0.9.x"
-
 jobs:
   py-check:
     runs-on: ubuntu-latest
@@ -30,8 +27,6 @@ jobs:
 
       - name: 🚀 Install uv
         uses: astral-sh/setup-uv@v8.1.0
-        with:
-          version: ${{ env.UV_VERSION }}
 
       - name: 📦 Install the project
         run: uv sync --all-extras --all-groups
@@ -51,8 +46,6 @@ jobs:
 
       - name: 🚀 Install uv
         uses: astral-sh/setup-uv@v8.1.0
-        with:
-          version: ${{ env.UV_VERSION }}
 
       - name: 📦 Sync e2e deps
         run: uv sync --group tests-e2e
