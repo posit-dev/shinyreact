@@ -158,12 +158,20 @@ class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N8
         import shiny.ui as _sui
 
         # `shiny.ui.accordion` does an explicit isinstance(panel, AccordionPanel)
-        # check, so children must supply shiny's AccordionPanel wrapper rather
-        # than the rendered Tag. accordion_panel._build_accordion_panel() is
-        # the internal hook for that. A single .tagify() on the outer result
-        # lets htmltools' walker resolve any Tagifiable descendants inside
-        # the panels (e.g. an input_slider inside a panel).
-        panels = [child._build_accordion_panel() for child in self.children]  # type: ignore[union-attr]
+        # check on its positional args and rejects rendered Tags. So instead of
+        # calling child.tagify() (which now returns Tag), we read each child's
+        # stored state and build shiny's AccordionPanel wrapper inline. A single
+        # .tagify() on the outer result lets htmltools' walker resolve any
+        # remaining Tagifiable descendants (e.g. an input_slider inside a panel).
+        panels = [
+            _sui.accordion_panel(
+                child.title,  # type: ignore[union-attr]
+                *child.children,  # type: ignore[union-attr]
+                value=child._value,  # type: ignore[union-attr]
+                icon=child.icon,  # type: ignore[union-attr]
+            )
+            for child in self.children
+        ]
         return _sui.accordion(
             *panels,
             id=self.id,

@@ -6,7 +6,6 @@ from typing import overload
 
 from htmltools import Tag, TagChild
 from shiny.types import MISSING, MISSING_TYPE
-from shiny.ui._accordion import AccordionPanel
 
 from ._children import AllowsChildren
 from ._roles import UiLayout
@@ -121,32 +120,23 @@ class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
             return self.title
         return self._value
 
-    def _build_accordion_panel(self) -> AccordionPanel:
-        """Internal: produce shiny's ``AccordionPanel`` wrapper for the parent
-        :class:`accordion` to consume. ``shiny.ui.accordion`` does an explicit
-        ``isinstance(panel, AccordionPanel)`` check on its positional args, so
-        the parent reaches for this helper instead of calling :meth:`tagify`.
-        """
+    def tagify(self) -> Tag:
+        # Honor the UiComponent.tagify() -> Tag contract by chaining .tagify()
+        # on shiny's AccordionPanel wrapper. shiny's AccordionPanel.tagify()
+        # requires `_accordion_id` (normally stamped by the parent accordion's
+        # `_sui.accordion(*panels)` call). For standalone rendering we set a
+        # placeholder keyed off the panel's value. The parent :class:`accordion`
+        # builds its own AccordionPanel wrappers from this instance's
+        # attributes (it can't reuse the rendered Tag — shiny.ui.accordion
+        # does an isinstance(panel, AccordionPanel) check on its positional
+        # args).
         import shiny.ui as _sui
 
-        return _sui.accordion_panel(
+        panel = _sui.accordion_panel(
             self.title,
             *self.children,
             value=self._value,
             icon=self.icon,
         )
-
-    def tagify(self) -> Tag:
-        # Chain .tagify() on the AccordionPanel wrapper so we honor the
-        # UiComponent.tagify() -> Tag contract. The parent accordion doesn't
-        # call this directly (see _build_accordion_panel above).
-        #
-        # shiny's AccordionPanel.tagify() requires `_accordion_id` to be set,
-        # normally written by the parent `_sui.accordion(*panels)` call. For
-        # standalone rendering (e.g. snapshot tests, ad-hoc inspection) we
-        # stamp a placeholder so .tagify() works in isolation. The parent
-        # rendering path uses a separate AccordionPanel instance via
-        # `_build_accordion_panel()` and is unaffected.
-        panel = self._build_accordion_panel()
         panel._accordion_id = f"_orphan_{self.value}"
         return panel.tagify()
