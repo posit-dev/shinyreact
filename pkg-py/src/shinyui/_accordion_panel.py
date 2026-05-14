@@ -13,6 +13,24 @@ from ._roles import UiLayout
 
 
 class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
+    """A single collapsible panel within an :class:`accordion`.
+
+    ``accordion_panel`` has no wire id of its own. The parent
+    :class:`accordion` identifies each panel by its ``value`` attribute (which
+    defaults to ``title`` when not supplied explicitly). Pass that string to
+    :meth:`accordion.update` to open or close a specific panel.
+
+    Example
+    -------
+    .. code-block:: python
+
+        accordion_panel("Settings", input_slider("seed", "Seed", 1, 100, 42))
+
+        # Express pattern:
+        with accordion_panel("Settings"):
+            input_slider("seed", "Seed", 1, 100, 42)
+    """
+
     # Express overload: `with accordion_panel("Settings"): input_slider(...)`.
     @overload
     def __init__(
@@ -40,6 +58,24 @@ class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
         value: str | MISSING_TYPE = MISSING,
         icon: TagChild | None = None,
     ) -> None:
+        """Build an accordion panel.
+
+        Parameters
+        ----------
+        title
+            Panel header text. Also used as the panel's ``value`` identifier
+            when ``value`` is not supplied.
+        *args
+            Child elements (any ``TagChild``). Omit when using the Express
+            ``with accordion_panel(...):`` context-manager pattern.
+        value
+            String identifier for this panel within the accordion. Defaults to
+            ``title``. The parent :class:`accordion` uses this when reporting
+            which panels are open via ``input.<id>()`` / :meth:`accordion.open_panels`.
+        icon
+            Optional icon displayed in the panel header. Forwarded to
+            :func:`shiny.ui.accordion_panel`.
+        """
         self.title = title
         self._value: str | MISSING_TYPE = value
         self.icon = icon

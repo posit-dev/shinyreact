@@ -28,12 +28,29 @@ _MISSING = object()
 
 
 class input_action_button(UiInput, Updatable):  # noqa: N801
-    """Server-readable button.
+    """Server-readable action button.
 
-    ``input.<id>()`` is an integer counter that starts at 0 and increments on
-    each click. The class accessor :meth:`clicked` returns the current value as
-    a reactive read; pair with :func:`shiny.reactive.event` to run code on each
-    click without firing on the initial value.
+    Wire id: ``input.<id>()`` is an integer click counter that starts at ``0``
+    and increments on each click. The class accessor :meth:`clicked` returns
+    the same value as a reactive read.
+
+    Pair :meth:`clicked` with :func:`shiny.reactive.event` and
+    ``ignore_init=True`` to respond only to real clicks, not the initial
+    ``0`` value registered at page load.
+
+    Example
+    -------
+    .. code-block:: python
+
+        go = input_action_button("go", "Run")
+
+        # In server:
+        @reactive.event(go.clicked, ignore_init=True)
+        def _on_click():
+            ...
+
+        # Push label / disabled state from the server:
+        go.update(label="Running...", disabled=True)
     """
 
     # Auto-registered via HasInputValue.__init_subclass__ when this class
@@ -58,6 +75,21 @@ class input_action_button(UiInput, Updatable):  # noqa: N801
         width: Optional[str] = None,
         disabled: bool = False,
     ) -> None:
+        """Build an action button.
+
+        Parameters
+        ----------
+        id
+            Input id; available as ``input.<id>()`` server-side, or via
+            :meth:`clicked`.
+        label
+            Button label text (or any ``TagChild``).
+        icon
+            Optional icon to display before the label.
+        width, disabled
+            Forwarded verbatim to :func:`shiny.ui.input_action_button`; see
+            shiny's docs for semantics.
+        """
         self.label = label
         self.icon = icon
         self.width = width

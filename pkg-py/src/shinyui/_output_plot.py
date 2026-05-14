@@ -32,6 +32,35 @@ from ._roles import UiOutput
 
 
 class output_plot(UiOutput):  # noqa: N801
+    """Plot output with optional client-side interaction signals.
+
+    No primary ``input.<id>()`` value. When interaction flags are enabled,
+    the browser pushes derived wire ids that are accessible via class
+    accessors:
+
+    =====================  ======================================
+    Wire id                Accessor
+    =====================  ======================================
+    ``input.<id>_click``   :meth:`click_value`
+    ``input.<id>_dblclick`` :meth:`dbl_value`
+    ``input.<id>_hover``   :meth:`hover_value`
+    ``input.<id>_brush``   :meth:`brush_value`
+    =====================  ======================================
+
+    Example
+    -------
+    .. code-block:: python
+
+        p = output_plot("plot", click=True, brush=True)
+
+        # In server:
+        @reactive.effect
+        def _():
+            coords = p.click_value()
+            if coords:
+                print(coords["x"], coords["y"])
+    """
+
     def __init__(
         self,
         id: str,
@@ -45,6 +74,27 @@ class output_plot(UiOutput):  # noqa: N801
         brush: bool = False,
         fill: bool | MISSING_TYPE = MISSING,
     ) -> None:
+        """Build a plot output.
+
+        Parameters
+        ----------
+        id
+            Output id; must match a ``@render.plot``-decorated function in the
+            server.
+        width, height
+            CSS dimensions of the plot container.
+        click
+            Enable click interaction; read via :meth:`click_value`.
+        dblclick
+            Enable double-click interaction; read via :meth:`dbl_value`.
+        hover
+            Enable hover interaction; read via :meth:`hover_value`.
+        brush
+            Enable brush (drag-select) interaction; read via :meth:`brush_value`.
+        inline, fill
+            Forwarded verbatim to :func:`shiny.ui.output_plot`; see shiny's
+            docs for semantics.
+        """
         self.id = id
         self.width = width
         self.height = height

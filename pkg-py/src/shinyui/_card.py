@@ -27,11 +27,31 @@ _MISSING = object()
 
 
 class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
-    """Card container; full-screen state is available via full_screen_value().
+    """Card container with optional full-screen toggle.
 
-    No custom input handler is registered — shiny's own card binding handles
-    the wire format when client JS is present. full_screen_value() reads the
-    input keyed by self.id (mocked in tests).
+    Wire id: ``input.<id>_full_screen`` is a boolean pushed by shiny's card
+    binding when the user toggles full-screen mode. The class accessor
+    :meth:`full_screen_value` returns the same.
+
+    **Prototype note:** the browser-side JS that pushes ``full_screen`` is out
+    of scope for the Stage A prototype. :meth:`full_screen_value` and
+    :meth:`update` work correctly under mocked sessions and in unit tests, but
+    in a live app the value stays ``False`` until the client-side JS lands in
+    Stage B.
+
+    Example
+    -------
+    .. code-block:: python
+
+        c = card(output_code("summary"), id="main", full_screen=True)
+
+        # In server:
+        @reactive.calc
+        def is_full():
+            return c.full_screen_value()
+
+        # Push a state change from the server:
+        c.update(full_screen=False)
     """
 
     # Express overload: `with card(id="m"): child_a; child_b` — no positional
@@ -75,6 +95,22 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
         fill: bool = True,
         class_: Optional[str] = None,
     ) -> None:
+        """Build a card container.
+
+        Parameters
+        ----------
+        *args
+            Child elements (any ``TagChild``). Omit when using the Express
+            ``with card(id=...):`` context-manager pattern.
+        id
+            Input id used to read ``input.<id>_full_screen`` via
+            :meth:`full_screen_value`.
+        full_screen
+            Initial full-screen state rendered into the HTML.
+        height, max_height, min_height, fill, class_
+            Forwarded verbatim to :func:`shiny.ui.card`; see shiny's docs for
+            semantics.
+        """
         self._full_screen = full_screen
         self.height = height
         self.max_height = max_height

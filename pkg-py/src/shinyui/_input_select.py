@@ -23,6 +23,26 @@ SelectChoicesArg = Union[
 
 
 class input_select(UiInput, Updatable):  # noqa: N801
+    """Dropdown / multi-select input.
+
+    Wire id: ``input.<id>()`` is the selected key string, or a ``list[str]``
+    when ``multiple=True``. The class accessor :meth:`value` returns the same.
+
+    Example
+    -------
+    .. code-block:: python
+
+        c = input_select("c", "Column", {"a": "Alpha", "b": "Beta"})
+
+        # In server:
+        @render.code
+        def summary():
+            return f"column = {c.value()}"
+
+        # Push a new selection from the server:
+        c.update(selected="b")
+    """
+
     def __init__(
         self,
         id: str,
@@ -34,6 +54,28 @@ class input_select(UiInput, Updatable):  # noqa: N801
         width: Optional[str] = None,
         size: Optional[str] = None,
     ) -> None:
+        """Build a select input.
+
+        Parameters
+        ----------
+        id
+            Input id; available as ``input.<id>()`` server-side, or via
+            :meth:`value`.
+        label
+            Display label.
+        choices
+            Selectable options — a list/tuple of strings, a ``{value: label}``
+            mapping, or a nested ``{group: {value: label}}`` mapping for
+            option-group rendering.
+        selected
+            Initially selected value(s). ``None`` defaults to the first choice.
+            Pass a list when ``multiple=True``.
+        multiple
+            Allow multiple simultaneous selections.
+        width, size
+            Forwarded verbatim to :func:`shiny.ui.input_select`; see shiny's
+            docs for semantics.
+        """
         self.label = label
         self.choices = choices
         self._init_selected = selected

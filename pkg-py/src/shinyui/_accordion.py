@@ -22,10 +22,29 @@ _MISSING = object()
 
 
 class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
-    """Accordion container; open-panel set is available via open_panels().
+    """Accordion container with collapsible panels.
 
-    No custom input handler is registered — shiny's own accordion binding handles
-    the wire format.  open_panels() coerces the received list to a tuple at read time.
+    Wire id: ``input.<id>()`` is a list of the currently-open panel values,
+    pushed by shiny's accordion binding. The class accessor :meth:`open_panels`
+    returns the same set as a ``tuple[str, ...]``.
+
+    Example
+    -------
+    .. code-block:: python
+
+        acc = accordion(
+            accordion_panel("Settings", input_slider("n", "N", 1, 10, 5)),
+            accordion_panel("Diagnostics", output_code("diag")),
+            id="acc",
+            open="Settings",
+        )
+
+        # In server:
+        acc.open_panels()               # tuple of open panel values
+
+        # Push open/closed state from the server:
+        acc.update(open=("Settings", "Diagnostics"))
+        acc.update(open=False)          # close all
     """
 
     # Express overload: `with accordion(id="acc"): accordion_panel(...)`.
@@ -64,6 +83,26 @@ class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N8
         width: Optional[str] = None,
         height: Optional[str] = None,
     ) -> None:
+        """Build an accordion container.
+
+        Parameters
+        ----------
+        *args
+            Child :class:`accordion_panel` instances. Omit when using the
+            Express ``with accordion(id=...):`` context-manager pattern.
+        id
+            Input id; the open-panel list is available as ``input.<id>()``
+            server-side, or via :meth:`open_panels`.
+        open
+            Initially open panel(s). Pass a string for a single panel, a
+            tuple for multiple, ``True`` to open all, or ``False`` to close all.
+            ``None`` delegates to shiny's default (first panel open).
+        multiple
+            Allow more than one panel to be open at a time.
+        class_, width, height
+            Forwarded verbatim to :func:`shiny.ui.accordion`; see shiny's docs
+            for semantics.
+        """
         self._open = open
         self.multiple = multiple
         self.class_ = class_
