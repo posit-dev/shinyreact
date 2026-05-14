@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import overload
 
-from htmltools import TagChild
+from htmltools import Tag, TagChild
 from shiny.types import MISSING, MISSING_TYPE
 from shiny.ui._accordion import AccordionPanel
 
@@ -87,7 +87,12 @@ class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
             return self.title
         return self._value
 
-    def tagify(self) -> AccordionPanel:  # type: ignore[override]
+    def _build_accordion_panel(self) -> AccordionPanel:
+        """Internal: produce shiny's ``AccordionPanel`` wrapper for the parent
+        :class:`accordion` to consume. ``shiny.ui.accordion`` does an explicit
+        ``isinstance(panel, AccordionPanel)`` check on its positional args, so
+        the parent reaches for this helper instead of calling :meth:`tagify`.
+        """
         import shiny.ui as _sui
 
         return _sui.accordion_panel(
@@ -96,3 +101,18 @@ class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
             value=self._value,
             icon=self.icon,
         )
+
+    def tagify(self) -> Tag:
+        # Chain .tagify() on the AccordionPanel wrapper so we honor the
+        # UiComponent.tagify() -> Tag contract. The parent accordion doesn't
+        # call this directly (see _build_accordion_panel above).
+        #
+        # shiny's AccordionPanel.tagify() requires `_accordion_id` to be set,
+        # normally written by the parent `_sui.accordion(*panels)` call. For
+        # standalone rendering (e.g. snapshot tests, ad-hoc inspection) we
+        # stamp a placeholder so .tagify() works in isolation. The parent
+        # rendering path uses a separate AccordionPanel instance via
+        # `_build_accordion_panel()` and is unaffected.
+        panel = self._build_accordion_panel()
+        panel._accordion_id = f"_orphan_{self.value}"
+        return panel.tagify()

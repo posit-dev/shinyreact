@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shiny.ui as sui
 from htmltools import tags
 from shinyui._accordion_panel import accordion_panel
 from shinyui._children import AllowsChildren
@@ -17,16 +16,18 @@ def test_children_collected():
     assert "a" in p.children and "b" in p.children
 
 
-def test_tagify_matches_shiny():
-    # accordion_panel() returns an AccordionPanel (not a plain Tag).
-    # Compare key attributes that drive rendered output — random bslib panel IDs
-    # make full HTML string comparison non-deterministic.
+def test_tagify_returns_tag():
+    # accordion_panel.tagify() now returns a rendered Tag (chained .tagify()
+    # on shiny's AccordionPanel wrapper). The class stamps a placeholder
+    # _accordion_id so standalone rendering works outside a parent accordion.
+    from htmltools import Tag
+
     ours = accordion_panel("Settings", "body").tagify()
-    theirs = sui.accordion_panel("Settings", "body")
-    assert ours._title == theirs._title
-    assert ours._args == theirs._args
-    assert ours._data_value == theirs._data_value
-    assert ours._icon == theirs._icon
+    assert isinstance(ours, Tag)
+    # Sanity: rendered HTML contains the panel title and body content.
+    html = ours.get_html_string()
+    assert "Settings" in html
+    assert "body" in html
 
 
 def test_with_block_appends():

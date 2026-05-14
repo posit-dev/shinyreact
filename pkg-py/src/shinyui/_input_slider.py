@@ -14,6 +14,27 @@ _MISSING = object()
 
 
 class input_slider(UiInput, Updatable):  # noqa: N801
+    """Numeric slider input.
+
+    Wire id: ``input.<id>()`` is the current slider value (a ``float``, or a
+    ``(min, max)`` tuple if ``value`` was passed as a 2-tuple — i.e. a
+    range-slider). The class accessor :meth:`value` returns the same.
+
+    Example
+    -------
+    .. code-block:: python
+
+        n = input_slider("n", "Sample size", 1, 1000, 100)
+
+        # In server:
+        @render.code
+        def summary():
+            return f"n = {n.value()}"
+
+        # Push a new value from the server:
+        n.update(value=500)
+    """
+
     def __init__(
         self,
         id: str,
@@ -33,6 +54,25 @@ class input_slider(UiInput, Updatable):  # noqa: N801
         timezone: str | None = None,
         drag_range: bool = True,
     ) -> None:
+        """Build a slider.
+
+        Parameters
+        ----------
+        id
+            Input id; available as ``input.<id>()`` server-side, or via
+            :meth:`value`.
+        label
+            Display label.
+        min, max
+            Inclusive slider range.
+        value
+            Initial value. Pass a ``(low, high)`` tuple for a range slider.
+        step
+            Minimum delta between adjacent values; ``None`` lets shiny pick.
+        ticks, animate, width, sep, pre, post, time_format, timezone, drag_range
+            Forwarded verbatim to :func:`shiny.ui.input_slider`; see shiny's
+            docs for semantics.
+        """
         self.label = label
         self.min = min
         self.max = max
