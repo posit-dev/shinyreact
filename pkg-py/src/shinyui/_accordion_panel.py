@@ -31,7 +31,7 @@ class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
             input_slider("seed", "Seed", 1, 100, 42)
     """
 
-    # Express overload: `with accordion_panel("Settings"): input_slider(...)`.
+    # Express overload — listed first so IDEs prefer it for `with ...:` idioms.
     @overload
     def __init__(
         self,
@@ -39,9 +39,34 @@ class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
         *,
         value: str | MISSING_TYPE = MISSING,
         icon: TagChild | None = None,
-    ) -> None: ...
+    ) -> None:
+        """Build an accordion panel as an Express context manager.
 
-    # Core overload: `accordion_panel("Settings", input_slider(...), ...)`.
+        Children come from the ``with`` block, not from positional args.
+
+        Example
+        -------
+        .. code-block:: python
+
+            with accordion_panel("Settings"):
+                input_slider("seed", "Seed", 1, 100, 42)
+
+        Parameters
+        ----------
+        title
+            Panel header text. Also used as the panel's ``value`` identifier
+            when ``value`` is not supplied.
+        value
+            String identifier for this panel within the accordion. Defaults
+            to ``title``. The parent :class:`accordion` uses this when
+            reporting which panels are open.
+        icon
+            Optional icon displayed in the panel header. Forwarded to
+            :func:`shiny.ui.accordion_panel`.
+        """
+        ...
+
+    # Core overload — inline positional children.
     @overload
     def __init__(
         self,
@@ -49,7 +74,34 @@ class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
         *args: TagChild,
         value: str | MISSING_TYPE = MISSING,
         icon: TagChild | None = None,
-    ) -> None: ...
+    ) -> None:
+        """Build an accordion panel with inline positional children.
+
+        Example
+        -------
+        .. code-block:: python
+
+            accordion_panel(
+                "Settings",
+                input_slider("seed", "Seed", 1, 100, 42),
+            )
+
+        Parameters
+        ----------
+        title
+            Panel header text. Also used as the panel's ``value`` identifier
+            when ``value`` is not supplied.
+        *args
+            Child elements (any ``TagChild``).
+        value
+            String identifier for this panel within the accordion. Defaults
+            to ``title``. The parent :class:`accordion` uses this when
+            reporting which panels are open.
+        icon
+            Optional icon displayed in the panel header. Forwarded to
+            :func:`shiny.ui.accordion_panel`.
+        """
+        ...
 
     def __init__(
         self,
@@ -58,24 +110,6 @@ class accordion_panel(UiLayout, AllowsChildren):  # noqa: N801
         value: str | MISSING_TYPE = MISSING,
         icon: TagChild | None = None,
     ) -> None:
-        """Build an accordion panel.
-
-        Parameters
-        ----------
-        title
-            Panel header text. Also used as the panel's ``value`` identifier
-            when ``value`` is not supplied.
-        *args
-            Child elements (any ``TagChild``). Omit when using the Express
-            ``with accordion_panel(...):`` context-manager pattern.
-        value
-            String identifier for this panel within the accordion. Defaults to
-            ``title``. The parent :class:`accordion` uses this when reporting
-            which panels are open via ``input.<id>()`` / :meth:`accordion.open_panels`.
-        icon
-            Optional icon displayed in the panel header. Forwarded to
-            :func:`shiny.ui.accordion_panel`.
-        """
         self.title = title
         self._value: str | MISSING_TYPE = value
         self.icon = icon

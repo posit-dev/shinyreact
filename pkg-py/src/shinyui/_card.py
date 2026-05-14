@@ -54,8 +54,7 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
         c.update(full_screen=False)
     """
 
-    # Express overload: `with card(id="m"): child_a; child_b` — no positional
-    # children. Listed first so IDEs prefer it for the `with ...:` idiom.
+    # Express overload — listed first so IDEs prefer it for `with ...:` idioms.
     @overload
     def __init__(
         self,
@@ -67,10 +66,33 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
         min_height: Optional[str] = None,
         fill: bool = True,
         class_: Optional[str] = None,
-    ) -> None: ...
+    ) -> None:
+        """Build a card as an Express context manager.
 
-    # Core overload: `card(child_a, child_b, id="m", ...)` — inline positional
-    # children, the classic Shiny Core pattern.
+        Children come from the ``with`` block, not from positional args.
+
+        Example
+        -------
+        .. code-block:: python
+
+            with card(id="main", full_screen=True):
+                output_code("summary")
+                output_plot("plot", click=True)
+
+        Parameters
+        ----------
+        id
+            Input id used to read ``input.<id>_full_screen`` via
+            :meth:`full_screen_value`.
+        full_screen
+            Initial full-screen state rendered into the HTML.
+        height, max_height, min_height, fill, class_
+            Forwarded verbatim to :func:`shiny.ui.card`; see shiny's docs for
+            semantics.
+        """
+        ...
+
+    # Core overload — inline positional children, the classic Shiny Core pattern.
     @overload
     def __init__(
         self,
@@ -82,7 +104,34 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
         min_height: Optional[str] = None,
         fill: bool = True,
         class_: Optional[str] = None,
-    ) -> None: ...
+    ) -> None:
+        """Build a card with inline positional children.
+
+        Example
+        -------
+        .. code-block:: python
+
+            card(
+                output_code("summary"),
+                output_plot("plot", click=True),
+                id="main",
+                full_screen=True,
+            )
+
+        Parameters
+        ----------
+        *args
+            Child elements (any ``TagChild``).
+        id
+            Input id used to read ``input.<id>_full_screen`` via
+            :meth:`full_screen_value`.
+        full_screen
+            Initial full-screen state rendered into the HTML.
+        height, max_height, min_height, fill, class_
+            Forwarded verbatim to :func:`shiny.ui.card`; see shiny's docs for
+            semantics.
+        """
+        ...
 
     def __init__(
         self,
@@ -95,22 +144,6 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):  # noqa: N801
         fill: bool = True,
         class_: Optional[str] = None,
     ) -> None:
-        """Build a card container.
-
-        Parameters
-        ----------
-        *args
-            Child elements (any ``TagChild``). Omit when using the Express
-            ``with card(id=...):`` context-manager pattern.
-        id
-            Input id used to read ``input.<id>_full_screen`` via
-            :meth:`full_screen_value`.
-        full_screen
-            Initial full-screen state rendered into the HTML.
-        height, max_height, min_height, fill, class_
-            Forwarded verbatim to :func:`shiny.ui.card`; see shiny's docs for
-            semantics.
-        """
         self._full_screen = full_screen
         self.height = height
         self.max_height = max_height
