@@ -1,14 +1,17 @@
 """card — layout with optional full-screen toggle exposed as input value.
 
-NOTE: real wire-level `full_screen` input is out of scope for the Stage A
-prototype (would require client-side JS). The `full_screen_value()` accessor
-exists for the class-design test path; in a live app it will be None until
-client JS is added.
+Wire id: ``shiny.ui.card`` accepts an ``id`` kwarg and shiny's card binding
+pushes the full-screen state to ``input.<id>_full_screen``. The class accessor
+:meth:`card.full_screen_value` reads that derived id directly (suffix
+``_full_screen``) — there is no primary ``input.<id>()`` value.
 
-`shiny.ui.card` already accepts an `id` kwarg and reports
-``input.<id>_full_screen`` as a bool when the browser's card JS fires, but
-that browser JS is not wired in the prototype. This class uses the plain
-``self.id`` key so unit tests can mock it straightforwardly.
+Stage A scope note: server → client wiring for ``card.update(full_screen=)``
+is out of scope (would require a small client-side JS adapter, since shiny
+does not currently listen for a server-pushed ``full_screen`` message on
+card). ``full_screen_value()`` reads the bound input correctly under unit
+tests with a mocked session; in a live browser the value reflects whatever
+state the user toggled client-side. The Stage B port to py-shiny may add the
+JS hook.
 """
 
 from __future__ import annotations

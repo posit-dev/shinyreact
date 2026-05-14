@@ -10,11 +10,11 @@
 
 Build a new Python package `shinyui` at `pkg-py/src/shinyui/` that prototypes a class-per-component UI hierarchy. Each class owns its own metadata (input handler, bookmark serializer, HTML deps, `update()` method, server-side read accessors). The package depends only on `shiny` and `htmltools` — *not* on `shinyreact` — so the eventual Stage B port into `py-shiny` is a near-mechanical copy.
 
-The prototype ships seven concrete classes covering every archetype: simple input, structured input, plain output, output-with-read-only-signals (plot), layout-with-children, layout-with-state (card, accordion), and layout-as-child-of-layout.
+The prototype ships at least seven concrete classes covering every archetype: simple input, structured input, plain output, output-with-read-only-signals (plot), layout-with-children, layout-with-state (card, accordion), and layout-as-child-of-layout. The implementation also adds `input_action_button` to exercise the `__init_subclass__` handler-registration demo (see below).
 
 Three open questions from the umbrella are resolved in this spec:
 
-- **Handler registration:** explicit `cls._register_input_handler()` call at module level (no `__init_subclass__`).
+- **Handler registration:** `cls._register_input_handler()` is a classmethod on `HasInputValue`; it is auto-fired by `HasInputValue.__init_subclass__` whenever any subclass is defined. Subclasses that leave `input_handler_name = ""` (the default) are a no-op — slider, select, card, accordion, and the plot/code outputs all take that path. `input_action_button` is the one class in the prototype that opts into a custom wire-side coercion handler, registered under `"shinyui.action"`.
 - **Bookmark id → instance lookup:** register-on-construction; `__init__` queries `get_current_session()` and registers `(id, self)` on the session if one is in scope. No-op if not (module-level UI keeps working, just without class-owned serializers).
 - **`update()` signature:** typed per-class keyword arguments. No `session=` kwarg — session is captured at `__init__` and resolved at call time via a shared `_require_session()` helper.
 

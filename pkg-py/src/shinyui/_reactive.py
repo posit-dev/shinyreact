@@ -14,9 +14,16 @@ when that session ends. If we cache one calc per instance (instance-keyed
 only), the second session sees a destroyed calc → ``DestroyedReactiveError``
 → session-wide crash → "grey overlay" in the browser.
 
-The cache below is keyed by ``(instance, session)`` so each session gets a
-fresh ``@reactive.calc``. Entries are evicted on session-end via
-``shiny.session.Session.on_ended``.
+The cache is keyed by the **current session** so each session gets a fresh
+``@reactive.calc``. Two cleanup paths run together:
+
+1. **Proactive:** when the captured session ends, the ``on_ended`` callback
+   below clears the cached attribute on the instance. This drops the strong
+   reference to the dead session promptly, before any subsequent accessor
+   call.
+2. **Lazy fallback:** if for any reason the ``on_ended`` callback hasn't
+   fired yet (or the cache survived for another reason), the wrapper also
+   detects a session mismatch at call time and rebuilds the calc.
 """
 
 from __future__ import annotations
@@ -44,6 +51,20 @@ def reactive_calc_method(fn: Callable[[Any], T]) -> Callable[[Any], T]:
                 return fn(self)
 
             setattr(self, attr_name, (sess, _calc))
+            if sess is not None:
+                # Proactively drop the cached slot for this session when the
+                # session ends. Avoids holding a strong reference to the dead
+                # session via this attribute until the next accessor call
+                # would otherwise overwrite it.
+                def _evict(_sess=sess) -> None:
+                    current = getattr(self, attr_name, None)
+                    if current is not None and current[0] is _sess:
+                        try:
+                            delattr(self, attr_name)
+                        except AttributeError:
+                            pass
+
+                sess.on_ended(_evict)
             return _calc()
         return cached[1]()
 
