@@ -1,4 +1,4 @@
-"""End-to-end demo of shinyui's class-per-component hierarchy (Shiny Express).
+"""End-to-end demo of shinyui's unified API — class-per-component hierarchy.
 
 Exercises every reference class in one page:
   - input_slider, input_select, input_action_button  (inputs)
@@ -7,12 +7,17 @@ Exercises every reference class in one page:
   - card                                             (layout with state)
   - accordion + accordion_panel                      (layout + layout-as-child)
 
-This is the Express variant of the demo. In Express the script runs once per
-session — ``get_current_session()`` is bound while the module's top-level
-statements execute, so the components register themselves on the session at
-construction time. shinyui containers are still built programmatically (passing
-children to the factories) because the parent-tag stack / ``with`` integration
-is umbrella sub-issue 3, deferred from this prototype.
+This is the Express variant of the demo. The same shinyui component classes
+compose both positionally (``card(accordion(...), ...)``) and via ``with``
+blocks (``with card(): with accordion(): ...``). This file uses the ``with``-
+block form as the idiomatic Express style; the two approaches produce
+identical UI trees. See issue #70 for context.
+
+In Express the script runs once per session — ``get_current_session()`` is
+bound while the module's top-level statements execute, so components register
+themselves on the session at construction time. shinyui's parent-tag context
+stack (issue #70) routes bare expression statements inside a ``with`` block
+to the innermost active parent.
 """
 
 from __future__ import annotations
@@ -23,6 +28,8 @@ from shiny import ui as _sui
 from shiny.express import render, ui
 
 # --- Components -------------------------------------------------------------
+# Components without children are constructed at module top-level so the
+# server-side accessors (``n_slider.value()``, etc.) bind to instances we hold.
 n_slider = su.input_slider("n", "Sample size", 10, 1000, 100)
 seed_slider = su.input_slider("seed", "Seed", 1, 1000, 42)
 dist_select = su.input_select(
@@ -33,33 +40,28 @@ dist_select = su.input_select(
 plot_handle = su.output_plot("plot", click=True, brush=True)
 open_all_btn = su.input_action_button("open_all", "Open all panels")
 close_all_btn = su.input_action_button("close_all", "Close all panels")
-acc = su.accordion(
-    su.accordion_panel("Settings", n_slider, dist_select, seed_slider),
-    su.accordion_panel(
-        "Diagnostics",
-        su.output_code("summary"),
-        su.output_code("diag"),
-    ),
-    id="acc",
-    open="Settings",
-)
-main_card = su.card(
-    # Use plain shiny.ui.layout_column_wrap here, not shiny.express.ui's
-    # recall-context-managed version (the express one takes 0 positional args).
-    _sui.layout_column_wrap(open_all_btn, close_all_btn, width=1 / 2),
-    acc,
-    plot_handle,
-    id="main_card",
-    full_screen=False,
-)
+summary_code = su.output_code("summary")
+diag_code = su.output_code("diag")
 
 # --- Page ------------------------------------------------------------------
 ui.page_opts(title="shinyui Stage A prototype")
 
-# Top-level expression: Express's `@expressify`-driven runtime appends the
-# value to the current page container. shinyui factories are NOT Express-aware,
-# so we hand the constructed instance to Express via this expression statement.
-main_card
+# Build the UI tree with `with` blocks. Express's @expressify rewrite turns
+# each bare expression below into `sys.displayhook(value)`; shinyui's parent
+# stack routes them to the active `with` parent.
+with su.card(id="main_card", full_screen=False) as main_card:
+    # Use plain shiny.ui.layout_column_wrap here, not shiny.express.ui's
+    # recall-context-managed version (the express one takes 0 positional args).
+    _sui.layout_column_wrap(open_all_btn, close_all_btn, width=1 / 2)
+    with su.accordion(id="acc", open="Settings") as acc:
+        with su.accordion_panel("Settings"):
+            n_slider
+            dist_select
+            seed_slider
+        with su.accordion_panel("Diagnostics"):
+            summary_code
+            diag_code
+    plot_handle
 
 
 # --- Renderers -------------------------------------------------------------
