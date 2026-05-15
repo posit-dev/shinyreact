@@ -25,7 +25,7 @@ from typing import Any
 from htmltools import TagChild
 from typing_extensions import Self
 
-from ._ctx_stack import pop, push
+from ._ctx_stack import dispatch_to_active_parent, pop, push
 
 
 class AllowsChildren:
@@ -46,3 +46,9 @@ class AllowsChildren:
 
     def __exit__(self, *exc: object) -> None:
         pop(self._ctx_token)
+        # If an enclosing ``with`` block is still active, dispatch self to it so
+        # that nested ``with`` blocks compose the same tree as positional calls.
+        # Only fires when there is an active parent; leaves the original
+        # displayhook untouched when the stack is empty.
+        if exc[0] is None:  # no exception — normal exit
+            dispatch_to_active_parent(self)

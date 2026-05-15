@@ -143,3 +143,44 @@ async def test_concurrent_tasks_have_isolated_stacks() -> None:
     assert all(c.children[0] == f"a{i}" for i, c in enumerate(card_a.children, 1))
     assert len(card_b.children) == 2
     assert all(c.children[0] == f"b{i}" for i, c in enumerate(card_b.children, 1))
+
+
+def test_expressify_with_blocks_match_positional_form() -> None:
+    """The same UI tree built two ways must render structurally identical HTML.
+
+    Positional form: explicit ``card(accordion(panel(slider), ...))`` nesting.
+    Express form: ``@expressify`` rewrites bare expression statements into
+    ``sys.displayhook(...)`` calls; our shim routes them to the active parent.
+
+    bslib's ``accordion_panel`` generates a random hex suffix
+    (``bslib_accordion_panel_<hex>``) on every ``tagify()`` call, so we
+    normalise those before comparing to avoid false failures from non-determinism
+    that is external to shinyui.
+    """
+    import re
+
+    from shiny.express import expressify
+
+    positional = sui.card(
+        sui.accordion(
+            sui.accordion_panel("A", sui.input_slider("n", "N", 1, 10, 5)),
+            id="acc",
+        ),
+        id="m",
+    )
+
+    @expressify
+    def build() -> sui.card:
+        with sui.card(id="m") as c:
+            with sui.accordion(id="acc"):
+                with sui.accordion_panel("A"):
+                    sui.input_slider("n", "N", 1, 10, 5)
+        return c
+
+    express_form = build()
+
+    def _normalize(html: str) -> str:
+        """Replace bslib's random accordion-panel IDs with a fixed placeholder."""
+        return re.sub(r"bslib_accordion_panel_[0-9a-f]+", "bslib_accordion_panel_X", html)
+
+    assert _normalize(str(positional.tagify())) == _normalize(str(express_form.tagify()))

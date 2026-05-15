@@ -63,3 +63,15 @@ def push(parent: Any) -> contextvars.Token[tuple[Any, ...]]:
 def pop(token: contextvars.Token[tuple[Any, ...]]) -> None:
     """Restore the stack to its snapshot at the time ``token`` was issued."""
     _stack.reset(token)
+
+
+def dispatch_to_active_parent(x: Any) -> None:
+    """Dispatch ``x`` to the current stack tip, if one exists.
+
+    Called by ``AllowsChildren.__exit__`` after the token is reset so that
+    nested ``with`` blocks propagate the finished component to its enclosing
+    parent without touching the previous displayhook when no parent is active.
+    """
+    stack = _stack.get()
+    if stack:
+        wrap_displayhook_handler(stack[-1].append)(x)

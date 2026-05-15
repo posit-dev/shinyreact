@@ -36,13 +36,18 @@ def test_with_block_collects_via_displayhook() -> None:
 
 
 def test_nested_with_routes_to_innermost_parent() -> None:
-    """Nested AllowsChildren context managers form a proper stack."""
+    """Nested AllowsChildren context managers form a proper stack.
+
+    On ``__exit__``, each component auto-dispatches itself to the enclosing
+    parent (if one is active), so no explicit ``sys.displayhook`` call is
+    needed after the inner ``with`` blocks close.
+    """
     with sui.card(id="m") as c:
         with sui.accordion(id="acc") as acc:
             with sui.accordion_panel("A") as panel:
                 sys.displayhook(tags.p("in panel"))
-            sys.displayhook(panel)
-        sys.displayhook(acc)
+            # panel is auto-dispatched to acc on __exit__
+        # acc is auto-dispatched to c on __exit__
     assert len(c.children) == 1 and c.children[0] is acc
     assert len(acc.children) == 1 and acc.children[0] is panel
     assert len(panel.children) == 1
