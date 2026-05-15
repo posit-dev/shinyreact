@@ -7,6 +7,7 @@ integration tests live in test_allows_children.py.
 from __future__ import annotations
 
 import asyncio
+import re
 import sys
 
 import pytest
@@ -157,8 +158,6 @@ def test_expressify_with_blocks_match_positional_form() -> None:
     normalise those before comparing to avoid false failures from non-determinism
     that is external to shinyui.
     """
-    import re
-
     from shiny.express import expressify
 
     positional = sui.card(

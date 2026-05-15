@@ -17,7 +17,12 @@ The mechanism:
    reset is robust to exceptions in the ``with`` body.
 
 This module is private. ``AllowsChildren`` (in ``_children.py``) and
-``CtxTag`` (in ``_ctx_tag.py``) are the only callers.
+``CtxTag`` (in ``_ctx_tag.py``) call ``push``/``pop`` to track scope.
+``AllowsChildren.__exit__`` additionally calls ``dispatch_to_active_parent``
+to propagate the just-closed component to whatever parent is still on the
+stack — this mirrors ``htmltools.Tag.__exit__``'s behavior of forwarding
+self to the outer scope, but with the contextvar stack as the routing
+target instead of a swapped ``sys.displayhook``.
 """
 
 from __future__ import annotations

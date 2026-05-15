@@ -101,18 +101,49 @@ def push(parent: Any) -> contextvars.Token[tuple[Any, ...]]:
 
 def pop(token: contextvars.Token[tuple[Any, ...]]) -> None:
     _stack.reset(token)
+
+
+def dispatch_to_active_parent(x: Any) -> None:
+    """Dispatch ``x`` to the current stack tip, if one exists.
+
+    Called by ``AllowsChildren.__exit__`` after the token is reset so that
+    nested ``with`` blocks propagate the finished component to its enclosing
+    parent without touching the previous displayhook when no parent is active.
+    """
+    stack = _stack.get()
+    if stack:
+        wrap_displayhook_handler(stack[-1].append)(x)
 ```
 
-Single-file module. Module-private functions; only `push` / `pop` are imported by `_children.py` and `_ctx_tag.py`. The `_installed` / `_prev_displayhook` globals are an intentional one-shot install — multiple `_ensure_installed()` calls are no-ops, so import order and test setup are unaffected.
+Single-file module. Module-private functions; `push` / `pop` are imported by `_children.py` and `_ctx_tag.py`; `dispatch_to_active_parent` is imported by `_children.py` only. The `_installed` / `_prev_displayhook` globals are an intentional one-shot install — multiple `_ensure_installed()` calls are no-ops, so import order and test setup are unaffected.
 
 `contextvars.ContextVar` (not `threading.local`) for asyncio compatibility — every `asyncio.Task` gets its own copy on creation; `Token`-based reset survives exceptions.
 
 ### Hook into `AllowsChildren`
 
-Replace the existing no-op `__enter__` / `__exit__` in `shinyui/_children.py`:
+Replace the existing no-op `__enter__` / `__exit__` in `shinyui/_children.py`.
+`__enter__` pushes `self` onto the contextvar stack so that any bare expressions
+inside the `with` body are routed to this component.  `__exit__` first pops `self`
+off the stack (restoring the prior snapshot via the token), then — on normal exit —
+calls `dispatch_to_active_parent(self)` so that the just-closed component is
+automatically appended to whatever parent is still active.  This is what makes
+nested `with` blocks compose: `with accordion():` inside `with card():` lands the
+accordion in the card's children without any explicit call from the user.
+
+> **Why `__exit__`-time dispatch is required.**  The `with X as y:` syntax never
+> triggers `sys.displayhook` on `X` itself — `@expressify` only rewrites bare
+> *expression statements* (`ast.Expr`), not `with`-headers.  So without the
+> `dispatch_to_active_parent` call in `__exit__`, `with accordion()` inside
+> `with card()` would silently vanish: the accordion would collect its own
+> children correctly, but it would never end up in `card.children`.
+> `htmltools.Tag.__exit__` solves the identical problem by calling
+> `sys.displayhook(self)` after restoring its previous displayhook; our
+> contextvar variant achieves the same effect via `dispatch_to_active_parent`,
+> which reads the stack *after* the token reset so that self is routed to the
+> outer parent, not back to itself.
 
 ```python
-from ._ctx_stack import push, pop
+from ._ctx_stack import dispatch_to_active_parent, push, pop
 
 class AllowsChildren:
     children: list[TagChild]
@@ -131,6 +162,10 @@ class AllowsChildren:
 
     def __exit__(self, *exc: object) -> None:
         pop(self._ctx_token)
+        # If an enclosing ``with`` block is still active, dispatch self to it so
+        # nested ``with`` blocks compose the same tree as positional calls.
+        if exc[0] is None:  # no exception — normal exit
+            dispatch_to_active_parent(self)
 ```
 
 Three of the existing concrete classes (`card`, `accordion`, `accordion_panel`) already declare `AllowsChildren` and have Express overloads in place — they pick up `with`-block support with zero per-class changes.
@@ -179,13 +214,14 @@ Exported from `shinyui/__init__.py` for the standalone-htmltools test path (`wit
 ## Data flow
 
 ```
-with card(id="m") as c:           push(c)            stack = (c,)
-    "title"                       _dispatch("title") wrap_displayhook_handler(c.append)("title")
-    h1("hi") via CtxTag           _dispatch(h1)      wrap_displayhook_handler(c.append)(h1)
-    with accordion(id="a") as a:  push(a)            stack = (c, a)
-        accordion_panel("A")      _dispatch(panel)   wrap_displayhook_handler(a.append)(panel)
-                                  pop(token_a)       stack = (c,)
-                                  pop(token_c)       stack = ()
+with card(id="m") as c:           push(c)                      stack = (c,)
+    "title"                       _dispatch("title")            wrap_displayhook_handler(c.append)("title")
+    h1("hi") via CtxTag           _dispatch(h1)                 wrap_displayhook_handler(c.append)(h1)
+    with accordion(id="a") as a:  push(a)                      stack = (c, a)
+        accordion_panel("A")      _dispatch(panel)              wrap_displayhook_handler(a.append)(panel)
+                                  pop(token_a)                  stack = (c,)
+                                  dispatch_to_active_parent(a)  wrap_displayhook_handler(c.append)(a)
+                                  pop(token_c)                  stack = ()
 ```
 
 Each `__enter__` produces a `Token`; `__exit__` resets to the snapshot the token captured. Nested entries naturally form a stack because each token holds the *previous* contextvar value.
