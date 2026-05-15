@@ -180,6 +180,10 @@ def test_expressify_with_blocks_match_positional_form() -> None:
 
     def _normalize(html: str) -> str:
         """Replace bslib's random accordion-panel IDs with a fixed placeholder."""
-        return re.sub(r"bslib_accordion_panel_[0-9a-f]+", "bslib_accordion_panel_X", html)
+        return re.sub(
+            r"bslib_accordion_panel_[0-9a-f]+", "bslib_accordion_panel_X", html
+        )
 
-    assert _normalize(str(positional.tagify())) == _normalize(str(express_form.tagify()))
+    assert _normalize(str(positional.tagify())) == _normalize(
+        str(express_form.tagify())
+    )
