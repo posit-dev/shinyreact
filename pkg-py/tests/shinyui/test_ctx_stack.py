@@ -64,3 +64,33 @@ def test_displayhook_fall_through_outside_with_block() -> None:
         cs._prev_displayhook = original_prev
 
     assert seen == ["untargeted"]
+
+
+def test_ctx_tag_as_context_manager_collects_children() -> None:
+    """CtxTag.__enter__ pushes onto the stack so bare expressions collect."""
+    outer = sui.CtxTag("div")
+    with outer as d:
+        sys.displayhook(sui.CtxTag("h1", "Title"))
+        sys.displayhook("body text")
+    assert len(d.children) == 2
+    assert d.children[0].name == "h1"
+    assert d.children[1] == "body text"
+
+
+def test_ctx_tag_outside_with_block_behaves_like_tag() -> None:
+    """Constructing a CtxTag outside any with-block does not touch the stack."""
+    t = sui.CtxTag("span", "ok")
+    assert t.name == "span"
+    assert "ok" in list(t.children)
+
+
+def test_ctx_tag_overrides_htmltools_displayhook_swap() -> None:
+    """CtxTag.__enter__ must NOT do htmltools' global sys.displayhook swap.
+
+    htmltools.Tag.__enter__ sets self.prev_displayhook; if our subclass
+    delegates to super().__enter__, that side-effect would happen. Verify
+    it does not."""
+    t = sui.CtxTag("div")
+    with t:
+        pass
+    assert t.prev_displayhook is None

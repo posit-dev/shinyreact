@@ -9,6 +9,7 @@ from ._base import UiComponent
 from ._bookmark import lookup_component
 from ._card import card
 from ._children import AllowsChildren
+from ._ctx_tag import CtxTag
 from ._input_action_button import input_action_button
 from ._input_select import input_select
 from ._input_slider import input_slider
@@ -20,6 +21,7 @@ from ._updatable import Updatable
 
 __all__ = [
     "AllowsChildren",
+    "CtxTag",
     "HasInputValue",
     "UiComponent",
     "UiInput",

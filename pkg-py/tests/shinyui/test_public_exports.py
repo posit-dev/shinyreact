@@ -15,3 +15,6 @@ def test_public_exports():
     assert isinstance(sui.card, type)
     assert isinstance(sui.accordion, type)
     assert isinstance(sui.accordion_panel, type)
+
+    # Tag-as-CM (issue #70)
+    assert isinstance(sui.CtxTag, type)
