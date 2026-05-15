@@ -16,12 +16,17 @@ accessors (``slider.value()``, ``acc.update(...)``, ``card.full_screen_value()``
 work the same in both — they resolve the active session at call time, so
 they are safe to define at module load in Core and access from inside the
 ``server`` function.
+
+The plot uses :class:`shinyui.render_plot`, which owns the derived-input
+accessors (``click_value``, ``brush_value``, etc.). In Core, ``output_plot``
+in ``app_ui`` provides placement; the matching ``@su.render_plot(...)`` in
+``server`` provides the renderer plus the derived-input accessors.
 """
 
 from __future__ import annotations
 
 import shinyui as su
-from shiny import App, Inputs, Outputs, Session, reactive
+from shiny import App, Inputs, Outputs, Session, reactive, render
 from shiny import ui as _sui
 
 # --- Components -------------------------------------------------------------
@@ -63,8 +68,8 @@ app_ui = _sui.page_fluid(
 
 # --- Server -----------------------------------------------------------------
 def server(input: Inputs, output: Outputs, session: Session) -> None:
-    @summary_code.render
-    def _() -> str:
+    @render.code
+    def summary() -> str:
         return (
             f"n     = {n_slider.value()}\n"
             f"dist  = {dist_select.value()}\n"
@@ -73,15 +78,15 @@ def server(input: Inputs, output: Outputs, session: Session) -> None:
             f"fs    = {main_card.full_screen_value()}\n"
         )
 
-    @diag_code.render
-    def _() -> str:
+    @render.code
+    def diag() -> str:
         return (
-            f"click = {plot_handle.click_value()}\n"
-            f"brush = {plot_handle.brush_value()}\n"
+            f"click = {plot.click_value()}\n"
+            f"brush = {plot.brush_value()}\n"
         )
 
-    @plot_handle.render
-    def _():
+    @su.render_plot(click=True, brush=True)
+    def plot():
         import matplotlib.pyplot as plt
         import numpy as np
 

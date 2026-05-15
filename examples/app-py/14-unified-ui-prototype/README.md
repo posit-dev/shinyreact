@@ -67,7 +67,8 @@ hood, so reads inside reactive contexts establish dependencies correctly.
 - Click **Open all panels** / **Close all panels** — the accordion expands
   or collapses via `acc.update(open=...)`.
 - Click or brush on the plot — coordinates appear in the `diag` panel via
-  `plot_handle.click_value()` / `plot_handle.brush_value()`.
+  `plot.click_value()` / `plot.brush_value()` (the renderer object created
+  by `@su.render_plot(click=True, brush=True)`).
 
 ## Notes on real-app fidelity
 

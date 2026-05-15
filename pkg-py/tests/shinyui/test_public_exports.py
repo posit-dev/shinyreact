@@ -12,6 +12,7 @@ def test_public_exports():
     assert isinstance(sui.input_action_button, type)
     assert isinstance(sui.output_code, type)
     assert isinstance(sui.output_plot, type)
+    assert isinstance(sui.render_plot, type)
     assert isinstance(sui.card, type)
     assert isinstance(sui.accordion, type)
     assert isinstance(sui.accordion_panel, type)

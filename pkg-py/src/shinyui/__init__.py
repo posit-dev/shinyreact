@@ -16,6 +16,7 @@ from ._input_slider import input_slider
 from ._input_value import HasInputValue
 from ._output_code import output_code
 from ._output_plot import output_plot
+from ._render_plot import render_plot
 from ._roles import UiInput, UiLayout, UiOutput
 from ._updatable import Updatable
 
@@ -37,4 +38,5 @@ __all__ = [
     "lookup_component",
     "output_code",
     "output_plot",
+    "render_plot",
 ]

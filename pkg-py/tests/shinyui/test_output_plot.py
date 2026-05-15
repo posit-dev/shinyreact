@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import shiny.ui as sui
-from shiny import reactive
 from shinyui._output_plot import output_plot
 
 
@@ -17,29 +16,25 @@ def test_tagify_matches_shiny_ui_output_plot():
     assert ours.get_html_string() == theirs.get_html_string()
 
 
-def test_click_value_reads_correct_id(mock_session):
-    p = output_plot("p", click=True)
-    mock_session.input.__getitem__.return_value = lambda: {"x": 10, "y": 20}
-    with reactive.isolate():
-        assert p.click_value() == {"x": 10, "y": 20}
-    mock_session.input.__getitem__.assert_called_with("p_click")
-
-
-def test_brush_value_reads_correct_id(mock_session):
-    p = output_plot("p", brush=True)
-    mock_session.input.__getitem__.return_value = lambda: {"xmin": 1, "xmax": 2}
-    with reactive.isolate():
-        assert p.brush_value() == {"xmin": 1, "xmax": 2}
-    mock_session.input.__getitem__.assert_called_with("p_brush")
-
-
-def test_hover_and_dbl_values(mock_session):
-    p = output_plot("p", hover=True, dblclick=True)
-    seq = iter([{"x": 1}, {"x": 2}])
-    mock_session.input.__getitem__.return_value = lambda: next(seq)
-    with reactive.isolate():
-        assert p.hover_value() == {"x": 1}
-        assert p.dbl_value() == {"x": 2}
+def test_flags_forwarded_to_tagify():
+    """All four interaction flags + inline are wired into the rendered HTML."""
+    p = output_plot(
+        "p",
+        click=True,
+        dblclick=True,
+        hover=True,
+        brush=True,
+        inline=True,
+    )
+    theirs = sui.output_plot(
+        "p",
+        inline=True,
+        click=True,
+        dblclick=True,
+        hover=True,
+        brush=True,
+    )
+    assert p.tagify().get_html_string() == theirs.get_html_string()
 
 
 def test_no_update_method():
@@ -47,27 +42,16 @@ def test_no_update_method():
     assert not hasattr(p, "update")
 
 
-def test_plot_render_returns_renderer_bound_to_id() -> None:
-    """output_plot.render(fn) returns a Renderer whose output_id is the
-    output's id, not the function's __name__."""
-    from shiny.render.renderer import Renderer
-
-    out = output_plot("p")
-
-    @out.render
-    def _():
-        return None  # plot renderer accepts None (no plot)
-
-    assert isinstance(_, Renderer)
-    assert _.output_id == "p"
+def test_no_derived_input_accessors_on_output_plot() -> None:
+    """Derived-input accessors have moved to shinyui.render_plot."""
+    p = output_plot("p", click=True, brush=True)
+    for name in ("click_value", "dbl_value", "hover_value", "brush_value"):
+        assert not hasattr(p, name), (
+            f"output_plot should no longer expose {name}; it lives on render_plot now"
+        )
 
 
-def test_plot_render_overrides_function_name() -> None:
-    """The function passed to .render is renamed to match the output id."""
-    out = output_plot("p")
-
-    def my_renderer():
-        return None
-
-    out.render(my_renderer)
-    assert my_renderer.__name__ == "p"
+def test_no_render_method_on_output_plot() -> None:
+    """output_plot.render was reverted; use @shinyui.render_plot instead."""
+    p = output_plot("p")
+    assert not hasattr(p, "render")

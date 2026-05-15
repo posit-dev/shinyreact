@@ -1,64 +1,56 @@
-"""output_plot — output with read-only client-side interaction signals.
+"""output_plot — placement helper for plot outputs.
 
-Derived input ids (the four that ``shiny.ui.output_plot`` actually pushes):
+This class is now a pure placement helper. It carries the configuration
+flags (``click``, ``dblclick``, ``hover``, ``brush``, ``inline``, ``fill``)
+that Core needs at ``app_ui`` time — before any renderer exists — and
+delegates to :func:`shiny.ui.output_plot` in :meth:`tagify`.
 
-  ===================  ============================================
-  Wire id              Accessor (reactive read)
-  ===================  ============================================
-  input.<id>_click     :meth:`output_plot.click_value`
-  input.<id>_dblclick  :meth:`output_plot.dbl_value`
-  input.<id>_hover     :meth:`output_plot.hover_value`
-  input.<id>_brush     :meth:`output_plot.brush_value`
-  ===================  ============================================
+Derived-input accessors (``click_value``, ``dbl_value``, ``hover_value``,
+``brush_value``) live on :class:`shinyui.render_plot`, which is the
+renderer side of the same plot output. The renderer owns the session at
+read time in both Core and Express, so it's the natural home for those
+accessors.
 
-No HasInputValue, no Updatable. Derived inputs flow through Shiny's
-auto-created Value[Any] mechanism on first ``session.input[...]`` access.
+See :class:`shinyui.render_plot` for the accessor surface.
 
 Two interactions that shinyui does NOT expose because the shiny binding
 does not push them: ``_limits`` (zoom bounds) and ``_selection`` (lasso /
 selected-points). If shiny grows those signals upstream, add the matching
-``limits_value`` / ``selection_value`` accessors here.
+``limits_value`` / ``selection_value`` accessors on ``render_plot``.
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable
-
 from htmltools import Tag
 from shiny.types import MISSING, MISSING_TYPE
 
-from ._reactive import reactive_calc_method
 from ._roles import UiOutput
 
 
 class output_plot(UiOutput):
-    """Plot output with optional client-side interaction signals.
+    """Plot output placeholder.
 
-    No primary ``input.<id>()`` value. When interaction flags are enabled,
-    the browser pushes derived wire ids that are accessible via class
-    accessors:
-
-    =====================  ======================================
-    Wire id                Accessor
-    =====================  ======================================
-    ``input.<id>_click``   :meth:`click_value`
-    ``input.<id>_dblclick`` :meth:`dbl_value`
-    ``input.<id>_hover``   :meth:`hover_value`
-    ``input.<id>_brush``   :meth:`brush_value`
-    =====================  ======================================
+    Pure placement helper — carries the interaction configuration flags that
+    Core needs at ``app_ui`` time. In Express, the matching
+    :class:`shinyui.render_plot` auto-places its own placeholder via
+    ``auto_output_ui()`` and you typically don't construct ``output_plot``
+    directly.
 
     Example
     -------
     .. code-block:: python
 
+        # Core (app.py with positional composition)
         p = output_plot("plot", click=True, brush=True)
 
         # In server:
-        @reactive.effect
-        def _():
-            coords = p.click_value()
-            if coords:
-                print(coords["x"], coords["y"])
+        @su.render_plot(click=True, brush=True)
+        def plot():
+            ...
+
+        @render.code
+        def diag():
+            return f"click = {plot.click_value()}\\nbrush = {plot.brush_value()}\\n"
     """
 
     def __init__(
@@ -74,23 +66,18 @@ class output_plot(UiOutput):
         brush: bool = False,
         fill: bool | MISSING_TYPE = MISSING,
     ) -> None:
-        """Build a plot output.
+        """Build a plot output placeholder.
 
         Parameters
         ----------
         id
-            Output id; must match a ``@render.plot``-decorated function in the
-            server.
+            Output id; must match a ``@render.plot``- or
+            ``@shinyui.render_plot``-decorated function in the server.
         width, height
             CSS dimensions of the plot container.
-        click
-            Enable click interaction; read via :meth:`click_value`.
-        dblclick
-            Enable double-click interaction; read via :meth:`dbl_value`.
-        hover
-            Enable hover interaction; read via :meth:`hover_value`.
-        brush
-            Enable brush (drag-select) interaction; read via :meth:`brush_value`.
+        click, dblclick, hover, brush
+            Enable the matching client-side interaction. Reads happen on
+            the matching :class:`shinyui.render_plot` instance, not here.
         inline, fill
             Forwarded verbatim to :func:`shiny.ui.output_plot`; see shiny's
             docs for semantics.
@@ -105,45 +92,6 @@ class output_plot(UiOutput):
         self.brush_enabled = brush
         self.fill = fill
         super().__init__()
-
-    @reactive_calc_method
-    def click_value(self) -> Any:
-        return self._read_input("_click")
-
-    @reactive_calc_method
-    def dbl_value(self) -> Any:
-        return self._read_input("_dblclick")
-
-    @reactive_calc_method
-    def hover_value(self) -> Any:
-        return self._read_input("_hover")
-
-    @reactive_calc_method
-    def brush_value(self) -> Any:
-        return self._read_input("_brush")
-
-    def render(self, fn: Callable[..., Any]) -> Any:
-        """Bind ``fn`` as the plot renderer for this output instance.
-
-        Returns the wrapped :class:`shiny.render.plot` renderer. The function
-        is registered with Shiny under ``self.id``, regardless of its own
-        ``__name__``. See :meth:`output_code.render` for the full rationale.
-
-        .. code-block:: python
-
-            plot_handle = output_plot("plot", click=True, brush=True)
-
-            @plot_handle.render
-            def _():
-                import matplotlib.pyplot as plt
-                fig, ax = plt.subplots()
-                ax.plot([1, 2, 3])
-                return fig
-        """
-        from shiny import render as _r
-
-        fn.__name__ = self.id
-        return _r.plot(fn)
 
     def tagify(self) -> Tag:
         import shiny.ui as _sui

@@ -13,16 +13,18 @@ expression statements get rewritten to ``sys.displayhook(...)`` calls. The
 shinyui parent-tag context stack (issue #70) routes those values to the
 innermost active ``with`` parent.
 
-Renderers use the ``@<output>.render`` instance method instead of bare
-``@render.code`` / ``@render.plot``. This binds the renderer to the output's
-id (not the function's ``__name__``) and — because the decorator is an
-assignment expression — does not trigger Express's displayhook auto-placement.
+Renderer ``def`` statements are placed at module top level (outside any
+``with`` block) so Express's expressify hook auto-displays them. The plot
+renderer is :class:`shinyui.render_plot`, which auto-places its placeholder
+with the right interaction flags via ``auto_output_ui()`` and owns the
+``click_value`` / ``brush_value`` / ``hover_value`` / ``dbl_value``
+accessors.
 """
 
 from __future__ import annotations
 
 import shinyui as su
-from shiny import reactive
+from shiny import reactive, render
 from shiny import ui as _sui
 from shiny.express import ui
 
@@ -36,7 +38,6 @@ dist_select = su.input_select(
     "Distribution",
     {"normal": "Normal", "uniform": "Uniform"},
 )
-plot_handle = su.output_plot("plot", click=True, brush=True)
 open_all_btn = su.input_action_button("open_all", "Open all panels")
 close_all_btn = su.input_action_button("close_all", "Close all panels")
 summary_code = su.output_code("summary")
@@ -58,17 +59,18 @@ with su.card(id="main_card", full_screen=False) as main_card:
         with su.accordion_panel("Diagnostics"):
             summary_code
             diag_code
-    plot_handle
 
 
 # --- Renderers -------------------------------------------------------------
-# ``@<output>.render`` binds the function to the output's id (not the
-# function's __name__) and, being an assignment expression, does NOT trigger
-# Express's displayhook auto-placement. No ``ui.hold()`` wrapper needed.
+# Renderer ``def`` statements live at the module top level; Express's
+# expressify hook (``_expressify_decorator_function_def``) auto-displays them
+# because each returned Renderer has ``_repr_html_``. The text renderers
+# match the ``output_code`` placeholders above by name; the plot renderer
+# (``shinyui.render_plot``) auto-places its own placeholder.
 
 
-@summary_code.render
-def _():
+@render.code
+def summary():
     return (
         f"n     = {n_slider.value()}\n"
         f"dist  = {dist_select.value()}\n"
@@ -78,16 +80,16 @@ def _():
     )
 
 
-@diag_code.render
-def _():
+@render.code
+def diag():
     return (
-        f"click = {plot_handle.click_value()}\n"
-        f"brush = {plot_handle.brush_value()}\n"
+        f"click = {plot.click_value()}\n"
+        f"brush = {plot.brush_value()}\n"
     )
 
 
-@plot_handle.render
-def _():
+@su.render_plot(click=True, brush=True)
+def plot():
     import matplotlib.pyplot as plt
     import numpy as np
 
