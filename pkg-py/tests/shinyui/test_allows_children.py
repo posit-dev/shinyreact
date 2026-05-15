@@ -64,6 +64,7 @@ def test_sequential_with_blocks_do_not_leak() -> None:
     assert len(c2.children) == 1
     # Stack must be empty after both blocks.
     from shinyui._ctx_stack import _stack
+
     assert _stack.get() == ()
 
 
