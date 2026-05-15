@@ -96,3 +96,45 @@ def test_exception_in_body_still_pops_stack() -> None:
         pass
     assert _stack.get() == ()
     assert len(c.children) == 1  # collected before the raise
+
+
+def test_preconstructed_component_works_as_context_manager() -> None:
+    """A component built outside any with-block can be entered later.
+
+    `acc = accordion(...)` then `with acc:` is a valid usage pattern — the
+    instance is constructed against an empty stack (so it doesn't auto-attach
+    to anything), and `__enter__` pushes the already-built instance so its
+    body's bare expressions collect into its children.
+    """
+    acc = sui.accordion(id="acc")
+    assert acc.children == []  # constructed empty
+
+    with acc as same_acc:
+        assert same_acc is acc
+        sys.displayhook(sui.accordion_panel("A"))
+        sys.displayhook(sui.accordion_panel("B"))
+
+    assert len(acc.children) == 2
+    assert all(isinstance(p, sui.accordion_panel) for p in acc.children)
+    assert [p.title for p in acc.children] == ["A", "B"]
+
+
+def test_preconstructed_with_expressify_form() -> None:
+    """Same as above but using @expressify to validate the AST-rewritten path.
+
+    Confirms that defining the parent first and entering it later behaves the
+    same under @expressify's bare-expression rewriting as the inline form.
+    """
+    from shiny.express import expressify
+
+    @expressify
+    def build() -> sui.accordion:
+        acc = sui.accordion(id="acc")
+        with acc:
+            sui.accordion_panel("A")
+            sui.accordion_panel("B")
+        return acc
+
+    acc = build()
+    assert len(acc.children) == 2
+    assert [p.title for p in acc.children] == ["A", "B"]
