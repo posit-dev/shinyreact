@@ -21,7 +21,7 @@ they are safe to define at module load in Core and access from inside the
 from __future__ import annotations
 
 import shinyui as su
-from shiny import App, Inputs, Outputs, Session, reactive, render
+from shiny import App, Inputs, Outputs, Session, reactive
 from shiny import ui as _sui
 
 # --- Components -------------------------------------------------------------
@@ -63,8 +63,8 @@ app_ui = _sui.page_fluid(
 
 # --- Server -----------------------------------------------------------------
 def server(input: Inputs, output: Outputs, session: Session) -> None:
-    @render.code
-    def summary() -> str:
+    @summary_code.render
+    def _() -> str:
         return (
             f"n     = {n_slider.value()}\n"
             f"dist  = {dist_select.value()}\n"
@@ -73,15 +73,15 @@ def server(input: Inputs, output: Outputs, session: Session) -> None:
             f"fs    = {main_card.full_screen_value()}\n"
         )
 
-    @render.code
-    def diag() -> str:
+    @diag_code.render
+    def _() -> str:
         return (
             f"click = {plot_handle.click_value()}\n"
             f"brush = {plot_handle.brush_value()}\n"
         )
 
-    @render.plot
-    def plot():
+    @plot_handle.render
+    def _():
         import matplotlib.pyplot as plt
         import numpy as np
 

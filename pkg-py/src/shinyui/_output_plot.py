@@ -22,7 +22,7 @@ selected-points). If shiny grows those signals upstream, add the matching
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from htmltools import Tag
 from shiny.types import MISSING, MISSING_TYPE
@@ -121,6 +121,29 @@ class output_plot(UiOutput):
     @reactive_calc_method
     def brush_value(self) -> Any:
         return self._read_input("_brush")
+
+    def render(self, fn: Callable[..., Any]) -> Any:
+        """Bind ``fn`` as the plot renderer for this output instance.
+
+        Returns the wrapped :class:`shiny.render.plot` renderer. The function
+        is registered with Shiny under ``self.id``, regardless of its own
+        ``__name__``. See :meth:`output_code.render` for the full rationale.
+
+        .. code-block:: python
+
+            plot_handle = output_plot("plot", click=True, brush=True)
+
+            @plot_handle.render
+            def _():
+                import matplotlib.pyplot as plt
+                fig, ax = plt.subplots()
+                ax.plot([1, 2, 3])
+                return fig
+        """
+        from shiny import render as _r
+
+        fn.__name__ = self.id
+        return _r.plot(fn)
 
     def tagify(self) -> Tag:
         import shiny.ui as _sui

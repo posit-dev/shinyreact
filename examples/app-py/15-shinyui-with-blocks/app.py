@@ -12,6 +12,11 @@ Both rely on ``@expressify`` (Shiny Express's default for ``app.py``) so bare
 expression statements get rewritten to ``sys.displayhook(...)`` calls. The
 shinyui parent-tag context stack (issue #70) routes those values to the
 innermost active ``with`` parent.
+
+Renderers use the ``@<output>.render`` instance method instead of bare
+``@render.code`` / ``@render.plot``. This binds the renderer to the output's
+id (not the function's ``__name__``) and — because the decorator is an
+assignment expression — does not trigger Express's displayhook auto-placement.
 """
 
 from __future__ import annotations
@@ -19,7 +24,7 @@ from __future__ import annotations
 import shinyui as su
 from shiny import reactive
 from shiny import ui as _sui
-from shiny.express import render, ui
+from shiny.express import ui
 
 # --- Components -------------------------------------------------------------
 # Components without children are constructed at module top-level so the
@@ -57,48 +62,51 @@ with su.card(id="main_card", full_screen=False) as main_card:
 
 
 # --- Renderers -------------------------------------------------------------
-# ``ui.hold()`` suppresses Express's default auto-placement so each renderer
-# binds to its id-matching output placed inside the accordion / card above.
-with ui.hold():
+# ``@<output>.render`` binds the function to the output's id (not the
+# function's __name__) and, being an assignment expression, does NOT trigger
+# Express's displayhook auto-placement. No ``ui.hold()`` wrapper needed.
 
-    @render.code
-    def summary():
-        return (
-            f"n     = {n_slider.value()}\n"
-            f"dist  = {dist_select.value()}\n"
-            f"seed  = {seed_slider.value()}\n"
-            f"open  = {acc.open_panels()}\n"
-            f"fs    = {main_card.full_screen_value()}\n"
-        )
 
-    @render.code
-    def diag():
-        return (
-            f"click = {plot_handle.click_value()}\n"
-            f"brush = {plot_handle.brush_value()}\n"
-        )
+@summary_code.render
+def _():
+    return (
+        f"n     = {n_slider.value()}\n"
+        f"dist  = {dist_select.value()}\n"
+        f"seed  = {seed_slider.value()}\n"
+        f"open  = {acc.open_panels()}\n"
+        f"fs    = {main_card.full_screen_value()}\n"
+    )
 
-    @render.plot
-    def plot():
-        import matplotlib.pyplot as plt
-        import numpy as np
 
-        rng = np.random.default_rng(seed_slider.value())
-        n = n_slider.value()
-        if dist_select.value() == "normal":
-            x = rng.standard_normal(n)
-            y = rng.standard_normal(n)
-        else:
-            x = rng.uniform(-2, 2, n)
-            y = rng.uniform(-2, 2, n)
+@diag_code.render
+def _():
+    return (
+        f"click = {plot_handle.click_value()}\n"
+        f"brush = {plot_handle.brush_value()}\n"
+    )
 
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.scatter(x, y, s=12, alpha=0.6)
-        ax.set_title(f"{dist_select.value()} sample, n={n}, seed={seed_slider.value()}")
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.grid(True, alpha=0.3)
-        return fig
+
+@plot_handle.render
+def _():
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    rng = np.random.default_rng(seed_slider.value())
+    n = n_slider.value()
+    if dist_select.value() == "normal":
+        x = rng.standard_normal(n)
+        y = rng.standard_normal(n)
+    else:
+        x = rng.uniform(-2, 2, n)
+        y = rng.uniform(-2, 2, n)
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.scatter(x, y, s=12, alpha=0.6)
+    ax.set_title(f"{dist_select.value()} sample, n={n}, seed={seed_slider.value()}")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.grid(True, alpha=0.3)
+    return fig
 
 
 # --- Reactive effects ------------------------------------------------------

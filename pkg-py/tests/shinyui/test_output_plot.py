@@ -45,3 +45,29 @@ def test_hover_and_dbl_values(mock_session):
 def test_no_update_method():
     p = output_plot("p")
     assert not hasattr(p, "update")
+
+
+def test_plot_render_returns_renderer_bound_to_id() -> None:
+    """output_plot.render(fn) returns a Renderer whose output_id is the
+    output's id, not the function's __name__."""
+    from shiny.render.renderer import Renderer
+
+    out = output_plot("p")
+
+    @out.render
+    def _():
+        return None  # plot renderer accepts None (no plot)
+
+    assert isinstance(_, Renderer)
+    assert _.output_id == "p"
+
+
+def test_plot_render_overrides_function_name() -> None:
+    """The function passed to .render is renamed to match the output id."""
+    out = output_plot("p")
+
+    def my_renderer():
+        return None
+
+    out.render(my_renderer)
+    assert my_renderer.__name__ == "p"
