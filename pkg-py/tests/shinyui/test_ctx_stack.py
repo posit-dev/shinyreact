@@ -19,13 +19,17 @@ def test_push_pop_isolated_stack() -> None:
     assert _stack.get() == ()
     parent_a = sui.card(id="a")
     token_a = push(parent_a)
-    assert _stack.get() == (parent_a,)
-    parent_b = sui.card(id="b")
-    token_b = push(parent_b)
-    assert _stack.get() == (parent_a, parent_b)
-    pop(token_b)
-    assert _stack.get() == (parent_a,)
-    pop(token_a)
+    try:
+        assert _stack.get() == (parent_a,)
+        parent_b = sui.card(id="b")
+        token_b = push(parent_b)
+        try:
+            assert _stack.get() == (parent_a, parent_b)
+        finally:
+            pop(token_b)
+        assert _stack.get() == (parent_a,)
+    finally:
+        pop(token_a)
     assert _stack.get() == ()
 
 
@@ -40,6 +44,7 @@ def test_displayhook_routes_to_stack_tip_via_push() -> None:
     finally:
         pop(token)
     assert len(c.children) == 1
+    assert c.children[0].name == "p"
 
 
 def test_displayhook_fall_through_outside_with_block() -> None:
