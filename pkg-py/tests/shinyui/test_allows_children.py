@@ -76,3 +76,17 @@ def test_none_and_ellipsis_are_filtered() -> None:
         sys.displayhook(...)
         sys.displayhook("kept")
     assert c.children == ["kept"]
+
+
+def test_exception_in_body_still_pops_stack() -> None:
+    """Stack is restored even when the with-block body raises."""
+    from shinyui._ctx_stack import _stack
+
+    try:
+        with sui.card(id="m") as c:
+            sys.displayhook(tags.p("before"))
+            raise RuntimeError("intentional")
+    except RuntimeError:
+        pass
+    assert _stack.get() == ()
+    assert len(c.children) == 1  # collected before the raise
