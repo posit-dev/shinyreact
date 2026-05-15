@@ -104,15 +104,16 @@ def pop(token: contextvars.Token[tuple[Any, ...]]) -> None:
 
 
 def dispatch_to_active_parent(x: Any) -> None:
-    """Dispatch ``x`` to the current stack tip, if one exists.
+    """Forward ``x`` to the active parent — the next outer ``with``-block parent
+    if one exists, otherwise the displayhook that was installed before ours.
 
-    Called by ``AllowsChildren.__exit__`` after the token is reset so that
-    nested ``with`` blocks propagate the finished component to its enclosing
-    parent without touching the previous displayhook when no parent is active.
+    Called by ``AllowsChildren.__exit__`` so nested ``with`` blocks propagate
+    the just-closed component to the enclosing parent. When the outermost
+    ``with`` exits, the stack is empty — falling through to ``_prev_displayhook``
+    lets Express (or REPL/Jupyter) place the top-level component as if it had
+    been a bare expression statement.
     """
-    stack = _stack.get()
-    if stack:
-        wrap_displayhook_handler(stack[-1].append)(x)
+    sys.displayhook(x)
 ```
 
 Single-file module. Module-private functions; `push` / `pop` are imported by `_children.py` and `_ctx_tag.py`; `dispatch_to_active_parent` is imported by `_children.py` only. The `_installed` / `_prev_displayhook` globals are an intentional one-shot install — multiple `_ensure_installed()` calls are no-ops, so import order and test setup are unaffected.
@@ -220,11 +221,12 @@ with card(id="m") as c:           push(c)                      stack = (c,)
     with accordion(id="a") as a:  push(a)                      stack = (c, a)
         accordion_panel("A")      _dispatch(panel)              wrap_displayhook_handler(a.append)(panel)
                                   pop(token_a)                  stack = (c,)
-                                  dispatch_to_active_parent(a)  wrap_displayhook_handler(c.append)(a)
+                                  dispatch_to_active_parent(a)  sys.displayhook(a) → _dispatch → wrap_displayhook_handler(c.append)(a)
                                   pop(token_c)                  stack = ()
+                                  dispatch_to_active_parent(c)  sys.displayhook(c) → _dispatch → _prev_displayhook(c)
 ```
 
-Each `__enter__` produces a `Token`; `__exit__` resets to the snapshot the token captured. Nested entries naturally form a stack because each token holds the *previous* contextvar value.
+Each `__enter__` produces a `Token`; `__exit__` resets to the snapshot the token captured. Nested entries naturally form a stack because each token holds the *previous* contextvar value. `dispatch_to_active_parent` always routes through `sys.displayhook` (which is `_dispatch` after install): when the stack is non-empty, it appends to the current parent; when the outermost `with` exits with an empty stack, `_dispatch` falls through to `_prev_displayhook` so Express (or the REPL/Jupyter hook) can place the top-level component.
 
 ### Nested function-call interaction (the issue the user pinned earlier)
 

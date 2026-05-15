@@ -19,10 +19,11 @@ The mechanism:
 This module is private. ``AllowsChildren`` (in ``_children.py``) and
 ``CtxTag`` (in ``_ctx_tag.py``) call ``push``/``pop`` to track scope.
 ``AllowsChildren.__exit__`` additionally calls ``dispatch_to_active_parent``
-to propagate the just-closed component to whatever parent is still on the
-stack — this mirrors ``htmltools.Tag.__exit__``'s behavior of forwarding
-self to the outer scope, but with the contextvar stack as the routing
-target instead of a swapped ``sys.displayhook``.
+to propagate the just-closed component. When an outer parent is still on
+the stack, the component is appended there; when the stack is empty
+(outermost ``with``), it falls through via ``sys.displayhook`` so
+REPL/Jupyter/Express can place it. This mirrors ``htmltools.Tag.__exit__``'s
+behavior of forwarding self to the outer scope.
 """
 
 from __future__ import annotations
@@ -71,12 +72,13 @@ def pop(token: contextvars.Token[tuple[Any, ...]]) -> None:
 
 
 def dispatch_to_active_parent(x: Any) -> None:
-    """Dispatch ``x`` to the current stack tip, if one exists.
+    """Forward ``x`` to the active parent — the next outer ``with``-block parent
+    if one exists, otherwise the displayhook that was installed before ours.
 
-    Called by ``AllowsChildren.__exit__`` after the token is reset so that
-    nested ``with`` blocks propagate the finished component to its enclosing
-    parent without touching the previous displayhook when no parent is active.
+    Called by ``AllowsChildren.__exit__`` so nested ``with`` blocks propagate
+    the just-closed component to the enclosing parent. When the outermost
+    ``with`` exits, the stack is empty — falling through to ``_prev_displayhook``
+    lets Express (or REPL/Jupyter) place the top-level component as if it had
+    been a bare expression statement.
     """
-    stack = _stack.get()
-    if stack:
-        wrap_displayhook_handler(stack[-1].append)(x)
+    sys.displayhook(x)

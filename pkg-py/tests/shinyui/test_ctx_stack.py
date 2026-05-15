@@ -187,3 +187,28 @@ def test_expressify_with_blocks_match_positional_form() -> None:
     assert _normalize(str(positional.tagify())) == _normalize(
         str(express_form.tagify())
     )
+
+
+def test_outermost_with_dispatches_to_prev_displayhook() -> None:
+    """When the outermost `with`-block exits with an empty stack, the
+    component is forwarded via sys.displayhook so the prior displayhook
+    (Express / REPL / Jupyter) can place it. Pre-fix bug: was silently
+    dropped.
+    """
+    from shinyui._ctx_stack import _ensure_installed
+
+    _ensure_installed()
+
+    seen: list[object] = []
+    import shinyui._ctx_stack as cs
+
+    original_prev = cs._prev_displayhook
+    cs._prev_displayhook = seen.append
+    try:
+        with sui.card(id="m") as c:
+            sys.displayhook(tags.p("inside"))
+        # After the with-block exits with an empty stack, `c` itself should
+        # have been dispatched to the (previously-installed) displayhook.
+        assert c in seen
+    finally:
+        cs._prev_displayhook = original_prev
