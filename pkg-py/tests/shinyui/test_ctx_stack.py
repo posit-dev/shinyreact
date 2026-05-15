@@ -6,8 +6,10 @@ integration tests live in test_allows_children.py.
 
 from __future__ import annotations
 
+import asyncio
 import sys
 
+import pytest
 import shinyui as sui
 from htmltools import tags
 
@@ -94,3 +96,50 @@ def test_ctx_tag_overrides_htmltools_displayhook_swap() -> None:
     with t:
         pass
     assert t.prev_displayhook is None
+
+
+@pytest.mark.asyncio
+async def test_concurrent_tasks_have_isolated_stacks() -> None:
+    """Two asyncio tasks each in their own with-block must not pollute each
+    other's parent. ContextVar copies at task creation time, so each task
+    sees an empty stack at the start and its own parent thereafter."""
+
+    started_a = asyncio.Event()
+    started_b = asyncio.Event()
+    finish = asyncio.Event()
+
+    card_a: sui.card | None = None
+    card_b: sui.card | None = None
+
+    async def task_a() -> None:
+        nonlocal card_a
+        with sui.card(id="A") as ca:
+            card_a = ca
+            sys.displayhook(tags.p("a1"))
+            started_a.set()
+            await started_b.wait()
+            sys.displayhook(tags.p("a2"))
+            await finish.wait()
+            sys.displayhook(tags.p("a3"))
+
+    async def task_b() -> None:
+        nonlocal card_b
+        await started_a.wait()
+        with sui.card(id="B") as cb:
+            card_b = cb
+            sys.displayhook(tags.p("b1"))
+            started_b.set()
+            await asyncio.sleep(0)
+            sys.displayhook(tags.p("b2"))
+
+    a = asyncio.create_task(task_a())
+    b = asyncio.create_task(task_b())
+    await b
+    finish.set()
+    await a
+
+    assert card_a is not None and card_b is not None
+    assert len(card_a.children) == 3
+    assert all(c.children[0] == f"a{i}" for i, c in enumerate(card_a.children, 1))
+    assert len(card_b.children) == 2
+    assert all(c.children[0] == f"b{i}" for i, c in enumerate(card_b.children, 1))
