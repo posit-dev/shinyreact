@@ -5,21 +5,32 @@ Mixin protocol:
   - `AllowsChildren.__init__` claims positional args as children and forwards
     the remaining kwargs up the MRO.
 
-Note: the parent-tag context stack (sub-issue 3) is OUT OF SCOPE. __enter__
-returns self with no side effects; auto-collecting bare Tags inside a with-block
-is not implemented here.
+Context-manager protocol (issue #70):
+  - `__enter__` pushes self onto the parent-tag stack and returns self.
+  - `__exit__` restores the stack to its prior snapshot via the Token captured
+    in __enter__.
+
+While a parent is on the stack, any value reaching ``sys.displayhook`` is
+routed to ``self.append`` via ``htmltools.wrap_displayhook_handler``. This
+fires automatically in REPL / Jupyter / Quarto / Shiny Express
+(``@expressify``) — anywhere bare expression statements are displayed.
+In plain Python script bodies, callers compose children positionally instead.
 """
 
 from __future__ import annotations
 
+import contextvars
 from typing import Any
 
 from htmltools import TagChild
 from typing_extensions import Self
 
+from ._ctx_stack import pop, push
+
 
 class AllowsChildren:
     children: list[TagChild]
+    _ctx_token: contextvars.Token[tuple[Any, ...]]
 
     def __init__(self, *children: TagChild, **kwargs: Any) -> None:
         self.children = list(children)
@@ -30,7 +41,8 @@ class AllowsChildren:
         return self
 
     def __enter__(self) -> Self:
+        self._ctx_token = push(self)
         return self
 
     def __exit__(self, *exc: object) -> None:
-        return None
+        pop(self._ctx_token)

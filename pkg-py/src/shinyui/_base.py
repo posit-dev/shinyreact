@@ -65,4 +65,9 @@ class UiComponent(ABC):
         )
 
     def __exit__(self, *exc: object) -> None:
-        return None
+        # Mirror the __enter__ delegation: if this component allows children,
+        # pop the parent-tag stack so the ContextVar is fully restored.
+        from shinyui._children import AllowsChildren  # local import avoids circular
+
+        if isinstance(self, AllowsChildren):
+            AllowsChildren.__exit__(self, *exc)
