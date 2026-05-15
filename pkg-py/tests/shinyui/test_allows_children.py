@@ -138,3 +138,54 @@ def test_preconstructed_with_expressify_form() -> None:
     acc = build()
     assert len(acc.children) == 2
     assert [p.title for p in acc.children] == ["A", "B"]
+
+
+def test_with_block_appends_to_existing_positional_children() -> None:
+    """Children passed at construction are preserved; with-block adds more.
+
+    A component built with positional children that is later entered as a
+    context manager appends — does not replace. Final order:
+    positional children first, then with-block children in source order.
+    """
+    panel_a = sui.accordion_panel("A")
+    acc = sui.accordion(panel_a, id="acc")
+    assert acc.children == [panel_a]
+
+    with acc:
+        sys.displayhook(sui.accordion_panel("B"))
+        sys.displayhook(sui.accordion_panel("C"))
+
+    assert len(acc.children) == 3
+    assert acc.children[0] is panel_a
+    assert [p.title for p in acc.children] == ["A", "B", "C"]
+
+
+def test_with_block_append_with_expressify() -> None:
+    """Same as above, validated through @expressify's AST rewrite."""
+    from shiny.express import expressify
+
+    panel_a = sui.accordion_panel("A")
+
+    @expressify
+    def extend(parent: sui.accordion) -> sui.accordion:
+        with parent:
+            sui.accordion_panel("B")
+            sui.accordion_panel("C")
+        return parent
+
+    acc = extend(sui.accordion(panel_a, id="acc"))
+    assert [p.title for p in acc.children] == ["A", "B", "C"]
+
+
+def test_re_entering_same_instance_keeps_appending() -> None:
+    """Entering the same component a second time adds to children again.
+
+    Confirms `with acc:` ... `with acc:` accumulates rather than resetting.
+    Not a recommended usage pattern, but the behavior should be predictable.
+    """
+    acc = sui.accordion(id="acc")
+    with acc:
+        sys.displayhook(sui.accordion_panel("A"))
+    with acc:
+        sys.displayhook(sui.accordion_panel("B"))
+    assert [p.title for p in acc.children] == ["A", "B"]
