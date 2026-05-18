@@ -83,5 +83,6 @@ def test_with_block_protocol(cls, allows_children):
         with inst as ctx:
             assert ctx is inst
     else:
-        with pytest.raises(TypeError, match=f"{cls.__name__} does not accept children"):
-            inst.__enter__()
+        with pytest.raises(TypeError, match=r"context manager protocol"):
+            with inst:  # noqa: B017  intentional protocol-violation check
+                pass

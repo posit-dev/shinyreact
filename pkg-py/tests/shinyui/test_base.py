@@ -51,10 +51,16 @@ def test_require_session_falls_back_to_current(mock_session):
         assert c._require_session(for_op="foo") is mock_session
 
 
-def test_enter_raises_with_class_name():
+def test_uicomponent_does_not_support_context_manager_protocol():
+    """UiComponent subclasses that don't inherit AllowsChildren must not be
+    usable as context managers. The check is now static (pyright catches
+    `with input_slider(...):` because input_slider has no __enter__); at
+    runtime Python raises TypeError with its standard protocol message.
+    """
     c = _Dummy()
-    with pytest.raises(TypeError, match=r"_Dummy does not accept children"):
-        c.__enter__()
+    with pytest.raises(TypeError, match=r"context manager protocol"):
+        with c:  # noqa: B017  intentional protocol-violation check
+            pass
 
 
 def test_read_input_uses_current_session_and_id(mock_session):

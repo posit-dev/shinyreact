@@ -6,7 +6,10 @@ Single source of truth for:
     to the current session, raising RuntimeError if none is reachable.
   - `_read_input(suffix="")`: reads `session.input[f"{self.id}{suffix}"]()`.
 
-`tagify()` is abstract. `__enter__` raises by default; `AllowsChildren` overrides.
+`tagify()` is abstract. Context-manager protocol (``__enter__``/``__exit__``) is
+declared only on :class:`shinyui.AllowsChildren`, so type checkers immediately
+flag ``with input_slider(...):`` and similar misuses — `input_slider` does not
+declare ``__enter__`` because it doesn't inherit ``AllowsChildren``.
 
 Container subclasses should end their `tagify()` with `.tagify()` on the result —
 htmltools' walker iterates Tagifiable→Tagifiable chains during that single call,
@@ -20,7 +23,6 @@ from typing import Any, ClassVar
 
 from htmltools import HTMLDependency, Tag
 from shiny.session import Session, get_current_session
-from typing_extensions import Self
 
 
 class UiComponent(ABC):
@@ -50,24 +52,3 @@ class UiComponent(ABC):
 
     @abstractmethod
     def tagify(self) -> Tag: ...
-
-    def __enter__(self) -> Self:
-        # AllowsChildren overrides __enter__ to return self.  When the MRO
-        # places UiComponent before AllowsChildren (the typical mixin order),
-        # we must explicitly delegate so the mixin wins.
-        from shinyui._children import AllowsChildren  # local import avoids circular
-
-        if isinstance(self, AllowsChildren):
-            return AllowsChildren.__enter__(self)  # type: ignore[return-value]
-        raise TypeError(
-            f"{type(self).__name__} does not accept children; "
-            f"only components declaring `AllowsChildren` may be used as `with` blocks."
-        )
-
-    def __exit__(self, *exc: object) -> None:
-        # Mirror the __enter__ delegation: if this component allows children,
-        # pop the parent-tag stack so the ContextVar is fully restored.
-        from shinyui._children import AllowsChildren  # local import avoids circular
-
-        if isinstance(self, AllowsChildren):
-            AllowsChildren.__exit__(self, *exc)
