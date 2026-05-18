@@ -1,9 +1,13 @@
 # 14 — Unified UI prototype (shinyui Stage A)
 
-End-to-end Shiny Express demo of [shinyui](../../../pkg-py/src/shinyui), the
+End-to-end Shiny Core demo of [shinyui](../../../pkg-py/src/shinyui), the
 class-per-component UI hierarchy from issue #69 (umbrella #68). Each UI
 component is a Python class that owns its own metadata (handler, serializer,
 HTML deps, `update()`, server-side read accessors).
+
+This example uses positional composition in `app_ui` + a `server(input, output, session)`
+function. The equivalent Express with-blocks variant lives in
+[`../15-shinyui-with-blocks/`](../15-shinyui-with-blocks/).
 
 ## Run
 
@@ -28,9 +32,9 @@ Requires `matplotlib` and `numpy` (already in the repo's `examples` extras).
 
 ## Class-per-component patterns in the server code
 
-Components are constructed at module level so they're shared between the
-top-level Express layout and the server-side renderers via closure. Each
-class accessor reads a wire-side input value reactively:
+Components are constructed at module level so they're shared between the Core
+`app_ui` object and the server-side renderers via closure. Each class accessor
+reads a wire-side input value reactively:
 
 ```python
 n_slider = su.input_slider("n", "Sample size", 10, 1000, 100)
