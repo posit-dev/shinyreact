@@ -108,12 +108,12 @@ def server(input: Inputs, output: Outputs, session: Session) -> None:
         return fig
 
     @reactive.effect
-    @reactive.event(open_all_btn.clicked, ignore_init=True)
+    @reactive.event(open_all_btn.value, ignore_init=True)
     def _open_all_panels():
         acc.update(open=("Settings", "Diagnostics"))
 
     @reactive.effect
-    @reactive.event(close_all_btn.clicked, ignore_init=True)
+    @reactive.event(close_all_btn.value, ignore_init=True)
     def _close_all_panels():
         acc.update(open=False)
 

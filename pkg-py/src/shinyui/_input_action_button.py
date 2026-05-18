@@ -1,4 +1,4 @@
-"""input_action_button — class-based input_action_button with a clicked accessor.
+"""input_action_button — class-based input_action_button with a value accessor.
 
 Demonstrates the ``__init_subclass__`` registration pattern: by declaring
 ``input_handler_name`` and ``_input_handler`` on the class, the handler is
@@ -31,10 +31,10 @@ class input_action_button(UiInput, Updatable):
     """Server-readable action button.
 
     Wire id: ``input.<id>()`` is an integer click counter that starts at ``0``
-    and increments on each click. The class accessor :meth:`clicked` returns
+    and increments on each click. The class accessor :meth:`value` returns
     the same value as a reactive read.
 
-    Pair :meth:`clicked` with :func:`shiny.reactive.event` and
+    Pair :meth:`value` with :func:`shiny.reactive.event` and
     ``ignore_init=True`` to respond only to real clicks, not the initial
     ``0`` value registered at page load.
 
@@ -45,7 +45,7 @@ class input_action_button(UiInput, Updatable):
         go = input_action_button("go", "Run")
 
         # In server:
-        @reactive.event(go.clicked, ignore_init=True)
+        @reactive.event(go.value, ignore_init=True)
         def _on_click():
             ...
 
@@ -81,7 +81,7 @@ class input_action_button(UiInput, Updatable):
         ----------
         id
             Input id; available as ``input.<id>()`` server-side, or via
-            :meth:`clicked`.
+            :meth:`value`.
         label
             Button label text (or any ``TagChild``).
         icon
@@ -97,8 +97,8 @@ class input_action_button(UiInput, Updatable):
         super().__init__(id=id)
 
     @reactive_calc_method
-    def clicked(self) -> int:
-        """Click counter; 0 before the first click, +1 per click."""
+    def value(self) -> int:
+        """Click counter; ``0`` before the first click, ``+1`` per click."""
         return int(self._read_input() or 0)
 
     def tagify(self) -> Tag:

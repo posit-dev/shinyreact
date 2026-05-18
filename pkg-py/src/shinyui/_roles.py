@@ -7,12 +7,23 @@ and child-bearing capabilities are provided by orthogonal mixins
 
 from __future__ import annotations
 
+from abc import abstractmethod
+from typing import Any
+
 from ._base import UiComponent
 from ._input_value import HasInputValue
 
 
 class UiInput(UiComponent, HasInputValue):
-    """Primarily a user-input control."""
+    """Primarily a user-input control.
+
+    Concrete subclasses MUST implement :meth:`value` returning the current
+    server-readable value for the input. Reads happen reactively against the
+    active session.
+    """
+
+    @abstractmethod
+    def value(self) -> Any: ...
 
 
 class UiOutput(UiComponent):

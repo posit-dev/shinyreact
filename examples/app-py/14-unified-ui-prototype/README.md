@@ -49,18 +49,18 @@ action buttons drive `accordion.update()`:
 
 ```python
 @reactive.effect
-@reactive.event(open_all_btn.clicked, ignore_init=True)
+@reactive.event(open_all_btn.value, ignore_init=True)
 def _open_all_panels():
     acc.update(open=("Settings", "Diagnostics"))
 
 
 @reactive.effect
-@reactive.event(close_all_btn.clicked, ignore_init=True)
+@reactive.event(close_all_btn.value, ignore_init=True)
 def _close_all_panels():
     acc.update(open=False)
 ```
 
-Each `.value()` / `.clicked()` / `.full_screen_value()` / `.open_panels()` /
+Each `.value()` / `.full_screen_value()` / `.open_panels()` /
 `.click_value()` / `.brush_value()` accessor is a `@reactive.calc` under the
 hood, so reads inside reactive contexts establish dependencies correctly.
 
