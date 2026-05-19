@@ -15,6 +15,7 @@ from ._base import UiComponent
 from ._card import card
 from ._children import AllowsChildren
 from ._ctx_tag import CtxTag
+from ._input_slider import input_slider
 from ._roles import UiInput, UiLayout, UiOutput
 
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     "accordion",
     "accordion_panel",
     "card",
+    "input_slider",
 ]
