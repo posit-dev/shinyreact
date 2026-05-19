@@ -17,9 +17,13 @@ class output_code(UiOutput):
     -------
     .. code-block:: python
 
-        output_code("summary")
+        summary_code = output_code("summary")
 
-        # In server:
+        # Placed in the UI tree:
+        with accordion_panel("Diagnostics"):
+            summary_code
+
+        # In the server (Core) or at module top-level (Express):
         @render.code
         def summary():
             return f"n = {n.value()}"

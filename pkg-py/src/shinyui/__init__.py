@@ -9,17 +9,20 @@ from ._base import UiComponent
 from ._bookmark import lookup_component
 from ._card import card
 from ._children import AllowsChildren
+from ._ctx_tag import CtxTag
 from ._input_action_button import input_action_button
 from ._input_select import input_select
 from ._input_slider import input_slider
 from ._input_value import HasInputValue
 from ._output_code import output_code
 from ._output_plot import output_plot
+from ._render_plot import render_plot
 from ._roles import UiInput, UiLayout, UiOutput
 from ._updatable import Updatable
 
 __all__ = [
     "AllowsChildren",
+    "CtxTag",
     "HasInputValue",
     "UiComponent",
     "UiInput",
@@ -35,4 +38,5 @@ __all__ = [
     "lookup_component",
     "output_code",
     "output_plot",
+    "render_plot",
 ]

@@ -36,3 +36,20 @@ def no_session() -> Iterator[None]:
 
     assert get_current_session() is None, "Test expected no active session"
     yield
+
+
+@pytest.fixture(autouse=True)
+def _reset_ctx_stack() -> Iterator[None]:
+    """Isolate the ctx stack between tests so leaks don't cascade.
+
+    Issue #70's parent-tag stack lives in a process-wide ``ContextVar``. In
+    a sync pytest run, tests share the same context, so a test that forgets
+    to pop a parent would dirty every subsequent test. Reset on both edges.
+    """
+    from shinyui._ctx_stack import _stack
+
+    token = _stack.set(())
+    try:
+        yield
+    finally:
+        _stack.reset(token)

@@ -10,6 +10,9 @@ class _MyInput(UiInput):
     def tagify(self):
         return tags.div(id=self.id)
 
+    def value(self):
+        return self._read_input()
+
 
 class _MyOutput(UiOutput):
     def __init__(self, id: str) -> None:

@@ -1,78 +1,92 @@
-"""End-to-end demo of shinyui's class-per-component hierarchy (Shiny Express).
+"""End-to-end demo of shinyui's class-per-component hierarchy in **Shiny Core**.
 
-Exercises every reference class in one page:
-  - input_slider, input_select, input_action_button  (inputs)
-  - output_code                                      (output)
-  - output_plot                                      (output with read-only signals)
-  - card                                             (layout with state)
-  - accordion + accordion_panel                      (layout + layout-as-child)
+This is the Core (positional composition) variant. Its sibling
+``15-shinyui-with-blocks/app.py`` builds the same UI tree in Shiny Express
+using ``with``-blocks. Together they demonstrate the unified API from
+issue #70: a single set of ``shinyui`` classes that work in both idioms.
 
-This is the Express variant of the demo. In Express the script runs once per
-session — ``get_current_session()`` is bound while the module's top-level
-statements execute, so the components register themselves on the session at
-construction time. shinyui containers are still built programmatically (passing
-children to the factories) because the parent-tag stack / ``with`` integration
-is umbrella sub-issue 3, deferred from this prototype.
+  - **This file** (Core): ``app_ui = ui.page_fluid(card(accordion(panel(...))))``
+    plus a ``server(input, output, session)`` function.
+  - **Example 15** (Express): ``with card(): with accordion(): with panel(): ...``
+    plus ``@render.*`` inside the active ``with`` block.
+
+The same component classes (``card``, ``accordion``, ``accordion_panel``,
+``input_slider``, etc.) compose identically in both modes. The server-side
+accessors (``slider.value()``, ``acc.update(...)``, ``card.full_screen_value()``)
+work the same in both — they resolve the active root session at call time, so
+they are safe to define at module load in Core and access from inside the
+``server`` function (see ``UiComponent._require_session`` for how the
+unification works).
+
+This file uses the **walrus operator** to construct and bind every component
+inline inside the single ``app_ui = page_fluid(card(...))`` expression. The
+walrus assignment (`(n_slider := su.input_slider(...))`) places the input in
+its positional slot AND binds a module-scope name that the ``server`` function
+reads via ``n_slider.value()``. Same trick as example 15 (where the walrus
+runs inside ``with`` blocks); here it runs inside positional ``card(...)`` /
+``accordion(...)`` calls.
+
+The plot uses :class:`shinyui.render_plot`, which owns the derived-input
+accessors (``click_value``, ``brush_value``, etc.). In Core, ``output_plot``
+in ``app_ui`` provides placement; the matching ``@su.render_plot(...)`` in
+``server`` provides the renderer plus the derived-input accessors.
 """
 
 from __future__ import annotations
 
 import shinyui as su
-from shiny import reactive
+from shiny import App, Inputs, Outputs, Session, reactive, render
 from shiny import ui as _sui
-from shiny.express import render, ui
 
-# --- Components -------------------------------------------------------------
-n_slider = su.input_slider("n", "Sample size", 10, 1000, 100)
-seed_slider = su.input_slider("seed", "Seed", 1, 1000, 42)
-dist_select = su.input_select(
-    "dist",
-    "Distribution",
-    {"normal": "Normal", "uniform": "Uniform"},
-)
-plot_handle = su.output_plot("plot", click=True, brush=True)
-open_all_btn = su.input_action_button("open_all", "Open all panels")
-close_all_btn = su.input_action_button("close_all", "Close all panels")
-acc = su.accordion(
-    su.accordion_panel("Settings", n_slider, dist_select, seed_slider),
-    su.accordion_panel(
-        "Diagnostics",
-        su.output_code("summary"),
-        su.output_code("diag"),
+# --- UI ---------------------------------------------------------------------
+# Build the whole UI tree as a single expression. Walrus operators
+# (`(name := expr)`) inside the tree bind module-scope names so the
+# `server(input, output, session)` function below can read inputs via
+# `n_slider.value()`, push updates via `acc.update(...)`, etc.
+app_ui = _sui.page_fluid(
+    (
+        main_card := su.card(
+            _sui.layout_column_wrap(
+                (open_all_btn := su.input_action_button("open_all", "Open all panels")),
+                (close_all_btn := su.input_action_button("close_all", "Close all panels")),
+                width=1 / 2,
+            ),
+            (
+                acc := su.accordion(
+                    su.accordion_panel(
+                        "Settings",
+                        (n_slider := su.input_slider("n", "Sample size", 10, 1000, 100)),
+                        (
+                            dist_select := su.input_select(
+                                "dist",
+                                "Distribution",
+                                {"normal": "Normal", "uniform": "Uniform"},
+                            )
+                        ),
+                        (seed_slider := su.input_slider("seed", "Seed", 1, 1000, 42)),
+                    ),
+                    su.accordion_panel(
+                        "Diagnostics",
+                        su.output_code("summary"),
+                        su.output_code("diag"),
+                    ),
+                    id="acc",
+                    open="Settings",
+                )
+            ),
+            su.output_plot("plot", click=True, brush=True),
+            id="main_card",
+            full_screen=False,
+        )
     ),
-    id="acc",
-    open="Settings",
-)
-main_card = su.card(
-    # Use plain shiny.ui.layout_column_wrap here, not shiny.express.ui's
-    # recall-context-managed version (the express one takes 0 positional args).
-    _sui.layout_column_wrap(open_all_btn, close_all_btn, width=1 / 2),
-    acc,
-    plot_handle,
-    id="main_card",
-    full_screen=False,
+    title="shinyui Stage A — Core (positional) form",
 )
 
-# --- Page ------------------------------------------------------------------
-ui.page_opts(title="shinyui Stage A prototype")
 
-# Top-level expression: Express's `@expressify`-driven runtime appends the
-# value to the current page container. shinyui factories are NOT Express-aware,
-# so we hand the constructed instance to Express via this expression statement.
-main_card
-
-
-# --- Renderers -------------------------------------------------------------
-# `ui.hold()` suppresses Express's default auto-placement so each renderer
-# binds to its id-matching output element that we placed inside the
-# accordion / card above. Without `hold()`, Express would insert a SECOND
-# `<pre id="summary">` at the page tail, duplicating the id and breaking
-# the in-place output binding.
-with ui.hold():
-
+# --- Server -----------------------------------------------------------------
+def server(input: Inputs, output: Outputs, session: Session) -> None:
     @render.code
-    def summary():
-        # Reads via class accessors — no `input.n()` / `input.dist()` needed.
+    def summary() -> str:
         return (
             f"n     = {n_slider.value()}\n"
             f"dist  = {dist_select.value()}\n"
@@ -82,15 +96,14 @@ with ui.hold():
         )
 
     @render.code
-    def diag():
+    def diag() -> str:
         return (
-            f"click = {plot_handle.click_value()}\n"
-            f"brush = {plot_handle.brush_value()}\n"
+            f"click = {plot.click_value()}\n"
+            f"brush = {plot.brush_value()}\n"
         )
 
-    @render.plot
+    @su.render_plot(click=True, brush=True)
     def plot():
-        # Real scatter plot driven by the slider/select/seed inputs.
         import matplotlib.pyplot as plt
         import numpy as np
 
@@ -111,17 +124,15 @@ with ui.hold():
         ax.grid(True, alpha=0.3)
         return fig
 
+    @reactive.effect
+    @reactive.event(open_all_btn.value, ignore_init=True)
+    def _open_all_panels():
+        acc.update(open=("Settings", "Diagnostics"))
 
-# --- Reactive effects ------------------------------------------------------
-@reactive.effect
-@reactive.event(open_all_btn.clicked, ignore_init=True)
-def _open_all_panels():
-    acc.update(open=("Settings", "Diagnostics"))
+    @reactive.effect
+    @reactive.event(close_all_btn.value, ignore_init=True)
+    def _close_all_panels():
+        acc.update(open=False)
 
 
-@reactive.effect
-@reactive.event(close_all_btn.clicked, ignore_init=True)
-def _close_all_panels():
-    # update_accordion's `show=` takes a panel value list, OR True/False.
-    # False closes all panels in the set.
-    acc.update(open=False)
+app = App(app_ui, server)

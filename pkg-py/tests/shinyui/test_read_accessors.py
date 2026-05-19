@@ -17,18 +17,6 @@ from shiny import reactive
             "",
             ["A"],
         ),
-        (
-            lambda: sui.output_plot("p", click=True),
-            "click_value",
-            "_click",
-            {"x": 1, "y": 2},
-        ),
-        (
-            lambda: sui.output_plot("p", brush=True),
-            "brush_value",
-            "_brush",
-            {"xmin": 1},
-        ),
     ],
 )
 def test_accessor_reads_correct_id(mock_session, maker, accessor, suffix, value):
@@ -49,7 +37,6 @@ def test_accessor_reads_correct_id(mock_session, maker, accessor, suffix, value)
     [
         (lambda: sui.input_slider("n", "N", 1, 10, 5), "value"),
         (lambda: sui.card("b", id="m"), "full_screen_value"),
-        (lambda: sui.output_plot("p", click=True), "click_value"),
     ],
 )
 def test_accessor_raises_outside_session(maker, accessor):
