@@ -9,6 +9,7 @@ no input-handler or bookmark registration. Server code reads inputs via
 See docs/superpowers/specs/2026-05-19-shinyuiclassonly-design.md.
 """
 
+from ._accordion_panel import accordion_panel
 from ._base import UiComponent
 from ._card import card
 from ._children import AllowsChildren
@@ -22,5 +23,6 @@ __all__ = [
     "UiInput",
     "UiLayout",
     "UiOutput",
+    "accordion_panel",
     "card",
 ]
