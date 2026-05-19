@@ -8,3 +8,7 @@ no input-handler or bookmark registration. Server code reads inputs via
 
 See docs/superpowers/specs/2026-05-19-shinyuiclassonly-design.md.
 """
+
+from ._ctx_tag import CtxTag
+
+__all__ = ["CtxTag"]
