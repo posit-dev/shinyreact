@@ -33,8 +33,21 @@ def _dispatch(x: object) -> None:
 
 
 def _ensure_installed() -> None:
+    """Install (or re-install) ``_dispatch`` as ``sys.displayhook``.
+
+    Re-installs whenever ``sys.displayhook`` is not already our ``_dispatch``.
+    Shiny Express re-creates its top-level ``RecallContextManager`` each time
+    it (re-)runs the app body — once for UI extraction, again per session for
+    server registration — and each enter swaps ``sys.displayhook`` to the
+    new RCM's bound method. A module-level "installed once" guard would
+    leave our shim bypassed for every run after the first, so bare
+    expressions inside ``with``-blocks would land in Express's RCM args
+    instead of being routed to the active parent. Re-checking the identity
+    of ``sys.displayhook`` on every push keeps our shim layered on top and
+    captures the current Express displayhook as the fall-through target.
+    """
     global _installed, _prev_displayhook
-    if not _installed:
+    if sys.displayhook is not _dispatch:
         _prev_displayhook = sys.displayhook
         sys.displayhook = _dispatch
         _installed = True
