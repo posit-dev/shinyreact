@@ -9,6 +9,18 @@ no input-handler or bookmark registration. Server code reads inputs via
 See docs/superpowers/specs/2026-05-19-shinyuiclassonly-design.md.
 """
 
+from ._base import UiComponent
+from ._card import card
+from ._children import AllowsChildren
 from ._ctx_tag import CtxTag
+from ._roles import UiInput, UiLayout, UiOutput
 
-__all__ = ["CtxTag"]
+__all__ = [
+    "AllowsChildren",
+    "CtxTag",
+    "UiComponent",
+    "UiInput",
+    "UiLayout",
+    "UiOutput",
+    "card",
+]
