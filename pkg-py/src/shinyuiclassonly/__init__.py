@@ -18,6 +18,7 @@ from ._ctx_tag import CtxTag
 from ._input_action_button import input_action_button
 from ._input_select import input_select
 from ._input_slider import input_slider
+from ._output_code import output_code
 from ._roles import UiInput, UiLayout, UiOutput
 
 __all__ = [
@@ -33,4 +34,5 @@ __all__ = [
     "input_action_button",
     "input_select",
     "input_slider",
+    "output_code",
 ]
