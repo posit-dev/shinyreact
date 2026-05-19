@@ -99,6 +99,41 @@ def test_ctx_tag_overrides_htmltools_displayhook_swap() -> None:
     assert t.prev_displayhook is None
 
 
+def test_ensure_installed_reinstalls_when_displayhook_swapped() -> None:
+    """If something else swaps ``sys.displayhook`` between push calls — e.g.
+    Shiny Express's ``RecallContextManager`` entering and replacing the
+    displayhook on each ``run_express`` invocation — ``_ensure_installed``
+    must layer our shim back on top. Otherwise, bare expressions inside
+    ``with``-blocks land in Express's RCM args instead of being routed to
+    the active parent."""
+    from shinyui import _ctx_stack as cs
+
+    p1 = sui.CtxTag("div", id="a")
+    t1 = cs.push(p1)
+    try:
+        assert sys.displayhook is cs._dispatch
+        first_prev = cs._prev_displayhook
+
+        # Simulate an external displayhook swap (Express's RCM enter).
+        external_calls: list[object] = []
+        external_hook = external_calls.append
+        sys.displayhook = external_hook
+        assert sys.displayhook is not cs._dispatch
+
+        # Next push must re-install our shim and update _prev_displayhook
+        # to the external hook so fall-through routes there.
+        p2 = sui.CtxTag("div", id="b")
+        t2 = cs.push(p2)
+        try:
+            assert sys.displayhook is cs._dispatch
+            assert cs._prev_displayhook is external_hook
+            assert cs._prev_displayhook is not first_prev
+        finally:
+            cs.pop(t2)
+    finally:
+        cs.pop(t1)
+
+
 @pytest.mark.asyncio
 async def test_concurrent_tasks_have_isolated_stacks() -> None:
     """Two asyncio tasks each in their own with-block must not pollute each

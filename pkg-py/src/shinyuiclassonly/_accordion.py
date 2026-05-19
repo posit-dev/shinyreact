@@ -1,0 +1,95 @@
+"""accordion — layout with collapsible panels.
+
+Structure-only sibling of ``shinyui.accordion``. Same Express + Core
+overloads, same ``tagify()`` strategy (rebuild ``shiny.ui.accordion_panel``
+wrappers inline because ``shiny.ui.accordion`` does an
+``isinstance(panel, AccordionPanel)`` check on its positional args).
+``open_panels()`` and ``update()`` are dropped.
+"""
+
+from __future__ import annotations
+
+from typing import Optional, overload
+
+from htmltools import Tag
+
+from ._accordion_panel import accordion_panel
+from ._children import AllowsChildren
+from ._roles import UiLayout
+
+
+class accordion(UiLayout, AllowsChildren):
+    """Accordion container with collapsible panels.
+
+    No server-side accessor here. Read the open-panel list via
+    ``input.<id>()`` and push updates via ``shiny.ui.update_accordion``
+    / ``shiny.ui.update_accordion_panel``.
+    """
+
+    # Express overload — listed first so IDEs prefer it for `with ...:` idioms.
+    @overload
+    def __init__(
+        self,
+        *,
+        id: Optional[str] = None,
+        open: Optional[str | tuple[str, ...] | bool] = None,
+        multiple: bool = True,
+        class_: Optional[str] = None,
+        width: Optional[str] = None,
+        height: Optional[str] = None,
+    ) -> None: ...
+
+    # Core overload — inline positional :class:`accordion_panel` instances.
+    @overload
+    def __init__(
+        self,
+        *args: accordion_panel,
+        id: Optional[str] = None,
+        open: Optional[str | tuple[str, ...] | bool] = None,
+        multiple: bool = True,
+        class_: Optional[str] = None,
+        width: Optional[str] = None,
+        height: Optional[str] = None,
+    ) -> None: ...
+
+    def __init__(
+        self,
+        *args: accordion_panel,
+        id: Optional[str] = None,
+        open: Optional[str | tuple[str, ...] | bool] = None,
+        multiple: bool = True,
+        class_: Optional[str] = None,
+        width: Optional[str] = None,
+        height: Optional[str] = None,
+    ) -> None:
+        self.id = id
+        self._open = open
+        self.multiple = multiple
+        self.class_ = class_
+        self.width = width
+        self.height = height
+        super().__init__(*args)
+
+    def tagify(self) -> Tag:
+        import shiny.ui as _sui
+
+        # shiny.ui.accordion rejects pre-rendered Tags (isinstance check on
+        # AccordionPanel). Rebuild wrappers from each child's stored state.
+        panels = [
+            _sui.accordion_panel(
+                child.title,  # type: ignore[union-attr]
+                *child.children,  # type: ignore[union-attr]
+                value=child._value,  # type: ignore[union-attr]
+                icon=child.icon,  # type: ignore[union-attr]
+            )
+            for child in self.children
+        ]
+        return _sui.accordion(
+            *panels,
+            id=self.id,
+            open=self._open,
+            multiple=self.multiple,
+            class_=self.class_,
+            width=self.width,
+            height=self.height,
+        ).tagify()

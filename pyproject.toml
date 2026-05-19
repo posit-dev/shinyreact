@@ -13,7 +13,11 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pkg-py/src/shinyreact", "pkg-py/src/shinyui"]
+packages = [
+    "pkg-py/src/shinyreact",
+    "pkg-py/src/shinyui",
+    "pkg-py/src/shinyuiclassonly",
+]
 
 [dependency-groups]
 examples = [
@@ -52,7 +56,11 @@ testpaths = ["pkg-py/tests"]
 addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.pyright]
-include = ["pkg-py/src/shinyreact", "pkg-py/src/shinyui"]
+include = [
+    "pkg-py/src/shinyreact",
+    "pkg-py/src/shinyui",
+    "pkg-py/src/shinyuiclassonly",
+]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
@@ -69,6 +77,7 @@ select = ["E", "F", "I"]
 # parallel factory functions). Ignore N801 ("class name should use CapWords")
 # package-wide so individual class definitions don't carry the noqa pragma.
 "pkg-py/src/shinyui/**/*.py" = ["N801"]
+"pkg-py/src/shinyuiclassonly/**/*.py" = ["N801"]
 
 [tool.tox]
 legacy_tox_ini = """
