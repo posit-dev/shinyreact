@@ -2,7 +2,7 @@
 
 Structure-only sibling of ``shinyui.card``. Same Express + Core overloads,
 same ``tagify()`` delegation to ``shiny.ui.card``. The session-aware
-``full_screen_value()`` reader and ``update()`` are dropped. ``id`` is
+``value_full_screen()`` reader and ``update()`` are dropped. ``id`` is
 optional (no accessor needs it).
 """
 

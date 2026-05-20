@@ -40,7 +40,7 @@ def test_render_plot_has_no_session_accessors():
     def _plot():
         return None
 
-    assert not hasattr(_plot, "click_value")
-    assert not hasattr(_plot, "brush_value")
-    assert not hasattr(_plot, "dbl_value")
-    assert not hasattr(_plot, "hover_value")
+    assert not hasattr(_plot, "value_click")
+    assert not hasattr(_plot, "value_brush")
+    assert not hasattr(_plot, "value_dbl")
+    assert not hasattr(_plot, "value_hover")

@@ -23,8 +23,8 @@ Same delta from [example 15](../15-shinyui-with-blocks/) (`shinyui` Express
 form) as example 16 has from example 14:
 
 - Server reads use `input.<id>()`, not `n_slider.value()` /
-  `acc.open_panels()` / `card.full_screen_value()` /
-  `plot.click_value()`.
+  `acc.open_panels()` / `card.value_full_screen()` /
+  `plot.value_click()`.
 - Server updates use `shiny.ui.update_accordion(...)`, not
   `acc.update(...)`.
 - **No walrus operators** on input or layout component construction — the

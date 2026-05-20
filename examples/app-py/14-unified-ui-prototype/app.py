@@ -12,7 +12,7 @@ issue #70: a single set of ``shinyui`` classes that work in both idioms.
 
 The same component classes (``card``, ``accordion``, ``accordion_panel``,
 ``input_slider``, etc.) compose identically in both modes. The server-side
-accessors (``slider.value()``, ``acc.update(...)``, ``card.full_screen_value()``)
+accessors (``slider.value()``, ``acc.update(...)``, ``card.value_full_screen()``)
 work the same in both — they resolve the active root session at call time, so
 they are safe to define at module load in Core and access from inside the
 ``server`` function (see ``UiComponent._require_session`` for how the
@@ -27,7 +27,7 @@ runs inside ``with`` blocks); here it runs inside positional ``card(...)`` /
 ``accordion(...)`` calls.
 
 The plot uses :class:`shinyui.render_plot`, which owns the derived-input
-accessors (``click_value``, ``brush_value``, etc.). In Core, ``output_plot``
+accessors (``value_click``, ``value_brush``, etc.). In Core, ``output_plot``
 in ``app_ui`` provides placement; the matching ``@su.render_plot(...)`` in
 ``server`` provides the renderer plus the derived-input accessors.
 """
@@ -92,14 +92,14 @@ def server(input: Inputs, output: Outputs, session: Session) -> None:
             f"dist  = {dist_select.value()}\n"
             f"seed  = {seed_slider.value()}\n"
             f"open  = {acc.open_panels()}\n"
-            f"fs    = {main_card.full_screen_value()}\n"
+            f"fs    = {main_card.value_full_screen()}\n"
         )
 
     @render.code
     def diag() -> str:
         return (
-            f"click = {plot.click_value()}\n"
-            f"brush = {plot.brush_value()}\n"
+            f"click = {plot.value_click()}\n"
+            f"brush = {plot.value_brush()}\n"
         )
 
     @su.render_plot(click=True, brush=True)

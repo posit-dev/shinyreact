@@ -12,7 +12,7 @@
 #     ``acc.update(...)``.
 #   - the plot renderer (``shinyuiclassonly.render_plot``) still carries
 #     the interaction flags and auto-places its ``output_plot``; it just
-#     no longer carries ``.click_value`` / ``.brush_value`` accessors.
+#     no longer carries ``.value_click`` / ``.value_brush`` accessors.
 #
 # Both rely on ``@expressify`` (Shiny Express's default for ``app.py``) so
 # bare expression statements get rewritten to ``sys.displayhook(...)``

@@ -40,7 +40,7 @@ def test_card_positional_children():
 def test_card_has_no_value_or_update_methods():
     """shinyuiclassonly strips accessors and update()."""
     c = sui.card(id="m")
-    assert not hasattr(c, "full_screen_value")
+    assert not hasattr(c, "value_full_screen")
     assert not hasattr(c, "update")
 
 

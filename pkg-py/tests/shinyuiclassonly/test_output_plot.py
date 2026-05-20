@@ -17,12 +17,12 @@ def test_output_plot_carries_interaction_flags():
     assert o.hover_enabled is True
 
 
-def test_output_plot_no_click_value_accessor():
+def test_output_plot_no_value_click_accessor():
     o = sui.output_plot("plot", click=True)
-    assert not hasattr(o, "click_value")
-    assert not hasattr(o, "brush_value")
-    assert not hasattr(o, "hover_value")
-    assert not hasattr(o, "dbl_value")
+    assert not hasattr(o, "value_click")
+    assert not hasattr(o, "value_brush")
+    assert not hasattr(o, "value_hover")
+    assert not hasattr(o, "value_dbl")
 
 
 def test_output_plot_is_uioutput():

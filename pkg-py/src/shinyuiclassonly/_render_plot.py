@@ -8,8 +8,8 @@ Structure-only sibling of ``shinyui.render_plot``. Keeps:
     :class:`shinyuiclassonly.output_plot` so Express's auto-placement
     produces a properly-configured placeholder
 
-Drops the session-bound ``.click_value()`` / ``.dbl_value()`` /
-``.hover_value()`` / ``.brush_value()`` accessors — read
+Drops the session-bound ``.value_click()`` / ``.value_dbl()`` /
+``.value_hover()`` / ``.value_brush()`` accessors — read
 ``input.<id>_click()`` / ``input.<id>_brush()`` etc. directly from the
 server.
 

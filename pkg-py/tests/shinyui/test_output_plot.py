@@ -45,7 +45,7 @@ def test_no_update_method():
 def test_no_derived_input_accessors_on_output_plot() -> None:
     """Derived-input accessors have moved to shinyui.render_plot."""
     p = output_plot("p", click=True, brush=True)
-    for name in ("click_value", "dbl_value", "hover_value", "brush_value"):
+    for name in ("value_click", "value_dbl", "value_hover", "value_brush"):
         assert not hasattr(p, name), (
             f"output_plot should no longer expose {name}; it lives on render_plot now"
         )

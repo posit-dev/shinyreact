@@ -5,8 +5,8 @@ flags (``click``, ``dblclick``, ``hover``, ``brush``, ``inline``, ``fill``)
 that Core needs at ``app_ui`` time — before any renderer exists — and
 delegates to :func:`shiny.ui.output_plot` in :meth:`tagify`.
 
-Derived-input accessors (``click_value``, ``dbl_value``, ``hover_value``,
-``brush_value``) live on :class:`shinyui.render_plot`, which is the
+Derived-input accessors (``value_click``, ``value_dbl``, ``value_hover``,
+``value_brush``) live on :class:`shinyui.render_plot`, which is the
 renderer side of the same plot output. The renderer owns the session at
 read time in both Core and Express, so it's the natural home for those
 accessors.
@@ -16,7 +16,7 @@ See :class:`shinyui.render_plot` for the accessor surface.
 Two interactions that shinyui does NOT expose because the shiny binding
 does not push them: ``_limits`` (zoom bounds) and ``_selection`` (lasso /
 selected-points). If shiny grows those signals upstream, add the matching
-``limits_value`` / ``selection_value`` accessors on ``render_plot``.
+``value_limits`` / ``value_selection`` accessors on ``render_plot``.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ class output_plot(UiOutput):
 
         @render.code
         def diag():
-            return f"click = {plot.click_value()}\\nbrush = {plot.brush_value()}\\n"
+            return f"click = {plot.value_click()}\\nbrush = {plot.value_brush()}\\n"
     """
 
     def __init__(

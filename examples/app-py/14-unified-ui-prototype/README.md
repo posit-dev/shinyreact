@@ -26,7 +26,7 @@ Requires `matplotlib` and `numpy` (already in the repo's `examples` extras).
 | Action input | `input_action_button` | `Open all panels` / `Close all panels` |
 | Plain output | `output_code` | `summary` and `diag` outputs |
 | Output with read-only signals | `output_plot` | `plot` with `click=True, brush=True` |
-| Layout with children + state | `card` | `main_card.full_screen_value()`, `main_card.update(full_screen=...)` |
+| Layout with children + state | `card` | `main_card.value_full_screen()`, `main_card.update(full_screen=...)` |
 | Layout with state + children | `accordion` | `acc.open_panels()`, `acc.update(open=...)` |
 | Layout-as-child | `accordion_panel` | `Settings` and `Diagnostics` panels |
 
@@ -60,8 +60,8 @@ def _close_all_panels():
     acc.update(open=False)
 ```
 
-Each `.value()` / `.full_screen_value()` / `.open_panels()` /
-`.click_value()` / `.brush_value()` accessor is a `@reactive.calc` under the
+Each `.value()` / `.value_full_screen()` / `.open_panels()` /
+`.value_click()` / `.value_brush()` accessor is a `@reactive.calc` under the
 hood, so reads inside reactive contexts establish dependencies correctly.
 
 ## What to try
@@ -71,12 +71,12 @@ hood, so reads inside reactive contexts establish dependencies correctly.
 - Click **Open all panels** / **Close all panels** — the accordion expands
   or collapses via `acc.update(open=...)`.
 - Click or brush on the plot — coordinates appear in the `diag` panel via
-  `plot.click_value()` / `plot.brush_value()` (the renderer object created
+  `plot.value_click()` / `plot.value_brush()` (the renderer object created
   by `@su.render_plot(click=True, brush=True)`).
 
 ## Notes on real-app fidelity
 
-- `card.full_screen_value()` reads `input.<card_id>_full_screen` — that's
+- `card.value_full_screen()` reads `input.<card_id>_full_screen` — that's
   the wire id shiny's card binding pushes when the user toggles full-screen
   mode. Stage A doesn't ship the browser-side JS for `card.update(full_screen=)`
   to flip the card from the server, so server-driven full-screen changes are
