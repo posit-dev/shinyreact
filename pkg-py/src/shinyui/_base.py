@@ -21,15 +21,13 @@ so calling it once on the outer tag fully resolves our Tagifiable descendants.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar
+from typing import Any
 
-from htmltools import HTMLDependency, Tag
+from htmltools import Tag
 from shiny.session import Session, get_current_session
 
 
 class UiComponent(ABC):
-    html_dependencies: ClassVar[tuple[HTMLDependency, ...]] = ()
-
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Capture session BEFORE super() so mixins can read self._session
         # in their own __init__ after they call super().__init__(**kw).
