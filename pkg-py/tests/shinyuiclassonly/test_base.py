@@ -22,10 +22,6 @@ def test_uicomponent_concrete_subclass_constructs():
     assert c.tagify().name == "div"
 
 
-def test_uicomponent_html_dependencies_default_empty():
-    assert _Dummy.html_dependencies == ()
-
-
 def test_uicomponent_has_no_session_attribute():
     """shinyuiclassonly drops all session machinery."""
     c = _Dummy()

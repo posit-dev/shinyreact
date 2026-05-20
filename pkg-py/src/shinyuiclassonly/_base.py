@@ -1,9 +1,8 @@
 """UiComponent — abstract base for the shinyuiclassonly class hierarchy.
 
 This is the structure-only sibling of ``shinyui.UiComponent``. It carries
-only the bits that affect the class hierarchy:
+only the bit that affects the class hierarchy:
 
-  - ``html_dependencies`` ClassVar (default ``()``)
   - abstract :meth:`tagify` returning a ``Tag``
 
 Deliberately omitted (the "no session" delta vs. ``shinyui``):
@@ -20,13 +19,10 @@ on :class:`shinyuiclassonly.AllowsChildren`. Subclasses that don't inherit
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import ClassVar
 
-from htmltools import HTMLDependency, Tag
+from htmltools import Tag
 
 
 class UiComponent(ABC):
-    html_dependencies: ClassVar[tuple[HTMLDependency, ...]] = ()
-
     @abstractmethod
     def tagify(self) -> Tag: ...
