@@ -29,11 +29,11 @@ def test_tagify_matches_shiny():
         assert type(ours).__name__ == type(theirs).__name__
 
 
-def test_full_screen_value(mock_session):
+def test_value_full_screen(mock_session):
     c = card("body", id="main")
     mock_session.input.__getitem__.return_value = lambda: True
     with reactive.isolate():
-        assert c.full_screen_value() is True
+        assert c.value_full_screen() is True
     mock_session.input.__getitem__.assert_called_with("main_full_screen")
 
 

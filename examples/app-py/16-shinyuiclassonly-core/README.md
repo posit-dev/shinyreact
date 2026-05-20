@@ -4,7 +4,7 @@ End-to-end Shiny **Core** demo of
 [shinyuiclassonly](../../../pkg-py/src/shinyuiclassonly) — the structure-only
 sibling of [shinyui](../../../pkg-py/src/shinyui). Each UI component is a
 Python class with `tagify()`, but with **no** session-bound machinery
-(`.value()`, `.update()`, `.click_value()`, per-session id registry, input
+(`.value()`, `.update()`, `.value_click()`, per-session id registry, input
 handler registration, bookmark serializer).
 
 The equivalent Express `with`-block variant lives in
@@ -30,8 +30,8 @@ form), with the server-side accessor layer stripped away:
 |---------------------------------------|---------------------------------------------|-------------------------------------------|
 | Read slider value                     | `n_slider.value()`                          | `input.n()`                               |
 | Read accordion open panels            | `acc.open_panels()`                         | `tuple(input.acc() or ())`                |
-| Read card full-screen state           | `main_card.full_screen_value()`             | `bool(input.main_card_full_screen())`     |
-| Read plot click / brush coordinates   | `plot.click_value()` / `plot.brush_value()` | `input.plot_click()` / `input.plot_brush()` |
+| Read card full-screen state           | `main_card.value_full_screen()`             | `bool(input.main_card_full_screen())`     |
+| Read plot click / brush coordinates   | `plot.value_click()` / `plot.value_brush()` | `input.plot_click()` / `input.plot_brush()` |
 | Update accordion from server          | `acc.update(open=...)`                      | `shiny.ui.update_accordion("acc", show=...)` |
 | Event trigger on action button        | `@reactive.event(open_all_btn.value, ...)`  | `@reactive.event(input.open_all, ...)`    |
 | Walrus bindings on inputs / layouts   | required (server reads class accessors)     | not used (server reads via `input.<id>()`)|

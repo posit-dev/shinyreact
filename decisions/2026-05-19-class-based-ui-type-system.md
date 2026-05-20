@@ -26,7 +26,7 @@ This repo ships two sibling prototypes deliberately. They test the two dimension
 | Dimension                       | `shinyuiclassonly`                          | `shinyui`                                     |
 |---------------------------------|--------------------------------------------|----------------------------------------------|
 | Class hierarchy (structural)    | ✅                                          | ✅                                            |
-| Session-bound accessors (ergonomic) | ❌ — server reads `input.<id>()`, updates via `ui.update_*` | ✅ — `slider.value()`, `card.full_screen_value()`, `acc.open_panels()`, `acc.update(open=...)` |
+| Session-bound accessors (ergonomic) | ❌ — server reads `input.<id>()`, updates via `ui.update_*` | ✅ — `slider.value()`, `card.value_full_screen()`, `acc.open_panels()`, `acc.update(open=...)` |
 
 Reviewers can adopt the dimensions on independent timelines. The benefits below are tagged with which prototype demonstrates them.
 
@@ -89,7 +89,7 @@ Adding a new input is one file. The trade-offs are visible in one place. This wa
 
 With `ui.card(...) -> Tag`, pyright sees only `Tag` at the call site. There's no way to express "this is a card; it has `full_screen=True`" in the type system. Auto-complete after the dot shows `Tag`'s methods, not the component's.
 
-With `card(...) -> card`, pyright keeps the concrete type. `c.full_screen_value()` (in `shinyui`) is autocompletable. `isinstance(c, AllowsChildren)` lights up only on layouts. Mixed mistakes — `with input_slider(...): ...` — are caught statically because `input_slider` doesn't inherit `AllowsChildren` and so has no `__enter__`/`__exit__`.
+With `card(...) -> card`, pyright keeps the concrete type. `c.value_full_screen()` (in `shinyui`) is autocompletable. `isinstance(c, AllowsChildren)` lights up only on layouts. Mixed mistakes — `with input_slider(...): ...` — are caught statically because `input_slider` doesn't inherit `AllowsChildren` and so has no `__enter__`/`__exit__`.
 
 ### 5. Mixin composition keeps capabilities orthogonal (structural)
 
@@ -144,7 +144,7 @@ def plot(): ...
 
 The single biggest pedagogical finding of this work is that the structural change and the ergonomic change can be evaluated independently:
 
-- Reading `examples/14` against `examples/16` shows what disappears when the session-bound accessors are removed. The class hierarchy stays; the `with`-block ergonomics stay; only the `.value()` / `.update()` / `.click_value()` calls go.
+- Reading `examples/14` against `examples/16` shows what disappears when the session-bound accessors are removed. The class hierarchy stays; the `with`-block ergonomics stay; only the `.value()` / `.update()` / `.value_click()` calls go.
 - Reading `examples/16` against today's `ui.card()` code shows what the class hierarchy alone buys you, *before* the ergonomic layer.
 
 A team that wants only the structural change can adopt `shinyuiclassonly`'s shape upstream. A team that wants the full version can adopt `shinyui`'s. The decision is two-axis, not one.

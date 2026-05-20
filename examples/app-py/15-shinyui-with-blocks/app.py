@@ -24,7 +24,7 @@
 # renderer's UI to the active `with` parent. No `output_code(...)`
 # placeholder is needed — the renderer IS the placement. The plot renderer
 # (`shinyui.render_plot`) carries the interaction config and accessors
-# (`click_value`, `brush_value`, etc.).
+# (`value_click`, `value_brush`, etc.).
 #
 # A module-level docstring would render as raw text on the page because
 # Express's `@expressify` wraps every bare-expression statement (including
@@ -86,14 +86,14 @@ with su.card(id="main_card", full_screen=False) as main_card:
                     f"dist  = {dist_select.value()}\n"
                     f"seed  = {seed_slider.value()}\n"
                     f"open  = {acc.open_panels()}\n"
-                    f"fs    = {main_card.full_screen_value()}\n"
+                    f"fs    = {main_card.value_full_screen()}\n"
                 )
 
             @render.code
             def diag():
                 return (
-                    f"click = {plot.click_value()}\n"
-                    f"brush = {plot.brush_value()}\n"
+                    f"click = {plot.value_click()}\n"
+                    f"brush = {plot.value_brush()}\n"
                 )
 
     @su.render_plot(click=True, brush=True)

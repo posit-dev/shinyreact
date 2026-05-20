@@ -2,13 +2,13 @@
 
 Wire id: ``shiny.ui.card`` accepts an ``id`` kwarg and shiny's card binding
 pushes the full-screen state to ``input.<id>_full_screen``. The class accessor
-:meth:`card.full_screen_value` reads that derived id directly (suffix
+:meth:`card.value_full_screen` reads that derived id directly (suffix
 ``_full_screen``) — there is no primary ``input.<id>()`` value.
 
 Stage A scope note: server → client wiring for ``card.update(full_screen=)``
 is out of scope (would require a small client-side JS adapter, since shiny
 does not currently listen for a server-pushed ``full_screen`` message on
-card). ``full_screen_value()`` reads the bound input correctly under unit
+card). ``value_full_screen()`` reads the bound input correctly under unit
 tests with a mocked session; in a live browser the value reflects whatever
 state the user toggled client-side. The Stage B port to py-shiny may add the
 JS hook.
@@ -34,10 +34,10 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):
 
     Wire id: ``input.<id>_full_screen`` is a boolean pushed by shiny's card
     binding when the user toggles full-screen mode. The class accessor
-    :meth:`full_screen_value` returns the same.
+    :meth:`value_full_screen` returns the same.
 
     **Prototype note:** the browser-side JS that pushes ``full_screen`` is out
-    of scope for the Stage A prototype. :meth:`full_screen_value` and
+    of scope for the Stage A prototype. :meth:`value_full_screen` and
     :meth:`update` work correctly under mocked sessions and in unit tests, but
     in a live app the value stays ``False`` until the client-side JS lands in
     Stage B.
@@ -51,7 +51,7 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):
         # In server:
         @reactive.calc
         def is_full():
-            return c.full_screen_value()
+            return c.value_full_screen()
 
         # Push a state change from the server:
         c.update(full_screen=False)
@@ -86,7 +86,7 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):
         ----------
         id
             Input id used to read ``input.<id>_full_screen`` via
-            :meth:`full_screen_value`.
+            :meth:`value_full_screen`.
         full_screen
             Initial full-screen state rendered into the HTML.
         height, max_height, min_height, fill, class_
@@ -127,7 +127,7 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):
             Child elements (any ``TagChild``).
         id
             Input id used to read ``input.<id>_full_screen`` via
-            :meth:`full_screen_value`.
+            :meth:`value_full_screen`.
         full_screen
             Initial full-screen state rendered into the HTML.
         height, max_height, min_height, fill, class_
@@ -156,7 +156,7 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):
         super().__init__(*args, id=id)
 
     @reactive_calc_method
-    def full_screen_value(self) -> bool:
+    def value_full_screen(self) -> bool:
         """Return whether the card is currently in full-screen mode.
 
         Shiny's card binding pushes the full-screen state to

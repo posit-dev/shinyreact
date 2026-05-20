@@ -35,29 +35,29 @@ def test_render_plot_auto_output_ui_emits_output_plot_with_flags():
     assert tag.get_html_string() == expected
 
 
-def test_render_plot_click_value_reads_correct_input(mock_session):
+def test_render_plot_value_click_reads_correct_input(mock_session):
     @sui.render_plot(click=True)
     def my_plot() -> None:
         return None
 
     mock_session.input.__getitem__.return_value = lambda: {"x": 10, "y": 20}
     with reactive.isolate():
-        assert my_plot.click_value() == {"x": 10, "y": 20}
+        assert my_plot.value_click() == {"x": 10, "y": 20}
     mock_session.input.__getitem__.assert_called_with("my_plot_click")
 
 
-def test_render_plot_brush_value_reads_correct_input(mock_session):
+def test_render_plot_value_brush_reads_correct_input(mock_session):
     @sui.render_plot(brush=True)
     def my_plot() -> None:
         return None
 
     mock_session.input.__getitem__.return_value = lambda: {"xmin": 1, "xmax": 2}
     with reactive.isolate():
-        assert my_plot.brush_value() == {"xmin": 1, "xmax": 2}
+        assert my_plot.value_brush() == {"xmin": 1, "xmax": 2}
     mock_session.input.__getitem__.assert_called_with("my_plot_brush")
 
 
-def test_render_plot_hover_and_dbl_values(mock_session):
+def test_render_plot_value_hover_and_value_dbl(mock_session):
     @sui.render_plot(hover=True, dblclick=True)
     def my_plot() -> None:
         return None
@@ -65,5 +65,5 @@ def test_render_plot_hover_and_dbl_values(mock_session):
     seq = iter([{"x": 1}, {"x": 2}])
     mock_session.input.__getitem__.return_value = lambda: next(seq)
     with reactive.isolate():
-        assert my_plot.hover_value() == {"x": 1}
-        assert my_plot.dbl_value() == {"x": 2}
+        assert my_plot.value_hover() == {"x": 1}
+        assert my_plot.value_dbl() == {"x": 2}

@@ -8,10 +8,10 @@ accessors for the four derived input ids:
   ===================  ============================================
   Wire id              Accessor (reactive read)
   ===================  ============================================
-  input.<id>_click     :meth:`click_value`
-  input.<id>_dblclick  :meth:`dbl_value`
-  input.<id>_hover     :meth:`hover_value`
-  input.<id>_brush     :meth:`brush_value`
+  input.<id>_click     :meth:`value_click`
+  input.<id>_dblclick  :meth:`value_dbl`
+  input.<id>_hover     :meth:`value_hover`
+  input.<id>_brush     :meth:`value_brush`
   ===================  ============================================
 
 Interaction flags (click=, dblclick=, hover=, brush=, inline=, fill=) live on
@@ -42,8 +42,8 @@ class render_plot(_shiny_plot):
     - Interaction flags (``click``, ``dblclick``, ``hover``, ``brush``,
       ``inline``, ``fill``) carried on the renderer.
     - Typed accessors for the four derived input ids that the shiny plot
-      binding pushes: :meth:`click_value`, :meth:`dbl_value`,
-      :meth:`hover_value`, :meth:`brush_value`.
+      binding pushes: :meth:`value_click`, :meth:`value_dbl`,
+      :meth:`value_hover`, :meth:`value_brush`.
     - An overridden :meth:`auto_output_ui` that emits a
       :class:`shinyui.output_plot` configured with the same flags — so in
       Express, ``@render_plot(click=True)`` is enough for both server logic
@@ -91,19 +91,19 @@ class render_plot(_shiny_plot):
         ).tagify()
 
     @reactive_calc_method
-    def click_value(self) -> Any:
+    def value_click(self) -> Any:
         return self._read_derived("_click")
 
     @reactive_calc_method
-    def dbl_value(self) -> Any:
+    def value_dbl(self) -> Any:
         return self._read_derived("_dblclick")
 
     @reactive_calc_method
-    def hover_value(self) -> Any:
+    def value_hover(self) -> Any:
         return self._read_derived("_hover")
 
     @reactive_calc_method
-    def brush_value(self) -> Any:
+    def value_brush(self) -> Any:
         return self._read_derived("_brush")
 
     def _read_derived(self, suffix: str) -> Any:

@@ -13,13 +13,13 @@ Compared with examples 14 / 15 (the ``shinyui`` versions of this app):
     ``input.<id>()`` directly, so there is no reason to bind a
     module-level name on any component instance.
   - Reads use ``input.<id>()`` instead of ``n_slider.value()`` /
-    ``acc.open_panels()`` / ``main_card.full_screen_value()`` /
-    ``plot.click_value()``.
+    ``acc.open_panels()`` / ``main_card.value_full_screen()`` /
+    ``plot.value_click()``.
   - Updates use ``shiny.ui.update_accordion(...)`` directly instead of
     ``acc.update(...)``.
   - The plot renderer (``shinyuiclassonly.render_plot``) still carries
     the interaction flags and auto-places its ``output_plot``; it just
-    no longer carries ``.click_value`` / ``.brush_value`` accessors.
+    no longer carries ``.value_click`` / ``.value_brush`` accessors.
 
 The architectural delta between this file and example 14 is the cost of
 the session-bound machinery that ``shinyui`` adds on top of the class
