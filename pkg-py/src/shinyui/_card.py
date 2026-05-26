@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, overload
 
-from htmltools import Tag, TagChild
+from htmltools import TagChild, Tagified
 
 from ._children import AllowsChildren
 from ._input_value import HasInputValue
@@ -165,7 +165,7 @@ class card(UiLayout, AllowsChildren, HasInputValue, Updatable):
         """
         return bool(self._read_input("_full_screen"))
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         kwargs: dict[str, Any] = {

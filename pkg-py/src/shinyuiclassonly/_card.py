@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, overload
 
-from htmltools import Tag, TagChild
+from htmltools import TagChild, Tagified
 
 from ._children import AllowsChildren
 from ._roles import UiLayout
@@ -72,7 +72,7 @@ class card(UiLayout, AllowsChildren):
         self.class_ = class_
         super().__init__(*args)
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         kwargs: dict[str, Any] = {

@@ -3,7 +3,7 @@
 This is the structure-only sibling of ``shinyui.UiComponent``. It carries
 only the bit that affects the class hierarchy:
 
-  - abstract :meth:`tagify` returning a ``Tag``
+  - abstract :meth:`tagify` returning a ``Tagified``
 
 Deliberately omitted (the "no session" delta vs. ``shinyui``):
 
@@ -20,9 +20,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from htmltools import Tag
+from htmltools import Tagified
 
 
 class UiComponent(ABC):
     @abstractmethod
-    def tagify(self) -> Tag: ...
+    def tagify(self) -> Tagified: ...

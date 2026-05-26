@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, overload
 
-from htmltools import Tag
+from htmltools import Tagified
 
 from ._accordion_panel import accordion_panel
 from ._children import AllowsChildren
@@ -154,7 +154,7 @@ class accordion(UiLayout, AllowsChildren, HasInputValue, Updatable):
         """Return the currently open accordion panel values as a tuple."""
         return tuple(self._read_input() or ())
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         # `shiny.ui.accordion` does an explicit isinstance(panel, AccordionPanel)

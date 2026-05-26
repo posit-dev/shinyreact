@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from htmltools import Tag, TagChild
+from htmltools import TagChild, Tagified
 
 from ._roles import UiInput
 
@@ -37,7 +37,7 @@ class input_action_button(UiInput):
         self.width = width
         self.disabled = disabled
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         return _sui.input_action_button(
@@ -46,4 +46,4 @@ class input_action_button(UiInput):
             icon=self.icon,
             width=self.width,
             disabled=self.disabled,
-        )
+        ).tagify()

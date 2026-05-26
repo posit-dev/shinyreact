@@ -21,7 +21,7 @@ selected-points). If shiny grows those signals upstream, add the matching
 
 from __future__ import annotations
 
-from htmltools import Tag
+from htmltools import Tagified
 from shiny.types import MISSING, MISSING_TYPE
 
 from ._roles import UiOutput
@@ -93,7 +93,7 @@ class output_plot(UiOutput):
         self.fill = fill
         super().__init__()
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         return _sui.output_plot(
@@ -106,4 +106,4 @@ class output_plot(UiOutput):
             hover=self.hover_enabled,
             brush=self.brush_enabled,
             fill=self.fill,
-        )
+        ).tagify()

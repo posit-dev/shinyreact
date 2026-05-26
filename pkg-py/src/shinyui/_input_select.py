@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional, Union
 
-from htmltools import Tag, TagChild
+from htmltools import TagChild, Tagified
 
 from ._reactive import reactive_calc_method
 from ._roles import UiInput
@@ -88,7 +88,7 @@ class input_select(UiInput, Updatable):
     def value(self) -> Any:
         return self._read_input()
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         return _sui.input_select(
@@ -99,7 +99,7 @@ class input_select(UiInput, Updatable):
             multiple=self.multiple,
             width=self.width,
             size=self.size,
-        )
+        ).tagify()
 
     def update(
         self,

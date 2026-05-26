@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from htmltools import Tag
+from htmltools import Tagified
 
 from ._reactive import reactive_calc_method
 from ._roles import UiInput
@@ -93,7 +93,7 @@ class input_slider(UiInput, Updatable):
     def value(self) -> Any:
         return self._read_input()
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         # Delegating to shiny.ui — markup origin per the design spec.
         import shiny.ui as _sui
 
@@ -113,7 +113,7 @@ class input_slider(UiInput, Updatable):
             time_format=self.time_format,
             timezone=self.timezone,
             drag_range=self.drag_range,
-        )
+        ).tagify()
 
     def update(
         self,
