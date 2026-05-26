@@ -161,3 +161,7 @@ make js-build-watch    # JS watch mode
 ```
 
 Run `make help` to see all targets.
+
+## Authors
+
+- Barret Schloerke
