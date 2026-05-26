@@ -217,7 +217,7 @@ IDE auto-complete picks the overload by call form: `card(child1, child2)` vs `wi
 
 ### Lazy `tagify()`
 
-Today, `ui.card(...)` does the work of building a `Tag` immediately. With classes, `__init__` only records arguments — the `Tag` is constructed when an outer consumer calls `.tagify()`. This is the lazy-tagify property the meeting kept returning to:
+Today, `ui.card(...)` does the work of building a `Tag` immediately. With classes, `__init__` only records arguments — the `Tag` is constructed when an outer consumer calls `.tagify()`. The lazy-tagify property is what makes the rest of this proposal possible:
 
 - Express layout components (e.g. `layout_column_wrap`) needed access to *children* at tagify time but the current factory pattern couldn't see them. With classes, tagify runs *after* the entire `with` block has populated `children`.
 - Late binding of session-dependent details (HTML dependencies, role attrs, ARIA wiring) becomes natural — `tagify()` can consult the active session if one is in scope.
@@ -240,21 +240,45 @@ This works in REPL/Jupyter/Quarto/Express because the display hook fires on the 
 
 ### What we are switching to
 
-The class itself owns a context stack via `contextvars`. Already prototyped in `shinyuiclassonly._ctx_stack`:
+The class itself owns a context stack via `contextvars`. The full mechanism:
 
 ```python
-# AllowsChildren.__enter__
-def __enter__(self) -> Self:
-    self._ctx_token = push(self)       # push self onto contextvar stack
-    return self
+# Module-level stack, shared across components
+_stack: ContextVar[tuple[AllowsChildren, ...]] = ContextVar("_stack", default=())
 
-def __exit__(self, *exc):
-    pop(self._ctx_token)
-    if exc[0] is None:
-        dispatch_to_active_parent(self)   # add self to whatever is now on top
+def push(parent: AllowsChildren) -> Token:
+    return _stack.set(_stack.get() + (parent,))
+
+def pop(token: Token) -> None:
+    _stack.reset(token)
+
+def active_parent() -> AllowsChildren | None:
+    stack = _stack.get()
+    return stack[-1] if stack else None
+
+# AllowsChildren mixin
+class AllowsChildren:
+    children: list[TagChild]
+
+    def __enter__(self) -> Self:
+        self._ctx_token = push(self)        # this component is now the active parent
+        return self
+
+    def __exit__(self, *exc) -> None:
+        pop(self._ctx_token)
+        if exc[0] is None:
+            dispatch_to_active_parent(self) # add self to whatever is now on top
+
+# UiComponent.__init__ (every component, capturing or not)
+class UiComponent:
+    def __init_subclass__(cls, **kw):
+        # wrap __init__ so the last thing it does is:
+        #   parent = active_parent()
+        #   if parent is not None: parent.append(self)
+        ...
 ```
 
-And `UiComponent.__init__` (or a small base init on `AllowsChildren`) inspects the stack: if a parent is active, it appends itself to that parent's children. Construction-time capture, not display-time capture.
+`__init__` checks `active_parent()` and appends `self` if a parent is active. This is **construction-time capture**, not display-time capture: nothing depends on `sys.displayhook` or `__repr_html__`.
 
 ### Consequence: things must be wrapped
 
@@ -286,7 +310,7 @@ with ui.card() as main:
     # `slider` is bound in the enclosing scope AND has been added to main.children
 ```
 
-This is the meeting's resolution: the variable binding is *additional* to the capture, not a substitute for it. To opt out, the author either constructs outside the `with` and uses an explicit `.display()` / `.ui_here()` method at the placement site, or uses `ui.hold(...)` (the `StackCapture` equivalent suppresses construction-time capture for its body).
+The variable binding is *additional* to the capture, not a substitute for it. To opt out, the author either constructs outside the `with` and uses an explicit `.display()` / `.ui_here()` method at the placement site, or uses `ui.hold(...)` — the `StackCapture` equivalent of `ui.hold()` is a `with`-block that pushes a sentinel onto the stack, so any components constructed inside its body see "no real parent" and are not captured.
 
 ```python
 slider = ui.input_slider("n", "N", 1, 100, 10)   # top-level: not captured anywhere
@@ -294,11 +318,25 @@ with ui.card() as main:
     slider.display()                              # explicit placement
 ```
 
-The method name (`display` / `show` / `ui_here`) is an open question; `display` is the front-runner per the meeting.
+The method name (`display` / `show` / `ui_here`) is an open question; `display` is the front-runner.
 
 ## `HtmlToolsStack` — push the stack down into `htmltools`
 
-Once `StackCapture` is in `shiny.ui`, the natural next move is to give `htmltools.tags.div(...)` the same context-manager behaviour. The prototype already includes a `ctx_tag` proof of concept (`shinyuiclassonly/_ctx_tag.py`) that shares the same `contextvars` stack.
+Once `StackCapture` is in `shiny.ui`, the natural next move is to give `htmltools.tags.div(...)` the same context-manager behaviour, using the same shared stack. The change is a small mixin on `Tag`:
+
+```python
+class Tag:
+    # ... existing fields (name, attrs, children) ...
+
+    def __enter__(self) -> Tag:
+        self._ctx_token = push(self)
+        return self
+
+    def __exit__(self, *exc) -> None:
+        pop(self._ctx_token)
+        if exc[0] is None:
+            dispatch_to_active_parent(self)
+```
 
 This means:
 
@@ -318,9 +356,32 @@ Why do this:
 
 The constraint: `htmltools` does not know about Shiny's session. The stack lives in a `contextvars.ContextVar[list[AllowsChildren-like]]`, which is dependency-free and works fine without Shiny. Shiny adds its own layer on top for session-scoped concerns.
 
-### Subtle bug: calling `tagify()` within a stack
+### Escape hatch: `tagify()` suppresses capture
 
-If a `tagify()` implementation itself constructs nested tags (e.g. a component whose `tagify()` returns `tags.div(tags.span(42))`), those nested `tags` initialise while the *outer* parent is still on the stack — and end up captured by the wrong parent. We need a "suppress capture inside `tagify()`" flag so that `tagify()` bodies can freely construct `htmltools` objects without polluting the active stack frame. The flag is set on entry to `tagify()` and cleared on exit. Already noted in `app.py`'s comments; needs a clean public API.
+`tagify()` is the *intentional* way out of the capture stack. Consider a component whose `tagify()` returns `tags.div(tags.span(42))`:
+
+```python
+class my_component(UiLayout):
+    def tagify(self) -> Tag:
+        return tags.div(tags.span(42))   # constructs inner tags eagerly
+```
+
+If `tagify()` runs while some outer `with ui.card():` is still active, those nested `tags.div` and `tags.span` constructions would naively get captured by the surrounding card — even though they are part of *this component's own rendering*, not new children of the user's `with` block.
+
+The rule: **`tagify()` is a capture-suppressing boundary.** Entering `tagify()` pushes a sentinel onto the stack; exiting pops it. Components built inside the body of `tagify()` see "no real parent" and are not appended anywhere implicitly.
+
+```python
+def tagify(self) -> Tag:
+    with _no_capture():                  # internal helper
+        return tags.div(tags.span(42))
+```
+
+Two consequences for app authors:
+
+1. Implementers can compose `htmltools` freely inside `tagify()` without polluting the active stack frame.
+2. The same rule is reachable from user code: calling `.tagify()` explicitly inside a `with` block produces a `Tag` that is *not* captured. This is the documented way to construct a sub-tree for later placement.
+
+The public API needs naming: a user-facing `with no_capture(): ...` context manager that lets app authors opt out without going through `tagify()`, and a documented "`tagify()` is always a capture-suppressing boundary" rule. Both should land with `HtmlToolsStack`.
 
 ## `UnifiedMode` — collapsing Core and Express into one mode
 
@@ -370,6 +431,24 @@ with global_session():
     def shared_counter():
         return 0
 ```
+
+### Modules
+
+`@module` keeps the Express-shaped signature in `UnifiedMode`. A module declared inside a `with` block is captured as a child of the active parent, and its body runs with its own scoped `input` / `output` / `session`:
+
+```python
+with ui.card() as main:
+    @module
+    def my_panel(input, output, session):
+        ui.markdown("nested UI")
+        ui.input_action_button("go", "Go")
+
+        @render.code
+        def out():
+            return f"clicked {input.go()} times"
+```
+
+This matches what app authors already write in Express today. The names `input`, `output`, `session` are importable from `shiny` at module scope (`from shiny import input, output, session`) for the top-level UI body; inside `@module`, the parameters shadow them with module-scoped versions. The decorator continues to handle id namespacing and per-session resolution as it does today.
 
 ### What's actually different from "Express today"
 
@@ -422,8 +501,6 @@ A class on the stack at depth 0 (no parent active) and reached by `sys.displayho
 This needs a spike to confirm Jupyter, Quarto-Python, and VS Code interactive all behave correctly.
 
 ### `dev` branch strategy
-
-Per the meeting:
 
 - Branch: `dev` on `posit-dev/py-shiny` (no `v2` suffix — we may converge on a non-v2 path; the name doesn't need to commit).
 - Planning artifacts (this doc, follow-up specs) live in the branch under `docs/` or `decisions/` and are deleted before merge.
