@@ -5,7 +5,7 @@
 **Scope:** `py-shiny` (not `shinyreact`)
 **Branch plan:** prototype in a `dev` branch on `posit-dev/py-shiny`; targets a **Shiny v2 / breaking** release
 **Related:**
-- [`decisions/2026-05-19-class-based-ui-type-system.md`](../2026-05-19-class-based-ui-type-system.md) — the "why bother with classes" benefits memo.
+- [`decisions/2026-05-19-class-based-ui-type-system.md`](./2026-05-19-class-based-ui-type-system.md) — the "why bother with classes" benefits memo.
 - `examples/app-py/14-unified-ui-prototype/` and `15-shinyui-with-blocks/` — the fuller `shinyui` vision (`.value()` / `.update()` accessors on instances).
 - `examples/app-py/16-shinyuiclassonly-core/` and `17-shinyuiclassonly-express/` — the structure-only step proposed here.
 
@@ -190,7 +190,7 @@ AllowsChildren         (mixin: children: list[TagChild]; __enter__/__exit__)
   - Maybe `UiLayout` adopts this functionality permanently?
 - The three markers (`UiInput`, `UiOutput`, `UiLayout`) carry no methods of their own under `ClassComponents`. They exist so downstream code can write `isinstance(c, UiInput)` against a stable, public surface (today this is private inside `shiny.ui`).
 
-The `shinyuiclassonly` package in this repo is the reference implementation for `ClassComponents`. Per-component files own their `__init__` + `tagify()` in one place — the *"co-located metadata"* benefit from the [type-system memo](../2026-05-19-class-based-ui-type-system.md#3-co-located-metadata-per-component-structural-leveraged-by-ergonomics).
+The `shinyuiclassonly` package in this repo is the reference implementation for `ClassComponents`. Per-component files own their `__init__` + `tagify()` in one place — the *"co-located metadata"* benefit from the [type-system memo](./2026-05-19-class-based-ui-type-system.md#3-co-located-metadata-per-component-structural-leveraged-by-ergonomics).
 
 ### Two call styles, one symbol
 
@@ -460,7 +460,7 @@ This matches what app authors already write in Express today. The names `input`,
 
 ## `InstanceAccessors` — `.value()` / `.update()` on instances (NOT in this proposal)
 
-Sketched fully in [`decisions/2026-05-19-class-based-ui-type-system.md`](../2026-05-19-class-based-ui-type-system.md) and examples 14–15. The structural change here doesn't require it. Open questions:
+Sketched fully in [`decisions/2026-05-19-class-based-ui-type-system.md`](./2026-05-19-class-based-ui-type-system.md) and examples 14–15. The structural change here doesn't require it. Open questions:
 
 - Reading: `slider.value()` (reactive calc method, explicit) vs `slider.value` (property, implicit reactivity) vs Marimo-style `slider.value = 42` setter (Joe-style concern: hides reactivity).
 - Multiple values per component: namespace them (`plot.value.click()`, `plot.value.brush()`) so they auto-complete together — or prefix individually (`plot.value_click()`, `plot.value_brush()`).
