@@ -33,6 +33,140 @@ from shiny import App, Inputs, Outputs, Session, reactive, render
 from shiny import ui as _sui
 
 # --- UI ---------------------------------------------------------------------
+
+btn1=
+btn2=        su.input_action_button("close_all", "Close all panels")
+
+# Current Express: Use display hooks to route render
+# Used only within "express"
+with ui.hold():
+    with su.card() as main_card:
+        with _sui.layout_column_wrap(width=1 / 2):
+            ui.markdown("Extra content")
+
+            "Extra content"
+            42
+
+            su.input_action_button("open_all", "Open all panels")
+            btn2
+
+# Proposal: Stack only; Hook exists within the `__init__`
+# Used within "core" apps; Also "express" mode
+# All components must be "wrapped"!!
+# No ui.hold(); Only simple ctx stack management
+# Prefab UI style
+
+from shiny import input, output, session # similar to express mode
+
+with global_session():
+    @reactive.calc
+    def first_content():
+        return str(42)
+
+# BE AWARE!!:
+# * display hooks are used within notebooks; Validate the behavior of the hooks
+# * Maybe we could escape it and have the print method not "print to screen" if the stack level is >= 1?
+
+# All inputs at top level to store into variable
+
+# Top level will not "print". Only sets variable
+open_btn = su.input_action_button("open_all", "Open all panels")
+
+# Team:
+# * Stack is good;
+# * Capture during `__init__`; Allow for `.display()` to "init" within a sep stack
+# * Allows for both assignment and just "printing" the component;
+# * Will require reactive objects to be session lazy and handle multiple sessions;
+# * Leverages UI class mechanisms to manage the stack and capture;
+#   * Uses tagify to convert to Tags
+
+# Impl Now:
+# * PR to `dev` - put in md docs / plans
+#   * Commit superpower plan/design docs; Delete them later
+#   * Step in path towards: "How to display a component" - Instead of immediate "to DOM", it decouples intent from implementation. Allows an entry point to print using a new mechanism (ex: react.js).
+#     * Future - could be json that is rendered client-side via react.js / vue / svelte / etc. instead of rendered server-side via tagify
+
+# * Use a `dev` v2 branch!
+# * Ui Classes are a good idea; It is independent of the stack mechanism and can be used in both express and core;
+#   * Get basic classes working first
+#   * Open Question: syntax for value / update methods
+# * Stack implementation - Change "Express" mental model
+#   * Require that Express mode items are "wrapped" so they can be captured
+#   * Breaking changes - Require shiny v2
+#     * Requires doc of all pros/cons and migration path;
+
+# Impl later:
+# * Core mode w/ stack
+#   * Requires that all components are "wrapped" so they can be captured
+# * Stack implementation is a big lift for docs and future development
+# * How far away are we to get "express" style within core mode? - Only run the code once
+#   * Or the answer is "core" is "have server function", and "express" is "don't have server function and use display hooks to capture values"
+
+# `main_card` is not "printed", it is only set
+with su.card() as main_card:
+    with _sui.layout_column_wrap(width=1 / 2):
+        with ui.hold():
+            mymark = ui.markdown("Extra content")
+        mymark
+
+        "Extra content" # No longer possible!
+        42 # No longer possible!
+
+        ui.markdown(42) # div(span(42)) -> div(), span(42); Safety hatch - use tagify to escape the capture stack
+        open_btn = su.input_action_button("open_all", "Open all panels")
+        open_btn
+        su.input_action_button("close_all", "Close all panels")
+
+        # Displays and sets variable
+        open_btn = su.input_action_button("open_all", "Open all panels")
+
+        su.output_code("summary")
+
+        @module
+        def mymod(input, output, session):
+            ui.markdown("More extra content")
+            ui.markdown(first_content())
+            su.input_action_button("mod_btn", "Module button")
+
+        # Woudl require that it is aware of all values for every session
+        # as there is only "one" extra_content() function that is shared across sessions. Would need to be able to route values based on session context.
+        @reactive.calc
+        def extra_content():
+            input.myvalue()
+            return "Extra content\n" + first_content()
+
+        # express only
+        @render.code # currently, super greedy and wants a session NOW
+        # Proposal: delay session requirement until later
+        def extra():
+            return extra_content()
+
+@render.code
+def summary():
+    return extra_content()
+
+app = App(main_card)
+
+
+
+
+
+
+
+
+    a = su.accordion(
+        su.accordion_panel(
+            "Settings",
+            su.input_slider("n", "Sample size", 10, 1000, 100),
+            su.input_select(
+                "dist",
+                "Distribution",
+                {"normal": "Normal", "uniform": "Uniform"},
+            ),
+            su.input_slider("seed", "Seed", 1, 1000, 42),
+        )
+    )
+
 app_ui = _sui.page_fluid(
     su.card(
         _sui.layout_column_wrap(
@@ -81,10 +215,7 @@ def server(input: Inputs, output: Outputs, session: Session) -> None:
 
     @render.code
     def diag() -> str:
-        return (
-            f"click = {input.plot_click()}\n"
-            f"brush = {input.plot_brush()}\n"
-        )
+        return f"click = {input.plot_click()}\nbrush = {input.plot_brush()}\n"
 
     @su.render_plot(click=True, brush=True)
     def plot():
