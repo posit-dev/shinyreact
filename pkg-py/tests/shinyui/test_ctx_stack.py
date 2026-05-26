@@ -224,6 +224,49 @@ def test_expressify_with_blocks_match_positional_form() -> None:
     )
 
 
+def test_ctx_tag_with_block_dispatches_to_enclosing_allows_children_parent() -> None:
+    """Regression: a ``with CtxTag(...)`` nested inside an ``AllowsChildren``
+    parent must propagate itself to the enclosing parent on exit.
+
+    Pre-fix bug (issue #107): ``CtxTag.__exit__`` only popped the stack and
+    never forwarded ``self``, so the CtxTag — and the children it had
+    collected — were silently dropped from the enclosing tree.
+    """
+    with sui.card(id="c") as c:
+        sys.displayhook(sui.input_slider("n", "N", 1, 10, 5))
+        with sui.CtxTag("div", class_="wrapper") as wrapper:
+            sys.displayhook(sui.input_slider("m", "M", 1, 10, 5))
+
+    assert len(c.children) == 2
+    assert c.children[1] is wrapper
+    assert len(wrapper.children) == 1
+
+
+def test_ctx_tag_with_block_dispatches_to_enclosing_ctx_tag_parent() -> None:
+    """A ``with CtxTag(...)`` nested inside another ``with CtxTag(...)``
+    must compose into the outer CtxTag's children list."""
+    with sui.CtxTag("section") as outer:
+        with sui.CtxTag("div") as inner:
+            sys.displayhook("hi")
+
+    assert len(outer.children) == 1
+    assert outer.children[0] is inner
+    assert "hi" in list(inner.children)
+
+
+def test_ctx_tag_with_block_does_not_dispatch_on_exception() -> None:
+    """If the body raises, the CtxTag must not be appended to the enclosing
+    parent — matching ``AllowsChildren.__exit__``'s ``exc[0] is None`` guard."""
+    with sui.card(id="c") as c:
+        try:
+            with sui.CtxTag("div"):
+                raise RuntimeError("boom")
+        except RuntimeError:
+            pass
+
+    assert len(c.children) == 0
+
+
 def test_outermost_with_dispatches_to_prev_displayhook() -> None:
     """When the outermost `with`-block exits with an empty stack, the
     component is forwarded via sys.displayhook so the prior displayhook

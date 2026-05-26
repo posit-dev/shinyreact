@@ -168,3 +168,46 @@ async def test_concurrent_tasks_have_isolated_stacks() -> None:
     b_p = [c for c in b_div.children if hasattr(c, "name") and c.name == "p"]
     assert len(a_p) == 3
     assert len(b_p) == 2
+
+
+def test_ctx_tag_with_block_dispatches_to_enclosing_allows_children_parent() -> None:
+    """Regression: a ``with CtxTag(...)`` nested inside an ``AllowsChildren``
+    parent must propagate itself to the enclosing parent on exit.
+
+    Pre-fix bug (issue #107): ``CtxTag.__exit__`` only popped the stack and
+    never forwarded ``self``, so the CtxTag — and the children it had
+    collected — were silently dropped from the enclosing tree.
+    """
+    with sui.card(id="c") as c:
+        sys.displayhook(sui.input_slider("n", "N", 1, 10, 5))
+        with sui.CtxTag("div", class_="wrapper") as wrapper:
+            sys.displayhook(sui.input_slider("m", "M", 1, 10, 5))
+
+    assert len(c.children) == 2
+    assert c.children[1] is wrapper
+    assert len(wrapper.children) == 1
+
+
+def test_ctx_tag_with_block_dispatches_to_enclosing_ctx_tag_parent() -> None:
+    """A ``with CtxTag(...)`` nested inside another ``with CtxTag(...)``
+    must compose into the outer CtxTag's children list."""
+    with sui.CtxTag("section") as outer:
+        with sui.CtxTag("div") as inner:
+            sys.displayhook("hi")
+
+    assert len(outer.children) == 1
+    assert outer.children[0] is inner
+    assert "hi" in list(inner.children)
+
+
+def test_ctx_tag_with_block_does_not_dispatch_on_exception() -> None:
+    """If the body raises, the CtxTag must not be appended to the enclosing
+    parent — matching ``AllowsChildren.__exit__``'s ``exc[0] is None`` guard."""
+    with sui.card(id="c") as c:
+        try:
+            with sui.CtxTag("div"):
+                raise RuntimeError("boom")
+        except RuntimeError:
+            pass
+
+    assert len(c.children) == 0

@@ -17,7 +17,7 @@ from typing import Any
 from htmltools import Tag
 from typing_extensions import Self
 
-from ._ctx_stack import pop, push
+from ._ctx_stack import dispatch_to_active_parent, pop, push
 
 
 class CtxTag(Tag):
@@ -29,3 +29,8 @@ class CtxTag(Tag):
 
     def __exit__(self, *exc: object) -> None:
         pop(self._ctx_token)
+        # Mirror AllowsChildren.__exit__: on normal exit, forward self to the
+        # enclosing parent so nested ``with CtxTag(...)`` blocks compose into
+        # the surrounding tree rather than being silently dropped.
+        if exc[0] is None:
+            dispatch_to_active_parent(self)
