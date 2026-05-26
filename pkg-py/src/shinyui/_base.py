@@ -23,7 +23,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from htmltools import Tag
+from htmltools import Tagified
 from shiny.session import Session, get_current_session
 
 
@@ -83,4 +83,4 @@ class UiComponent(ABC):
         return sess.input[f"{self.id}{suffix}"]()  # type: ignore[attr-defined]
 
     @abstractmethod
-    def tagify(self) -> Tag: ...
+    def tagify(self) -> Tagified: ...

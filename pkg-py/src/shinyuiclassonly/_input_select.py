@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Mapping, Optional, Union
 
-from htmltools import Tag, TagChild
+from htmltools import TagChild, Tagified
 
 from ._roles import UiInput
 
@@ -40,7 +40,7 @@ class input_select(UiInput):
         self.width = width
         self.size = size
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         return _sui.input_select(
@@ -51,4 +51,4 @@ class input_select(UiInput):
             multiple=self.multiple,
             width=self.width,
             size=self.size,
-        )
+        ).tagify()

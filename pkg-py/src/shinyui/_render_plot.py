@@ -78,9 +78,9 @@ class render_plot(_shiny_plot):
         self.fill = fill
 
     def auto_output_ui(self, **_kw: object) -> Tag:
-        from ._output_plot import output_plot
+        import shiny.ui as _sui
 
-        return output_plot(
+        return _sui.output_plot(
             self.output_id,
             inline=self.inline,
             click=self.click_enabled,
@@ -88,7 +88,7 @@ class render_plot(_shiny_plot):
             hover=self.hover_enabled,
             brush=self.brush_enabled,
             fill=self.fill,
-        ).tagify()
+        )
 
     @reactive_calc_method
     def value_click(self) -> Any:

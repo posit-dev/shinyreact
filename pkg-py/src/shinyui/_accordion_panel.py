@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import overload
 
-from htmltools import Tag, TagChild
+from htmltools import TagChild, Tagified
 from shiny.types import MISSING, MISSING_TYPE
 
 from ._children import AllowsChildren
@@ -120,8 +120,8 @@ class accordion_panel(UiLayout, AllowsChildren):
             return self.title
         return self._value
 
-    def tagify(self) -> Tag:
-        # Honor the UiComponent.tagify() -> Tag contract by chaining .tagify()
+    def tagify(self) -> Tagified:
+        # Honor the UiComponent.tagify() -> Tagified contract by chaining .tagify()
         # on shiny's AccordionPanel wrapper. shiny's AccordionPanel.tagify()
         # requires `_accordion_id` (normally stamped by the parent accordion's
         # `_sui.accordion(*panels)` call). For standalone rendering we set a

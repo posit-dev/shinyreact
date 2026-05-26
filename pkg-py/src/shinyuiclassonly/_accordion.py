@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Optional, overload
 
-from htmltools import Tag
+from htmltools import Tagified
 
 from ._accordion_panel import accordion_panel
 from ._children import AllowsChildren
@@ -70,7 +70,7 @@ class accordion(UiLayout, AllowsChildren):
         self.height = height
         super().__init__(*args)
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         # shiny.ui.accordion rejects pre-rendered Tags (isinstance check on

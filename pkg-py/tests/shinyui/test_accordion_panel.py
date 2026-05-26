@@ -17,13 +17,13 @@ def test_children_collected():
 
 
 def test_tagify_returns_tag():
-    # accordion_panel.tagify() now returns a rendered Tag (chained .tagify()
-    # on shiny's AccordionPanel wrapper). The class stamps a placeholder
+    # accordion_panel.tagify() returns a fully-tagified result (TagifiedTag)
+    # per the htmltools Tagifiable protocol. The class stamps a placeholder
     # _accordion_id so standalone rendering works outside a parent accordion.
-    from htmltools import Tag
+    from htmltools import TagifiedTag
 
     ours = accordion_panel("Settings", "body").tagify()
-    assert isinstance(ours, Tag)
+    assert isinstance(ours, TagifiedTag)
     # Sanity: rendered HTML contains the panel title and body content.
     html = ours.get_html_string()
     assert "Settings" in html

@@ -32,8 +32,8 @@ def test_tagify_attribute_parity():
         sui.accordion_panel("B", "body-b"),
         id="acc",
         open="A",
-    )
-    # Both resolve to a Tag (<div>); assert same type and id attribute.
+    ).tagify()
+    # Both resolve to a TagifiedTag (<div>); assert same type and id attribute.
     assert type(ours).__name__ == type(theirs).__name__
     assert ours.attrs.get("id") == theirs.attrs.get("id")
 

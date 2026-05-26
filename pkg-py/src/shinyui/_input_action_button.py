@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from htmltools import Tag, TagChild
+from htmltools import TagChild, Tagified
 
 from ._reactive import reactive_calc_method
 from ._roles import UiInput
@@ -101,7 +101,7 @@ class input_action_button(UiInput, Updatable):
         """Click counter; ``0`` before the first click, ``+1`` per click."""
         return int(self._read_input() or 0)
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
         return _sui.input_action_button(
@@ -110,7 +110,7 @@ class input_action_button(UiInput, Updatable):
             icon=self.icon,
             width=self.width,
             disabled=self.disabled,
-        )
+        ).tagify()
 
     def update(
         self,

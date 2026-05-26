@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from htmltools import Tag
+from htmltools import Tagified
 
 from ._roles import UiOutput
 
@@ -45,7 +45,7 @@ class output_code(UiOutput):
         self.placeholder = placeholder
         super().__init__()
 
-    def tagify(self) -> Tag:
+    def tagify(self) -> Tagified:
         import shiny.ui as _sui
 
-        return _sui.output_code(self.id, placeholder=self.placeholder)
+        return _sui.output_code(self.id, placeholder=self.placeholder).tagify()
