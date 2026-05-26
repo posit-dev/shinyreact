@@ -93,6 +93,8 @@ class accordion(UiLayout, AllowsChildren):
         for child in self.children:
             _check_panel(child)
 
+        # `cast` because pyright doesn't propagate the narrowing from the
+        # validation loop above into the comprehension's iteration variable.
         panels = [
             _sui.accordion_panel(
                 child.title,
