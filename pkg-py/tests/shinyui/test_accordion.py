@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import pytest
 from shiny import reactive
 from shinyui._accordion import accordion
@@ -76,3 +78,53 @@ def test_update_sends_message(mock_session):
     # shiny's update_accordion defers via session.on_flush() rather than calling
     # send_input_message directly.  Assert that a flush callback was registered.
     mock_session.on_flush.assert_called_once()
+
+
+def test_init_rejects_non_panel_positional_arg():
+    """Core form: bare string positional arg raises TypeError at construction."""
+    with pytest.raises(TypeError, match="accordion children must be accordion_panel"):
+        accordion("some text", id="acc")  # type: ignore[arg-type]
+
+
+def test_append_rejects_non_panel():
+    """Direct .append() of a non-panel child raises TypeError."""
+    a = accordion(id="acc")
+    with pytest.raises(TypeError, match="accordion children must be accordion_panel"):
+        a.append("text")  # type: ignore[arg-type]
+
+
+def test_express_with_block_rejects_bare_string():
+    """Express form: bare string inside `with accordion(...)` raises TypeError.
+
+    This validates the displayhook -> dispatch_to_active_parent -> append
+    path that is the real-world hazard described in #106.
+    """
+    with pytest.raises(TypeError, match="accordion children must be accordion_panel"):
+        with accordion(id="acc"):
+            sys.displayhook("Some descriptive text")
+
+
+def test_tagify_rejects_directly_mutated_children():
+    """Defense-in-depth: bypassing __init__/append still fails at tagify()."""
+    a = accordion(accordion_panel("A"), id="acc")
+    a.children.append("text")  # bypass the guards
+    with pytest.raises(TypeError, match="accordion children must be accordion_panel"):
+        a.tagify()
+
+
+def test_error_message_names_offending_type():
+    """The TypeError includes the offending child's type name."""
+    a = accordion(id="acc")
+    with pytest.raises(TypeError, match=r"got str\b"):
+        a.append("text")  # type: ignore[arg-type]
+
+
+def test_well_formed_accordion_still_tagifies():
+    """Regression guard: validation does not break the happy path."""
+    a = accordion(
+        accordion_panel("A", "body-a"),
+        accordion_panel("B", "body-b"),
+        id="acc",
+    )
+    tag = a.tagify()
+    assert tag.attrs.get("id") == "acc"
