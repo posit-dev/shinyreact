@@ -434,21 +434,39 @@ with global_session():
 
 ### Modules
 
-`@module` keeps the Express-shaped signature in `UnifiedMode`. A module declared inside a `with` block is captured as a child of the active parent, and its body runs with its own scoped `input` / `output` / `session`:
+`@module` in `UnifiedMode` takes **no required parameters** — same shape as `@reactive.calc` and `@reactive.effect`. A module initialized inside a `with` block is captured as a child of the active parent, and its body composes nested UI directly:
 
 ```python
 with ui.card() as main:
     @module
-    def my_panel(input, output, session):
+    def my_panel():
         ui.markdown("nested UI")
-        ui.input_action_button("go", "Go")
+        go = ui.input_action_button("go", "Go")
 
         @render.code
         def out():
-            return f"clicked {input.go()} times"
+            return f"clicked {go.value()} times"
 ```
 
-This matches what app authors already write in Express today. The names `input`, `output`, `session` are importable from `shiny` at module scope (`from shiny import input, output, session`) for the top-level UI body; inside `@module`, the parameters shadow them with module-scoped versions. The decorator continues to handle id namespacing and per-session resolution as it does today.
+Why the empty signature is enough:
+
+- **Inputs** come from the input-class instances themselves (`go.value()`), not from a passed-in `input` object. This is the `InstanceAccessors` end state; until that lands, authors can read inputs via `input.<id>()` imported at module scope.
+- **`output`** is no longer a parameter app authors interact with. Render decorators register themselves directly; if a render needs the legacy registry, it can reach it via the active session.
+- **`session`** is rarely needed once `.update()` / `.value()` live on instances. When something genuinely needs it (custom messages, lifecycle hooks), call `shiny.session.require_active_session()` from inside the module body.
+
+Parameters can still be **optional**, mirroring the way server functions today let you drop unused names:
+
+```python
+@module
+def my_panel(input):                       # only inputs needed
+    ...
+
+@module
+def my_panel(input, session):              # inputs + session
+    ...
+```
+
+The decorator inspects the signature and passes only the names the function declares. This matches the shape app authors already write for `@reactive.calc` / `@reactive.effect` and keeps the syntactic space clean. The decorator continues to handle id namespacing and per-session resolution as it does today.
 
 ### What's actually different from "Express today"
 
