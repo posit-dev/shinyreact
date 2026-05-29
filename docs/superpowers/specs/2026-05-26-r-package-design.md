@@ -1,5 +1,7 @@
 # R Package Design — `shinyreact` (pkg-r)
 
+> **Note (2026-05-29):** The data-model, wire-format, `to_spec()`/`Spec`/`Element` sections of this document are **superseded** by [`2026-05-29-r-wire-format-rework-design.md`](2026-05-29-r-wire-format-rework-design.md). The flat-map model (`{root, elements}`, S7 `Spec`/`Element`, `to_spec()`) was replaced by the #119 discriminated-union tree (`react`/`tag`/`text`/`html`), `node()` became a plain S3 class, and S7 was dropped. Everything else in this document (page helpers, `ui_output`, `send_message`, bookmarking, downstream extension) remains accurate.
+
 **Issue:** [#91](https://github.com/posit-dev/shinyreact/issues/91)
 **Status:** Design — awaiting implementation plan
 **Related:**

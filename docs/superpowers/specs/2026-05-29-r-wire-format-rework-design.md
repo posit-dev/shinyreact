@@ -130,7 +130,14 @@ Keeps its signature and Shiny wiring (`installExprFunction` + `createRenderFunct
 }
 ```
 
-`.should_walk` intent: `FALSE` for bare `character` (so a JSON string in the `ui.tsx` pattern passes through); `TRUE` for `shinyreact_node`/`shiny.tag`/`shiny.tag.list`; `TRUE` for objects that implement an `as.tags()` method (Tagifiable-like — detected via `methods::existsMethod`/S3 method lookup, or by attempting `as.tags()` in a `tryCatch`); `FALSE` otherwise (raw passthrough for plain lists/numbers destined for `useShinyOutputValue`). The exact `as.tags`-detection mechanism is an implementation choice; the contract is the intent stated here. Returned payload has `unbox()`-wrapped scalars, so Shiny's serializer emits scalar `name`/`value`/`type`.
+`.should_walk` is an internal **S3 generic** with the following dispatch:
+
+- `shinyreact_node` → `TRUE` (walk as a `react` wire node)
+- `shiny.tag` → `TRUE` (walk as a `tag` wire node)
+- `shiny.tag.list` → `TRUE` (walk as a sibling list)
+- default → `FALSE` (raw passthrough — plain lists, numbers, and `character` vectors, including `HTML()` whose class vector is `c("html", "character")`)
+
+The `as.tags`-able test is intentionally NOT used: `as.tags.list` and `as.tags.character` exist in htmltools, so a dispatch-based "does `as.tags` have a method?" check would incorrectly walk raw data payloads. The S3 generic approach keeps the opt-in surface explicit: downstream packages that want their class walked can add a `should_walk.theirclass <- function(x) TRUE` method. This mirrors Python's `_should_walk` (which checks `isinstance(value, (Node, Tag, TagList))` and returns `False` for `str`/`bytes`/plain scalars). Returned payload has `unbox()`-wrapped scalars, so Shiny's serializer emits scalar `name`/`value`/`type`.
 
 ## Error handling
 

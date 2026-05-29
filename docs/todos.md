@@ -85,17 +85,6 @@ restore. Needs a cross-language bookmark-payload fixture and a shape-preserving
 fix (hard due to R's lack of scalar vs. vector distinction). See issue
 [#27](https://github.com/posit-dev/shinyreact/issues/27).
 
-## R package wire format must follow #119 (discriminated-union tree)
-
-The R package (`pkg-r/`) was implemented against the old flat-map wire format
-(`{root, elements}` with auto keys, S7 `Spec`/`Element`, `to_spec()`,
-`.wire_json()`). PR #119 replaced that with a nested discriminated-union tree
-(`{type: "react"|"tag"|"text"|"html", ...}`) and removed `Spec`/`Element` from
-the Python surface (`Node` is the only spec surface). The R package must be
-reworked to emit the new tree (and ideally walk R htmltools tags the way Python's
-`serialize_ui()` does). Until then, the R wire output is incompatible with the
-current JS bundle.
-
 ## Re-parent `Node` onto `UiReact(UiComponent, AllowsChildren)` (after #69)
 
 `Node` is currently a standalone `Tagifiable` dataclass (see

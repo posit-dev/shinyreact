@@ -104,18 +104,17 @@ Mirrors the Python package API for R Shiny users. Pure plumbing — no UI compon
 
 ### `app.R` pattern (`page_react` + `render_reactive`)
 
-UI is defined as R objects (`node()`, `spec()`, `element()`) in the app file via `page_react()`; the server returns trees from `render_reactive()`. Equivalent to the Python `app.py` pattern. Examples in `examples/app-r/`.
+UI is defined as R objects (`node()`, htmltools tags, `HTML()`, strings/numbers) in the app file via `page_react()`; the server returns trees from `render_reactive()`. Equivalent to the Python `app.py` pattern. Examples in `examples/app-r/`.
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | `page_react(...)` | Working | Full-page React app with `#root` + page-level dep (bundle + bookmark restore script) |
 | `page_bare(...)` | Working | Minimal HTML scaffold without `#root` |
 | `ui_output(id, extra_deps = list())` | Working | Output div with `shinyreact-output` class and per-output dep; `extra_deps` merged via `attachDependencies()` |
-| `render_reactive(expr)` | Working | Shiny renderer; calls `to_spec()` on the value and returns the plain list for Shiny to serialize. `NULL` passes through. |
-| `node(type, ..., props = list())` | Working | Nested tree API; `to_spec(node())` auto-flattens to a `Spec` with generated keys |
-| `spec(root, elements)` | Working | S7 `Spec` class; `root` must be in `names(elements)` |
-| `element(type, props, children)` | Working | S7 `Element` class with validated children (list of length-1 character keys) |
-| `to_spec(x)` | Working | S7 generic; identity for plain lists; error on unregistered S7 classes |
+| `render_reactive(expr)` | Working | Shiny renderer; walks `node()` trees (or htmltools content) into the JSON wire tree via an internal S3 walker (`as_wire()`). Raw JSON-serializable values (plain lists, numbers, strings) pass through for `useShinyOutputValue()`. `NULL` passes through. |
+| `node(type, ..., props = list())` | Working | Plain S3 (`shinyreact_node`) component node; children may interleave other `node()`s, htmltools `tags$*`, `HTML()`, strings, and numbers at arbitrary depth. Walked into the discriminated-union wire tree (`react`/`tag`/`text`/`html`). |
+| **Interleaved htmltools + React content** | Working | `node()` children accept htmltools `Tag`/`TagList`/`HTML()`/strings/numbers; the internal walker harvests `htmlDependency` objects from the tree. Mirrors Python `Node` + `serialize_ui()`. |
+| **Static mounts** | Working | `as.tags.shinyreact_node()` renders a `node()` as a `.shinyreact-static` div + inline `<script type="application/json">`, hydrated client-side by `seedInlineSpecs()`. Use in page chrome without a server round-trip. |
 | `send_message(session, type, data)` | Working | Server-to-client custom message (`shinyReactMessage`) |
 | Bookmark restoration | Working | `page_react()` and `page_react_html()` emit a head `<script>` carrying restored input values; `useShinyInput` adopts them as initial values. URL and server-stored bookmark modes both supported |
 
@@ -145,7 +144,7 @@ The shared JS bundle (`window.shinyreact`) is identical for R and Python apps. A
 
 ### Design decisions
 
-- **`render_reactive()` returns a plain list.** `to_spec()` produces a plain R list; Shiny serializes it via its standard `jsonlite` call. `toJSON` / `.wire_json()` helpers are used for the bookmark payload and cross-language parity tests only — they are not on the output critical path.
-- **Parity with Python is semantic.** Cross-language wire-format parity is verified by parsing both outputs and comparing structures; element-map key order is insignificant. Python `json.dumps` and R `jsonlite` differ in whitespace by design.
+- **`render_reactive()` walks via an internal S3 walker.** `as_wire()` + `serialize_ui()` produce the discriminated-union wire tree; Shiny serializes the resulting plain R list via its standard `jsonlite` call. Scalars are `unbox()`-wrapped so they serialize as JSON scalars, not 1-element arrays.
+- **Parity with Python is structural.** Cross-language wire-format parity is verified via shared fixtures; `children` order is significant, prop key order is insignificant. Python `json.dumps` and R `jsonlite` differ in whitespace by design.
 - **`shiny:::` for bookmark restore context.** R Shiny does not expose a public API for reading the restore context non-destructively. `bookmark.R` uses `shiny:::` internals, isolated in one thin wrapper, with a pinned `shiny` version floor in `DESCRIPTION`.
-- **Downstream extension.** Downstream R packages supply S7 classes with `to_spec` methods and an `htmlDependency` injected via `ui_output(id, extra_deps = list(...))`. `render_reactive()` is the single rendering entry point — downstream packages register `to_spec` methods, not render wrappers.
+- **Downstream extension.** Downstream R packages build `node("TheirComponent", ...)` trees and inject their `htmlDependency` via `ui_output(id, extra_deps = list(...))`. `render_reactive()` is the single rendering entry point. Downstream can also implement `as.tags()` for their own classes as an escape hatch; `should_walk()` dispatches on the class to opt in.
