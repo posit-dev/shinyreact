@@ -1,7 +1,7 @@
 # Layer all the way down: nesting htmltools and the React spec at arbitrary depth
 
 **Date:** 2026-05-29
-**Status:** Design — sub-issue of #68 (unified UI component class). **Hard-depends on #69** (the `UiComponent` / `AllowsChildren` hierarchy must land first).
+**Status:** Design — sub-issue of #68 (unified UI component class). **Independent of #69** for the serialization work itself: the capability needs only that `Node` implement `Tagifiable` (`.tagify()`). Categorizing `Node` as `UiReact(UiComponent, AllowsChildren)` is a small follow-up that lands when #69's hierarchy exists (see §4).
 **Tracking issue:** #88
 **Related:** #87 (HTMLDependency harvesting inside modules), #68/#69 (unified UI component class), #35/#36 (JSON Patch wire format — unimplemented; tree format is compatible).
 
@@ -35,7 +35,7 @@ A single recursive walker (shaped like Shiny's `process_ui`) converts any mixed 
 
 ## Non-goals
 
-- Building the `UiComponent` hierarchy itself — that is #69, a prerequisite.
+- Building the `UiComponent` hierarchy itself — that is #69, a separate and independent effort. This work needs only `Node.tagify()`, not the hierarchy.
 - Solving runtime `HTMLDependency` delivery for deps discovered after page render — that is #87 / a future custom-message mechanism. This design extracts and *warns*; it does not retroactively inject.
 - Changing how the `ui.tsx` pattern ships JSON data outputs (`useShinyOutputValue` payloads pass through unchanged).
 - The R package equivalent (follow-up if the Python design proves out).
@@ -117,7 +117,9 @@ The `div`/`span` render as intrinsic React host elements (attributes translated 
 
 ### 4. `Node` as `UiReact`; delivery of static `Node`s
 
-`Node` becomes **`UiReact(UiComponent, AllowsChildren)`** — a new sibling category alongside `UiInput` / `UiOutput` / `UiLayout` (per the #68 hierarchy). It is structurally distinct: its `tagify()` produces a `.shinyreact-output` mount point plus a JSON spec, not direct HTML. Naming it as its own category (rather than reusing `UiLayout`) prevents the conceptual drift of "a layout that isn't really a layout."
+The interleaving capability comes from one thing: **`Node` implements `Tagifiable`** (a `.tagify()` method), so it can sit anywhere an htmltools `TagChild` can. That is independent of #69 and is built now. `Node.tagify()` produces a `.shinyreact-output` mount point plus a JSON spec, not direct HTML.
+
+When #69's hierarchy lands, `Node` is re-categorized as **`UiReact(UiComponent, AllowsChildren)`** — a new sibling category alongside `UiInput` / `UiOutput` / `UiLayout`. It is structurally distinct (its `tagify()` produces a mount point + spec, not HTML), and naming it its own category rather than reusing `UiLayout` prevents the conceptual drift of "a layout that isn't really a layout." This re-parenting is cosmetic — it changes `Node`'s base classes, not its serialization behavior — and is tracked as a follow-up task, not a blocker for this work.
 
 **Authoring API unchanged (decision (a)).** Users keep writing `Node(type="Card", props=…, children=…)`; `to_dict()` maps `self.type` → the wire `name` field and stamps `type: "react"`. The Python constructor param keeps the name `type` even though it lands in the wire `name` field — a contained mismatch internal to `to_dict()`, with zero churn to the many existing `Node(type=…)` call sites. A rename to `Node(name=…)` is deferred to (and decided within) the #69 `UiReact` work.
 
@@ -131,7 +133,7 @@ The `div`/`span` render as intrinsic React host elements (attributes translated 
   <script type="application/json" data-shinyreact-spec-for="shinyreact-auto-N">{…tree…}</script>
   ```
 
-  The JS output binding, before subscribing to the WebSocket output channel, checks for a sibling `<script type="application/json">[data-shinyreact-spec-for=ID]` and seeds initial state from it if present; otherwise it falls through to the existing WebSocket path (preserving current `ui_output` semantics). This mirrors how Shiny already ships initial bookmark/dependency JSON. Auto-generated ids (`shinyreact-auto-N`) won't collide with user output ids.
+  The JS output binding, before subscribing to the WebSocket output channel, checks for a sibling `<script type="application/json">[data-shinyreact-spec-for=ID]` and seeds initial state from it if present; otherwise it falls through to the existing WebSocket path (preserving current `ui_output` semantics). This mirrors how Shiny already ships initial bookmark/dependency JSON. Auto-generated ids (`shinyreact-auto-N`) won't collide with user output ids. The serialized JSON escapes `<` as `<` (still valid JSON, parses back to `<` on the client) so a payload containing `</script>` cannot break out of the script element.
 
   "Static" describes only the spec *shape* — interior React components still subscribe to inputs/outputs reactively (`useShinyInputValue`, etc.) at runtime.
 
@@ -164,7 +166,7 @@ Bug-fix-grade coverage (per repo testing policy):
 
 ## Risks
 
-- **Depends on #69 not yet landed.** This design assumes `UiComponent` / `AllowsChildren` exist. It cannot start until #69's Stage-A hierarchy is in `shinyreact`. Mitigation: sequence behind #69; the walker and tree format can be prototyped against a stub hierarchy if needed.
+- **#69 re-categorization drift.** This work makes `Node` a `Tagifiable`; #69 later re-parents it onto `UiReact(UiComponent, AllowsChildren)`. The two could drift (e.g. #69 expects a method/attribute this `Node` doesn't expose). Mitigation: the re-parenting is a tracked follow-up and is cosmetic (base classes only); keep `Node`'s `tagify()` / `html_dependencies` surface aligned with what the #69 spec expects of a `UiComponent`.
 - **`html` node span wrapper.** Invalid for block-level raw HTML. Mitigation: document; add a configurable wrapper tag if a real case appears.
 - **Attribute-translation completeness.** The HTML-attr → React-prop map is a known but open-ended set. Mitigation: cover the common attributes, pass `data-*`/`aria-*` through, and treat unknown attributes as pass-through; expand the map as gaps surface.
 - **Breaking removal of flat `Spec`.** External code we can't see may import `shinyreact.Spec`. Mitigation: pre-1.0 status sanctions the break; offer a short-lived deprecation alias if wanted.
