@@ -434,22 +434,38 @@ as_wire.shinyreact_node <- function(x, deps) {
 - [ ] **Step 5: Rewrite `pkg-r/R/render.R`**
 
 ```r
-# Walk only for node/tag/taglist. Bare character (incl. HTML(), which is a
-# character subclass) and plain lists/numbers pass through as raw data for
-# useShinyOutputValue — matching Python's _should_walk (HTML subclasses str).
-.should_walk <- function(value) {
-  if (is.character(value)) {
-    return(FALSE)
-  }
-  inherits(value, c("shinyreact_node", "shiny.tag", "shiny.tag.list"))
-}
+# Is this UI content to walk into the wire tree, or raw data to pass through?
+# Internal S3 generic (mirrors as_wire's dispatch + Python's _should_walk).
+#  - node/tag/taglist -> walk
+#  - bare character (incl. HTML(), via the html->character class vector) -> raw
+#    passthrough, matching Python where HTML subclasses str
+#  - plain lists, numbers, unknown -> default FALSE (raw data for
+#    useShinyOutputValue)
+# Downstream may register should_walk.theirclass <- function(x) TRUE to opt
+# their own top-level component class into walking.
+should_walk <- function(value) UseMethod("should_walk")
+
+#' @keywords internal
+should_walk.default <- function(value) FALSE
+
+#' @keywords internal
+should_walk.character <- function(value) FALSE
+
+#' @keywords internal
+should_walk.shinyreact_node <- function(value) TRUE
+
+#' @keywords internal
+should_walk.shiny.tag <- function(value) TRUE
+
+#' @keywords internal
+should_walk.shiny.tag.list <- function(value) TRUE
 
 # Value-transform shared by render_reactive() and its tests.
 .render_transform <- function(value) {
   if (is.null(value)) {
     return(NULL)
   }
-  if (.should_walk(value)) {
+  if (should_walk(value)) {
     parts <- serialize_ui(value)
     if (length(parts$deps) > 0L) {
       nms <- paste(
@@ -549,6 +565,19 @@ test_that(".render_transform passes a bare string through unchanged", {
 
 test_that(".render_transform returns NULL for NULL", {
   expect_null(shinyreact:::.render_transform(NULL))
+})
+
+test_that("should_walk dispatches correctly across types", {
+  expect_true(shinyreact:::should_walk(node("Card")))
+  expect_true(shinyreact:::should_walk(htmltools::tags$div()))
+  expect_true(shinyreact:::should_walk(htmltools::tagList(htmltools::tags$div())))
+  expect_false(shinyreact:::should_walk("a string"))
+  # HTML() is class c("html","character") -> no should_walk.html method ->
+  # falls through to should_walk.character -> FALSE (raw passthrough at top
+  # level, matching Python where HTML subclasses str).
+  expect_false(shinyreact:::should_walk(htmltools::HTML("<b>x</b>")))
+  expect_false(shinyreact:::should_walk(list(rows = 1, cols = 2)))
+  expect_false(shinyreact:::should_walk(42L))
 })
 
 test_that(".render_transform warns when a walked tree carries dependencies", {
@@ -966,9 +995,9 @@ Read it. Remove any mention of `spec()`/`element()`/`to_spec()` and the flat-map
 
 Read it. Remove the "R package wire format must follow #119" entry (now done) and the "R `to_spec()` on a child-bearing bare `Element`" entry (the flat `Element` model is gone). Keep the "R bookmark restore value shape vs Python (#27)" entry (still valid — bookmark still uses `auto_unbox = TRUE`).
 
-- [ ] **Step 3: Refine the `.should_walk` note in the rework spec**
+- [ ] **Step 3: Refine the `should_walk` note in the rework spec**
 
-Edit `docs/superpowers/specs/2026-05-29-r-wire-format-rework-design.md`: in the `render_reactive()` section, replace the "objects that implement an `as.tags()` method (Tagifiable-like)" clause with the precise rule actually implemented: walk only `shinyreact_node`/`shiny.tag`/`shiny.tag.list`; a bare `character` (incl. `HTML()`) and plain lists/numbers pass through as raw data — matching Python's `_should_walk` (where `HTML` subclasses `str`). Note that `as.tags.list`/`as.tags.character` exist, which is why an "as.tags-able" test would wrongly walk raw data.
+Edit `docs/superpowers/specs/2026-05-29-r-wire-format-rework-design.md`: in the `render_reactive()` section, replace the "objects that implement an `as.tags()` method (Tagifiable-like)" clause with the precise rule actually implemented — `should_walk` is an internal **S3 generic**: `node`/`shiny.tag`/`shiny.tag.list` → walk; bare `character` (incl. `HTML()`, via the `html`→`character` class vector) and plain lists/numbers → raw passthrough (default FALSE). This matches Python's `_should_walk` (where `HTML` subclasses `str`). Note that `as.tags.list`/`as.tags.character` exist, which is why an "as.tags-able" test would wrongly walk raw data; the S3 generic also lets downstream opt their own class in via `should_walk.theirclass`.
 
 - [ ] **Step 4: Cross-link the original R spec**
 
@@ -1007,14 +1036,14 @@ git -c commit.gpgsign=false commit -m "docs(r): update features/todos/specs for 
 **Spec coverage:**
 - S3 `node()` (no S7) → Task 2; static mount `as.tags` → Task 3
 - `as_wire()` walker (node/tag/taglist/html/text/number/dep/null/default→as.tags) + attr translation + scalar unbox + `serialize_ui` → Tasks 1, 2
-- `render_reactive()` rewrite + `.should_walk` (precise three-class) + dep warning → Task 2
+- `render_reactive()` rewrite + `should_walk` (internal S3 generic: node/tag/taglist → TRUE; character incl. HTML() → FALSE; default → FALSE) + dep warning → Task 2
 - Remove `Spec`/`Element`/`to_spec`/`.wire_json` + S7 → Task 2
 - Expanded cross-language fixtures + fix broken Python test → Task 4; R parity rewrite → Task 5; `make r-check-fixtures` → Task 5/7
 - Examples re-verified → Task 6
 - Docs + spec updates + `R CMD check` green → Task 7
 
-**Deviation from spec (documented):** `.should_walk` uses the precise three-class rule, not "as.tags-able objects" (verified: `as.tags.list`/`as.tags.character` exist; the broad rule would walk raw `ui.tsx` data). Task 7 Step 3 updates the spec note. This matches Python's real `_should_walk`.
+**Deviation from spec (documented):** `should_walk` is an internal S3 generic (not "as.tags-able objects"). Verified: `as.tags.list`/`as.tags.character` exist, so an as.tags-based test would walk raw `ui.tsx` data. The S3 generic dispatches `node`/`tag`/`taglist` → TRUE, `character` (incl. `HTML()` via the `html`→`character` class vector) → FALSE, default → FALSE — matching Python's real `_should_walk`, with the bonus that downstream can register `should_walk.theirclass`. Task 7 Step 3 updates the spec note.
 
-**Type/name consistency:** `as_wire`, `serialize_ui`, `translate_attrs`, `.wire_props`, `.tag_props`, `.walk_all`, `.text_nodes`, `.new_dep_acc`, `node`, `as.tags.shinyreact_node`, `.should_walk`, `.render_transform`, `render_reactive` used consistently. Class string `"shinyreact_node"` consistent across constructor, walker method, and `as.tags` method. Wire node shapes (`type`/`name`/`props`/`children`, `type`/`value`, `type`/`html`) match the JS `js/src/spec.ts` discriminated union throughout.
+**Type/name consistency:** `as_wire`, `serialize_ui`, `translate_attrs`, `.wire_props`, `.tag_props`, `.walk_all`, `.text_nodes`, `.new_dep_acc`, `node`, `as.tags.shinyreact_node`, `should_walk` (S3 generic + methods), `.render_transform`, `render_reactive` used consistently. Class string `"shinyreact_node"` consistent across constructor, walker method, and `as.tags` method. Wire node shapes (`type`/`name`/`props`/`children`, `type`/`value`, `type`/`html`) match the JS `js/src/spec.ts` discriminated union throughout.
 
 **No placeholders:** every code step contains complete R/Python code. The `testServer` accessor (Task 2 Step 8) and the `tagList` dep-splicing (Task 3 Step 3) carry explicit fallbacks tied to the test as source of truth.
