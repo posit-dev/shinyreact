@@ -1,4 +1,4 @@
-from shinyreact._spec import Node
+from shinyreact import Node
 
 
 def test_node_simple_react_node():
@@ -38,5 +38,9 @@ def test_node_nested_react_children():
 
 
 def test_node_numeric_child_becomes_text():
-    node = Node(type="Card", props={}, children=[42])
-    assert node.to_dict()["children"] == [{"type": "text", "value": "42"}]
+    assert Node(type="Card", props={}, children=[42]).to_dict()["children"] == [
+        {"type": "text", "value": "42"}
+    ]
+    assert Node(type="Card", props={}, children=[3.14]).to_dict()["children"] == [
+        {"type": "text", "value": "3.14"}
+    ]

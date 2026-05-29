@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Iterable
 
 from htmltools import HTML, HTMLDependency, MetadataNode, Tag, TagList
 
@@ -24,7 +24,7 @@ def _translate_attrs(attrs: dict[str, Any]) -> dict[str, Any]:
     return {_ATTR_MAP.get(k, k): v for k, v in attrs.items()}
 
 
-def _walk_all(children: Any, deps: list[HTMLDependency]) -> list[dict[str, Any]]:
+def _walk_all(children: Iterable[Any], deps: list[HTMLDependency]) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for child in children:
         out.extend(_walk(child, deps))
@@ -51,7 +51,7 @@ def _walk(child: Any, deps: list[HTMLDependency]) -> list[dict[str, Any]]:
             }
         ]
     if isinstance(child, TagList):
-        return _walk_all(list(child), deps)
+        return _walk_all(child, deps)
     if isinstance(child, HTML):
         return [{"type": "html", "html": str(child)}]
     if isinstance(child, HTMLDependency):
@@ -75,7 +75,10 @@ def serialize_ui(value: Any) -> tuple[Any, list[HTMLDependency]]:
     """Walk a TagChild tree into a wire payload + harvested dependencies.
 
     The payload is a single wire node when the walk yields exactly one node,
-    or a list of nodes (e.g. a ``TagList`` with several top-level children).
+    a list of nodes when it yields several (e.g. a ``TagList`` with multiple
+    top-level children), or an empty list when it yields none (e.g. an empty
+    ``TagList`` or ``None``) — the renderer treats an empty list as "render
+    nothing".
     """
     deps: list[HTMLDependency] = []
     nodes = _walk(value, deps)
@@ -105,7 +108,12 @@ class Node:
         }
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to the wire tree, discarding any harvested dependencies."""
+        """Serialize to the wire tree, discarding any harvested dependencies.
+
+        If the node tree contains ``HTMLDependency`` children, use
+        :func:`serialize_ui` (or :meth:`serialize`, added later) instead to
+        harvest them.
+        """
         return self._to_wire([])
 
 
