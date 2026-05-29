@@ -1,0 +1,25 @@
+Package: shinyreact
+Title: Shiny UI Infrastructure for JSON-Driven React Rendering
+Version: 0.0.0.9000
+Authors@R:
+    person("Posit Software, PBC", role = c("aut", "cre"),
+           email = "info@posit.co")
+Description: Server-side plumbing for rendering React component trees from
+    Shiny. Provides the 'app.R' pattern (UI described as R objects) and the
+    'ui.tsx' pattern (UI defined in a client React bundle). Ships no UI
+    components; downstream packages register their own.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports:
+    cli,
+    htmltools,
+    jsonlite,
+    S7,
+    shiny (>= 1.9.0)
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+URL: https://github.com/posit-dev/shinyreact
+BugReports: https://github.com/posit-dev/shinyreact/issues
+Config/roxygen2/version: 8.0.0
