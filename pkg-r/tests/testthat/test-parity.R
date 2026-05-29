@@ -1,7 +1,6 @@
-# Fixtures are copies of pkg-py/tests/fixtures/wire_format/ — keep in sync.
-# (A make target verifies the copy matches the Python source.)
-# NOTE: This test file is rewritten in RW Task 5 to use the new node() +
-# serialize_ui() model. All tests below are skipped until then.
+# Fixtures are copies of pkg-py/tests/fixtures/wire_format/ — kept in sync by
+# `make r-check-fixtures`. Python is the source of truth; R must reproduce the
+# same wire tree (compared semantically; whitespace/format-insignificant).
 
 fixture <- function(name) {
   jsonlite::fromJSON(
@@ -10,22 +9,61 @@ fixture <- function(name) {
   )
 }
 
-test_that("single_element matches Python", {
-  skip("rewritten in RW Task 5")
+r_wire <- function(value) {
+  parts <- serialize_ui(value)
+  jsonlite::fromJSON(
+    jsonlite::toJSON(parts$payload, auto_unbox = FALSE),
+    simplifyVector = FALSE
+  )
+}
+
+test_that("react_node matches Python", {
+  expect_equal(
+    r_wire(node("Card", props = list(title = "Hi"))),
+    fixture("react_node")
+  )
 })
 
-test_that("nested_tree matches Python", {
-  skip("rewritten in RW Task 5")
+test_that("tag_child matches Python (attr translation)", {
+  expect_equal(
+    r_wire(node("Card", htmltools::tags$span("hi", class = "x"))),
+    fixture("tag_child")
+  )
 })
 
-test_that("empty_children matches Python", {
-  skip("rewritten in RW Task 5")
+test_that("text_child matches Python (number coercion)", {
+  expect_equal(
+    r_wire(node("Card", "plain text", 42L)),
+    fixture("text_child")
+  )
 })
 
-test_that("multi_props matches Python", {
-  skip("rewritten in RW Task 5")
+test_that("html_child matches Python", {
+  expect_equal(
+    r_wire(node("Card", htmltools::HTML("<b>x</b>"))),
+    fixture("html_child")
+  )
 })
 
-test_that("raw_value passes through unchanged", {
-  skip("rewritten in RW Task 5")
+test_that("mixed_tree matches Python", {
+  expect_equal(
+    r_wire(node(
+      "Card",
+      node("Divider"),
+      htmltools::tags$span("hi", class = "x"),
+      "text",
+      props = list(title = "Hi")
+    )),
+    fixture("mixed_tree")
+  )
+})
+
+test_that("taglist_root matches Python (sibling-list payload)", {
+  expect_equal(
+    r_wire(htmltools::tagList(
+      node("Card"),
+      htmltools::tags$div("d", id = "root2")
+    )),
+    fixture("taglist_root")
+  )
 })
