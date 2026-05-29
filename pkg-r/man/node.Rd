@@ -2,16 +2,21 @@
 % Please edit documentation in R/node.R
 \name{node}
 \alias{node}
+\alias{as.tags.shinyreact_node}
 \title{Create a React component node}
 \usage{
 node(type, ..., props = list())
+
+\method{as.tags}{shinyreact_node}(x, ...)
 }
 \arguments{
 \item{type}{Registered component name (single non-empty string).}
 
-\item{...}{Children: \code{node()}s, htmltools tags, \code{HTML()}, strings, numbers.}
+\item{...}{Unused.}
 
 \item{props}{Named list of props (or empty).}
+
+\item{x}{A \code{shinyreact_node}.}
 }
 \value{
 An object of class \code{shinyreact_node}.

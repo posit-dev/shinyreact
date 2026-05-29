@@ -28,3 +28,34 @@ node <- function(type, ..., props = list()) {
     class = "shinyreact_node"
   )
 }
+
+#' @rdname node
+#' @param x A `shinyreact_node`.
+#' @param ... Unused.
+#' @exportS3Method htmltools::as.tags
+as.tags.shinyreact_node <- function(x, ...) {
+  parts <- serialize_ui(x)
+  # Escape "<" as < (valid JSON, parses back to "<") so a payload with
+  # "</script>" can't break out of the inline <script>. Mirrors Python's
+  # Node.tagify().
+  spec_json <- gsub(
+    "<",
+    "\\u003c",
+    as.character(jsonlite::toJSON(parts$payload, auto_unbox = FALSE)),
+    fixed = TRUE
+  )
+  do.call(
+    htmltools::tagList,
+    c(
+      list(shinyreact_dep()),
+      parts$deps,
+      list(htmltools::div(
+        class = "shinyreact-static",
+        htmltools::tags$script(
+          htmltools::HTML(spec_json),
+          type = "application/json"
+        )
+      ))
+    )
+  )
+}
