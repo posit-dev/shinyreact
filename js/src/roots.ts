@@ -1,0 +1,27 @@
+import { createRoot, type Root } from "react-dom/client";
+
+// One React root per output DOM element.
+const roots = new WeakMap<Element, Root>();
+
+// getOrCreateRoot requires HTMLElement because createRoot() does.
+// hasRoot/unmountRoot accept the broader Element — they only do map lookups.
+export function getOrCreateRoot(el: HTMLElement): Root {
+  let root = roots.get(el);
+  if (!root) {
+    root = createRoot(el);
+    roots.set(el, root);
+  }
+  return root;
+}
+
+export function hasRoot(el: Element): boolean {
+  return roots.has(el);
+}
+
+export function unmountRoot(el: Element): void {
+  const root = roots.get(el);
+  if (root) {
+    root.unmount();
+    roots.delete(el);
+  }
+}

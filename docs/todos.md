@@ -59,7 +59,9 @@ Create a comprehensive nested bullet list cataloging every feature and benefit `
 
 ## Can dynamic UI be supported? Can any render output be supported, or should it always be components?
 
-Investigate whether `shinyreact` can support dynamic UI patterns where the server controls what gets rendered (not just data updates to fixed components). For example: can a render function return arbitrary Shiny UI (like `ui.tags`, `ui.input_slider`, etc.) mixed with `shinyreact` components? Should render output always be a component tree, or could it include raw HTML, plain text, or other Shiny outputs? This has implications for how flexible the framework is versus how predictable the rendering contract remains.
+`@reactive_output` can now return a `Node`, which is a `Tagifiable` that nests htmltools `tags.*`, `HTML`, strings, and other `Node`s at arbitrary depth. Raw HTML, plain text, and htmltools wrappers are all supported in the wire tree. See `docs/superpowers/specs/2026-05-29-htmltools-spec-nesting-design.md` and `examples/app-py/14-nesting` for the design and a working example.
+
+Still open: whether traditional Shiny input widgets (e.g., `ui.input_slider`) embedded inside a `@reactive_output` tree work end-to-end (input bindings, server-side `input.xxx()` reads). That path is untested.
 
 ## Nest UI functions into `shinyreact.ui.*` submodule
 
@@ -72,6 +74,30 @@ Currently `ui_output`, `page_react`, and `page_bare` are flat top-level exports.
 ## Evaluate `extra_deps` on `ui_output()`
 
 Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `ui_output()` to simplify the API.
+
+## Re-parent `Node` onto `UiReact(UiComponent, AllowsChildren)` (after #69)
+
+`Node` is currently a standalone `Tagifiable` dataclass (see
+`docs/superpowers/specs/2026-05-29-htmltools-spec-nesting-design.md`). Once #69
+lands the `UiComponent` / `AllowsChildren` hierarchy, re-categorize `Node` as
+`UiReact(UiComponent, AllowsChildren)`. This is cosmetic — it changes `Node`'s
+base classes, not its `tagify()` / serialization behavior. Keep `Node`'s
+`tagify()` and dependency surface aligned with what #69 expects of a
+`UiComponent`.
+
+## Static `Node` mounts inserted after page load are not auto-seeded
+
+Tracked in [#120](https://github.com/posit-dev/shinyreact/issues/120).
+
+`Node.tagify()` produces a `.shinyreact-static` mount that the JS bundle seeds
+once at `DOMContentLoaded` via `seedInlineSpecs()`. A static mount inserted
+*after* load — e.g. `Node.tagify()` output passed to Shiny's `insertUI`, or a
+dynamic `@render.ui` returning one — won't be seeded (no MutationObserver, by
+design/YAGNI). Reactive `Node`s returned from `@reactive_output` are unaffected
+(they deliver over the WebSocket, not via inline scripts). The likely fix is to
+hook Shiny's existing UI-insertion lifecycle (the same one `output_ui` uses)
+rather than a standing observer — see #120, which also asks whether
+`.shinyreact-static` and `output_ui`-style delivery should converge.
 
 ## Tracked as GitHub issues
 
