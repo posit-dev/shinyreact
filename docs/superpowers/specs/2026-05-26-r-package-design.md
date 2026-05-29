@@ -198,14 +198,17 @@ window.shinyreact._restore = JSON.parse(<js-string-literal>);
 
 Bookmarked input values appear in the rendered page source. In URL bookmark mode they are already in the URL; in server-stored mode (`?_state_id_=...`) this script re-exposes them in the page source. Anything that can read the HTML can read these values. Apps must not bookmark credentials, tokens, or PII.
 
-### Open implementation risk — restore-context API access
+### Restore-context API access — use `shiny:::` internals (decided)
 
-Python reads the restore context via a **private** module (`shiny.bookmark._restore_state.get_current_restore_context`) and `ctx.input.as_dict()` directly, deliberately avoiding `restore_input()` (which marks values used). R's equivalent must:
+Python reads the restore context via a **private** module (`shiny.bookmark._restore_state.get_current_restore_context`) and `ctx.input.as_dict()` directly, deliberately avoiding `restore_input()` (which marks values used). R mirrors this with R Shiny's internal restore-context API — **`shiny:::` access is accepted** (decided, not a spike).
 
-- locate R Shiny's restore context for the current request (candidates: `shiny::restoreInput()`, `session$restoreContext`, or an internal `RestoreContext` object), and
-- read the full restored input map **without** consuming/marking values (so the app's own `restoreInput()` calls still work).
+Requirements for the R implementation:
 
-If no public R Shiny API exposes the raw map non-destructively, the implementation may need `shiny:::` internals — which conflicts with the "no `:::` in R CMD check" requirement below. **The implementation plan must open with a short spike** to determine the correct R Shiny API. Resolution options, in preference order: (a) a public/exported R Shiny API; (b) reconstruct the map from `parseQueryString(session$clientData$url_search)` for URL-mode bookmarks (avoids internals, but does not cover server-stored mode); (c) accept a documented `:::` exception with a pinned `shiny` version floor. The choice gates whether server-stored bookmark mode is supported in v1.
+- Locate R Shiny's restore context for the current request via its internal API (e.g. `shiny:::RestoreContext` / the restore context hung off the current reactive domain).
+- Read the full restored input map **without** consuming/marking values, so the app's own `restoreInput()` calls still work — the non-destructive read is the same constraint Python honors by reading `ctx.input.as_dict()` rather than `restore_input()`.
+- Cover both bookmark modes (URL and server-stored `?_state_id_=...`); using internals means we are not limited to reconstructing the map from the query string.
+
+Because this depends on Shiny internals, **pin a `shiny` version floor in `DESCRIPTION`** and isolate every `shiny:::` call in `bookmark.R` behind a thin wrapper (one function) so a future Shiny API change is a single-site fix. Add a brief comment at each `:::` site explaining why the internal is used and which public API would replace it if one appears.
 
 ## Downstream extension pattern
 
@@ -321,7 +324,7 @@ This is the strongest defense against subtle divergence (`jsonlite` auto-boxing,
 
 ### `R CMD check`
 
-Green via `make r-check`. No `Note`s about `:::`, undeclared imports, or hidden globals — **except** a possible documented `shiny:::` exception for restore-context access if the spike (see Bookmarking) finds no public API. If that exception is taken, pin a `shiny` version floor in `DESCRIPTION` and note it in a `# nolint` / package comment.
+Green via `make r-check`. No `Note`s about undeclared imports or hidden globals. **`shiny:::` is used intentionally** for restore-context access (see Bookmarking) — `R CMD check` emits a Note for `:::` calls to another package; this Note is accepted and documented (pinned `shiny` floor in `DESCRIPTION`, wrapper-isolated calls). All other Notes must be resolved.
 
 ## Examples to port
 
@@ -332,7 +335,7 @@ Green via `make r-check`. No `Note`s about `:::`, undeclared imports, or hidden 
 | `examples/app-r/04-messages/` | `app.R` | Exercises `send_message()` end-to-end. Port of `examples/app-py/04-messages/`. |
 | `examples/ui-tsx-r/01-hello/` | `ui.tsx` | Exercises `page_react_html()` + raw-JSON renderer return. Port of `examples/ui-tsx/01-hello/`. |
 
-Bookmarking gets manual browser verification (set inputs → bookmark → reload restores them) rather than a dedicated example app in v1, unless the spike (above) lands a clean public-API path — in which case `02-inputs` enables `enableBookmarking("url")` to double as the bookmark demo.
+Bookmarking is demonstrated by enabling `enableBookmarking("url")` in `02-inputs` (it doubles as the bookmark demo), plus manual browser verification (set inputs → bookmark → reload restores them).
 
 Out of scope for v1 examples: `03-outputs` (needs `ImageOutput`), `05-shadcn` through `10-columns` (downstream-package territory or larger UI surface without new API coverage).
 
