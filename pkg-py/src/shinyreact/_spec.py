@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 
-from htmltools import HTML, HTMLDependency, MetadataNode, Tag, TagList
+from htmltools import HTML, HTMLDependency, MetadataNode, Tag, Tagified, TagList
 
 # HTML attribute name -> React prop name. Anything not listed (including
 # data-* and aria-*) passes through verbatim — React accepts those.
@@ -113,7 +113,7 @@ class Node:
         deps: list[HTMLDependency] = []
         return self._to_wire(deps), deps
 
-    def tagify(self) -> TagList:
+    def tagify(self) -> Tagified:
         """Render as a static `.shinyreact-static` mount carrying its spec.
 
         Makes ``Node`` a ``Tagifiable`` so it can be embedded directly in page
@@ -130,6 +130,9 @@ class Node:
         # client) so a payload containing "</script>" cannot break out of the
         # script element.
         spec_json = json.dumps(node).replace("<", "\\u003c")
+        # htmltools requires a `.tagify()` implementation to return a fully
+        # tagified value; call `.tagify()` on the assembled TagList so nested
+        # Tags (the mount div, the dep) are tagified too.
         return TagList(
             _dep(),
             *deps,
@@ -137,7 +140,7 @@ class Node:
                 tags.script(spec_json, type="application/json"),
                 class_="shinyreact-static",
             ),
-        )
+        ).tagify()
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to the wire tree, discarding any harvested dependencies.

@@ -1,12 +1,21 @@
 import json
 import re
 
-from htmltools import HTMLDependency, TagList
+from htmltools import HTMLDependency, TagList, tags
 from shinyreact._spec import Node
 
 
 def _render(node: Node) -> str:
     return str(TagList(node.tagify()))
+
+
+def test_tagify_returns_fully_tagified_value_when_nested_in_a_tag():
+    # htmltools requires `.tagify()` to return a fully-tagified value; when a
+    # parent Tag tagifies its children it raises TypeError otherwise. This is
+    # the path exercised by `page_react(tags.div(Node(...)))`.
+    ui = tags.div(Node(type="Badge", props={"text": "x"}), id="chrome")
+    html = str(ui.tagify())  # must not raise
+    assert 'class="shinyreact-static"' in html
 
 
 def test_tagify_emits_static_mount_with_child_script():
