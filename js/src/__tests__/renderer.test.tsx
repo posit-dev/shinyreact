@@ -85,4 +85,29 @@ describe("ShinyreactRenderer", () => {
     const { container } = render(<ShinyreactRenderer spec={spec} />);
     expect(container.innerHTML).toBe('<div class="x"></div>');
   });
+
+  it("renders a react node nested inside a tag node", () => {
+    const Badge = ({ element }: { element: { props: Record<string, unknown> } }) => (
+      <em>{element.props.text as string}</em>
+    );
+    registerComponents(null, { Badge });
+
+    const spec: Spec = {
+      type: "tag",
+      name: "div",
+      props: { className: "wrap" },
+      children: [{ type: "react", name: "Badge", props: { text: "hi" }, children: [] }],
+    };
+    const { container } = render(<ShinyreactRenderer spec={spec} />);
+    expect(container.innerHTML).toBe('<div class="wrap"><em>hi</em></div>');
+  });
+
+  it("renders mixed text and tag siblings in an array", () => {
+    const spec: Spec = [
+      { type: "text", value: "before " },
+      { type: "tag", name: "b", props: {}, children: [{ type: "text", value: "bold" }] },
+    ];
+    const { container } = render(<ShinyreactRenderer spec={spec} />);
+    expect(container.innerHTML).toBe("before <b>bold</b>");
+  });
 });

@@ -5,7 +5,7 @@ import type { ComponentType, ReactNode } from "react";
  * component name (`react`) or DOM tag name (`tag`). Mirrors the Python walker
  * output in `pkg-py/src/shinyreact/_spec.py`.
  */
-export interface ReactElement {
+export interface ComponentElement {
   type: "react";
   name: string;
   props: Record<string, unknown>;
@@ -29,7 +29,7 @@ export interface HtmlElement {
   html: string;
 }
 
-export type Element = ReactElement | TagElement | TextElement | HtmlElement;
+export type Element = ComponentElement | TagElement | TextElement | HtmlElement;
 
 /**
  * The root payload rendered into a `.shinyreact-output` element: a single
@@ -42,7 +42,7 @@ export type Spec = Element | Element[];
  * element plus already-rendered `children`, and read `element.props`.
  */
 export interface RegisteredComponentProps {
-  element: ReactElement;
+  element: ComponentElement;
   children: ReactNode;
 }
 
