@@ -26,10 +26,12 @@ js/                         # TypeScript/React Vite IIFE bundle
   src/                      # index.ts, registry.ts, renderer.tsx, shiny.d.ts, shinyreact.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
-pkg-py/                     # Python package
-  src/shinyreact/           # Package: set_react_page, reactive_output, page_react, Spec/Element/Node
+pkg-py/                     # Python packages (three shipped from one wheel)
+  src/shinyreact/           # Core JSON-spec / React-bridge package
     www/                    # Bundled JS
-  tests/                    # pytest tests
+  src/shinyui/              # Class-per-component UI hierarchy prototype (session-aware)
+  src/shinyuiclassonly/     # Class-per-component UI hierarchy, structure only (no session)
+  tests/                    # pytest tests for all three packages
 pkg-r/                      # R package (placeholder — not yet implemented)
 examples/
   app-py/                   # app.py pattern examples (01-hello-world … 10-columns)
@@ -39,6 +41,16 @@ decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
 ```
+
+## Sibling packages: shinyui and shinyuiclassonly
+
+Two prototype packages explore a class-per-component UI hierarchy as a possible direction for `py-shiny`'s `ui.*` surface. They share the same component vocabulary (`card`, `accordion`, `input_slider`, …) but differ in what server-side machinery comes attached.
+
+- **`shinyui`** — the full prototype. Every component is a `Tagifiable` class that *also* captures the active session at construction, registers itself with a per-session id→instance map, exposes typed reactive accessors (`slider.value()`, `card.value_full_screen()`, `acc.open_panels()`), supports server-driven `update(...)`, owns its input handler and bookmark serializer, and ships a `render_plot` with derived-input accessors (`value_click`, `value_brush`, …). This is what the umbrella design (`docs/superpowers/specs/2026-05-06-unified-ui-component-class-design.md`) proposes for upstream `py-shiny`. Examples 14 and 15 demonstrate it in Core (positional) and Express (`with`-block) form respectively.
+
+- **`shinyuiclassonly`** — the *small delta* the team can compare against today's `ui.*`. Same component classes and same hierarchy (`UiComponent`, `UiInput`, `UiOutput`, `UiLayout`, `AllowsChildren`, parent-tag context stack), but with **none** of the session-bound machinery: no `_session` capture, no `.value()` / `.update()` / `.value_click()` accessors, no input-handler or bookmark registration, no per-session instance registry, no `reactive_calc_method`. Components are pure `Tagifiable` objects. Server code reads inputs via `input.<id>()` and pushes updates via `shiny.ui.update_*` — exactly like today. Examples 16 and 17 mirror 14 and 15 line-for-line so the diff is small enough to read in one sitting.
+
+Use **`shinyuiclassonly`** when motivating "what does the class hierarchy give us, structurally, before we add server-side ergonomics?" — it's the cheapest possible step from `ui.card(...)` → `card(...)`. Use **`shinyui`** when motivating the full vision (typed accessors, `update()` on the instance, auto-placement of renderers).
 
 ## Commands
 
@@ -178,6 +190,24 @@ The hook surface follows the Jotai/Recoil cadence — each hook has one responsi
 | **Output status** | | `useShinyOutputStatus(id)` → `"pending" \| "ready" \| "recalculating" \| "error"` | |
 
 Pick the narrowest hook that fits the call site. A button that pushes events but never reads its own state should use `useSetShinyInput`, not `useShinyInput` with a discarded `[value]`. A display card that just reads should use `useShinyInputValue` / `useShinyOutputValue`. Narrow hooks make data-flow direction visible at the call site, prevent accidental writes from read-only components, and avoid spurious re-renders from subscribing to channels you don't observe.
+
+### Routing input values through Shiny input handlers (`type=`)
+
+`useShinyInput` and `useSetShinyInput` accept an optional `type` that appends `:type` to the wire id, opting into Shiny's server-side input-handler dispatch:
+
+```js
+const [when, setWhen] = useShinyInput("when", Math.floor(Date.now() / 1000), {
+  type: "shiny.datetime",
+});
+```
+
+```python
+@reactive.effect
+def _():
+    print(type(input.when()))  # datetime.datetime
+```
+
+The handler name is a server-side contract: once an input id has been registered with a `type` (or with no `type`), a later mount disagreeing with that policy throws. Validation rejects empty strings, whitespace, and `:` characters at hook mount.
 
 ### Avoiding flicker on input changes (use status correctly, don't conflate states)
 

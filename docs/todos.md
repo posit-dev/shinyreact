@@ -75,7 +75,6 @@ Should HTML dependencies be handled exclusively at the render subclass or page l
 
 ## Tracked as GitHub issues
 
-- [#27 — Bookmarking and initial state](https://github.com/posit-dev/shinyreact/issues/27)
 - [#28 — Shiny client runtime as an npm package](https://github.com/posit-dev/shinyreact/issues/28)
 - [#35 — JSON Patch value-equality dedup](https://github.com/posit-dev/shinyreact/issues/35)
 - [#36 — JSON Patch wire format](https://github.com/posit-dev/shinyreact/issues/36)

@@ -18,20 +18,15 @@ on:
 permissions:
   contents: read
 
-env:
-  UV_VERSION: "0.9.x"
-
 jobs:
   py-check:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 🚀 Install uv
-        uses: astral-sh/setup-uv@v6.1.0
-        with:
-          version: ${{ env.UV_VERSION }}
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: 📦 Install the project
         run: uv sync --all-extras --all-groups
@@ -42,17 +37,15 @@ jobs:
       - name: 🧪 Check tests and types (Python 3.10–3.14)
         run: make py-check-tox
 
-  playwright-e2e:
+  py-test-e2e:
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 🚀 Install uv
-        uses: astral-sh/setup-uv@v6.1.0
-        with:
-          version: ${{ env.UV_VERSION }}
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: 📦 Sync e2e deps
         run: uv sync --group tests-e2e
@@ -72,7 +65,7 @@ jobs:
 
       - name: 📤 Upload Playwright traces on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-e2e-results
           path: test-results/

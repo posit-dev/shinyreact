@@ -11,9 +11,6 @@ name: release-py
 on:
   workflow_dispatch:
 
-env:
-  UV_VERSION: "0.9.x"
-
 jobs:
   py-release:
     name: Build and release Python package
@@ -30,12 +27,10 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: 🚀 Install uv
-        uses: astral-sh/setup-uv@v6.1.0
-        with:
-          version: ${{ env.UV_VERSION }}
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: 🧳 Build package
         run: uv build
