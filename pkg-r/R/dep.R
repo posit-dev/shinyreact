@@ -22,11 +22,6 @@ shinyreact_dep <- function() {
   )
 }
 
-# Stub replaced in bookmark.R (a later task). Returns NULL when no restore context.
-restore_script_tag <- function() {
-  NULL
-}
-
 # Internal: page-level dependency = bundle + bookmark restore <script> (if any).
 shinyreact_dep_page <- function() {
   restore <- restore_script_tag()
