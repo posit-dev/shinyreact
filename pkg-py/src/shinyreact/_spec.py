@@ -107,6 +107,16 @@ class Node:
             "children": _walk_all(self.children, deps),
         }
 
+    def tagify(self) -> "Node":
+        """Satisfy the htmltools ``Tagifiable`` protocol.
+
+        Returning ``self`` lets ``TagList`` (and any other htmltools container)
+        accept a ``Node`` as a child without converting it to HTML.  The actual
+        serialization is handled by :meth:`_to_wire` when the walker encounters
+        this node.
+        """
+        return self
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize to the wire tree, discarding any harvested dependencies.
 

@@ -84,3 +84,44 @@ def test_input_tag_name_and_attributes_do_not_collide():
         "tabIndex": "2",
         "aria-label": "Email",
     }
+
+
+def test_html_becomes_html_node():
+    node = Node(type="Card", props={}, children=[HTML("<b>bold</b>")])
+    assert node.to_dict()["children"] == [{"type": "html", "html": "<b>bold</b>"}]
+
+
+def test_taglist_flattens_into_parent_children():
+    node = Node(type="Card", props={}, children=[TagList("a", "b")])
+    assert node.to_dict()["children"] == [
+        {"type": "text", "value": "a"},
+        {"type": "text", "value": "b"},
+    ]
+
+
+def test_none_child_is_skipped():
+    node = Node(type="Card", props={}, children=["a", None, "b"])
+    assert node.to_dict()["children"] == [
+        {"type": "text", "value": "a"},
+        {"type": "text", "value": "b"},
+    ]
+
+
+def test_dependencies_are_harvested_not_emitted():
+    dep = HTMLDependency(name="d", version="1.0", source={"subdir": "/tmp"})
+    node = Node(type="Card", props={}, children=[dep, "text"])
+    payload, deps = serialize_ui(node)
+    assert payload["children"] == [{"type": "text", "value": "text"}]
+    assert deps == [dep]
+
+
+def test_serialize_ui_single_node_unwrapped():
+    payload, deps = serialize_ui(Node(type="Card"))
+    assert payload["type"] == "react"
+    assert deps == []
+
+
+def test_serialize_ui_taglist_returns_list():
+    payload, _ = serialize_ui(TagList(Node(type="A"), Node(type="B")))
+    assert isinstance(payload, list)
+    assert [n["name"] for n in payload] == ["A", "B"]
