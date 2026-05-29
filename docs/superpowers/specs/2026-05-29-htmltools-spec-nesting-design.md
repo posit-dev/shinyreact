@@ -126,14 +126,17 @@ When #69's hierarchy lands, `Node` is re-categorized as **`UiReact(UiComponent, 
 **Two delivery contexts, one folding rule.** The recursion always converts a mixed subtree into *one* spec tree. Only the delivery differs:
 
 - **Inside `@reactive_output`** returning a `Node` / mixed tree → the whole subtree folds into one spec and ships over the WebSocket, exactly as today. Nested `Tag`s and nested `Node`s are all folded in.
-- **Static `Node` in page chrome** (e.g. `page_react(tags.div(Node("Chart", …)))`, no render function feeding it) → `tagify()` emits:
+- **Static `Node` in page chrome** (e.g. `page_react(tags.div(Node("Chart", …)))`, no render function feeding it) → `tagify()` emits a self-contained mount carrying its spec as a child script:
 
   ```html
-  <div class="shinyreact-output" id="shinyreact-auto-N"></div>
-  <script type="application/json" data-shinyreact-spec-for="shinyreact-auto-N">{…tree…}</script>
+  <div class="shinyreact-static">
+    <script type="application/json">{…tree…}</script>
+  </div>
   ```
 
-  The JS output binding, before subscribing to the WebSocket output channel, checks for a sibling `<script type="application/json">[data-shinyreact-spec-for=ID]` and seeds initial state from it if present; otherwise it falls through to the existing WebSocket path (preserving current `ui_output` semantics). This mirrors how Shiny already ships initial bookmark/dependency JSON. Auto-generated ids (`shinyreact-auto-N`) won't collide with user output ids. The serialized JSON escapes `<` as `<` (still valid JSON, parses back to `<` on the client) so a payload containing `</script>` cannot break out of the script element.
+  **No id.** A static `Node` is not a Shiny output, so it gets no output id — honoring "ids are required for *outputs*" by simply not pretending a static node is one. The inline script is linked to its mount by **DOM adjacency** (it's the div's child), not by an id reference. A separate `.shinyreact-static` class keeps these mounts out of the output binding's `find()` (`.shinyreact-output`), so Shiny never tries to bind an id-less output. The JS seeding pass finds each `.shinyreact-static`, parses its child script, and renders the tree into the div. The serialized JSON escapes `<` as `<` (still valid JSON, parses back to `<` on the client) so a payload containing `</script>` cannot break out of the script element.
+
+  Outputs and static nodes are therefore fully separated: outputs (`.shinyreact-output`, id required) are WebSocket-fed; static nodes (`.shinyreact-static`, no id) are inline-only. There is no hybrid path.
 
   "Static" describes only the spec *shape* — interior React components still subscribe to inputs/outputs reactively (`useShinyInputValue`, etc.) at runtime.
 
@@ -170,7 +173,7 @@ Bug-fix-grade coverage (per repo testing policy):
 - **`html` node span wrapper.** Invalid for block-level raw HTML. Mitigation: document; add a configurable wrapper tag if a real case appears.
 - **Attribute-translation completeness.** The HTML-attr → React-prop map is a known but open-ended set. Mitigation: cover the common attributes, pass `data-*`/`aria-*` through, and treat unknown attributes as pass-through; expand the map as gaps surface.
 - **Breaking removal of flat `Spec`.** External code we can't see may import `shinyreact.Spec`. Mitigation: pre-1.0 status sanctions the break; offer a short-lived deprecation alias if wanted.
-- **Static-Node id collisions / double-mounting.** Auto ids must not collide with user output ids, and the binding must not both seed from the inline script *and* subscribe to a (nonexistent) WebSocket channel. Mitigation: namespace auto ids (`shinyreact-auto-N`); the binding treats an inline-script seed as terminal when no matching output channel exists.
+- **Static-Node double-mounting.** A static mount must not be picked up by both the output binding and the seeding pass. Mitigation: static mounts use a distinct `.shinyreact-static` class (not `.shinyreact-output`) and carry no id, so the output binding's `find()` never matches them; the seeding pass is their only renderer. The shared root cache (`hasRoot`) keeps the seeding pass idempotent.
 
 ## What this spec does not commit to
 

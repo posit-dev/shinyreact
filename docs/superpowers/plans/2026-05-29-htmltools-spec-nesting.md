@@ -1084,17 +1084,20 @@ beforeEach(() => {
   document.body.innerHTML = "";
 });
 
-function mount(id: string, specJson: string) {
-  document.body.innerHTML = `
-    <div id="${id}" class="shinyreact-output"></div>
-    <script type="application/json" data-shinyreact-spec-for="${id}">${specJson}</script>
-  `;
+function mountStatic(specJson: string): HTMLElement {
+  const div = document.createElement("div");
+  div.className = "shinyreact-static";
+  const script = document.createElement("script");
+  script.type = "application/json";
+  script.textContent = specJson;
+  div.appendChild(script);
+  document.body.appendChild(div);
+  return div;
 }
 
 describe("seedInlineSpecs", () => {
-  it("renders the inline spec into the matching output element", async () => {
-    mount(
-      "shinyreact-auto-1",
+  it("renders the inline spec into its containing static mount", async () => {
+    const div = mountStatic(
       JSON.stringify({
         type: "tag",
         name: "div",
@@ -1105,19 +1108,18 @@ describe("seedInlineSpecs", () => {
     seedInlineSpecs();
     // React 19 renders synchronously enough for jsdom; flush a microtask.
     await Promise.resolve();
-    const el = document.getElementById("shinyreact-auto-1")!;
-    expect(el.innerHTML).toBe('<div class="seeded">hi</div>');
+    expect(div.innerHTML).toBe('<div class="seeded">hi</div>');
   });
 
-  it("ignores a script whose target element is missing", () => {
-    document.body.innerHTML = `
-      <script type="application/json" data-shinyreact-spec-for="nope">{"type":"text","value":"x"}</script>
-    `;
+  it("ignores a static mount with no child JSON script", () => {
+    const div = document.createElement("div");
+    div.className = "shinyreact-static";
+    document.body.appendChild(div);
     expect(() => seedInlineSpecs()).not.toThrow();
   });
 
-  it("does not re-render an element that already has a root", async () => {
-    mount("shinyreact-auto-2", JSON.stringify({ type: "text", value: "first" }));
+  it("does not re-render a mount that already has a root", async () => {
+    mountStatic(JSON.stringify({ type: "text", value: "first" }));
     seedInlineSpecs();
     await Promise.resolve();
     // Second call is a no-op because the element already has a React root.
@@ -1142,37 +1144,34 @@ import { ShinyreactRenderer } from "./renderer";
 import { getOrCreateRoot, hasRoot } from "./roots";
 
 /**
- * Render any static `<script type="application/json" data-shinyreact-spec-for>`
- * payloads into their matching `.shinyreact-output` elements.
+ * Render every `.shinyreact-static` mount from its child
+ * `<script type="application/json">` payload.
  *
  * This is the delivery path for `Node` objects embedded directly in page
- * chrome (no server render function). Elements that already have a React root
- * (e.g. seeded by the server output binding) are skipped.
+ * chrome (no server render function, no output id). The script is linked to
+ * its mount by DOM adjacency (it is the div's child), so no id is needed.
+ * Mounts that already have a React root are skipped, keeping the pass
+ * idempotent.
  */
 export function seedInlineSpecs(): void {
-  const scripts = document.querySelectorAll<HTMLScriptElement>(
-    'script[type="application/json"][data-shinyreact-spec-for]',
-  );
-  scripts.forEach((script) => {
-    const targetId = script.getAttribute("data-shinyreact-spec-for");
-    if (!targetId) return;
-    const el = document.getElementById(targetId);
-    if (!el || !el.classList.contains("shinyreact-output")) return;
+  const mounts = document.querySelectorAll<HTMLElement>(".shinyreact-static");
+  mounts.forEach((el) => {
     if (hasRoot(el)) return;
+    const script = el.querySelector<HTMLScriptElement>(
+      ':scope > script[type="application/json"]',
+    );
+    if (!script) return;
 
     let spec: Spec;
     try {
       spec = JSON.parse(script.textContent || "null");
     } catch (err) {
-      console.error(
-        `[shinyreact] failed to parse inline spec for "${targetId}":`,
-        err,
-      );
+      console.error("[shinyreact] failed to parse inline static spec:", err);
       return;
     }
     if (spec == null) return;
 
-    const root = getOrCreateRoot(el as HTMLElement);
+    const root = getOrCreateRoot(el);
     root.render(React.createElement(ShinyreactRenderer, { spec }));
   });
 }
@@ -1252,7 +1251,7 @@ Create `pkg-py/tests/test_tagify.py`:
 import json
 import re
 
-from htmltools import HTMLDependency, TagList, tags
+from htmltools import HTMLDependency, TagList
 from shinyreact._spec import Node
 
 
@@ -1260,23 +1259,16 @@ def _render(node: Node) -> str:
     return str(TagList(node.tagify()))
 
 
-def test_tagify_emits_mount_div_and_inline_script():
+def test_tagify_emits_static_mount_with_child_script():
     node = Node(type="Chart", props={"data": [1, 2]})
     html = _render(node)
 
-    # A mount div with the shinyreact-output class and an auto id.
-    m = re.search(r'<div id="(shinyreact-auto-\d+)" class="shinyreact-output">', html)
-    assert m, html
-    auto_id = m.group(1)
-
-    # A sibling JSON script keyed to the same id.
+    # A static mount div (distinct class) containing a JSON script.
+    assert 'class="shinyreact-static"' in html
     script_m = re.search(
-        rf'<script[^>]*data-shinyreact-spec-for="{auto_id}"[^>]*>(.*?)</script>',
-        html,
-        re.DOTALL,
+        r'<script type="application/json">(.*?)</script>', html, re.DOTALL
     )
     assert script_m, html
-    assert 'type="application/json"' in script_m.group(0)
     payload = json.loads(script_m.group(1))
     assert payload == {
         "type": "react",
@@ -1284,6 +1276,15 @@ def test_tagify_emits_mount_div_and_inline_script():
         "props": {"data": [1, 2]},
         "children": [],
     }
+
+
+def test_tagify_mount_has_no_id_and_is_not_an_output():
+    html = _render(Node(type="Chart"))
+    assert "shinyreact-output" not in html
+    # The static mount carries no id attribute.
+    div_m = re.search(r"<div[^>]*>", html)
+    assert div_m
+    assert " id=" not in div_m.group(0)
 
 
 def test_tagify_includes_harvested_dependency():
@@ -1294,14 +1295,6 @@ def test_tagify_includes_harvested_dependency():
     # Both shinyreact's own dep and the harvested one are present.
     assert "shinyreact" in names
     assert "mydep" in names
-
-
-def test_tagify_unique_ids_per_node():
-    a = str(TagList(Node(type="A").tagify()))
-    b = str(TagList(Node(type="B").tagify()))
-    id_a = re.search(r'id="(shinyreact-auto-\d+)"', a).group(1)
-    id_b = re.search(r'id="(shinyreact-auto-\d+)"', b).group(1)
-    assert id_a != id_b
 
 
 def test_tagify_escapes_script_breakout():
@@ -1320,19 +1313,12 @@ def test_tagify_escapes_script_breakout():
 Run: `uv run pytest pkg-py/tests/test_tagify.py -v`
 Expected: FAIL — `Node` has no `tagify` attribute.
 
-- [ ] **Step 3: Add `tagify()` and the id counter to `_spec.py`**
+- [ ] **Step 3: Add `serialize()` and `tagify()` to `_spec.py`**
 
-In `pkg-py/src/shinyreact/_spec.py`, add to the imports at the top:
+In `pkg-py/src/shinyreact/_spec.py`, add `json` to the imports at the top:
 
 ```python
 import json
-from itertools import count
-```
-
-Add a module-level counter near the top (after the imports):
-
-```python
-_auto_id_counter = count(1)
 ```
 
 Add these two methods to the `Node` dataclass (after `to_dict`):
@@ -1344,18 +1330,18 @@ Add these two methods to the `Node` dataclass (after `to_dict`):
         return self._to_wire(deps), deps
 
     def tagify(self) -> TagList:
-        """Render as a `.shinyreact-output` mount point + inline JSON spec.
+        """Render as a static `.shinyreact-static` mount carrying its spec.
 
         Makes ``Node`` a ``Tagifiable`` so it can be embedded directly in page
-        chrome (e.g. ``page_react(tags.div(Node(...)))``). The JS bundle seeds
-        the mount element from the inline script at load time.
+        chrome (e.g. ``page_react(tags.div(Node(...)))``). The mount has no id
+        and is not a Shiny output; the JS bundle seeds it from the child script
+        at load time. The inline JSON is linked to its mount by DOM adjacency.
         """
         from htmltools import tags
 
         from ._output import _dep
 
         node, deps = self.serialize()
-        auto_id = f"shinyreact-auto-{next(_auto_id_counter)}"
         # Escape "<" as \\u003c (still valid JSON, parses back to "<" on the
         # client) so a payload containing "</script>" cannot break out of the
         # script element.
@@ -1363,11 +1349,9 @@ Add these two methods to the `Node` dataclass (after `to_dict`):
         return TagList(
             _dep(),
             *deps,
-            tags.div(id=auto_id, class_="shinyreact-output"),
-            tags.script(
-                spec_json,
-                type="application/json",
-                **{"data-shinyreact-spec-for": auto_id},
+            tags.div(
+                tags.script(spec_json, type="application/json"),
+                class_="shinyreact-static",
             ),
         )
 ```
