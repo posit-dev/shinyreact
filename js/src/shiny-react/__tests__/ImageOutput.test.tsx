@@ -19,6 +19,7 @@ vi.mock("../react-registry", () => {
   const inputEntry = {
     updateDebounceDelay: vi.fn(),
     updatePriority: vi.fn(),
+    updateType: vi.fn(),
     addUseStateSetValueFn: vi.fn(),
     removeUseStateSetValueFn: vi.fn(),
     getValue: vi.fn(() => null),

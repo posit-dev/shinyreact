@@ -64,9 +64,9 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| `useShinyInput` | Working | Full `[value, setValue]` — stable defaultValue via `useRef`; debounce + priority options |
+| `useShinyInput` | Working | Full `[value, setValue]` — stable defaultValue via `useRef`; debounce + priority options; optional `type=` routes values through a Shiny input handler (e.g. `shiny.datetime`) |
 | `useShinyInputValue` | Working | Read-only consumer hook — returns just the current value, with mount-order-safe subscription to a producer registered elsewhere |
-| `useSetShinyInput` | Working | Write-only producer hook — returns just the setter; same `defaultValue` + options as `useShinyInput` |
+| `useSetShinyInput` | Working | Write-only producer hook — returns just the setter; same `defaultValue` + options as `useShinyInput`; optional `type=` routes values through a Shiny input handler (e.g. `shiny.datetime`) |
 | `useShinyOutputValue` | Working | Subscribes to a Shiny output binding; receives `Jsonifiable` values from `reactive_output`. Returns just the value |
 | `useShinyOutputStatus` | Working | Returns the lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` — for a Shiny output binding |
 | `useShinyMessageHandler` | Working | Stable handler ref; no unnecessary re-registration on inline arrow functions |
@@ -87,6 +87,7 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 | [05-temperature](../examples/ui-tsx/05-temperature/) | Working | Temperature conversion app demonstrating simple reactive data flow |
 | [06-data-frame](../examples/ui-tsx/06-data-frame/) | Working | Embeds `@render.data_frame` via `ShinyOutput` and `set_react_page()` |
 | [07-plotly](../examples/ui-tsx/07-plotly/) | Working | Embeds `@render_plotly` via `ShinyOutput` and `set_react_page()` |
+| [08-input-handler](../examples/ui-tsx/08-input-handler/) | Working | Demonstrates `useShinyInput` with `type="shiny.datetime"` — client sends unix seconds; server `input.when()` is a `datetime.datetime` via Shiny's built-in handler |
 
 ### Design decisions
 

@@ -9,11 +9,15 @@ description = "Shiny UI infrastructure for React-based component rendering"
 requires-python = ">=3.10"
 dependencies = [
     "shiny>=1.2.0",
-    "htmltools>=0.6.0",
+    "htmltools>=0.7.0",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pkg-py/src/shinyreact"]
+packages = [
+    "pkg-py/src/shinyreact",
+    "pkg-py/src/shinyui",
+    "pkg-py/src/shinyuiclassonly",
+]
 
 [dependency-groups]
 examples = [
@@ -52,7 +56,11 @@ testpaths = ["pkg-py/tests"]
 addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.pyright]
-include = ["pkg-py/src/shinyreact"]
+include = [
+    "pkg-py/src/shinyreact",
+    "pkg-py/src/shinyui",
+    "pkg-py/src/shinyuiclassonly",
+]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
@@ -62,6 +70,14 @@ extend-exclude = ["examples/shiny-react-upstream"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Concrete shinyui classes are intentionally snake_case to match
+# shiny.render.data_frame's convention (class name == call-site name, no
+# parallel factory functions). Ignore N801 ("class name should use CapWords")
+# package-wide so individual class definitions don't carry the noqa pragma.
+"pkg-py/src/shinyui/**/*.py" = ["N801"]
+"pkg-py/src/shinyuiclassonly/**/*.py" = ["N801"]
 
 [tool.tox]
 legacy_tox_ini = """

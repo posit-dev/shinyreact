@@ -20,7 +20,6 @@ permissions:
   contents: write
 
 env:
-  UV_VERSION: "0.9.x"
   PYTHON_VERSION: 3.13
   QUARTO_VERSION: 1.8.27
 
@@ -41,8 +40,6 @@ jobs:
 
       - name: 🚀 Install uv
         uses: astral-sh/setup-uv@v8.1.0
-        with:
-          version: ${{ env.UV_VERSION }}
 
       - name: 🐍 Set up Python ${{ env.PYTHON_VERSION }}
         run: uv python install ${{ env.PYTHON_VERSION }}
