@@ -6,7 +6,7 @@ The `shinyreact` package ships two first-class patterns. See [`docs/app-py-vs-ui
 
 ## `app.py` pattern (`page_react` + `reactive_output`)
 
-UI is defined as Python (or R) objects in the app file via `page_react()` / `Spec` / `Element` / `Node`. The server emits JSON specs that the client renders into a React tree using `shinyreact`'s in-house Spec walker (`js/src/renderer.tsx`). Lives at `pkg-py/src/shinyreact/`. Examples in `examples/app-py/`.
+UI is defined as Python (or R) objects in the app file via `page_react()` / `Node`. The server emits a JSON wire tree that the client renders into a React tree using `shinyreact`'s in-house walker (`js/src/renderer.tsx`). Lives at `pkg-py/src/shinyreact/`. Examples in `examples/app-py/`.
 
 ### Python public API
 
@@ -15,9 +15,8 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 | `shinyreact.ui_output()` | Working | Creates output div with HTMLDependency; accepts `extra_deps` |
 | `shinyreact.page_react()` | Working | Full-page React app with `#root` + the shinyreact HTMLDependency |
 | `shinyreact.page_bare()` | Working | Bare HTML page wrapper |
-| `@shinyreact.reactive_output` | Working | Renders `Spec` or passes raw JSON for `useShinyOutputValue` |
-| `shinyreact.Spec` / `Element` | Working | Flat-map data model for component trees |
-| `shinyreact.Node` | Working | Nested tree API; `.to_spec()` auto-flattens to `Spec` |
+| `@shinyreact.reactive_output` | Working | Walks `Node`/htmltools content into the JSON wire tree, or passes raw JSON for `useShinyOutputValue` |
+| `shinyreact.Node` | Working | Recursive component tree; `.to_dict()` serializes to the JSON wire tree |
 | **Interleaved htmltools + React content** | Working | `Node` is a `Tagifiable`; htmltools `tags.*`/`HTML`/strings and `Node`s nest at arbitrary depth in one tree. Serialized to a discriminated-union wire format (`react` \| `tag` \| `text` \| `html`); HTML dependencies are harvested in the same traversal. Static `Node`s in page chrome are delivered via an inline `<script type="application/json">` inside a `.shinyreact-static` mount. See `examples/app-py/14-nesting` |
 | `shinyreact.send_message()` | Working | Server-to-client custom messages |
 | Bookmark restoration | Working | `page_react()` and `set_react_page()` emit a head `<script>` carrying restored input values; `useShinyInput` adopts them as initial values. URL and server-stored bookmark modes both supported |
@@ -26,7 +25,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 
 | Example | Status | Description |
 |---------|--------|-------------|
-| [01-hello-world](../examples/app-py/01-hello-world/) | Working | Decomposed components (Card, TextInput, Divider, OutputDisplay) composed from Python via Spec |
+| [01-hello-world](../examples/app-py/01-hello-world/) | Working | Decomposed components (Card, TextInput, Divider, OutputDisplay) composed from Python via `Node` |
 | [02-inputs](../examples/app-py/02-inputs/) | Working | 10 input types (text, number, checkbox, radio, select, slider, date, button, file, batch form) |
 | [03-outputs](../examples/app-py/03-outputs/) | Working | Data table, statistics, matplotlib plot via ImageOutput |
 | [04-messages](../examples/app-py/04-messages/) | Working | Server-to-client messaging with send_message, auto-dismissing toasts |
@@ -41,7 +40,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 
 ### Design decisions
 
-- **Treat element keys as internal/opaque.** When using `Node`, element keys in the flat `elements` map (e.g., `"auto_001"`) are auto-generated internal plumbing. Callers can still manually construct `Spec(elements={...})` with arbitrary keys, so this is guidance rather than a hard API guarantee. These keys have no relationship to DOM IDs or Shiny input/output IDs: Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server needs to know about.
+- **React keys are positional by default.** The wire tree is a recursive structure with no synthetic element-key map; React reconciles children positionally. For lists or reorderable content, pass an explicit `key` in a node's props (React reads it natively and it is not emitted as a DOM attribute). Component identity has no relationship to DOM IDs or Shiny input/output IDs — Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server needs to know about.
 - **HTMLDependency mtime versioning for examples.** Shiny caches static files by `{name}-{version}` in the URL. During development, editing a JS file doesn't bust the cache if the version string is fixed. Examples use `version=str(int(file.stat().st_mtime))` so the version changes whenever the file is saved. Development convenience only — published packages should use fixed versions.
 - **Downstream extension.** Downstream packages (e.g. `shinyshadcn`) ship their own IIFE bundle that calls `window.shinyreact.registerComponents(catalog, registry)` at load time, plus a Python render subclass with an overridden `transform()`. The package's `HTMLDependency` is injected on the UI side via `shinyreact.ui_output(id, extra_deps=[...])` (`reactive_output` does not read an `extra_deps` class attribute).
 
