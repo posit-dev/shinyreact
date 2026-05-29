@@ -1,0 +1,12 @@
+{
+  "root": "auto_001",
+  "elements": {
+    "auto_001": {
+      "type": "Card",
+      "props": {
+        "title": "Hello"
+      },
+      "children": []
+    }
+  }
+}
