@@ -126,36 +126,3 @@ class Node:
         """
         return self._to_wire([])
 
-
-# ---------------------------------------------------------------------------
-# Backward-compatible stubs — kept so existing imports in __init__.py and
-# _reactive_output.py do not break while later tasks migrate those files.
-# These will be removed in Task 5.
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class Element:
-    type: str
-    props: dict[str, Any]
-    children: list[str] = field(default_factory=list)
-
-    def to_dict(self) -> dict[str, Any]:
-        return {"type": self.type, "props": self.props, "children": self.children}
-
-
-@dataclass
-class Spec:
-    root: str
-    elements: dict[str, Element]
-
-    def __post_init__(self) -> None:
-        if self.root not in self.elements:
-            keys = list(self.elements.keys())
-            raise ValueError(f"root '{self.root}' not found in elements keys: {keys}")
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "root": self.root,
-            "elements": {key: elem.to_dict() for key, elem in self.elements.items()},
-        }

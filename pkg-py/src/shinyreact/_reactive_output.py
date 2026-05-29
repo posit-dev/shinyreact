@@ -3,10 +3,10 @@ from shiny.render.renderer import Renderer
 from shiny.types import Jsonifiable
 
 from ._output import ui_output
-from ._spec import Node, Spec
+from ._spec import Node
 
 
-class reactive_output(Renderer[Spec | Node | Jsonifiable]):
+class reactive_output(Renderer[Node | Jsonifiable]):
     """Reactive output decorator for shinyreact.
 
     The server-side counterpart to ``useShinyOutput()`` on the React client.
@@ -45,7 +45,7 @@ class reactive_output(Renderer[Spec | Node | Jsonifiable]):
             )
     """
 
-    async def transform(self, value: Spec | Node | Jsonifiable) -> Jsonifiable:
+    async def transform(self, value: Node | Jsonifiable) -> Jsonifiable:
         if isinstance(value, Node):
             return value.to_spec().to_dict()
         if isinstance(value, Spec):
