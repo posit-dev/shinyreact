@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from htmltools import HTMLDependency, tags
+from htmltools import HTMLDependency, TagList, tags
 from shinyreact import Node, reactive_output
 
 
@@ -120,3 +120,32 @@ def test_auto_output_ui_returns_ui_output() -> None:
 
 def test_no_extra_deps_attribute() -> None:
     assert not hasattr(reactive_output, "extra_deps")
+
+
+@pytest.mark.asyncio
+async def test_taglist_single_child_unwraps_through_transform() -> None:
+    tl = TagList(tags.div("x"))
+
+    @reactive_output
+    def out():
+        return tl
+
+    assert await out.transform(tl) == {
+        "type": "tag",
+        "name": "div",
+        "props": {},
+        "children": [{"type": "text", "value": "x"}],
+    }
+
+
+@pytest.mark.asyncio
+async def test_taglist_multi_child_returns_list_through_transform() -> None:
+    tl = TagList(tags.div("a"), tags.span("b"))
+
+    @reactive_output
+    def out():
+        return tl
+
+    result = await out.transform(tl)
+    assert isinstance(result, list)
+    assert [n["name"] for n in result] == ["div", "span"]
