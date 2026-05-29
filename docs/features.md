@@ -18,6 +18,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 | `@shinyreact.reactive_output` | Working | Renders `Spec` or passes raw JSON for `useShinyOutputValue` |
 | `shinyreact.Spec` / `Element` | Working | Flat-map data model for component trees |
 | `shinyreact.Node` | Working | Nested tree API; `.to_spec()` auto-flattens to `Spec` |
+| **Interleaved htmltools + React content** | Working | `Node` is a `Tagifiable`; htmltools `tags.*`/`HTML`/strings and `Node`s nest at arbitrary depth in one tree. Serialized to a discriminated-union wire format (`react` \| `tag` \| `text` \| `html`); HTML dependencies are harvested in the same traversal. Static `Node`s in page chrome are delivered via an inline `<script type="application/json">` inside a `.shinyreact-static` mount. See `examples/app-py/14-nesting` |
 | `shinyreact.send_message()` | Working | Server-to-client custom messages |
 | Bookmark restoration | Working | `page_react()` and `set_react_page()` emit a head `<script>` carrying restored input values; `useShinyInput` adopts them as initial values. URL and server-stored bookmark modes both supported |
 
@@ -36,6 +37,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 | [09-blended](../examples/app-py/09-blended/) | Working | Tabbed sidebar layout, matplotlib plot, data table, settings panel |
 | [10-columns](../examples/app-py/10-columns/) | Working | Drag-between-columns demo; `render.ui`-driven approach |
 | [13-bookmarking](../examples/app-py/13-bookmarking/) | Working | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via a head `<script>` emitted by `page_react()` |
+| [14-nesting](../examples/app-py/14-nesting/) | Working | htmltools `tags.*` and `Node`s interleaved at arbitrary depth; static React component in page chrome + reactive `Node` with mixed htmltools/React children |
 
 ### Design decisions
 
