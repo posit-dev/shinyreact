@@ -71,9 +71,10 @@ server <- function(input, output, session) {
   output$hello <- render_reactive({
     card(
       "Hello Shiny React!",
-      # htmltools tags can be interleaved with React node() children —
-      # the walker serialises them to raw HTML that React renders via
-      # dangerouslySetInnerHTML on the client.
+      # tags$small() is a shiny.tag — the walker serialises it to a
+      # {"type":"tag","name":"small",...} wire node, rendered as
+      # React.createElement("small", ...). (Only htmltools::HTML() produces a
+      # dangerouslySetInnerHTML node.)
       htmltools::tags$small("A shinyreact × htmltools demo"),
       text_input(
         "txtin",
