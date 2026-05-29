@@ -5,6 +5,7 @@ import { registerComponents } from "./registry";
 import { ShinyreactRenderer } from "./renderer";
 import { ShinyOutput } from "./shiny-output";
 import { getOrCreateRoot, hasRoot, unmountRoot } from "./roots";
+import { installInlineSpecSeeding } from "./inline-spec";
 import "./shinyreact.css";
 
 // Re-export @posit/shiny-react hooks and components.
@@ -107,3 +108,6 @@ class ShinyreactOutputBinding extends Shiny.OutputBinding {
 // Register with Shiny — Shiny is always loaded before this script
 // because HTMLDependency ordering places Shiny's scripts first.
 Shiny.outputBindings.register(new ShinyreactOutputBinding(), "shinyreact.output");
+
+// Render any static Node specs embedded in page chrome (inline JSON scripts).
+installInlineSpecSeeding();
