@@ -25,7 +25,9 @@ def _translate_attrs(attrs: dict[str, Any]) -> dict[str, Any]:
     return {_ATTR_MAP.get(k, k): v for k, v in attrs.items()}
 
 
-def _walk_all(children: Iterable[Any], deps: list[HTMLDependency]) -> list[dict[str, Any]]:
+def _walk_all(
+    children: Iterable[Any], deps: list[HTMLDependency]
+) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for child in children:
         out.extend(_walk(child, deps))

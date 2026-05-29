@@ -1,5 +1,4 @@
 from htmltools import HTML, HTMLDependency, TagList, tags
-
 from shinyreact import Node
 from shinyreact._spec import serialize_ui
 
@@ -153,7 +152,12 @@ def test_nested_node_in_tag_in_node_folds_into_one_tree():
             "name": "div",
             "props": {},
             "children": [
-                {"type": "react", "name": "Chart", "props": {"data": [1, 2]}, "children": []}
+                {
+                    "type": "react",
+                    "name": "Chart",
+                    "props": {"data": [1, 2]},
+                    "children": [],
+                }
             ],
         }
     ]

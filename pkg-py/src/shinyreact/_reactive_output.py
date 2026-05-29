@@ -51,7 +51,8 @@ class reactive_output(Renderer["Node | Jsonifiable"]):
                     "after the page has rendered. Declare them up-front via "
                     "ui_output(..., extra_deps=[...]) or at the page level.",
                     UserWarning,
-                    # stacklevel=2: Shiny calls transform() internally, so this can't reach user code
+                    # stacklevel=2: Shiny calls transform() internally, so this
+                    # can't reach user code anyway.
                     stacklevel=2,
                 )
             return payload
