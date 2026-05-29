@@ -73,6 +73,25 @@ Currently `ui_output`, `page_react`, and `page_bare` are flat top-level exports.
 
 Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `ui_output()` to simplify the API.
 
+## R `to_spec()` on a child-bearing bare `Element`
+
+`element(type, props, children = list("key1", "key2"))` creates an `Element`
+whose `children` are string keys into a flat elements map. If such an `Element`
+is passed directly to `spec()`, the referenced keys must already exist in the
+`elements` argument. Only childless bare `Element`s (empty `children`) are safe
+to construct in isolation; child-bearing trees should use `node()` or `spec()`
+directly. Consider erroring at construction when children are provided without a
+corresponding `elements` map, or add clear documentation of this constraint.
+
+## R bookmark restore value shape vs Python ([#27](https://github.com/posit-dev/shinyreact/issues/27))
+
+R's `.wire_json()` uses `jsonlite::toJSON(auto_unbox = TRUE)`, so a length-1 R
+vector (e.g. a checkbox-group with one selected value) serializes as a JSON
+scalar `"a"`, whereas Python `json.dumps` emits `["a"]`. This can seed the wrong
+shape into the JS input registry for single-value multi-value inputs on restore.
+Needs a cross-language bookmark-payload fixture and a shape-preserving fix (hard
+due to R's lack of scalar vs. vector distinction). See issue [#27](https://github.com/posit-dev/shinyreact/issues/27).
+
 ## Tracked as GitHub issues
 
 - [#28 — Shiny client runtime as an npm package](https://github.com/posit-dev/shinyreact/issues/28)

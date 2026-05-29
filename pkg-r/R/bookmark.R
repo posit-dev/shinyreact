@@ -17,6 +17,7 @@
 # `get()` appends to `private$pending`, marking the value used and breaking the
 # app's own `restoreInput()` calls in the same render. `all.names = TRUE` also
 # preserves keys like `__proto__` that begin with a dot/are otherwise hidden.
+# DESCRIPTION pins shiny >= 1.13.0 for these internals.
 
 #' @keywords internal
 .restore_input_values <- function() {

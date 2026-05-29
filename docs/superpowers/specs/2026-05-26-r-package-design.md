@@ -203,6 +203,10 @@ window.shinyreact._restore = JSON.parse(<js-string-literal>);
 
 Bookmarked input values appear in the rendered page source. In URL bookmark mode they are already in the URL; in server-stored mode (`?_state_id_=...`) this script re-exposes them in the page source. Anything that can read the HTML can read these values. Apps must not bookmark credentials, tokens, or PII.
 
+### Known v1 limitation: `auto_unbox` shape mismatch
+
+R's `jsonlite::toJSON(auto_unbox = TRUE)` serializes a length-1 R vector as a JSON scalar (`"a"`), while Python's `json.dumps` emits a JSON array (`["a"]`). For multi-value inputs (e.g. checkbox-groups) where the user has selected exactly one option, R restore payloads seed a scalar into the JS input registry instead of the expected single-element array, which can produce type mismatches. This is a known v1 limitation tracked in [#27](https://github.com/posit-dev/shinyreact/issues/27).
+
 ### Restore-context API access — use `shiny:::` internals (decided)
 
 Python reads the restore context via a **private** module (`shiny.bookmark._restore_state.get_current_restore_context`) and `ctx.input.as_dict()` directly, deliberately avoiding `restore_input()` (which marks values used). R mirrors this with R Shiny's internal restore-context API — **`shiny:::` access is accepted** (decided, not a spike).
