@@ -2,7 +2,11 @@
 
 **Issue:** [#91](https://github.com/posit-dev/shinyreact/issues/91)
 **Status:** Design — awaiting implementation plan
-**Related:** [#98](https://github.com/posit-dev/shinyreact/issues/98) (flatten wire format — R will conform to whichever format is current at PR time)
+**Related:**
+- [#98](https://github.com/posit-dev/shinyreact/issues/98) (flatten wire format — R will conform to whichever format is current at PR time)
+- [#27](https://github.com/posit-dev/shinyreact/issues/27) (bookmarking & initial state — Python landed this; R mirrors it in v1, see "Bookmarking")
+
+**Baseline:** mirrors `pkg-py/src/shinyreact/` as of merge of `origin/main` (bookmarking + built-in mtime dep versioning included). The sibling Python prototypes `shinyui` / `shinyuiclassonly` are **orthogonal** — they emit traditional htmltools HTML via `tagify()` and explicitly do not touch the shinyreact wire protocol, so they do not affect this design. (They do validate the class-per-component direction this spec adopts for R via S7.)
 
 ## Goal
 
@@ -11,7 +15,7 @@ Promote `pkg-r/` from placeholder to a real R package mirroring the Python `shin
 - **`app.R` pattern** — UI defined as R objects (`node()`, `spec()`, `element()`) in the Shiny app file via `page_react()`; server returns trees from `render_reactive()`.
 - **`ui.tsx` pattern** — UI lives in `www/index.html` + JS; bootstrapped from R via `page_react_html()`; server is pure reactive computation, returning raw `Jsonifiable` values from `render_reactive()`.
 
-Both patterns share a single renderer (`render_reactive`) and a single page-level htmlDependency. The R package is pure plumbing — no UI components — same as Python.
+Both patterns share a single renderer (`render_reactive`) and the same shinyreact htmlDependency (a per-output bare variant and a page-level variant that adds the bookmark restore script — see Bookmarking). The R package is pure plumbing — no UI components — same as Python.
 
 ## Non-goals (v1)
 
@@ -31,20 +35,24 @@ Both patterns share a single renderer (`render_reactive`) and a single page-leve
 | `page.R` | `page_react()`, `page_bare()`, `page_react_html()`, `page_react_dep()` |
 | `render.R` | `render_reactive()` — Shiny renderer that calls `to_spec()` and returns JSON for the binding |
 | `message.R` | `send_message(session, type, data)` |
+| `dep.R` | `shinyreact_dep()` (per-output) + `shinyreact_dep_page()` (page-level: bundle + bookmark restore script); mtime-based version |
+| `bookmark.R` | `restore_script_tag()` — reads R Shiny's restore context, emits the `window.shinyreact._restore` `<script>` (mirrors Python `_restore_script_tag`) |
 | `zzz.R` | `.onLoad` for `jsonlite::toJSON` S3 method registration if needed |
 
 ### Dependencies (`DESCRIPTION` `Imports`)
 
-- `shiny` — `installExprFunction`, `createRenderFunction`, `markRenderFunction`, session machinery
-- `htmltools` — `htmlDependency`, `attachDependencies`, `htmlTemplate`, `HTML`, tag builders
+- `shiny` — `installExprFunction`, `createRenderFunction`, `markRenderFunction`, session machinery, restore-context access (see Bookmarking risk below)
+- `htmltools` — `htmlDependency`, `attachDependencies`, `htmlTemplate`, `HTML`, `tagList`, `tags$script`, tag builders
 - `S7` — classes and generic dispatch
-- `jsonlite` — `toJSON`
+- `jsonlite` — `toJSON` (Spec serialization + bookmark restore payload)
 - `cli` — error formatting (already a transitive dep of `shiny`)
 - `rlang` — only if tidy-eval helpers are needed in `render_reactive`
 
 ### Built assets
 
-Unchanged. `inst/lib/shiny/shinyreact.{js,css}` is already populated by `make r-update-dist`. `page_react_dep()` points at this path.
+Unchanged. `inst/lib/shiny/shinyreact.{js,css}` is already populated by `make r-update-dist`. The internal `shinyreact_dep()` points at this path.
+
+The dep **version is the bundle's mtime in whole seconds** (`file.mtime(...) |> as.integer() |> as.character()`), with a fixed fallback (`"0.1.0"`) when the bundle is missing in a partially-built checkout. This matches Python's `_dep()` after the `origin/main` merge — mtime versioning is now built into the package itself (not just examples), so browsers re-fetch after a `make update-dist`. The JS consumption side of bookmarking (`applyRestoredValues`) already ships in this shared bundle; R only emits the server-side restore script.
 
 ### Build / check wiring
 
@@ -88,26 +96,32 @@ toJSON.shinyreact::Spec     # S3 method calling jsonlite via to_spec(x) first
 
 ```r
 ui_output(id, extra_deps = list())
-# → htmltools tag <div id class="shinyreact-output"> with shinyreact_dep() +
-#   extra_deps attached via attachDependencies().
+# → htmltools tag <div id class="shinyreact-output"> with the per-output dep
+#   (shinyreact_dep()) + extra_deps attached via attachDependencies().
+#   Per-output consumers do NOT carry the page-level bookmark restore script.
 
 page_react(..., title = NULL, lang = "en")
-# → full HTML page with <div id="root"></div> + shinyreact_dep().
+# → full HTML page with <div id="root"></div> + the PAGE-level dep
+#   (shinyreact_dep_page(): bundle + bookmark restore <script>).
 #   `...` forwarded to htmltools::tags$head() for extra <head> content.
 
 page_bare(...)
 # → minimal HTML scaffold without #root.
 
 page_react_html(path = "www/index.html")
-# → reads the file, wraps via htmltools::HTML, attachDependencies(shinyreact_dep()).
-#   Defaults match Shiny's documented "HTML UI" convention; usable as:
+# → reads the file, wraps via htmltools::HTML, attaches the PAGE-level dep
+#   (shinyreact_dep_page()). Defaults match Shiny's documented "HTML UI"
+#   convention; usable as:
 #     shinyApp(ui = page_react_html(), server = function(input, output, session) { ... })
 #   Works with plain HTML files (no {{ headContent() }} template syntax required).
 
 page_react_dep()
-# → the canonical htmltools::htmlDependency() pointing at
-#   inst/lib/shiny/shinyreact.{js,css}.
+# → htmltools::htmlDependency() for a downstream package's own JS/CSS bundle
+#   (distinct from the internal shinyreact_dep()); mtime-versioned. Mirrors
+#   Python's page_react_dep().
 ```
+
+The page-level dep (`shinyreact_dep_page()`) is the bundle dep plus the bookmark restore `<script>` when a restore context is active; per-output `ui_output()` uses the bare bundle dep. This mirrors Python's `_dep()` vs `_dep_page()` split after the `origin/main` merge.
 
 ### Renderer
 
@@ -157,6 +171,41 @@ Matches Python byte-for-byte. Subject to change when [#98](https://github.com/po
 - `elements` is an object keyed by string. Keys are opaque (`auto_001`, `auto_002`, ... when auto-generated by `to_spec(node())`; arbitrary strings when constructed via `spec()` directly). **Keys are not Shiny input/output IDs** — those live in `props` as `input_id` / `output_id`.
 - Each element has `type` (chr), `props` (object, may be empty), `children` (array of string keys — may be empty array, never `null`).
 - Auto-key generation: left-to-right depth-first, zero-padded to 3 digits, prefix `auto_`. Matches Python.
+
+## Bookmarking (issue #27)
+
+Python ships bookmark restore for shinyreact: when a page loads with a bookmark query string, the server injects a `<script>` into the page head carrying the restored input values, and the shared JS bundle seeds them into the input registry **before** Shiny connects. R mirrors the **server half**; the JS half is already in the shared bundle.
+
+### Flow
+
+1. **JS (shared bundle — no R work):** `applyRestoredValues(registry)` (`js/src/shiny-react/bookmark.ts`) reads `window.shinyreact._restore`, seeds each entry into the input registry via `add()` (stored without sending to Shiny), then replaces the global with an applied-sentinel. Idempotent.
+2. **R (`bookmark.R` — `restore_script_tag()`):** reads R Shiny's active restore context for the loading request; if present and non-empty, emits a head `<script>` setting `window.shinyreact._restore = JSON.parse(<js-string-literal>)`. Returns `NULL` when there is no restore context or it is empty.
+3. **Wiring:** `shinyreact_dep_page()` = bundle dep + `restore_script_tag()` (when non-`NULL`). `page_react()` and `page_react_html()` use the page-level dep; `ui_output()` uses the bare bundle dep.
+
+### Payload encoding (must match Python `_restore_script_tag` exactly)
+
+```js
+window.shinyreact = window.shinyreact || {};
+window.shinyreact._restore = JSON.parse(<js-string-literal>);
+```
+
+- Serialize the value map with `jsonlite::toJSON(values, auto_unbox = TRUE)`, then replace `</` with `<\/` (prevents premature `</script>` close).
+- Wrap that JSON text as a JS string literal via a second `toJSON()` pass (double-encode) so `\n` / quotes survive the JS parser before `JSON.parse` runs.
+- Emit non-ASCII (including U+2028 / U+2029) as `\uXXXX` escapes. `jsonlite::toJSON` does this when configured; verify the byte output matches Python's `json.dumps(ensure_ascii=True)` in the cross-language fixture test.
+- The `JSON.parse(...)` wrapper (vs. a bare object literal) is required so keys like `__proto__` / `constructor` become ordinary data properties — same reason as Python.
+
+### Security (carry Python's warning verbatim into R docs)
+
+Bookmarked input values appear in the rendered page source. In URL bookmark mode they are already in the URL; in server-stored mode (`?_state_id_=...`) this script re-exposes them in the page source. Anything that can read the HTML can read these values. Apps must not bookmark credentials, tokens, or PII.
+
+### Open implementation risk — restore-context API access
+
+Python reads the restore context via a **private** module (`shiny.bookmark._restore_state.get_current_restore_context`) and `ctx.input.as_dict()` directly, deliberately avoiding `restore_input()` (which marks values used). R's equivalent must:
+
+- locate R Shiny's restore context for the current request (candidates: `shiny::restoreInput()`, `session$restoreContext`, or an internal `RestoreContext` object), and
+- read the full restored input map **without** consuming/marking values (so the app's own `restoreInput()` calls still work).
+
+If no public R Shiny API exposes the raw map non-destructively, the implementation may need `shiny:::` internals — which conflicts with the "no `:::` in R CMD check" requirement below. **The implementation plan must open with a short spike** to determine the correct R Shiny API. Resolution options, in preference order: (a) a public/exported R Shiny API; (b) reconstruct the map from `parseQueryString(session$clientData$url_search)` for URL-mode bookmarks (avoids internals, but does not cover server-stored mode); (c) accept a documented `:::` exception with a pinned `shiny` version floor. The choice gates whether server-stored bookmark mode is supported in v1.
 
 ## Downstream extension pattern
 
@@ -254,9 +303,10 @@ Example error:
 | `test-to-spec.R` | `to_spec()` identity on lists; dispatch on `Node`/`Element`/`Spec`; error on unregistered S7 class |
 | `test-toJSON.R` | `jsonlite::toJSON()` on a `Spec` emits the exact wire format (scalar auto-unboxing, empty arrays as `[]`) |
 | `test-ui-output.R` | `ui_output(id)` returns expected tag with `shinyreact-output` class and `shinyreact` dep; `extra_deps` merge correctly |
-| `test-page.R` | `page_react()` / `page_bare()` / `page_react_html()` return valid HTML; `page_react_html()` works on a plain HTML file with no `{{ headContent() }}` |
+| `test-page.R` | `page_react()` / `page_bare()` / `page_react_html()` return valid HTML; page helpers carry the page-level dep; `page_react_html()` works on a plain HTML file with no `{{ headContent() }}` |
 | `test-render.R` | `render_reactive()` wraps `createRenderFunction` correctly; `Node` → expected JSON; raw list passes through; `NULL` returns `NULL` |
 | `test-send-message.R` | `send_message()` calls `session$sendCustomMessage("shinyReactMessage", ...)` with expected payload (mock session) |
+| `test-bookmark.R` | `restore_script_tag()` returns `NULL` with no restore context / empty map; with a restore map, emits the exact `window.shinyreact._restore = JSON.parse(...)` script; double-encoding and `</`→`<\/` escaping correct; `__proto__`/`constructor` keys survive; non-ASCII emitted as `\uXXXX`. Byte-compare against the Python output for the same input map (cross-language fixture). |
 
 Prefer `expect_equal()` / `expect_identical()` for small inline expectations. Reserve `testthat::expect_snapshot()` for larger outputs (full JSON of a 3-level tree) where the diff is the test's value.
 
@@ -267,11 +317,11 @@ The critical guarantee: R-emitted JSON ≡ Python-emitted JSON for equivalent in
 1. R snapshot/`expect_equal` tests on ~5 canonical fixtures (single element, nested 3-level tree, empty children, multiple props, empty `Spec`).
 2. **Cross-language fixture check:** the same 5 fixtures live under `pkg-py/tests/fixtures/wire_format/*.json`, generated by Python via `Spec.to_dict() | json.dumps`. R reads each `.json` and asserts byte-equality with what R emits for the equivalent R input. Python's own tests assert the generator matches committed fixtures. If R and Python drift, both suites fail.
 
-This is the strongest defense against subtle divergence (`jsonlite` auto-boxing, key ordering, empty-array shape). Python fixture commit is a prerequisite task; tracked in #91's implementation plan.
+This is the strongest defense against subtle divergence (`jsonlite` auto-boxing, key ordering, empty-array shape). Python fixture commit is a prerequisite task; tracked in #91's implementation plan. The bookmark restore-script payload (`test-bookmark.R`) participates in the same cross-language fixture scheme — Python commits the expected `_restore` script bytes for a canonical input map; R asserts byte-equality.
 
 ### `R CMD check`
 
-Green via `make r-check`. No `Note`s about `:::`, undeclared imports, or hidden globals.
+Green via `make r-check`. No `Note`s about `:::`, undeclared imports, or hidden globals — **except** a possible documented `shiny:::` exception for restore-context access if the spike (see Bookmarking) finds no public API. If that exception is taken, pin a `shiny` version floor in `DESCRIPTION` and note it in a `# nolint` / package comment.
 
 ## Examples to port
 
@@ -281,6 +331,8 @@ Green via `make r-check`. No `Note`s about `:::`, undeclared imports, or hidden 
 | `examples/app-r/02-inputs/` | `app.R` | Covers ~10 input widget types — exercises `useShinyInput` round-trip. Port of `examples/app-py/02-inputs/`. |
 | `examples/app-r/04-messages/` | `app.R` | Exercises `send_message()` end-to-end. Port of `examples/app-py/04-messages/`. |
 | `examples/ui-tsx-r/01-hello/` | `ui.tsx` | Exercises `page_react_html()` + raw-JSON renderer return. Port of `examples/ui-tsx/01-hello/`. |
+
+Bookmarking gets manual browser verification (set inputs → bookmark → reload restores them) rather than a dedicated example app in v1, unless the spike (above) lands a clean public-API path — in which case `02-inputs` enables `enableBookmarking("url")` to double as the bookmark demo.
 
 Out of scope for v1 examples: `03-outputs` (needs `ImageOutput`), `05-shadcn` through `10-columns` (downstream-package territory or larger UI surface without new API coverage).
 
