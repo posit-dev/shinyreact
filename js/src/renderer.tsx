@@ -3,22 +3,40 @@ import type { ComponentRegistry, Element, Spec } from "./spec";
 import { getRegistry } from "./registry";
 
 function renderNode(
-  id: string,
-  spec: Spec,
+  el: Element,
+  fallbackKey: React.Key,
   registry: ComponentRegistry,
 ): ReactNode {
-  const el: Element | undefined = spec.elements[id];
-  if (!el) return null;
-
-  const childIds = el.children ?? [];
-  const children = childIds.map((cid) => renderNode(cid, spec, registry));
-
-  const Registered = registry[el.type];
-  if (Registered) {
-    return React.createElement(Registered, { element: el, children, key: id });
+  switch (el.type) {
+    case "text":
+      return el.value;
+    case "html":
+      return React.createElement("span", {
+        key: fallbackKey,
+        dangerouslySetInnerHTML: { __html: el.html },
+      });
+    case "tag": {
+      const key = (el.props.key as React.Key) ?? fallbackKey;
+      const children = (el.children ?? []).map((c, i) =>
+        renderNode(c, i, registry),
+      );
+      return React.createElement(el.name, { ...el.props, key }, ...children);
+    }
+    case "react": {
+      const key = (el.props.key as React.Key) ?? fallbackKey;
+      const children = (el.children ?? []).map((c, i) =>
+        renderNode(c, i, registry),
+      );
+      const Registered = registry[el.name];
+      if (!Registered) {
+        throw new Error(
+          `[shinyreact] Unknown component "${el.name}". Register it via ` +
+            `window.shinyreact.registerComponents() before rendering.`,
+        );
+      }
+      return React.createElement(Registered, { element: el, children, key });
+    }
   }
-
-  return React.createElement(el.type, { ...el.props, key: id }, ...children);
 }
 
 interface ShinyreactRendererProps {
@@ -26,13 +44,14 @@ interface ShinyreactRendererProps {
 }
 
 /**
- * Walks a Spec and renders it as a React tree. The component registry is read
- * at render time so any components registered before the render lands are
- * picked up.
+ * Walks a wire tree (single node or array of sibling nodes) and renders it as
+ * a React tree. The registry is read at render time so components registered
+ * before the render lands are picked up.
  */
 function ShinyreactRenderer({ spec }: ShinyreactRendererProps) {
   const registry = getRegistry();
-  return <>{renderNode(spec.root, spec, registry)}</>;
+  const nodes = Array.isArray(spec) ? spec : [spec];
+  return <>{nodes.map((n, i) => renderNode(n, i, registry))}</>;
 }
 
 export { ShinyreactRenderer };

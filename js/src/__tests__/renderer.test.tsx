@@ -5,105 +5,82 @@ import type { Spec } from "../spec";
 import { registerComponents, _resetForTests } from "../registry";
 import { ShinyreactRenderer } from "../renderer";
 
-// Tests in this file rely on a clean registry between cases.
 beforeEach(() => {
   _resetForTests();
 });
 
 describe("ShinyreactRenderer", () => {
-  it("renders a single intrinsic element with text props", () => {
+  it("renders a tag node with translated props and text child", () => {
     const spec: Spec = {
-      root: "a",
-      elements: {
-        a: { type: "div", props: { className: "hi", children: "hello" } },
-      },
+      type: "tag",
+      name: "div",
+      props: { className: "hi" },
+      children: [{ type: "text", value: "hello" }],
     };
     const { container } = render(<ShinyreactRenderer spec={spec} />);
     expect(container.innerHTML).toBe('<div class="hi">hello</div>');
   });
 
-  it("recursively renders intrinsic children referenced by id", () => {
+  it("recursively renders nested tag children", () => {
     const spec: Spec = {
-      root: "root",
-      elements: {
-        root: { type: "div", props: {}, children: ["c1", "c2"] },
-        c1: { type: "span", props: { children: "one" } },
-        c2: { type: "span", props: { children: "two" } },
-      },
+      type: "tag",
+      name: "div",
+      props: {},
+      children: [
+        { type: "tag", name: "span", props: {}, children: [{ type: "text", value: "one" }] },
+        { type: "tag", name: "span", props: {}, children: [{ type: "text", value: "two" }] },
+      ],
     };
     const { container } = render(<ShinyreactRenderer spec={spec} />);
-    expect(container.innerHTML).toBe(
-      "<div><span>one</span><span>two</span></div>",
-    );
+    expect(container.innerHTML).toBe("<div><span>one</span><span>two</span></div>");
   });
 
-  it("dispatches to a registered component receiving { element, children }", () => {
+  it("renders a html node via dangerouslySetInnerHTML", () => {
+    const spec: Spec = { type: "html", html: "<b>bold</b>" };
+    const { container } = render(<ShinyreactRenderer spec={spec} />);
+    expect(container.innerHTML).toBe("<span><b>bold</b></span>");
+  });
+
+  it("dispatches a react node to a registered component receiving { element, children }", () => {
     const Box = ({
       element,
       children,
     }: {
       element: { props: Record<string, unknown> };
       children: React.ReactNode;
-    }) => (
-      <section data-label={element.props.label as string}>{children}</section>
-    );
+    }) => <section data-label={element.props.label as string}>{children}</section>;
     registerComponents(null, { Box });
 
     const spec: Spec = {
-      root: "root",
-      elements: {
-        root: { type: "Box", props: { label: "outer" }, children: ["leaf"] },
-        leaf: { type: "span", props: { children: "inside" } },
-      },
+      type: "react",
+      name: "Box",
+      props: { label: "outer" },
+      children: [{ type: "tag", name: "span", props: {}, children: [{ type: "text", value: "inside" }] }],
     };
     const { container } = render(<ShinyreactRenderer spec={spec} />);
-    expect(container.innerHTML).toBe(
-      '<section data-label="outer"><span>inside</span></section>',
-    );
+    expect(container.innerHTML).toBe('<section data-label="outer"><span>inside</span></section>');
   });
 
-  it("passes direct rendered nodes (not Fragments) as children to registered components", () => {
-    let observedChildren: React.ReactNode = null;
-    const Inspector = ({ children }: { children: React.ReactNode }) => {
-      observedChildren = children;
-      return <div>{children}</div>;
-    };
-    registerComponents(null, { Inspector });
-
-    const spec: Spec = {
-      root: "root",
-      elements: {
-        root: { type: "Inspector", props: {}, children: ["a", "b"] },
-        a: { type: "span", props: { children: "A" } },
-        b: { type: "em", props: { children: "B" } },
-      },
-    };
-    render(<ShinyreactRenderer spec={spec} />);
-
-    const arr = observedChildren as unknown as React.ReactElement[];
-    expect(Array.isArray(arr)).toBe(true);
-    expect(arr).toHaveLength(2);
-    expect(arr[0].type).toBe("span");
-    expect(arr[1].type).toBe("em");
+  it("throws on an unknown registered component name", () => {
+    const spec: Spec = { type: "react", name: "Missing", props: {}, children: [] };
+    expect(() => render(<ShinyreactRenderer spec={spec} />)).toThrow(/Missing/);
   });
 
-  it("renders nothing when an id reference is missing", () => {
-    const spec: Spec = {
-      root: "root",
-      elements: {
-        root: { type: "div", props: {}, children: ["missing"] },
-      },
-    };
+  it("renders an array payload as sibling nodes", () => {
+    const spec: Spec = [
+      { type: "tag", name: "span", props: {}, children: [{ type: "text", value: "a" }] },
+      { type: "tag", name: "span", props: {}, children: [{ type: "text", value: "b" }] },
+    ];
     const { container } = render(<ShinyreactRenderer spec={spec} />);
-    expect(container.innerHTML).toBe("<div></div>");
+    expect(container.innerHTML).toBe("<span>a</span><span>b</span>");
   });
 
-  it("treats omitted children as an empty list", () => {
+  it("honors an explicit key in props without rendering it as an attribute", () => {
     const spec: Spec = {
-      root: "root",
-      elements: {
-        root: { type: "div", props: { className: "x" } },
-      },
+      type: "tag",
+      name: "div",
+      props: { key: "k1", className: "x" },
+      children: [],
     };
     const { container } = render(<ShinyreactRenderer spec={spec} />);
     expect(container.innerHTML).toBe('<div class="x"></div>');
