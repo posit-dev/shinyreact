@@ -20,7 +20,7 @@ NULL
   if (!is.character(type) || length(type) != 1L) {
     return("@type must be a single string")
   }
-  if (!nzchar(type)) {
+  if (is.na(type) || !nzchar(type)) {
     return("@type must be a non-empty string")
   }
   NULL
@@ -65,12 +65,9 @@ Element <- S7::new_class(
     if (!is.null(msg)) {
       return(msg)
     }
-    if (!is.list(self@children)) {
-      return("@children must be a list")
-    }
     ok <- vapply(
       self@children,
-      function(c) is.character(c) && length(c) == 1L,
+      function(c) is.character(c) && length(c) == 1L && !is.na(c) && nzchar(c),
       logical(1)
     )
     if (length(ok) && !all(ok)) {
@@ -88,9 +85,14 @@ Spec <- S7::new_class(
     root = S7::class_character,
     elements = S7::class_list
   ),
+  constructor = function(root, elements) {
+    S7::new_object(S7::S7_object(), root = root, elements = elements)
+  },
   validator = function(self) {
-    if (!is.character(self@root) || length(self@root) != 1L) {
-      return("@root must be a single string")
+    if (
+      !is.character(self@root) || length(self@root) != 1L || !nzchar(self@root)
+    ) {
+      return("@root must be a single non-empty string")
     }
     if (!(self@root %in% names(self@elements))) {
       return(sprintf(
@@ -98,6 +100,14 @@ Spec <- S7::new_class(
         self@root,
         paste(names(self@elements), collapse = ", ")
       ))
+    }
+    ok <- vapply(
+      self@elements,
+      function(e) S7::S7_inherits(e, Element),
+      logical(1)
+    )
+    if (length(ok) && !all(ok)) {
+      return("@elements must be a named list of Element objects")
     }
     NULL
   }
@@ -121,16 +131,13 @@ Node <- S7::new_class(
     if (!is.null(msg)) {
       return(msg)
     }
-    if (!is.list(self@children)) {
-      return("@children must be a list")
-    }
     ok <- vapply(
       self@children,
       function(c) S7::S7_inherits(c, Node),
       logical(1)
     )
     if (length(ok) && !all(ok)) {
-      return("node() children must be Node objects")
+      return("@children must be Node objects")
     }
     NULL
   }

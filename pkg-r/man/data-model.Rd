@@ -12,7 +12,7 @@
 \usage{
 Element(type, props = list(), children = list())
 
-Spec(root = character(0), elements = list())
+Spec(root, elements)
 
 Node(type = character(0), props = list(), children = list())
 

@@ -41,3 +41,31 @@ test_that("node() children must be Node objects", {
   expect_error(node("Card", "text"), "Node")
   expect_error(node("Card", 42), "Node")
 })
+
+test_that("Spec validator rejects non-Element values in elements", {
+  expect_error(spec("a", list(a = "not an element")), "Element")
+})
+
+test_that("element() rejects NA or empty children keys", {
+  expect_error(element("X", children = list(NA_character_)), "character")
+  expect_error(element("X", children = list("")), "character")
+})
+
+test_that("spec() requires a non-empty root string", {
+  els <- list(a = element("Card"))
+  expect_error(spec("", els), "non-empty")
+})
+
+test_that("Node validator rejects non-Node children on direct construction", {
+  expect_error(Node(type = "X", children = list("bad")), "Node")
+})
+
+test_that("element() rejects an NA type", {
+  expect_error(element(NA_character_), "non-empty")
+})
+
+test_that("node() nests multiple levels", {
+  n <- node("A", node("B", node("C")))
+  expect_s3_class(n@children[[1]]@children[[1]], "shinyreact::Node")
+  expect_identical(n@children[[1]]@children[[1]]@type, "C")
+})
