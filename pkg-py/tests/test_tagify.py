@@ -31,9 +31,9 @@ def test_tagify_emits_static_mount_with_child_script():
 def test_tagify_mount_has_no_id_and_is_not_an_output():
     html = _render(Node(type="Chart"))
     assert "shinyreact-output" not in html
-    # The static mount carries no id attribute.
-    div_m = re.search(r"<div[^>]*>", html)
-    assert div_m
+    # The static mount div specifically carries no id attribute.
+    div_m = re.search(r'<div[^>]*class="shinyreact-static"[^>]*>', html)
+    assert div_m, html
     assert " id=" not in div_m.group(0)
 
 

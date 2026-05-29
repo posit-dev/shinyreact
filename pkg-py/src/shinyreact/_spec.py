@@ -143,7 +143,7 @@ class Node:
         """Serialize to the wire tree, discarding any harvested dependencies.
 
         If the node tree contains ``HTMLDependency`` children, use
-        :func:`serialize_ui` (or :meth:`serialize`, added later) instead to
+        :func:`serialize_ui` (or :meth:`serialize`) instead to
         harvest them.
         """
         return self._to_wire([])
