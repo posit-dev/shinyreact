@@ -52,7 +52,7 @@ Both patterns share a single renderer (`render_reactive`) and the same shinyreac
 
 Unchanged. `inst/lib/shiny/shinyreact.{js,css}` is already populated by `make r-update-dist`. The internal `shinyreact_dep()` points at this path.
 
-The dep **version is the bundle's mtime in whole seconds** (`file.mtime(...) |> as.integer() |> as.character()`), with a fixed fallback (`"0.1.0"`) when the bundle is missing in a partially-built checkout. This matches Python's `_dep()` after the `origin/main` merge — mtime versioning is now built into the package itself (not just examples), so browsers re-fetch after a `make update-dist`. The JS consumption side of bookmarking (`applyRestoredValues`) already ships in this shared bundle; R only emits the server-side restore script.
+The dep **version is the bundle's mtime in whole seconds** (`file.mtime(...) |> as.integer() |> as.character()`), falling back to `as.character(utils::packageVersion("shinyreact"))` when the bundle is missing in a partially-built checkout. (R's `packageVersion()` gives a real installed version, unlike Python's hardcoded `"0.1.0"` fallback — no magic string.) This matches Python's `_dep()` after the `origin/main` merge — mtime versioning is now built into the package itself (not just examples), so browsers re-fetch after a `make update-dist`. The JS consumption side of bookmarking (`applyRestoredValues`) already ships in this shared bundle; R only emits the server-side restore script.
 
 ### Build / check wiring
 
