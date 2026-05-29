@@ -165,6 +165,17 @@ as_wire.default <- function(x, deps) {
   )
 }
 
+#' @keywords internal
+#' @exportS3Method
+as_wire.shinyreact_node <- function(x, deps) {
+  list(list(
+    type = jsonlite::unbox("react"),
+    name = jsonlite::unbox(x$type),
+    props = .wire_props(x$props),
+    children = .walk_all(x$children, deps)
+  ))
+}
+
 #' Serialize a UI value to a wire payload + harvested dependencies (internal)
 #'
 #' @keywords internal

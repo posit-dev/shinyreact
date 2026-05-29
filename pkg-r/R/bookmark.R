@@ -48,7 +48,12 @@ restore_script_tag <- function() {
     return(NULL)
   }
   # Layer 1: JSON of the values; neutralize </ so it can't close <script>.
-  json_payload <- gsub("</", "<\\/", .wire_json(values), fixed = TRUE)
+  json_payload <- gsub(
+    "</",
+    "<\\/",
+    as.character(jsonlite::toJSON(values, auto_unbox = TRUE)),
+    fixed = TRUE
+  )
   # Layer 2: wrap as a JS string literal (double-encode) so quotes/newlines
   # survive the JS parser before JSON.parse runs.
   js_string_literal <- jsonlite::toJSON(json_payload, auto_unbox = TRUE)

@@ -15,7 +15,6 @@ Imports:
     cli,
     htmltools,
     jsonlite,
-    S7,
     shiny (>= 1.13.0)
 Suggests:
     testthat (>= 3.0.0),

@@ -7,7 +7,7 @@
 render_reactive(expr, env = parent.frame(), quoted = FALSE)
 }
 \arguments{
-\item{expr}{An expression returning a \code{Node}/\code{Spec}/\code{Element} or a
+\item{expr}{An expression returning a \code{node()} tree / htmltools content, or a
 JSON-serializable value.}
 
 \item{env}{The environment in which to evaluate \code{expr}.}
@@ -18,10 +18,8 @@ JSON-serializable value.}
 A Shiny render function.
 }
 \description{
-The server-side counterpart to \code{useShinyOutputValue()} on the React client.
-Assign to \code{output[[id]]} where the UI has a matching \code{\link[=ui_output]{ui_output()}}.
-}
-\details{
-Accepts a \code{\link[=node]{node()}}/\code{\link[=spec]{spec()}}/\code{\link[=element]{element()}} tree (flattened via \code{\link[=to_spec]{to_spec()}}) or
-any JSON-serializable value (passed through unchanged).
+Server-side counterpart to \code{useShinyOutputValue()}. Assign to \code{output[[id]]}
+where the UI has a matching \code{\link[=ui_output]{ui_output()}}. Accepts a \code{\link[=node]{node()}} tree (which may
+interleave htmltools tags, \code{HTML()}, and strings) or any JSON-serializable
+value (passed through unchanged).
 }
