@@ -57,3 +57,38 @@ S7::method(to_spec, Node) <- function(x) {
 S7::method(to_spec, S7::class_any) <- function(x) {
   x
 }
+
+# Force a list that should serialize as a JSON object (even when empty).
+# jsonlite emits an unnamed empty list as `[]`; tagging with names = character()
+# makes it `{}`.
+.as_json_object <- function(x) {
+  if (is.list(x) && length(x) == 0L) {
+    return(structure(list(), names = character()))
+  }
+  x
+}
+
+# Recursively mark `props` sub-lists so empty ones serialize as objects.
+.mark_objects <- function(node) {
+  if (!is.list(node)) {
+    return(node)
+  }
+  if (!is.null(node$props)) {
+    node$props <- .as_json_object(node$props)
+  }
+  if (!is.null(node$elements)) {
+    node$elements <- lapply(node$elements, .mark_objects)
+  }
+  node
+}
+
+#' @keywords internal
+.wire_json <- function(x) {
+  payload <- .mark_objects(x)
+  jsonlite::toJSON(
+    payload,
+    auto_unbox = TRUE,
+    null = "null",
+    na = "null"
+  )
+}
