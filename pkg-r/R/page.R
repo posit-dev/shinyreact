@@ -43,7 +43,10 @@ page_react_html <- function(path = "www/index.html") {
   if (!file.exists(path)) {
     cli::cli_abort("HTML file not found: {.path {path}}")
   }
-  html <- htmltools::HTML(paste(readLines(path, warn = FALSE), collapse = "\n"))
+  html <- htmltools::HTML(paste(
+    readLines(path, encoding = "UTF-8", warn = FALSE),
+    collapse = "\n"
+  ))
   htmltools::tagList(shinyreact_dep_page(), html)
 }
 
