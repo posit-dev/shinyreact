@@ -9,14 +9,14 @@
 **Tech Stack:** R, htmltools, jsonlite, cli, shiny, testthat (3e), roxygen2, air. Spec: `docs/superpowers/specs/2026-05-29-r-wire-format-rework-design.md`. Python reference: `pkg-py/src/shinyreact/_spec.py` (`_walk`, `serialize_ui`, `Node`), `_reactive_output.py`.
 
 **Verified environment facts (R 4.5.2, htmltools 0.5.9, jsonlite 2.0.0):**
-- `as.tags.list` and `as.tags.character` exist → a plain list/character IS as.tags-able, so `.should_walk` must use the precise three-class check, NOT "as.tags succeeds."
+- `as.tags.list` and `as.tags.character` exist → a plain list/character IS as.tags-able, so `should_walk` must dispatch on explicit walkable classes (S3 generic), NOT "as.tags succeeds."
 - `HTML("x")` has class `c("html","character")` → `is.character()` is `TRUE` for it (bare top-level HTML passes through as raw data, matching Python's `str`-subclass behavior; HTML as a *child* becomes an `html` node via the walker).
 - `class(tagList(...))` is `c("shiny.tag.list","list")` → defining only `as_wire.list` covers both bare lists and taglists (UseMethod walks the class vector).
 - `class(42)` is `"numeric"`, `class(42L)` is `"integer"`, `class(TRUE)` is `"logical"` → need methods for each.
 - `jsonlite::toJSON(structure(list(), names=character()))` → `{}`; `jsonlite::toJSON(list())` → `[]`.
 - `jsonlite::unbox()` scalars survive `toJSON(..., auto_unbox = FALSE)` as JSON scalars.
 
-**Refinement vs spec:** the design spec's `.should_walk` mentioned "objects with an as.tags() method are walkable." That is replaced by the precise three-class rule above (Task 7 updates the spec note). This matches Python's actual `_should_walk` behavior.
+**Refinement vs spec:** the design spec's `should_walk` mentioned "objects with an as.tags() method are walkable." That is replaced by an internal **S3 generic** `should_walk` dispatching on explicit walkable classes (node/tag/taglist → TRUE; character incl. HTML() → FALSE; default → FALSE), which downstream can extend via `should_walk.theirclass` (Task 7 updates the spec note). This matches Python's actual `_should_walk` behavior.
 
 ---
 
@@ -28,7 +28,7 @@
 - `pkg-r/tests/testthat/test-wire.R`, `test-node.R`, `test-static-mount.R`
 
 **Modified:**
-- `pkg-r/R/render.R` — rewrite `.render_transform()` + add `.should_walk()`
+- `pkg-r/R/render.R` — rewrite `.render_transform()` + add `should_walk()` S3 generic + methods
 - `pkg-r/tests/testthat/test-render.R` — rewrite
 - `pkg-r/DESCRIPTION` — remove `S7` from Imports
 - `pkg-r/R/shinyreact-package.R` — remove `@import S7`
@@ -984,7 +984,7 @@ If no example source changed, skip the commit and note "examples build unchanged
 **Files:**
 - Modify: `docs/features.md`
 - Modify: `docs/todos.md`
-- Modify: `docs/superpowers/specs/2026-05-29-r-wire-format-rework-design.md` (refine `.should_walk` note)
+- Modify: `docs/superpowers/specs/2026-05-29-r-wire-format-rework-design.md` (refine `should_walk` note)
 - Modify: `docs/superpowers/specs/2026-05-26-r-package-design.md` (point data-model/wire sections at the rework)
 
 - [ ] **Step 1: Update `docs/features.md` R section**
