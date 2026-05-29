@@ -7,6 +7,6 @@ reference:
   - title: Outputs
     contents: [ui_output, render_reactive]
   - title: Data model
-    contents: [node, spec, element, to_spec]
+    contents: [node]
   - title: Messaging
     contents: [send_message]

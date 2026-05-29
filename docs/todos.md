@@ -85,6 +85,18 @@ restore. Needs a cross-language bookmark-payload fixture and a shape-preserving
 fix (hard due to R's lack of scalar vs. vector distinction). See issue
 [#27](https://github.com/posit-dev/shinyreact/issues/27).
 
+## R tag boolean/NA attribute serialization vs Python
+
+R's `as_wire.shiny.tag` walker passes attribute values through after key
+translation, so an HTML boolean attribute like `tags$input(checked = NA)`
+serializes to `"checked": null`, whereas Python's `tags.input(checked=True)`
+emits `"checked": ""`. Different falsy representations of an HTML boolean
+attribute. Only affects DOM-`tag` node attrs (not `node()` props), is an
+htmltools R-vs-Python idiom difference, and no parity fixture covers it.
+Acceptable v1 limitation; revisit if a downstream component relies on boolean
+attributes round-tripping identically across languages (would want a shared
+fixture + agreed canonical encoding).
+
 ## Re-parent `Node` onto `UiReact(UiComponent, AllowsChildren)` (after #69)
 
 `Node` is currently a standalone `Tagifiable` dataclass (see
