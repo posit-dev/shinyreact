@@ -125,3 +125,35 @@ def test_serialize_ui_taglist_returns_list():
     payload, _ = serialize_ui(TagList(Node(type="A"), Node(type="B")))
     assert isinstance(payload, list)
     assert [n["name"] for n in payload] == ["A", "B"]
+
+
+def test_generic_tagifiable_is_tagified_and_recursed():
+    class Widget:
+        def tagify(self):
+            return tags.div("from widget", class_="w")
+
+    node = Node(type="Card", props={}, children=[Widget()])
+    assert node.to_dict()["children"] == [
+        {
+            "type": "tag",
+            "name": "div",
+            "props": {"className": "w"},
+            "children": [{"type": "text", "value": "from widget"}],
+        }
+    ]
+
+
+def test_nested_node_in_tag_in_node_folds_into_one_tree():
+    node = Node(type="Card", props={}, children=[
+        tags.div(Node(type="Chart", props={"data": [1, 2]})),
+    ])
+    assert node.to_dict()["children"] == [
+        {
+            "type": "tag",
+            "name": "div",
+            "props": {},
+            "children": [
+                {"type": "react", "name": "Chart", "props": {"data": [1, 2]}, "children": []}
+            ],
+        }
+    ]
