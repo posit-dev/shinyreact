@@ -8,6 +8,8 @@ to_spec(x, ...)
 }
 \arguments{
 \item{x}{A \code{Node}, \code{Element}, \code{Spec}, or any JSON-serializable value.}
+
+\item{...}{Further arguments passed to methods.}
 }
 \value{
 A plain list (wire shape) or the input unchanged.

@@ -9,6 +9,7 @@
 #' `S7::method(to_spec, MyComponent) <- function(x) { ... }`.
 #'
 #' @param x A `Node`, `Element`, `Spec`, or any JSON-serializable value.
+#' @param ... Further arguments passed to methods.
 #' @return A plain list (wire shape) or the input unchanged.
 #' @export
 to_spec <- S7::new_generic("to_spec", "x")
