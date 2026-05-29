@@ -138,7 +138,7 @@ Shared `React` and `ReactDOM` instances are also available at `window.shinyreact
 
 - **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`. Registers a Shiny `OutputBinding` for `.shinyreact-output` elements.
 - **Python package** (`pkg-py/`): `Spec` / `Element` / `Node` data model, `reactive_output` decorator, `ui_output()` + `page_react()` helpers, `set_react_page()` for the `ui.tsx` pattern, and `send_message()` for server-to-client communication.
-- **R package** (`pkg-r/`): Placeholder — not yet implemented.
+- **R package** (`pkg-r/`): Mirrors the Python API for R Shiny users — same two patterns (`app.R` and `ui.tsx`), same wire format, same JS bundle. See `examples/app-r/01-hello-world/` for a working example and `docs/features.md` for the full R feature inventory.
 
 ## Development
 
