@@ -22,9 +22,9 @@ export function seedInlineSpecs(): void {
     );
     if (!script) return;
 
-    let spec: Spec;
+    let spec: Spec | null;
     try {
-      spec = JSON.parse(script.textContent || "null");
+      spec = JSON.parse(script.textContent || "null") as Spec | null;
     } catch (err) {
       console.error("[shinyreact] failed to parse inline static spec:", err);
       return;
