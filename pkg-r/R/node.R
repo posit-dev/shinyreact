@@ -14,7 +14,7 @@ node <- function(type, ..., props = list()) {
   if (!is.character(type) || length(type) != 1L) {
     cli::cli_abort("{.arg type} must be a single string.")
   }
-  if (!nzchar(type)) {
+  if (is.na(type) || !nzchar(type)) {
     cli::cli_abort("{.arg type} must be a non-empty string.")
   }
   if (length(props) > 0L) {

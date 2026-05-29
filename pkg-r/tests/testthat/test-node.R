@@ -19,6 +19,10 @@ test_that("node() rejects an empty or non-scalar type", {
   expect_error(node(c("a", "b")), "single")
 })
 
+test_that("node() rejects an NA type", {
+  expect_error(node(NA_character_), "non-empty")
+})
+
 test_that("node() rejects unnamed props", {
   expect_error(node("X", props = list(1, 2)), "named")
 })
