@@ -121,7 +121,7 @@ batch_form_card <- function(input_id, output_id) {
 
 # ---------------------------------------------------------------------------
 
-ui <- page_react(inputs_dep, ui_output("main"))
+ui <- ui_output("main", extra_deps = list(inputs_dep))
 
 server <- function(input, output, session) {
   output$main <- render_reactive({
