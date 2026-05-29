@@ -75,6 +75,16 @@ Currently `ui_output`, `page_react`, and `page_bare` are flat top-level exports.
 
 Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `ui_output()` to simplify the API.
 
+## Re-parent `Node` onto `UiReact(UiComponent, AllowsChildren)` (after #69)
+
+`Node` is currently a standalone `Tagifiable` dataclass (see
+`docs/superpowers/specs/2026-05-29-htmltools-spec-nesting-design.md`). Once #69
+lands the `UiComponent` / `AllowsChildren` hierarchy, re-categorize `Node` as
+`UiReact(UiComponent, AllowsChildren)`. This is cosmetic — it changes `Node`'s
+base classes, not its `tagify()` / serialization behavior. Keep `Node`'s
+`tagify()` and dependency surface aligned with what #69 expects of a
+`UiComponent`.
+
 ## Static `Node` mounts inserted after page load are not auto-seeded
 
 `Node.tagify()` produces a `.shinyreact-static` mount that the JS bundle seeds
