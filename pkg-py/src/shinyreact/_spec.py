@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 
@@ -107,15 +108,36 @@ class Node:
             "children": _walk_all(self.children, deps),
         }
 
-    def tagify(self) -> "Node":
-        """Satisfy the htmltools ``Tagifiable`` protocol.
+    def serialize(self) -> tuple[dict[str, Any], list[HTMLDependency]]:
+        """Serialize to the wire tree plus harvested HTML dependencies."""
+        deps: list[HTMLDependency] = []
+        return self._to_wire(deps), deps
 
-        Returning ``self`` lets ``TagList`` (and any other htmltools container)
-        accept a ``Node`` as a child without converting it to HTML.  The actual
-        serialization is handled by :meth:`_to_wire` when the walker encounters
-        this node.
+    def tagify(self) -> TagList:
+        """Render as a static `.shinyreact-static` mount carrying its spec.
+
+        Makes ``Node`` a ``Tagifiable`` so it can be embedded directly in page
+        chrome (e.g. ``page_react(tags.div(Node(...)))``). The mount has no id
+        and is not a Shiny output; the JS bundle seeds it from the child script
+        at load time. The inline JSON is linked to its mount by DOM adjacency.
         """
-        return self
+        from htmltools import tags
+
+        from ._output import _dep
+
+        node, deps = self.serialize()
+        # Escape "<" as \\u003c (still valid JSON, parses back to "<" on the
+        # client) so a payload containing "</script>" cannot break out of the
+        # script element.
+        spec_json = json.dumps(node).replace("<", "\\u003c")
+        return TagList(
+            _dep(),
+            *deps,
+            tags.div(
+                tags.script(spec_json, type="application/json"),
+                class_="shinyreact-static",
+            ),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to the wire tree, discarding any harvested dependencies.
