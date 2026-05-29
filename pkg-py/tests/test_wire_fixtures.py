@@ -1,40 +1,46 @@
 import json
 from pathlib import Path
 
+from htmltools import HTML, TagList, tags
+
 import shinyreact
 
 FIXTURES = Path(__file__).parent / "fixtures" / "wire_format"
 
-CASES = {
-    "single_element": shinyreact.Node(type="Card", props={"title": "Hello"}),
-    "nested_tree": shinyreact.Node(
-        type="Card",
-        props={"title": "Hi"},
-        children=[
-            shinyreact.Node(type="Divider"),
-            shinyreact.Node(type="Text", props={"value": "x"}),
-        ],
-    ),
-    "empty_children": shinyreact.Node(type="Divider"),
-    "multi_props": shinyreact.Node(
-        type="TextInput",
-        props={"input_id": "name", "label": "Name", "placeholder": "..."},
-    ),
-}
 
-
-def _wire(value) -> dict:
+def _wire(value: object) -> object:
     if isinstance(value, shinyreact.Node):
-        return value.to_spec().to_dict()
-    return value
+        return value.to_dict()
+    from shinyreact._spec import serialize_ui
+
+    payload, _deps = serialize_ui(value)
+    return payload
+
+
+def _cases() -> dict[str, object]:
+    return {
+        "react_node": shinyreact.Node(type="Card", props={"title": "Hi"}),
+        "tag_child": shinyreact.Node(
+            type="Card", children=[tags.span("hi", class_="x")]
+        ),
+        "text_child": shinyreact.Node(type="Card", children=["plain text", 42]),
+        "html_child": shinyreact.Node(type="Card", children=[HTML("<b>x</b>")]),
+        "mixed_tree": shinyreact.Node(
+            type="Card",
+            props={"title": "Hi"},
+            children=[
+                shinyreact.Node(type="Divider"),
+                tags.span("hi", class_="x"),
+                "text",
+            ],
+        ),
+        "taglist_root": TagList(
+            shinyreact.Node(type="Card"), tags.div("d", id="root2")
+        ),
+    }
 
 
 def test_fixtures_match_committed() -> None:
-    for name, value in CASES.items():
+    for name, value in _cases().items():
         expected = json.loads((FIXTURES / f"{name}.json").read_text())
         assert _wire(value) == expected, name
-
-    # Raw passthrough value (not a Node/Spec).
-    raw = {"key": "value", "count": 42}
-    expected_raw = json.loads((FIXTURES / "raw_value.json").read_text())
-    assert raw == expected_raw
