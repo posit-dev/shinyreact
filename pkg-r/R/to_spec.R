@@ -46,10 +46,11 @@ S7::method(to_spec, Node) <- function(x) {
   }
 
   root_key <- walk(x)
-  # Sort elements by key so the root and ancestors precede their descendants
-  # (pre-order depth-first).  auto_NNN keys sort lexicographically correctly
-  # for up to 999 nodes.
-  elements <- elements[sort(names(elements))]
+  # The counter is assigned in pre-order (root gets the lowest number before
+  # its subtree is walked).  Sort by the integer suffix so the root precedes
+  # its descendants regardless of node count.
+  ord <- order(as.integer(sub("^auto_", "", names(elements))))
+  elements <- elements[ord]
   list(root = root_key, elements = elements)
 }
 
