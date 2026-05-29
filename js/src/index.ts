@@ -1,10 +1,10 @@
 import React from "react";
 import * as ReactDOM from "react-dom/client";
-import { createRoot, type Root } from "react-dom/client";
 import type { ComponentRegistry, Spec } from "./spec";
 import { registerComponents } from "./registry";
 import { ShinyreactRenderer } from "./renderer";
 import { ShinyOutput } from "./shiny-output";
+import { getOrCreateRoot, hasRoot, unmountRoot } from "./roots";
 import "./shinyreact.css";
 
 // Re-export @posit/shiny-react hooks and components.
@@ -77,16 +77,6 @@ window.shinyreact = Object.assign(window.shinyreact || {}, {
   ReactDOM,
 });
 
-// React root cache: one React root per output DOM element
-const roots = new WeakMap<Element, Root>();
-
-function getOrCreateRoot(el: HTMLElement): Root {
-  if (!roots.has(el)) {
-    roots.set(el, createRoot(el));
-  }
-  return roots.get(el)!;
-}
-
 // Shiny output binding for .shinyreact-output elements
 class ShinyreactOutputBinding extends Shiny.OutputBinding {
   find(scope: Element): ArrayLike<Element> {
@@ -95,11 +85,7 @@ class ShinyreactOutputBinding extends Shiny.OutputBinding {
 
   renderValue(el: Element, data: Spec | null): void {
     if (!data) {
-      const existing = roots.get(el);
-      if (existing) {
-        existing.unmount();
-        roots.delete(el);
-      }
+      if (hasRoot(el)) unmountRoot(el);
       return;
     }
     const root = getOrCreateRoot(el as HTMLElement);
