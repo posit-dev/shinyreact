@@ -1,9 +1,8 @@
 import json
 from pathlib import Path
 
-from htmltools import HTML, TagList, tags
-
 import shinyreact
+from htmltools import HTML, TagList, tags
 
 FIXTURES = Path(__file__).parent / "fixtures" / "wire_format"
 
