@@ -40,6 +40,12 @@ jobs:
   py-test-e2e:
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
+    # `packages: write` lets GITHUB_TOKEN push the Playwright image to GHCR
+    # (the lazy pull-through cache in setup-playwright-remote). Job-level
+    # permissions replace the workflow-level grant, so restate `contents: read`.
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v6
