@@ -57,8 +57,10 @@ collision-free.
 - **R examples:** `examples/app-r/{01-hello-world,02-inputs,04-messages}/app.R`,
   `examples/ui-tsx-r/01-hello/app.R`, and the R example READMEs that name the functions
   (`examples/app-r/02-inputs/README.md`, `examples/ui-tsx-r/01-hello/README.md`).
-- **Living docs (updated for accuracy):** `docs/features.md`, `docs/app-py-vs-ui-tsx.md`,
-  `docs/todos.md`, `docs/timeline.md`, `CLAUDE.md`.
+- **Living docs (updated for accuracy):** `docs/features.md` (R-pattern section) and
+  `docs/timeline.md:83` (the `shinyreact::ui_output()` R reference). The other
+  `ui_output` mentions in `docs/todos.md`, `CLAUDE.md`, `docs/app-py-vs-ui-tsx.md`, and
+  `docs/timeline.md:110` are **Python** `ui_output` and stay unchanged.
 - **Not touched:** `docs/superpowers/specs/*` and `docs/superpowers/plans/*` — historical
   records, left as written.
 - **Verify:** `make r-check` (format + tests + R CMD check) passes.
@@ -113,9 +115,18 @@ none exist):
 
 ## Part 5 — Code of Conduct (separate from README)
 
-Run `usethis::use_code_of_conduct()` (default contact — no email argument) against the R
-package (`pkg-r/`) to add `CODE_OF_CONDUCT.md` (Contributor Covenant) and the
-`.Rbuildignore` entry. Do not embed a CoC section in the README.
+Run `usethis::use_tidy_coc()` with the active project set to the **repo root** to add
+**`.github/CODE_OF_CONDUCT.md`** (Contributor Covenant 2.1, contact
+`codeofconduct@posit.co` — the standard monitored tidyverse/Posit alias). Command:
+
+```sh
+Rscript -e 'usethis::with_project(".", usethis::use_tidy_coc())'
+```
+
+At the repo root there is no `DESCRIPTION`, so `is_package()` is `FALSE` and usethis
+makes no `.Rbuildignore` edit (none is needed — the file lives outside `pkg-r/`). usethis
+also creates `.github/.gitignore` (`*.html`) as a minor side artifact. Do not embed a CoC
+section in the README.
 
 ## Out of scope
 
