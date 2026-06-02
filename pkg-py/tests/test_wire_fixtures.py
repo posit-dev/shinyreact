@@ -3,6 +3,7 @@ from pathlib import Path
 
 import shinyreact
 from htmltools import HTML, TagList, tags
+from shinyreact._spec import _ATTR_MAP
 
 FIXTURES = Path(__file__).parent / "fixtures" / "wire_format"
 
@@ -43,3 +44,11 @@ def test_fixtures_match_committed() -> None:
     for name, value in _cases().items():
         expected = json.loads((FIXTURES / f"{name}.json").read_text())
         assert _wire(value) == expected, name
+
+
+def test_attr_map_matches_committed() -> None:
+    # The HTML-attribute -> React-prop name map must stay identical to R's
+    # `.ATTR_MAP` (pkg-r/R/wire.R). Both sides assert against this committed
+    # fixture so the two languages can't drift.
+    expected = json.loads((FIXTURES / "attr_map.json").read_text())
+    assert _ATTR_MAP == expected

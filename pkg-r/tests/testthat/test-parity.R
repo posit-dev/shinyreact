@@ -67,3 +67,14 @@ test_that("taglist_root matches Python (sibling-list payload)", {
     fixture("taglist_root")
   )
 })
+
+test_that(".ATTR_MAP matches Python's _ATTR_MAP", {
+  # The HTML-attribute -> React-prop map must stay identical across languages.
+  # Python commits attr_map.json from its _ATTR_MAP; R asserts its .ATTR_MAP
+  # against the same fixture (order-insensitive). Keeps the two from drifting.
+  expected <- unlist(jsonlite::fromJSON(
+    testthat::test_path("fixtures", "wire_format", "attr_map.json"),
+    simplifyVector = FALSE
+  ))
+  expect_mapequal(shinyreact:::.ATTR_MAP, expected)
+})
