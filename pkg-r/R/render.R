@@ -54,7 +54,7 @@ should_walk.shiny.tag.list <- function(value) TRUE
 #' Render a React component tree (or raw data) to a shinyreact output
 #'
 #' Server-side counterpart to `useShinyOutputValue()`. Assign to `output[[id]]`
-#' where the UI has a matching [ui_output_react()]. Accepts a [node()] tree (which may
+#' where the UI has a matching [output_react()]. Accepts a [node()] tree (which may
 #' interleave htmltools tags, `HTML()`, and strings) or any JSON-serializable
 #' value (passed through unchanged).
 #'

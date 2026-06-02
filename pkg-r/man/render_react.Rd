@@ -19,7 +19,7 @@ A Shiny render function.
 }
 \description{
 Server-side counterpart to \code{useShinyOutputValue()}. Assign to \code{output[[id]]}
-where the UI has a matching \code{\link[=ui_output_react]{ui_output_react()}}. Accepts a \code{\link[=node]{node()}} tree (which may
+where the UI has a matching \code{\link[=output_react]{output_react()}}. Accepts a \code{\link[=node]{node()}} tree (which may
 interleave htmltools tags, \code{HTML()}, and strings) or any JSON-serializable
 value (passed through unchanged).
 }
