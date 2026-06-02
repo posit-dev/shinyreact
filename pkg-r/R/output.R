@@ -9,11 +9,10 @@
 #' @return A `shiny.tag` `<div>`.
 #' @export
 ui_output <- function(id, extra_deps = list()) {
-  do.call(
-    htmltools::div,
-    c(
-      list(id = id, class = "shinyreact-output", shinyreact_dep()),
-      extra_deps
-    )
+  htmltools::div(
+    id = id,
+    class = "shinyreact-output",
+    shinyreact_dep(),
+    extra_deps
   )
 }
