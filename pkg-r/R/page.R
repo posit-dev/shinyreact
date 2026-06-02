@@ -69,11 +69,12 @@ page_react_dep <- function(
 ) {
   js_path <- file.path(src_dir, js_file)
   mtime <- suppressWarnings(file.mtime(js_path))
-  version <- if (length(mtime) == 1L && !is.na(mtime)) {
-    as.character(as.integer(mtime))
-  } else {
-    "0"
-  }
+  version <-
+    if (length(mtime) == 1L && !is.na(mtime)) {
+      as.character(as.integer(mtime))
+    } else {
+      "0"
+    }
   htmltools::htmlDependency(
     name = name,
     version = version,
