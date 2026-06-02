@@ -9,11 +9,11 @@ server <- function(input, output, session) {
     if (is.null(name) || nchar(name) == 0) "World" else name
   })
 
-  output$txtout_title <- render_react({
+  output$txtout_title <- reactive_output({
     paste0("Hello, ", greeting(), "!")
   })
 
-  output$txtout_count <- render_react({
+  output$txtout_count <- reactive_output({
     input$click_count
   })
 }

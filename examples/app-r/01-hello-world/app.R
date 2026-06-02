@@ -65,7 +65,7 @@ output_display <- function(output_id, label = "") {
 
 # ---------------------------------------------------------------------------
 
-ui <- page_react(hello_dep, ui_output_react("hello"))
+ui <- page_react(hello_dep, output_react("hello"))
 
 server <- function(input, output, session) {
   output$hello <- render_react({
@@ -92,7 +92,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$txtout <- render_react({
+  output$txtout <- reactive_output({
     toupper(input$txtin)
   })
 }

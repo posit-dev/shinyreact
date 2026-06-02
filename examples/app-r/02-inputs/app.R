@@ -121,7 +121,7 @@ batch_form_card <- function(input_id, output_id) {
 
 # ---------------------------------------------------------------------------
 
-ui <- ui_output_react("main", extra_deps = list(inputs_dep))
+ui <- output_react("main", extra_deps = list(inputs_dep))
 
 server <- function(input, output, session) {
   output$main <- render_react({
@@ -140,40 +140,40 @@ server <- function(input, output, session) {
     )
   })
 
-  output$txtout <- render_react({
+  output$txtout <- reactive_output({
     toupper(input$txtin)
   })
 
-  output$numberout <- render_react({
+  output$numberout <- reactive_output({
     as.character(input$numberin)
   })
 
-  output$checkboxout <- render_react({
+  output$checkboxout <- reactive_output({
     as.character(input$checkboxin)
   })
 
-  output$radioout <- render_react({
+  output$radioout <- reactive_output({
     as.character(input$radioin)
   })
 
-  output$selectout <- render_react({
+  output$selectout <- reactive_output({
     as.character(input$selectin)
   })
 
-  output$sliderout <- render_react({
+  output$sliderout <- reactive_output({
     as.character(input$sliderin)
   })
 
-  output$dateout <- render_react({
+  output$dateout <- reactive_output({
     as.character(input$datein)
   })
 
-  output$buttonout <- render_react({
+  output$buttonout <- reactive_output({
     input$buttonin
     as.character(input$buttonin)
   })
 
-  output$fileout <- render_react({
+  output$fileout <- reactive_output({
     files <- input$filein
     if (is.null(files) || length(files) == 0) {
       return(NULL)
@@ -207,7 +207,7 @@ server <- function(input, output, session) {
     paste(summaries, collapse = "\n")
   })
 
-  output$batchout <- render_react({
+  output$batchout <- reactive_output({
     data <- input$batchdata
     if (is.null(data)) {
       return("No data submitted yet.")
