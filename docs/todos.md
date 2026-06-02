@@ -75,6 +75,28 @@ Currently `ui_output`, `page_react`, and `page_bare` are flat top-level exports.
 
 Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `ui_output()` to simplify the API.
 
+## R bookmark restore value shape vs Python ([#27](https://github.com/posit-dev/shinyreact/issues/27))
+
+R's bookmark restore serializer uses `jsonlite::toJSON(auto_unbox = TRUE)`, so a
+length-1 R vector (e.g. a checkbox-group with one selected value) serializes as
+a JSON scalar `"a"`, whereas Python `json.dumps` emits `["a"]`. This can seed the
+wrong shape into the JS input registry for single-value multi-value inputs on
+restore. Needs a cross-language bookmark-payload fixture and a shape-preserving
+fix (hard due to R's lack of scalar vs. vector distinction). See issue
+[#27](https://github.com/posit-dev/shinyreact/issues/27).
+
+## R tag boolean/NA attribute serialization vs Python
+
+R's `as_wire.shiny.tag` walker passes attribute values through after key
+translation, so an HTML boolean attribute like `tags$input(checked = NA)`
+serializes to `"checked": null`, whereas Python's `tags.input(checked=True)`
+emits `"checked": ""`. Different falsy representations of an HTML boolean
+attribute. Only affects DOM-`tag` node attrs (not `node()` props), is an
+htmltools R-vs-Python idiom difference, and no parity fixture covers it.
+Acceptable v1 limitation; revisit if a downstream component relies on boolean
+attributes round-tripping identically across languages (would want a shared
+fixture + agreed canonical encoding).
+
 ## Re-parent `Node` onto `UiReact(UiComponent, AllowsChildren)` (after #69)
 
 `Node` is currently a standalone `Tagifiable` dataclass (see

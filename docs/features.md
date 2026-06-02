@@ -95,3 +95,56 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 - **`set_react_page()` serves static + Shiny side-by-side.** Inside a Shiny Express app, `shinyreact.set_react_page()` reads `www/index.html` and serves it as the page body alongside reactive computation. The Python file contains reactive logic only; the `www/` directory contains `index.html` and (optionally) a bundled JS app.
 - **No build step required.** The default path uses `React.createElement` directly from a hand-written `app.js` (see ex. 01/02). Apps that want JSX or a component library opt into Vite (see ex. 03/04).
 - **Vite lib-mode IIFE for build path.** Bundled `ui.tsx` apps externalize React to `window.shinyreact` to share the bundled React instance with shinyreact's hooks and avoid duplicate React copies.
+
+---
+
+## R package (`pkg-r/`)
+
+Mirrors the Python package API for R Shiny users. Pure plumbing — no UI components. Lives at `pkg-r/`. Install with `pak::local_install("pkg-r")`.
+
+### `app.R` pattern (`page_react` + `render_reactive`)
+
+UI is defined as R objects (`node()`, htmltools tags, `HTML()`, strings/numbers) in the app file via `page_react()`; the server returns trees from `render_reactive()`. Equivalent to the Python `app.py` pattern. Examples in `examples/app-r/`.
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| `page_react(...)` | Working | Full-page React app with `#root` + page-level dep (bundle + bookmark restore script) |
+| `page_bare(...)` | Working | Minimal HTML scaffold without `#root` |
+| `ui_output(id, extra_deps = list())` | Working | Output div with `shinyreact-output` class and per-output dep; `extra_deps` merged via `attachDependencies()` |
+| `render_reactive(expr)` | Working | Shiny renderer; walks `node()` trees (or htmltools content) into the JSON wire tree via an internal S3 walker (`as_wire()`). Raw JSON-serializable values (plain lists, numbers, strings) pass through for `useShinyOutputValue()`. `NULL` passes through. |
+| `node(type, ..., props = list())` | Working | Plain S3 (`shinyreact_node`) component node; children may interleave other `node()`s, htmltools `tags$*`, `HTML()`, strings, and numbers at arbitrary depth. Walked into the discriminated-union wire tree (`react`/`tag`/`text`/`html`). |
+| **Interleaved htmltools + React content** | Working | `node()` children accept htmltools `Tag`/`TagList`/`HTML()`/strings/numbers; the internal walker harvests `htmlDependency` objects from the tree. Mirrors Python `Node` + `serialize_ui()`. |
+| **Static mounts** | Working | `as.tags.shinyreact_node()` renders a `node()` as a `.shinyreact-static` div + inline `<script type="application/json">`, hydrated client-side by `seedInlineSpecs()`. Use in page chrome without a server round-trip. |
+| `send_message(session, type, data)` | Working | Server-to-client custom message (`shinyReactMessage`) |
+| Bookmark restoration | Working | `page_react()` and `page_react_html()` emit a head `<script>` carrying restored input values; `useShinyInput` adopts them as initial values. URL and server-stored bookmark modes both supported |
+
+### `ui.tsx` pattern (`page_react_html`)
+
+UI lives in `www/index.html` + JS; bootstrapped from R via `page_react_html()`. Server contains only reactive computation. Equivalent to the Python `ui.tsx` pattern. Examples in `examples/ui-tsx-r/`.
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| `page_react_html(path = "www/index.html")` | Working | Reads a static HTML file and attaches the page-level dep (bundle + bookmark restore script). Pass as `ui` to `shinyApp()` |
+| `page_react_dep()` | Working | `htmlDependency` for a downstream package's own JS/CSS bundle; mtime-versioned |
+| `render_reactive(expr)` | Working | Returns any `Jsonifiable` value for `useShinyOutputValue()` hooks; raw lists pass through |
+| `send_message(session, type, data)` | Working | Same as `app.R` pattern |
+
+### JS bridge hooks
+
+The shared JS bundle (`window.shinyreact`) is identical for R and Python apps. All hooks listed in the [JS bridge hooks table above](#js-bridge-hooks-jssrc-shiny-react) are accessible from R apps the same way — the client-side API is language-agnostic.
+
+### Examples
+
+| Example | Pattern | Status | Description |
+|---------|---------|--------|-------------|
+| [app-r/01-hello-world](../examples/app-r/01-hello-world/) | `app.R` | Working | Card + TextInput + OutputDisplay composed via `node()`; direct port of `app-py/01-hello-world` |
+| [app-r/02-inputs](../examples/app-r/02-inputs/) | `app.R` | Working | ~10 input widget types; bookmark demo (URL bookmark restores inputs on reload) |
+| [app-r/04-messages](../examples/app-r/04-messages/) | `app.R` | Working | `send_message()` end-to-end; auto-dismissing toasts |
+| [ui-tsx-r/01-hello](../examples/ui-tsx-r/01-hello/) | `ui.tsx` | Working | `page_react_html()` + raw-JSON renderer return; direct port of `ui-tsx/01-hello` |
+
+### Design decisions
+
+- **`render_reactive()` walks via an internal S3 walker.** `as_wire()` + `serialize_ui()` produce the discriminated-union wire tree; Shiny serializes the resulting plain R list via its standard `jsonlite` call. Scalars are `unbox()`-wrapped so they serialize as JSON scalars, not 1-element arrays.
+- **Parity with Python is structural.** Cross-language wire-format parity is verified via shared fixtures; `children` order is significant, prop key order is insignificant. Python `json.dumps` and R `jsonlite` differ in whitespace by design.
+- **`shiny:::` for bookmark restore context.** R Shiny does not expose a public API for reading the restore context non-destructively. `bookmark.R` uses `shiny:::` internals, isolated in one thin wrapper, with a pinned `shiny` version floor in `DESCRIPTION`.
+- **Downstream extension.** Downstream R packages build `node("TheirComponent", ...)` trees and inject their `htmlDependency` via `ui_output(id, extra_deps = list(...))`. `render_reactive()` is the single rendering entry point. Downstream can also implement `as.tags()` for their own classes as an escape hatch; `should_walk()` dispatches on the class to opt in.

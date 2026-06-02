@@ -1,0 +1,21 @@
+[
+  {
+    "type": "react",
+    "name": "Card",
+    "props": {},
+    "children": []
+  },
+  {
+    "type": "tag",
+    "name": "div",
+    "props": {
+      "id": "root2"
+    },
+    "children": [
+      {
+        "type": "text",
+        "value": "d"
+      }
+    ]
+  }
+]
