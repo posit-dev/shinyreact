@@ -27,7 +27,7 @@ toast_card <- function(title) {
 
 # ---------------------------------------------------------------------------
 
-ui <- ui_output("main", extra_deps = list(messages_dep))
+ui <- ui_output_react("main", extra_deps = list(messages_dep))
 
 server <- function(input, output, session) {
   log_messages <- list(
@@ -39,7 +39,7 @@ server <- function(input, output, session) {
     list(text = "Cache cleared", category = "info")
   )
 
-  output$main <- render_reactive({
+  output$main <- render_react({
     app_layout(
       "Event Message Demo",
       toast_card("Toast messages from server")

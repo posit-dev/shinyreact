@@ -65,10 +65,10 @@ output_display <- function(output_id, label = "") {
 
 # ---------------------------------------------------------------------------
 
-ui <- page_react(hello_dep, ui_output("hello"))
+ui <- page_react(hello_dep, ui_output_react("hello"))
 
 server <- function(input, output, session) {
-  output$hello <- render_reactive({
+  output$hello <- render_react({
     card(
       "Hello Shiny React!",
       # tags$small() is a shiny.tag — the walker serialises it to a
@@ -92,7 +92,7 @@ server <- function(input, output, session) {
     )
   })
 
-  output$txtout <- render_reactive({
+  output$txtout <- render_react({
     toupper(input$txtin)
   })
 }

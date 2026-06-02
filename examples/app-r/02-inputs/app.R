@@ -121,10 +121,10 @@ batch_form_card <- function(input_id, output_id) {
 
 # ---------------------------------------------------------------------------
 
-ui <- ui_output("main", extra_deps = list(inputs_dep))
+ui <- ui_output_react("main", extra_deps = list(inputs_dep))
 
 server <- function(input, output, session) {
-  output$main <- render_reactive({
+  output$main <- render_react({
     page_layout(
       "Shiny React Input Examples",
       text_input_card("txtin", "txtout"),
@@ -140,40 +140,40 @@ server <- function(input, output, session) {
     )
   })
 
-  output$txtout <- render_reactive({
+  output$txtout <- render_react({
     toupper(input$txtin)
   })
 
-  output$numberout <- render_reactive({
+  output$numberout <- render_react({
     as.character(input$numberin)
   })
 
-  output$checkboxout <- render_reactive({
+  output$checkboxout <- render_react({
     as.character(input$checkboxin)
   })
 
-  output$radioout <- render_reactive({
+  output$radioout <- render_react({
     as.character(input$radioin)
   })
 
-  output$selectout <- render_reactive({
+  output$selectout <- render_react({
     as.character(input$selectin)
   })
 
-  output$sliderout <- render_reactive({
+  output$sliderout <- render_react({
     as.character(input$sliderin)
   })
 
-  output$dateout <- render_reactive({
+  output$dateout <- render_react({
     as.character(input$datein)
   })
 
-  output$buttonout <- render_reactive({
+  output$buttonout <- render_react({
     input$buttonin
     as.character(input$buttonin)
   })
 
-  output$fileout <- render_reactive({
+  output$fileout <- render_react({
     files <- input$filein
     if (is.null(files) || length(files) == 0) {
       return(NULL)
@@ -207,7 +207,7 @@ server <- function(input, output, session) {
     paste(summaries, collapse = "\n")
   })
 
-  output$batchout <- render_reactive({
+  output$batchout <- render_react({
     data <- input$batchdata
     if (is.null(data)) {
       return("No data submitted yet.")

@@ -80,7 +80,7 @@ A written piece that articulates where Shiny fits in the modern app landscape �
 
 Full feature parity — not just a demo, the real thing:
 
-- `shinyreact::ui_output()` — equivalent to Python's `shinyreact.ui_output()`
+- `shinyreact::ui_output_react()` — equivalent to Python's `shinyreact.ui_output()`
 - `shinyreact::reactive_output` — equivalent to `@shinyreact.reactive_output`
 - `Spec` / `Element` data model
 - `send_message()` support
