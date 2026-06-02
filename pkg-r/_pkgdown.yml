@@ -5,7 +5,7 @@ reference:
   - title: Pages
     contents: [page_react, page_bare, page_react_html, page_react_dep]
   - title: Outputs
-    contents: [ui_output, render_reactive]
+    contents: [ui_output_react, render_react]
   - title: Data model
     contents: [node]
   - title: Messaging

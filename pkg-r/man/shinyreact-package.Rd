@@ -17,11 +17,16 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Posit Software, PBC \email{info@posit.co}
+\strong{Maintainer}: Barret Schloerke \email{barret@posit.co} (\href{https://orcid.org/0000-0001-9986-114X}{ORCID})
 
 Authors:
 \itemize{
-  \item Posit Software, PBC \email{info@posit.co}
+  \item Barret Schloerke \email{barret@posit.co} (\href{https://orcid.org/0000-0001-9986-114X}{ORCID})
+}
+
+Other contributors:
+\itemize{
+  \item  Posit Software, PBC (\href{https://ror.org/03wc8by49}{ROR}) [copyright holder, funder]
 }
 
 }

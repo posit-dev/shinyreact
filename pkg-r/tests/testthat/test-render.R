@@ -58,7 +58,7 @@ test_that(".render_transform warns when a walked tree carries dependencies", {
   )
 })
 
-test_that("render_reactive returns a shiny render function", {
-  r <- render_reactive(node("Card"))
+test_that("render_react returns a shiny render function", {
+  r <- render_react(node("Card"))
   expect_s3_class(r, "shiny.render.function")
 })

@@ -102,16 +102,16 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 
 Mirrors the Python package API for R Shiny users. Pure plumbing — no UI components. Lives at `pkg-r/`. Install with `pak::local_install("pkg-r")`.
 
-### `app.R` pattern (`page_react` + `render_reactive`)
+### `app.R` pattern (`page_react` + `render_react`)
 
-UI is defined as R objects (`node()`, htmltools tags, `HTML()`, strings/numbers) in the app file via `page_react()`; the server returns trees from `render_reactive()`. Equivalent to the Python `app.py` pattern. Examples in `examples/app-r/`.
+UI is defined as R objects (`node()`, htmltools tags, `HTML()`, strings/numbers) in the app file via `page_react()`; the server returns trees from `render_react()`. Equivalent to the Python `app.py` pattern. Examples in `examples/app-r/`.
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | `page_react(...)` | Working | Full-page React app with `#root` + page-level dep (bundle + bookmark restore script) |
 | `page_bare(...)` | Working | Minimal HTML scaffold without `#root` |
-| `ui_output(id, extra_deps = list())` | Working | Output div with `shinyreact-output` class and per-output dep; `extra_deps` merged via `attachDependencies()` |
-| `render_reactive(expr)` | Working | Shiny renderer; walks `node()` trees (or htmltools content) into the JSON wire tree via an internal S3 walker (`as_wire()`). Raw JSON-serializable values (plain lists, numbers, strings) pass through for `useShinyOutputValue()`. `NULL` passes through. |
+| `ui_output_react(id, extra_deps = list())` | Working | Output div with `shinyreact-output` class and per-output dep; `extra_deps` merged via `attachDependencies()` |
+| `render_react(expr)` | Working | Shiny renderer; walks `node()` trees (or htmltools content) into the JSON wire tree via an internal S3 walker (`as_wire()`). Raw JSON-serializable values (plain lists, numbers, strings) pass through for `useShinyOutputValue()`. `NULL` passes through. |
 | `node(type, ..., props = list())` | Working | Plain S3 (`shinyreact_node`) component node; children may interleave other `node()`s, htmltools `tags$*`, `HTML()`, strings, and numbers at arbitrary depth. Walked into the discriminated-union wire tree (`react`/`tag`/`text`/`html`). |
 | **Interleaved htmltools + React content** | Working | `node()` children accept htmltools `Tag`/`TagList`/`HTML()`/strings/numbers; the internal walker harvests `htmlDependency` objects from the tree. Mirrors Python `Node` + `serialize_ui()`. |
 | **Static mounts** | Working | `as.tags.shinyreact_node()` renders a `node()` as a `.shinyreact-static` div + inline `<script type="application/json">`, hydrated client-side by `seedInlineSpecs()`. Use in page chrome without a server round-trip. |
@@ -126,7 +126,7 @@ UI lives in `www/index.html` + JS; bootstrapped from R via `page_react_html()`. 
 |---------|--------|-------|
 | `page_react_html(path = "www/index.html")` | Working | Reads a static HTML file and attaches the page-level dep (bundle + bookmark restore script). Pass as `ui` to `shinyApp()` |
 | `page_react_dep()` | Working | `htmlDependency` for a downstream package's own JS/CSS bundle; mtime-versioned |
-| `render_reactive(expr)` | Working | Returns any `Jsonifiable` value for `useShinyOutputValue()` hooks; raw lists pass through |
+| `render_react(expr)` | Working | Returns any `Jsonifiable` value for `useShinyOutputValue()` hooks; raw lists pass through |
 | `send_message(session, type, data)` | Working | Same as `app.R` pattern |
 
 ### JS bridge hooks
@@ -144,7 +144,7 @@ The shared JS bundle (`window.shinyreact`) is identical for R and Python apps. A
 
 ### Design decisions
 
-- **`render_reactive()` walks via an internal S3 walker.** `as_wire()` + `serialize_ui()` produce the discriminated-union wire tree; Shiny serializes the resulting plain R list via its standard `jsonlite` call. Scalars are `unbox()`-wrapped so they serialize as JSON scalars, not 1-element arrays.
+- **`render_react()` walks via an internal S3 walker.** `as_wire()` + `serialize_ui()` produce the discriminated-union wire tree; Shiny serializes the resulting plain R list via its standard `jsonlite` call. Scalars are `unbox()`-wrapped so they serialize as JSON scalars, not 1-element arrays.
 - **Parity with Python is structural.** Cross-language wire-format parity is verified via shared fixtures; `children` order is significant, prop key order is insignificant. Python `json.dumps` and R `jsonlite` differ in whitespace by design.
 - **`shiny:::` for bookmark restore context.** R Shiny does not expose a public API for reading the restore context non-destructively. `bookmark.R` uses `shiny:::` internals, isolated in one thin wrapper, with a pinned `shiny` version floor in `DESCRIPTION`.
-- **Downstream extension.** Downstream R packages build `node("TheirComponent", ...)` trees and inject their `htmlDependency` via `ui_output(id, extra_deps = list(...))`. `render_reactive()` is the single rendering entry point. Downstream can also implement `as.tags()` for their own classes as an escape hatch; `should_walk()` dispatches on the class to opt in.
+- **Downstream extension.** Downstream R packages build `node("TheirComponent", ...)` trees and inject their `htmlDependency` via `ui_output_react(id, extra_deps = list(...))`. `render_react()` is the single rendering entry point. Downstream can also implement `as.tags()` for their own classes as an escape hatch; `should_walk()` dispatches on the class to opt in.
