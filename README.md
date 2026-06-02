@@ -49,20 +49,20 @@ registerComponents(catalog, registry);
 
 ### 2. Server — render your components + inject your dependency
 
-**Python** — subclass `reactive_output` and inject your `HTMLDependency` on the UI side:
+**Python** — subclass `render_react` and inject your `HTMLDependency` on the UI side:
 
 ```python
-class render(shinyreact.reactive_output):
+class render(shinyreact.render_react):
     async def transform(self, value: MyComponent) -> Any:
         return value.to_spec().to_dict()
 
-shinyreact.ui_output("my_output", extra_deps=[my_html_dependency()])
+shinyreact.output_react("my_output", extra_deps=[my_html_dependency()])
 ```
 
-**R** — build `node("YourComponent", ...)` trees and inject your `htmlDependency` via `ui_output_react()`:
+**R** — build `node("YourComponent", ...)` trees and inject your `htmlDependency` via `output_react()`:
 
 ```r
-ui_output_react("my_output", extra_deps = list(my_html_dependency()))
+output_react("my_output", extra_deps = list(my_html_dependency()))
 ```
 
 ### JS hooks available via `window.shinyreact`
@@ -85,8 +85,8 @@ Shared `React` and `ReactDOM` instances are also available at `window.shinyreact
 ## Architecture
 
 - **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`. Registers a Shiny `OutputBinding` for `.shinyreact-output` elements. Shared by both language packages.
-- **Python package** (`pkg-py/`): `Spec` / `Element` / `Node` data model, `reactive_output` decorator, `ui_output()` + `page_react()` helpers, `set_react_page()` for the `ui.tsx` pattern, and `send_message()` for server-to-client communication.
-- **R package** (`pkg-r/`): `node()` tree data model, `render_react()` renderer, `ui_output_react()` + `page_react()` helpers, `page_react_html()` for the `ui.tsx` pattern, and `send_message()`. Same wire format and JS bundle as Python.
+- **Python package** (`pkg-py/`): `Spec` / `Element` / `Node` data model, `render_react` (app.py) + `reactive_output` (ui.tsx) renderers, `output_react()` + `page_react()` helpers, `set_react_page()` for the `ui.tsx` pattern, and `send_message()` for server-to-client communication.
+- **R package** (`pkg-r/`): `node()` tree data model, `render_react()` (app.R) + `reactive_output()` (ui.tsx) renderers, `output_react()` + `page_react()` helpers, `page_react_html()` for the `ui.tsx` pattern, and `send_message()`. Same wire format and JS bundle as Python.
 
 ## Development
 

@@ -37,7 +37,7 @@ card <- function(title, ...) node("Card", ..., props = list(title = title))
 
 ui <- page_react(
   # ... your htmlDependency for the registered React components ...
-  ui_output_react("hello")
+  output_react("hello")
 )
 
 server <- function(input, output, session) {
@@ -52,7 +52,7 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
-`render_react()` walks a `node()` tree (which may interleave htmltools tags, `HTML()`, and strings) into the JSON wire tree. Any other JSON-serializable value passes through unchanged for `useShinyOutputValue()` hooks on the React side. Push data to the client with `send_message()`.
+`render_react()` walks a `node()` tree (which may interleave htmltools tags, `HTML()`, and strings) into the JSON wire tree and renders it into the matching `output_react()` placeholder. For the `ui.tsx` pattern — where the client owns the UI and reads values through `useShinyOutputValue()` hooks — use `reactive_output()` instead, which sends any JSON-serializable value through unchanged. Push data to the client with `send_message()`.
 
 See [`examples/app-r/01-hello-world/`](https://github.com/posit-dev/shinyreact/tree/main/examples/app-r/01-hello-world) for the complete runnable app, including the registered components.
 
