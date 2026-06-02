@@ -44,18 +44,15 @@ as.tags.shinyreact_node <- function(x, ...) {
     as.character(jsonlite::toJSON(parts$payload, auto_unbox = FALSE)),
     fixed = TRUE
   )
-  do.call(
-    htmltools::tagList,
-    c(
-      list(shinyreact_dep()),
-      parts$deps,
-      list(htmltools::div(
-        class = "shinyreact-static",
-        htmltools::tags$script(
-          htmltools::HTML(spec_json),
-          type = "application/json"
-        )
-      ))
+  htmltools::tagList(
+    shinyreact_dep(),
+    parts$deps,
+    htmltools::div(
+      class = "shinyreact-static",
+      htmltools::tags$script(
+        htmltools::HTML(spec_json),
+        type = "application/json"
+      )
     )
   )
 }
