@@ -1,6 +1,6 @@
 // Fixture components for the interleaved static + reactive nesting e2e test.
 // Registers two components that the app.py-pattern fixture uses both in static
-// page chrome (Node.tagify() → .shinyreact-static) and in a reactive_output.
+// page chrome (Node.tagify() → .shinyreact-static) and in a render_react.
 const { registerComponents, React } = window.shinyreact;
 
 function Badge({ element }) {

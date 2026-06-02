@@ -1,12 +1,12 @@
 """Fixture for the interleaved static + reactive nesting e2e test (#88).
 
-Exercises the app.py pattern (page_react + reactive_output) over BOTH delivery
+Exercises the app.py pattern (page_react + render_react) over BOTH delivery
 paths for a `Node` tree that interleaves React components with htmltools tags:
 
 1. Static: a `Node("Badge", ...)` embedded in page chrome. `Node.tagify()`
    emits a `.shinyreact-static` mount with an inline JSON `<script>`; the JS
    bundle's `seedInlineSpecs()` pass renders it at load time — no server output.
-2. Reactive: a `Node` tree returned from `@reactive_output`, delivered over the
+2. Reactive: a `Node` tree returned from `@render_react`, delivered over the
    WebSocket, interleaving an htmltools `tags.div`/`tags.span` with a nested
    registered `Badge` component inside a `Card`.
 
@@ -38,12 +38,12 @@ app_ui = shinyreact.page_react(
         shinyreact.Node("Badge", {"text": "static-badge"}),
         id="chrome",
     ),
-    shinyreact.ui_output("reactive_card"),
+    shinyreact.output_react("reactive_card"),
 )
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def reactive_card():
         return shinyreact.Node(
             "Card",

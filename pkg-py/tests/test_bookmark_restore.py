@@ -5,7 +5,7 @@ from pathlib import Path
 from htmltools import HTMLDependency, TagList
 from shiny.bookmark._restore_state import RestoreContext, RestoreInputSet
 from shiny.bookmark._restore_state import restore_context as restore_context_cm
-from shinyreact import page_react, ui_output
+from shinyreact import output_react, page_react
 from shinyreact._bookmark import _read_restore_input_values, _restore_script_tag
 from shinyreact._output import _dep, _dep_page
 from shinyreact._page import _build_react_page_fn
@@ -252,10 +252,10 @@ def test_set_react_page_no_restore_script_without_bookmark(tmp_path: Path) -> No
     assert "window.shinyreact._restore" not in html
 
 
-def test_ui_output_does_not_emit_restore_script_when_bookmark_active() -> None:
-    """ui_output uses _dep(), not _dep_page() — no restore script."""
+def test_output_react_does_not_emit_restore_script_when_bookmark_active() -> None:
+    """output_react uses _dep(), not _dep_page() — no restore script."""
     ctx = RestoreContext()
     ctx.input = RestoreInputSet({"foo": "hello"})
     with restore_context_cm(ctx):
-        html = _rendered_html(ui_output("main"))
+        html = _rendered_html(output_react("main"))
     assert "window.shinyreact._restore" not in html
