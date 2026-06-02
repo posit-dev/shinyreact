@@ -36,7 +36,7 @@ def _dep_page() -> TagChild:
     """Page-level shinyreact dependency: bundle + bookmark restore script.
 
     Use from page entry points (``page_react``, ``set_react_page``'s page
-    function). Per-output consumers (``ui_output``) should keep calling
+    function). Per-output consumers (``output_react``) should keep calling
     ``_dep()`` — they do not carry page-level restore state.
     """
     restore = _restore_script_tag()  # may be None

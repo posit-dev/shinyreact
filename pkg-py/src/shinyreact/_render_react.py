@@ -23,7 +23,7 @@ class render_react(Renderer["Node | TagChild"]):
     emitted if a returned tree carries any.
     """
 
-    async def transform(self, value: object) -> Jsonifiable:
+    async def transform(self, value: Node | TagChild) -> Jsonifiable:
         return walk_or_passthrough(value, self.output_id)
 
     def auto_output_ui(self) -> Tag:
