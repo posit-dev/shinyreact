@@ -43,11 +43,11 @@ def _dep_page() -> TagChild:
     return TagList(_dep(), restore) if restore is not None else _dep()
 
 
-def ui_output(id: str, extra_deps: Sequence[HTMLDependency] | None = None) -> Tag:
-    """Create a Shiny output placeholder for a shinyreact renderer.
+def output_react(id: str, extra_deps: Sequence[HTMLDependency] | None = None) -> Tag:
+    """Create a Shiny output placeholder for a shinyreact ``render_react`` renderer.
 
     Args:
-        id: The output ID. Must match the server-side ``@shinyreact.reactive_output``
+        id: The output ID. Must match the server-side ``@shinyreact.render_react``
             function name.
         extra_deps: Additional HTML dependencies to include. Used by downstream
             packages to inject their own JS/CSS (e.g. ``shinyshadcn``).

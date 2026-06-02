@@ -6,7 +6,7 @@ from htmltools import Tag, TagList
 from shiny.render.renderer import Renderer
 from shiny.types import Jsonifiable
 
-from ._output import ui_output
+from ._output import output_react
 from ._spec import Node, serialize_ui
 
 
@@ -59,4 +59,4 @@ class reactive_output(Renderer["Node | Jsonifiable"]):
         return value  # type: ignore[return-value]
 
     def auto_output_ui(self) -> Tag:
-        return ui_output(self.output_id)
+        return output_react(self.output_id)
