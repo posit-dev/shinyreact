@@ -14,7 +14,7 @@ _inputs_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyreact.ui_output("main", extra_deps=[_inputs_dep])
+app_ui = shinyreact.output_react("main", extra_deps=[_inputs_dep])
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +133,7 @@ def batch_form_card(input_id: str, output_id: str) -> shinyreact.Node:
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def main():
         return page_layout(
             "Shiny React Input Examples",

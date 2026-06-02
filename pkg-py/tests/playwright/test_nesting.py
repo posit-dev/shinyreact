@@ -2,7 +2,7 @@
 
 Covers both delivery paths for an interleaved `Node`/htmltools/text tree:
   - static page chrome rendered by the JS `seedInlineSpecs()` pass, and
-  - a reactive_output tree delivered over the WebSocket.
+  - a render_react tree delivered over the WebSocket.
 """
 
 from playwright.sync_api import Page, expect
@@ -26,7 +26,7 @@ def test_reactive_node_interleaves_tags_and_components(
 ) -> None:
     page.goto(nesting_app.url)
 
-    # The reactive_output returns a Card wrapping a tags.div that interleaves a
+    # The render_react output returns a Card wrapping a tags.div that interleaves a
     # tags.span ("mixed ") with a nested Badge component, delivered over the
     # WebSocket and rendered into the .shinyreact-output div.
     card = page.locator('[data-testid="card"]')

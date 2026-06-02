@@ -27,7 +27,7 @@ toast_card <- function(title) {
 
 # ---------------------------------------------------------------------------
 
-ui <- ui_output_react("main", extra_deps = list(messages_dep))
+ui <- output_react("main", extra_deps = list(messages_dep))
 
 server <- function(input, output, session) {
   log_messages <- list(

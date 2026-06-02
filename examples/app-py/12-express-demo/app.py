@@ -14,8 +14,8 @@ _demo_dep = HTMLDependency(
 )
 
 
-# Subclass shinyreact.reactive_output to inject our demo components dependency
-class render_demo(shinyreact.reactive_output):
+# Subclass shinyreact.render_react to inject our demo components dependency
+class render_demo(shinyreact.render_react):
     extra_deps = [_demo_dep]
 
 

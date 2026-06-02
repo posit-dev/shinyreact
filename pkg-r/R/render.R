@@ -43,7 +43,7 @@ should_walk.shiny.tag.list <- function(value) TRUE
       )
       cli::cli_warn(c(
         "shinyreact output returned content carrying HTMLDependency objects ({nms}) that cannot be injected after the page has rendered.",
-        "i" = "Declare them up-front via {.code ui_output_react(..., extra_deps = list(...))} or at the page level."
+        "i" = "Declare them up-front via {.code output_react(..., extra_deps = list(...))} or at the page level."
       ))
     }
     return(parts$payload)
@@ -54,7 +54,7 @@ should_walk.shiny.tag.list <- function(value) TRUE
 #' Render a React component tree (or raw data) to a shinyreact output
 #'
 #' Server-side counterpart to `useShinyOutputValue()`. Assign to `output[[id]]`
-#' where the UI has a matching [ui_output_react()]. Accepts a [node()] tree (which may
+#' where the UI has a matching [output_react()]. Accepts a [node()] tree (which may
 #' interleave htmltools tags, `HTML()`, and strings) or any JSON-serializable
 #' value (passed through unchanged).
 #'
@@ -75,6 +75,32 @@ render_react <- function(expr, env = parent.frame(), quoted = FALSE) {
   shiny::createRenderFunction(
     func,
     function(value, session, name, ...) .render_transform(value),
-    ui_output_react
+    output_react
+  )
+}
+
+#' Publish a reactive value to a shinyreact client (the `ui.tsx` pattern)
+#'
+#' Server-side counterpart to `useShinyOutputValue()`. Assign to `output[[id]]`;
+#' a React client reads the value by id. Unlike [render_react()] there is no UI
+#' placeholder — the client owns all UI. Accepts any JSON-serializable value
+#' (passed through unchanged).
+#'
+#' @param expr An expression returning a JSON-serializable value.
+#' @param env The environment in which to evaluate `expr`.
+#' @param quoted Is `expr` already quoted?
+#' @return A Shiny render function.
+#' @export
+reactive_output <- function(expr, env = parent.frame(), quoted = FALSE) {
+  func <- shiny::installExprFunction(
+    expr,
+    "func",
+    eval.env = env,
+    quoted = quoted,
+    label = "reactive_output"
+  )
+  shiny::createRenderFunction(
+    func,
+    function(value, session, name, ...) .render_transform(value)
   )
 }

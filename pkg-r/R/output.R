@@ -8,7 +8,7 @@
 #'   Downstream packages use this to inject their own JS/CSS.
 #' @return A `shiny.tag` `<div>`.
 #' @export
-ui_output_react <- function(id, extra_deps = list()) {
+output_react <- function(id, extra_deps = list()) {
   htmltools::div(
     id = id,
     class = "shinyreact-output",

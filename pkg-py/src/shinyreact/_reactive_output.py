@@ -1,62 +1,21 @@
 from __future__ import annotations
 
-from warnings import warn
-
-from htmltools import Tag, TagList
 from shiny.render.renderer import Renderer
 from shiny.types import Jsonifiable
 
-from ._output import ui_output
-from ._spec import Node, serialize_ui
+from ._render import walk_or_passthrough
 
 
-def _should_walk(value: object) -> bool:
-    """True when ``value`` is htmltools/Node content to walk into the JSON wire tree.
+class reactive_output(Renderer["Jsonifiable"]):
+    """Publish a reactive JSON value to the client (the ``ui.tsx`` pattern).
 
-    Bare ``str`` / ``bytes`` are excluded so JSON-string outputs in the
-    ``ui.tsx`` pattern pass through unchanged.
-    """
-    if isinstance(value, (str, bytes)):
-        return False
-    if isinstance(value, (Node, Tag, TagList)):
-        return True
-    return hasattr(value, "tagify")
+    Assign to ``output[id]`` where a React client reads the value with
+    ``useShinyOutputValue()``. There is no UI placeholder: ``auto_output_ui()``
+    inherits the base implementation, which returns ``None``.
 
-
-class reactive_output(Renderer["Node | Jsonifiable"]):
-    """Reactive output for shinyreact.
-
-    Accepts:
-
-    * :class:`~shinyreact.Node` and any htmltools ``TagChild`` (``Tag``,
-      ``TagList``, ``Tagifiable``) — walked into the JSON wire tree.
-    * Any JSON-serializable value (``dict``, ``list``, ``str``, ``int``,
-      ``float``, ``None``) — passed through unchanged for
-      ``useShinyOutputValue()``.
-
-    Dependencies harvested from a walked tree cannot reach ``<head>`` after
-    the page has rendered; declare them up-front via
-    ``ui_output(..., extra_deps=[...])`` or at the page level. A warning is
-    emitted if a returned tree carries any.
+    Accepts any JSON-serializable value (``dict``, ``list``, ``str``, ``int``,
+    ``float``, ``bool``, ``None``), passed through unchanged.
     """
 
     async def transform(self, value: object) -> Jsonifiable:
-        if _should_walk(value):
-            payload, deps = serialize_ui(value)
-            if deps:
-                names = ", ".join(d.name for d in deps)
-                warn(
-                    f"shinyreact: '{self.output_id}' returned content carrying "
-                    f"HTMLDependency objects ({names}) that cannot be injected "
-                    "after the page has rendered. Declare them up-front via "
-                    "ui_output(..., extra_deps=[...]) or at the page level.",
-                    UserWarning,
-                    # stacklevel=2: Shiny calls transform() internally, so this
-                    # can't reach user code anyway.
-                    stacklevel=2,
-                )
-            return payload
-        return value  # type: ignore[return-value]
-
-    def auto_output_ui(self) -> Tag:
-        return ui_output(self.output_id)
+        return walk_or_passthrough(value, self.output_id)

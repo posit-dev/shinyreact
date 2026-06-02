@@ -32,7 +32,7 @@ _shadcn_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyreact.ui_output("main", extra_deps=[_shadcn_dep])
+app_ui = shinyreact.output_react("main", extra_deps=[_shadcn_dep])
 
 
 # ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ def plot_card(plot_id: str) -> shinyreact.Node:
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def main():
         return page_layout(
             "Shiny + React + shadcn/ui",

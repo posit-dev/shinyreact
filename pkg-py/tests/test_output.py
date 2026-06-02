@@ -1,35 +1,35 @@
 from pathlib import Path
 
 from htmltools import HTMLDependency, Tag
-from shinyreact._output import _SHINYREACT_JS_PATH, _dep, ui_output
+from shinyreact._output import _SHINYREACT_JS_PATH, _dep, output_react
 
 
-def test_ui_output_returns_tag():
-    result = ui_output("my-output")
+def test_output_react_returns_tag():
+    result = output_react("my-output")
     assert isinstance(result, Tag)
 
 
-def test_ui_output_has_correct_id():
-    result = ui_output("my-output")
+def test_output_react_has_correct_id():
+    result = output_react("my-output")
     assert result.attrs.get("id") == "my-output"
 
 
-def test_ui_output_has_shinyreact_class():
-    result = ui_output("my-output")
+def test_output_react_has_shinyreact_class():
+    result = output_react("my-output")
     classes = result.attrs.get("class", "")
     assert "shinyreact-output" in classes
 
 
-def test_ui_output_accepts_extra_deps():
+def test_output_react_accepts_extra_deps():
     dep = HTMLDependency(
         "test", "1.0.0", source={"subdir": "/tmp"}, script={"src": "t.js"}
     )
-    result = ui_output("my-output", extra_deps=[dep])
+    result = output_react("my-output", extra_deps=[dep])
     assert isinstance(result, Tag)
 
 
-def test_ui_output_no_extra_deps_by_default():
-    result = ui_output("my-output")
+def test_output_react_no_extra_deps_by_default():
+    result = output_react("my-output")
     assert isinstance(result, Tag)
 
 
@@ -45,8 +45,8 @@ def test_dep_version_tracks_bundle_mtime():
     assert str(_dep().version) == expected
 
 
-def test_ui_output_script_has_defer():
-    result = ui_output("my-output")
+def test_output_react_script_has_defer():
+    result = output_react("my-output")
     deps = result.get_dependencies()
     shinyreact_dep = next(d for d in deps if d.name == "shinyreact")
     # The script dict should include defer=""

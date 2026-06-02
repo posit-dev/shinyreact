@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `shinyreact` is a monorepo providing Shiny UI infrastructure for JSON-driven React rendering. It provides zero UI components — it is pure plumbing for downstream packages (e.g. `shinyshadcn`) to build on top of.
 
-Two first-class patterns ship from this repo: the **`app.py` pattern** (`page_react` + `reactive_output`, server describes UI as a JSON spec built from Python/R objects in the Shiny app file) and the **`ui.tsx` pattern** (`set_react_page` + a React client whose entry conventionally lives in `ui.tsx`, server contains only reactive computation). See `DESIGN.md` and `docs/app-py-vs-ui-tsx.md` for context.
+Two first-class patterns ship from this repo: the **`app.py` pattern** (`page_react` + `render_react`, server describes UI as a JSON spec built from Python/R objects in the Shiny app file) and the **`ui.tsx` pattern** (`set_react_page` + a React client whose entry conventionally lives in `ui.tsx`, server contains only reactive computation). See `DESIGN.md` and `docs/app-py-vs-ui-tsx.md` for context.
 
 ## Terminology — canonical pair
 
@@ -101,9 +101,10 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 
 ### Python package
 
-- `shinyreact.ui_output(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyreact-output">` with the shinyreact HTMLDependency
+- `shinyreact.output_react(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyreact-output">` with the shinyreact HTMLDependency (the placeholder `render_react` renders into)
 - `shinyreact.page_react(...)` — full-page React app with `#root` + the shinyreact HTMLDependency
-- `@shinyreact.reactive_output` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutputValue()` hooks
+- `@shinyreact.render_react` — `Renderer[Node | TagChild]` subclass (app.py pattern); walks `Spec`/`Node`/htmltools content into the JSON wire tree, rendered into a matching `output_react()` placeholder. `auto_output_ui()` returns `output_react(id)`
+- `@shinyreact.reactive_output` — `Renderer[Jsonifiable]` subclass (ui.tsx pattern); passes raw JSON data through for `useShinyOutputValue()` hooks, with no placeholder (`auto_output_ui()` returns `None`)
 - `shinyreact.Spec(root, elements)` / `shinyreact.Element(type, props, children)` — the data model sent to the browser (app.py pattern)
 - `shinyreact.Node` — nested tree API; `.to_spec()` auto-flattens to `Spec`
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
@@ -114,14 +115,14 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 Downstream packages (e.g. `shinyshadcn`) extend shinyreact by:
 
 1. **JS:** own IIFE bundle that calls `window.shinyreact.registerComponents(catalog, registry)` at load time
-2. **Python UI:** `shinyreact.ui_output(id, extra_deps=[my_dep()])`
+2. **Python UI:** `shinyreact.output_react(id, extra_deps=[my_dep()])`
 3. **Python render subclass:**
    ```python
-   class render(shinyreact.reactive_output):
+   class render(shinyreact.render_react):
        async def transform(self, value: MyComponent) -> Any:
            return value.to_spec().to_dict()
    ```
-   Inject the package's `HTMLDependency` on the UI side via `shinyreact.ui_output(id, extra_deps=[...])` (step 2) — `reactive_output` does not read an `extra_deps` class attribute.
+   Inject the package's `HTMLDependency` on the UI side via `shinyreact.output_react(id, extra_deps=[...])` (step 2) — `render_react` does not read an `extra_deps` class attribute.
 
 ### Built assets
 

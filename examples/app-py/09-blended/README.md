@@ -14,7 +14,7 @@ Demonstrates that `shinyreact` can coexist with traditional Shiny outputs on the
 
 ```
 examples/app-py/09-blended/
-├── app.py        # Server: shinyreact.reactive_output outputs + traditional render.plot
+├── app.py        # Server: shinyreact.render_react + reactive_output outputs + traditional render.plot
 ├── blended.js    # JS bundle: custom cards
 └── styles.css
 ```

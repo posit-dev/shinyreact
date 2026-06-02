@@ -36,11 +36,11 @@ from shiny import App, ui
 import shinyreact
 
 app_ui = shinyreact.page_react(
-    shinyreact.ui_output("greeting"),
+    shinyreact.output_react("greeting"),
 )
 
 def server(input, output, session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def greeting():
         return shinyreact.Spec(
             root="card",
@@ -55,7 +55,7 @@ def server(input, output, session):
 app = App(app_ui, server)
 ```
 
-`@shinyreact.reactive_output` also accepts raw JSON-serializable values (dicts, lists, etc.) for use with `useShinyOutputValue()` hooks on the React side.
+`@shinyreact.render_react` walks a `Spec` / `Node` / htmltools content into the JSON wire tree and renders it into the matching `output_react()` placeholder. To send raw JSON-serializable data (dicts, lists, etc.) for `useShinyOutputValue()` hooks instead — with no placeholder — use `@shinyreact.reactive_output` (the `ui.tsx` pattern below).
 
 ### `ui.tsx` pattern
 
@@ -104,18 +104,18 @@ registerComponents(catalog, registry);
 ### 2. Python UI — inject your HTMLDependency
 
 ```python
-shinyreact.ui_output("my_output", extra_deps=[my_html_dependency()])
+shinyreact.output_react("my_output", extra_deps=[my_html_dependency()])
 ```
 
 ### 3. Python render subclass
 
 ```python
-class render(shinyreact.reactive_output):
+class render(shinyreact.render_react):
     async def transform(self, value: MyComponent) -> Any:
         return value.to_spec().to_dict()
 ```
 
-Inject your package's `HTMLDependency` on the UI side via `shinyreact.ui_output(id, extra_deps=[...])` (see step 2) — `reactive_output` does not read an `extra_deps` class attribute.
+Inject your package's `HTMLDependency` on the UI side via `shinyreact.output_react(id, extra_deps=[...])` (see step 2) — `render_react` does not read an `extra_deps` class attribute.
 
 ### JS hooks available via `window.shinyreact`
 

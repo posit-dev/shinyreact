@@ -36,11 +36,11 @@ from shiny import App, ui
 import shinyreact
 
 app_ui = shinyreact.page_react(
-    shinyreact.ui_output("my_output"),
+    shinyreact.output_react("my_output"),
 )
 
 def server(input, output, session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def my_output():
         return shinyreact.Spec(
             root="card",

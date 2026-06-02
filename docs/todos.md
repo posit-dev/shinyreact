@@ -51,7 +51,7 @@ Define what a well-formed `shinyreact` UI component looks like from the downstre
 
 ## What render methods are useful?
 
-Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyreact.reactive_output` returns `Spec` or raw JSON for `useShinyOutputValue`. Are there other render shapes that would be useful — e.g., rendering a single element without a full Spec, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
+Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyreact.render_react` returns a `Spec`/`Node` tree (app.py pattern) and `@shinyreact.reactive_output` returns raw JSON for `useShinyOutputValue` (ui.tsx pattern). Are there other render shapes that would be useful — e.g., rendering a single element without a full Spec, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
 
 ## Nested bullet structure of every feature or benefit
 
@@ -59,21 +59,21 @@ Create a comprehensive nested bullet list cataloging every feature and benefit `
 
 ## Can dynamic UI be supported? Can any render output be supported, or should it always be components?
 
-`@reactive_output` can now return a `Node`, which is a `Tagifiable` that nests htmltools `tags.*`, `HTML`, strings, and other `Node`s at arbitrary depth. Raw HTML, plain text, and htmltools wrappers are all supported in the wire tree. See `docs/superpowers/specs/2026-05-29-htmltools-spec-nesting-design.md` and `examples/app-py/14-nesting` for the design and a working example.
+`@render_react` can now return a `Node`, which is a `Tagifiable` that nests htmltools `tags.*`, `HTML`, strings, and other `Node`s at arbitrary depth. Raw HTML, plain text, and htmltools wrappers are all supported in the wire tree. See `docs/superpowers/specs/2026-05-29-htmltools-spec-nesting-design.md` and `examples/app-py/14-nesting` for the design and a working example.
 
-Still open: whether traditional Shiny input widgets (e.g., `ui.input_slider`) embedded inside a `@reactive_output` tree work end-to-end (input bindings, server-side `input.xxx()` reads). That path is untested.
+Still open: whether traditional Shiny input widgets (e.g., `ui.input_slider`) embedded inside a `@render_react` tree work end-to-end (input bindings, server-side `input.xxx()` reads). That path is untested.
 
 ## Nest UI functions into `shinyreact.ui.*` submodule
 
-Currently `ui_output`, `page_react`, and `page_bare` are flat top-level exports. Later, restructure into a `shinyreact.ui` submodule: `ui.output()`, `ui.page_react()`, `ui.page_bare()`.
+Currently `output_react`, `page_react`, and `page_bare` are flat top-level exports. Later, restructure into a `shinyreact.ui` submodule: `ui.output()`, `ui.page_react()`, `ui.page_bare()`.
 
 ## `HTMLDependency` support for `page_react()`
 
 `page_react()` currently accepts `js_file`/`css_file` string paths. Consider accepting `extra_deps: list[HTMLDependency]` instead of or in addition to string paths, for consistency with the rest of the API.
 
-## Evaluate `extra_deps` on `ui_output()`
+## Evaluate `extra_deps` on `output_react()`
 
-Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `ui_output()` to simplify the API.
+Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `output_react()` to simplify the API.
 
 ## R bookmark restore value shape vs Python ([#27](https://github.com/posit-dev/shinyreact/issues/27))
 
@@ -115,7 +115,7 @@ Tracked in [#120](https://github.com/posit-dev/shinyreact/issues/120).
 once at `DOMContentLoaded` via `seedInlineSpecs()`. A static mount inserted
 *after* load — e.g. `Node.tagify()` output passed to Shiny's `insertUI`, or a
 dynamic `@render.ui` returning one — won't be seeded (no MutationObserver, by
-design/YAGNI). Reactive `Node`s returned from `@reactive_output` are unaffected
+design/YAGNI). Reactive `Node`s returned from `@render_react` are unaffected
 (they deliver over the WebSocket, not via inline scripts). The likely fix is to
 hook Shiny's existing UI-insertion lifecycle (the same one `output_ui` uses)
 rather than a standing observer — see #120, which also asks whether
