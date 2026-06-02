@@ -2,7 +2,8 @@
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![R-CMD-check](https://github.com/posit-dev/shinyreact/actions/workflows/check-r.yaml/badge.svg)](https://github.com/posit-dev/shinyreact/actions/workflows/check-r.yaml)
+[![check-r](https://github.com/posit-dev/shinyreact/actions/workflows/check-r.yaml/badge.svg)](https://github.com/posit-dev/shinyreact/actions/workflows/check-r.yaml)
+[![check-js](https://github.com/posit-dev/shinyreact/actions/workflows/check-js.yaml/badge.svg)](https://github.com/posit-dev/shinyreact/actions/workflows/check-js.yaml)
 <!-- badges: end -->
 
 JSON-driven React rendering infrastructure for [Shiny](https://shiny.posit.co/). shinyreact is pure plumbing: it lets downstream packages deliver React component trees from R, and ships zero UI components of its own. The same JSON wire format and JavaScript bundle back both the R and [Python](https://github.com/posit-dev/shinyreact/tree/main/pkg-py) packages.

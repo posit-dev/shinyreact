@@ -1,4 +1,4 @@
-# shinyreact
+# shinyreact <img src="logo/shiny-react.png" align="right" height="138" alt="shinyreact logo" />
 
 JSON-driven React rendering infrastructure for [Shiny](https://shiny.posit.co/). `shinyreact` provides the plumbing that lets downstream packages (like `shinyshadcn`) deliver React component trees from **Python or R** — it ships zero UI components itself.
 
