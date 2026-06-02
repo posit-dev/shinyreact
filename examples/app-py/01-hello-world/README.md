@@ -14,7 +14,7 @@ The smallest end-to-end example using the **JSON-spec** package (`shinyreact`). 
 
 ```
 examples/app-py/01-hello-world/
-├── app.py                # Server: composes Node tree, returns it from @shinyreact.reactive_output
+├── app.py                # Server: composes Node tree, returns it from @shinyreact.render_react
 ├── hello_world.js        # JS bundle: registers Card / TextInput / Divider / InputDisplay
 └── styles.css
 ```

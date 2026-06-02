@@ -13,7 +13,7 @@ _modules_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyreact.ui_output("main", extra_deps=[_modules_dep])
+app_ui = shinyreact.output_react("main", extra_deps=[_modules_dep])
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ def counter_module_server(input: Inputs, output: Outputs, session: Session):
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def main():
         return app_layout(
             "Shiny Module Namespace Demo",

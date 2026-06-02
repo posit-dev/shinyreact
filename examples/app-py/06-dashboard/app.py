@@ -17,7 +17,7 @@ _dashboard_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyreact.ui_output("main", extra_deps=[_dashboard_dep])
+app_ui = shinyreact.output_react("main", extra_deps=[_dashboard_dep])
 
 
 # ---------------------------------------------------------------------------
@@ -74,7 +74,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             selected_categories=selected_categories,
         )
 
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def main():
         return dashboard_app(
             filter_panel("date_range", "search_term", "selected_categories"),

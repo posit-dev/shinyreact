@@ -2,7 +2,7 @@
 
 Demonstrates "layer all the way down": htmltools `tags.*` and shinyreact
 `Node`s nest inside each other at arbitrary depth, in both the static
-page-chrome path and a reactive @reactive_output.
+page-chrome path and a reactive @render_react.
 """
 
 from pathlib import Path
@@ -27,12 +27,12 @@ app_ui = shinyreact.page_react(
         shinyreact.Node("Badge", {"text": "I am a React component in chrome"}),
         tags.p("…and this is plain htmltools text."),
     ),
-    shinyreact.ui_output("card"),
+    shinyreact.output_react("card"),
 )
 
 
 def server(input: Inputs, output: Outputs, session: Session) -> None:
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def card():
         return shinyreact.Node(
             "Card",

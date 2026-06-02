@@ -14,7 +14,7 @@ _messages_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyreact.ui_output("main", extra_deps=[_messages_dep])
+app_ui = shinyreact.output_react("main", extra_deps=[_messages_dep])
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         {"text": "Cache cleared", "category": "info"},
     ]
 
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def main():
         return app_layout(
             "Event Message Demo",

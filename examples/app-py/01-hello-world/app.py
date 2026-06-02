@@ -15,7 +15,7 @@ _hello_dep = HTMLDependency(
 
 app_ui = shinyreact.page_react(
     _hello_dep,
-    shinyreact.ui_output("hello"),
+    shinyreact.output_react("hello"),
 )
 
 
@@ -69,7 +69,7 @@ def output_display(output_id: str, *, label: str = "") -> shinyreact.Node:
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def hello():
         return card(
             "Hello Shiny React!",
