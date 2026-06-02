@@ -62,3 +62,15 @@ test_that("render_react returns a shiny render function", {
   r <- render_react(node("Card"))
   expect_s3_class(r, "shiny.render.function")
 })
+
+test_that("reactive_output returns a shiny render function", {
+  r <- reactive_output(list(a = 1, b = 2))
+  expect_s3_class(r, "shiny.render.function")
+})
+
+test_that("reactive_output passes data through .render_transform", {
+  expect_identical(
+    shinyreact:::.render_transform(list(key = "value", count = 42L)),
+    list(key = "value", count = 42L)
+  )
+})
