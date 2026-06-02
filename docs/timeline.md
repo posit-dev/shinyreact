@@ -107,9 +107,9 @@ Examples currently use `React.createElement` directly (no JSX). A lightweight bu
 ## Current state (May 2026)
 
 - **JS core:** Working — hooks (useShinyInput, useShinyOutputValue, useShinyMessageHandler, useShinyInitialized), registerComponents, output binding all functional
-- **Python package:** Working — ui_output(), reactive_output, Spec/Element, send_message all functional; both traditional and SPA patterns ship
+- **Python package:** Working — ui_output(), reactive_output, Spec/Element, send_message all functional; both the `app.py` and `ui.tsx` patterns ship
 - **R package:** Placeholder — not yet implemented
-- **Examples:** Traditional (examples/traditional/) and SPA (examples/spa/) examples — target is 100 by conf
+- **Examples:** `app.py` (examples/app-py/) and `ui.tsx` (examples/ui-tsx/) examples — target is 100 by conf
 - **Known issues:** Duplicate output IDs on tab nav, chat example needs API key, no input handlers, XSS in chat markdown, component contract undefined, render method surface area unexplored
 
 ## Gap analysis
