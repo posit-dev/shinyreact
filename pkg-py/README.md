@@ -22,8 +22,8 @@ pip install "git+https://github.com/posit-dev/shinyreact.git"
 `shinyreact` ships two first-class patterns:
 
 **`app.py` pattern** — UI defined as Python objects in the Shiny app file:
-1. Server code builds a **Spec** — a flat map of elements with a root ID
-2. `shinyreact` serializes the Spec as JSON and sends it to the browser via a Shiny output binding
+1. Server code builds a **`Node`** tree — React component nodes that nest other `Node`s and htmltools content
+2. `shinyreact` walks the tree into a JSON wire format and sends it to the browser via a Shiny output binding
 3. The JS bundle renders the JSON into a live React component tree
 4. Downstream packages register their own React components so the renderer resolves `type` strings like `"Card"` or `"Button"`
 
@@ -47,20 +47,15 @@ app_ui = shinyreact.page_react(
 def server(input, output, session):
     @shinyreact.render_react
     def greeting():
-        return shinyreact.Spec(
-            root="card",
-            elements={
-                "card": shinyreact.Element(
-                    type="Card",
-                    props={"title": "Hello from shinyreact"},
-                ),
-            },
+        return shinyreact.Node(
+            type="Card",
+            props={"title": "Hello from shinyreact"},
         )
 
 app = App(app_ui, server)
 ```
 
-`@shinyreact.render_react` walks a `Spec` / `Node` / htmltools content into the JSON wire tree and renders it into the matching `output_react()` placeholder. To send raw JSON-serializable data (dicts, lists, etc.) for `useShinyOutputValue()` hooks instead — with no placeholder — use `@shinyreact.reactive_output` (the `ui.tsx` pattern below).
+`@shinyreact.render_react` walks a `Node` tree / htmltools content into the JSON wire tree and renders it into the matching `output_react()` placeholder. To send raw JSON-serializable data (dicts, lists, etc.) for `useShinyOutputValue()` hooks instead — with no placeholder — use `@shinyreact.reactive_output` (the `ui.tsx` pattern below).
 
 ### `ui.tsx` pattern
 
