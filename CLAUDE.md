@@ -12,7 +12,7 @@ Two first-class patterns ship from this repo: the **`app.py` pattern** (`page_re
 
 Use **`app.py`** (or **`app.py`/`app.R`** when cross-language matters) and **`ui.tsx`** consistently. **Never write "SPA", "Single Page App", "Single-Page Application", "traditional pattern", `client-ui`, or `ui-object`** in new content (docs, comments, commit messages, PR/issue text).
 
-- **`app.py` pattern** — UI defined as Python or R objects in the Shiny app file (`app.py` / `app.R`) via `page_react()`, `Spec`, etc.
+- **`app.py` pattern** — UI defined as Python or R objects in the Shiny app file (`app.py` / `app.R`) via `page_react()`, `Node`, etc.
 - **`ui.tsx` pattern** — UI defined in a client-side codebase whose entry is conventionally `ui.tsx` (or `App.jsx`, or `app.js` for no-build); bootstrapped from the app file via `set_react_page()`. `ui.tsx` is the *idiomatic* canonical name — examples may use simpler variants like `www/app.js` (no-build) or `src/App.jsx` (Vite + JSX). Treat `ui.tsx` as a *role label* for the React entry, not a strict filename requirement.
 
 Naming inspired by [Shiny's "Build your entire UI with HTML"](https://shiny.posit.co/r/articles/build/html-ui/) (UI object vs HTML UI), reframed around the canonical entry filenames the team actually edits.
@@ -32,7 +32,10 @@ pkg-py/                     # Python packages (three shipped from one wheel)
   src/shinyui/              # Class-per-component UI hierarchy prototype (session-aware)
   src/shinyuiclassonly/     # Class-per-component UI hierarchy, structure only (no session)
   tests/                    # pytest tests for all three packages
-pkg-r/                      # R package (placeholder — not yet implemented)
+pkg-r/                      # R package — mirrors the Python API in R
+  R/                         # node.R, output.R, render.R, page.R, wire.R, message.R, bookmark.R, dep.R
+  inst/lib/shiny/            # Bundled JS (R counterpart of pkg-py www/)
+  tests/testthat/            # testthat tests (incl. wire-format fixtures shared with Python)
 examples/
   app-py/                   # app.py pattern examples (01-hello-world … 10-columns)
   ui-tsx/                   # ui.tsx pattern examples (01-hello … 07-plotly)
@@ -103,12 +106,22 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 
 - `shinyreact.output_react(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyreact-output">` with the shinyreact HTMLDependency (the placeholder `render_react` renders into)
 - `shinyreact.page_react(...)` — full-page React app with `#root` + the shinyreact HTMLDependency
-- `@shinyreact.render_react` — `Renderer[Node | TagChild]` subclass (app.py pattern); walks `Spec`/`Node`/htmltools content into the JSON wire tree, rendered into a matching `output_react()` placeholder. `auto_output_ui()` returns `output_react(id)`
+- `@shinyreact.render_react` — `Renderer[Node | TagChild]` subclass (app.py pattern); walks `Node`/htmltools content into the JSON wire tree, rendered into a matching `output_react()` placeholder. `auto_output_ui()` returns `output_react(id)`
 - `@shinyreact.reactive_output` — `Renderer[Jsonifiable]` subclass (ui.tsx pattern); passes raw JSON data through for `useShinyOutputValue()` hooks, with no placeholder (`auto_output_ui()` returns `None`)
-- `shinyreact.Spec(root, elements)` / `shinyreact.Element(type, props, children)` — the data model sent to the browser (app.py pattern)
-- `shinyreact.Node` — nested tree API; `.to_spec()` auto-flattens to `Spec`
+- `shinyreact.Node(type, props, children)` — the nested-tree authoring API for the app.py pattern; `children` may mix nested `Node`s, htmltools content, and scalars. The walker turns it into the JSON wire tree (`{"type": "react", "name", "props", "children"}`, plus `tag`/`text`/`html` nodes). `.serialize()` → `(wire_tree, deps)`; `.to_dict()` → wire tree (discards harvested `HTMLDependency`); `.tagify()` → a static `.shinyreact-static` mount for embedding in page chrome
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
 - `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html` (the ui.tsx pattern); auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
+
+### R package
+
+The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `node`, `output_react`, `render_react`, `reactive_output`, `page_react`, `page_bare`, `page_react_html`, `page_react_dep`, `send_message`. Key shape differences from Python:
+
+- `node(type, ..., props = list())` — children are the `...` args (vs Python's `children` list); produces the same JSON wire tree. Serialize via `as_wire()` / `serialize_ui()` (see `pkg-r/R/wire.R`).
+- `render_react(expr, ...)` / `reactive_output(expr, ...)` are **functions** assigned to `output$id`, not decorator/`Renderer` classes.
+- `page_react_html(path = "www/index.html")` is R's equivalent of Python's `set_react_page()` (the ui.tsx pattern entry).
+- `output_react(id, extra_deps = list())` and `send_message(session, type, data)` match Python.
+
+The wire format is identical across languages — `make r-check-fixtures` verifies R's output matches Python's shared fixtures.
 
 ### Downstream package pattern
 
@@ -120,7 +133,8 @@ Downstream packages (e.g. `shinyshadcn`) extend shinyreact by:
    ```python
    class render(shinyreact.render_react):
        async def transform(self, value: MyComponent) -> Any:
-           return value.to_spec().to_dict()
+           # Convert your component into a shinyreact.Node, then the wire dict
+           return value.to_node().to_dict()
    ```
    Inject the package's `HTMLDependency` on the UI side via `shinyreact.output_react(id, extra_deps=[...])` (step 2) — `render_react` does not read an `extra_deps` class attribute.
 
