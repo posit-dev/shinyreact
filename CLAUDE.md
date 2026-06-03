@@ -32,7 +32,10 @@ pkg-py/                     # Python packages (three shipped from one wheel)
   src/shinyui/              # Class-per-component UI hierarchy prototype (session-aware)
   src/shinyuiclassonly/     # Class-per-component UI hierarchy, structure only (no session)
   tests/                    # pytest tests for all three packages
-pkg-r/                      # R package (placeholder — not yet implemented)
+pkg-r/                      # R package — mirrors the Python API in R
+  R/                         # node.R, output.R, render.R, page.R, wire.R, message.R, bookmark.R, dep.R
+  inst/lib/shiny/            # Bundled JS (R counterpart of pkg-py www/)
+  tests/testthat/            # testthat tests (incl. wire-format fixtures shared with Python)
 examples/
   app-py/                   # app.py pattern examples (01-hello-world … 10-columns)
   ui-tsx/                   # ui.tsx pattern examples (01-hello … 07-plotly)
@@ -108,6 +111,17 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 - `shinyreact.Node(type, props, children)` — the nested-tree authoring API for the app.py pattern; `children` may mix nested `Node`s, htmltools content, and scalars. The walker turns it into the JSON wire tree (`{"type": "react", "name", "props", "children"}`, plus `tag`/`text`/`html` nodes). `.serialize()` → `(wire_tree, deps)`; `.to_dict()` → wire tree (discards harvested `HTMLDependency`); `.tagify()` → a static `.shinyreact-static` mount for embedding in page chrome
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
 - `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html` (the ui.tsx pattern); auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
+
+### R package
+
+The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `node`, `output_react`, `render_react`, `reactive_output`, `page_react`, `page_bare`, `page_react_html`, `page_react_dep`, `send_message`. Key shape differences from Python:
+
+- `node(type, ..., props = list())` — children are the `...` args (vs Python's `children` list); produces the same JSON wire tree. Serialize via `as_wire()` / `serialize_ui()` (see `pkg-r/R/wire.R`).
+- `render_react(expr, ...)` / `reactive_output(expr, ...)` are **functions** assigned to `output$id`, not decorator/`Renderer` classes.
+- `page_react_html(path = "www/index.html")` is R's equivalent of Python's `set_react_page()` (the ui.tsx pattern entry).
+- `output_react(id, extra_deps = list())` and `send_message(session, type, data)` match Python.
+
+The wire format is identical across languages — `make r-check-fixtures` verifies R's output matches Python's shared fixtures.
 
 ### Downstream package pattern
 
