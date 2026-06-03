@@ -112,7 +112,8 @@ shinyreact.output_react("my_output", extra_deps=[my_html_dependency()])
 ```python
 class render(shinyreact.render_react):
     async def transform(self, value: MyComponent) -> Any:
-        return value.to_spec().to_dict()
+        # Convert your component into a shinyreact.Node, then the wire dict
+        return value.to_node().to_dict()
 ```
 
 Inject your package's `HTMLDependency` on the UI side via `shinyreact.output_react(id, extra_deps=[...])` (see step 2) — `render_react` does not read an `extra_deps` class attribute.
