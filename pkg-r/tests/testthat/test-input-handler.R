@@ -4,6 +4,11 @@ test_that("default_input_handler preserves arrays of objects as a list of record
     list(name = "b", size = 2L)
   )
   expect_identical(default_input_handler(records), records)
+  # A partially-named child is not a proper record array -> falls through to unlist.
+  expect_equal(
+    default_input_handler(list(list(a = 1L, 2L))),
+    c(a = 1L, 2L)
+  )
 })
 
 test_that("default_input_handler flattens scalar arrays to atomic vectors", {
@@ -12,7 +17,7 @@ test_that("default_input_handler flattens scalar arrays to atomic vectors", {
 })
 
 test_that("default_input_handler leaves scalars and single objects unchanged", {
-  expect_equal(default_input_handler(5L), 5L)
+  expect_identical(default_input_handler(5L), 5L)
   expect_identical(default_input_handler(list(a = 1L)), list(a = 1L))
 })
 
@@ -25,12 +30,26 @@ test_that("default_input_handler returns NULL for an empty array and flattens ne
 })
 
 test_that("asis_input_handler returns the value completely untouched", {
+  expect_null(asis_input_handler(NULL))
   expect_identical(asis_input_handler(list(0, 100)), list(0, 100))
   records <- list(list(name = "a"), list(name = "b"))
   expect_identical(asis_input_handler(records), records)
 })
 
-test_that("both handlers are registered with shiny on load", {
-  expect_false(is.null(shiny:::inputHandlers$get("shinyreact.default")))
-  expect_false(is.null(shiny:::inputHandlers$get("shinyreact.asis")))
+test_that("both handlers are registered and dispatch through shiny", {
+  # shiny:::applyInputHandler(name, val, session) splits the ":type" suffix,
+  # looks up the registered handler, and calls it — i.e. the real runtime path.
+  # It throws "No handler registered for type" if the handler is missing.
+  expect_identical(
+    shiny:::applyInputHandler(
+      "x:shinyreact.default",
+      list(list(a = 1L), list(b = 2L)),
+      NULL
+    ),
+    list(list(a = 1L), list(b = 2L))
+  )
+  expect_identical(
+    shiny:::applyInputHandler("y:shinyreact.asis", list(0, 100), NULL),
+    list(0, 100)
+  )
 })

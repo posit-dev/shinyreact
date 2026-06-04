@@ -10,18 +10,22 @@
 #' `unlist()`, everything else is returned as-is.
 #' @keywords internal
 default_input_handler <- function(value, session = NULL, name = NULL) {
-  is_records <- is.list(value) &&
-    is.null(names(value)) &&
+  is_unnamed_list <- is.list(value) && is.null(names(value))
+  is_records <- is_unnamed_list &&
     length(value) > 0 &&
     all(vapply(
       value,
-      function(el) is.list(el) && !is.null(names(el)),
+      function(el) {
+        is.list(el) && !is.null(names(el)) && all(nzchar(names(el)))
+      },
       logical(1)
     ))
   if (is_records) {
     return(value)
   }
-  if (is.list(value) && is.null(names(value))) {
+  if (is_unnamed_list) {
+    # unlist(list()) returns NULL; this reproduces Shiny's default no-type
+    # handler, which flattens unnamed lists (scalar arrays) the same way.
     return(unlist(value, recursive = TRUE))
   }
   value
