@@ -107,20 +107,6 @@ base classes, not its `tagify()` / serialization behavior. Keep `Node`'s
 `tagify()` and dependency surface aligned with what #69 expects of a
 `UiComponent`.
 
-## Static `Node` mounts inserted after page load are not auto-seeded
-
-Tracked in [#120](https://github.com/posit-dev/shinyreact/issues/120).
-
-`Node.tagify()` produces a `.shinyreact-static` mount that the JS bundle seeds
-once at `DOMContentLoaded` via `seedInlineSpecs()`. A static mount inserted
-*after* load — e.g. `Node.tagify()` output passed to Shiny's `insertUI`, or a
-dynamic `@render.ui` returning one — won't be seeded (no MutationObserver, by
-design/YAGNI). Reactive `Node`s returned from `@render_react` are unaffected
-(they deliver over the WebSocket, not via inline scripts). The likely fix is to
-hook Shiny's existing UI-insertion lifecycle (the same one `output_ui` uses)
-rather than a standing observer — see #120, which also asks whether
-`.shinyreact-static` and `output_ui`-style delivery should converge.
-
 ## Tracked as GitHub issues
 
 - [#28 — Shiny client runtime as an npm package](https://github.com/posit-dev/shinyreact/issues/28)

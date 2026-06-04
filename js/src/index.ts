@@ -5,7 +5,7 @@ import { registerComponents } from "./registry";
 import { ShinyreactRenderer } from "./renderer";
 import { ShinyOutput } from "./shiny-output";
 import { getOrCreateRoot, hasRoot, unmountRoot } from "./roots";
-import { installInlineSpecSeeding } from "./inline-spec";
+import { installInlineSpecSeeding, seedInlineSpecs } from "./inline-spec";
 import "./shinyreact.css";
 
 // Re-export @posit/shiny-react hooks and components.
@@ -50,6 +50,7 @@ declare global {
       ShinyModuleProvider: typeof ShinyModuleProvider;
       ShinyReactComponentElement: typeof ShinyReactComponentElement;
       ShinyOutput: typeof ShinyOutput;
+      seedInlineSpecs: typeof seedInlineSpecs;
       React: typeof React;
       ReactDOM: typeof ReactDOM;
     };
@@ -74,6 +75,7 @@ window.shinyreact = Object.assign(window.shinyreact || {}, {
   ShinyModuleProvider,
   ShinyReactComponentElement,
   ShinyOutput,
+  seedInlineSpecs,
   React,
   ReactDOM,
 });
