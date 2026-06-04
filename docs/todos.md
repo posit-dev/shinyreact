@@ -112,3 +112,18 @@ base classes, not its `tagify()` / serialization behavior. Keep `Node`'s
 - [#28 — Shiny client runtime as an npm package](https://github.com/posit-dev/shinyreact/issues/28)
 - [#35 — JSON Patch value-equality dedup](https://github.com/posit-dev/shinyreact/issues/35)
 - [#36 — JSON Patch wire format](https://github.com/posit-dev/shinyreact/issues/36)
+
+## Hot reload: ship the ergonomics (follow-up to #132)
+
+`examples/ui-tsx/09-hmr/` proves React Fast Refresh for the `ui.tsx` pattern with
+no backend change (a Vite dev server alongside Shiny; the dev stub swaps
+`www/app.js`). Two follow-ups remain:
+
+- **Dev `shinyreact` bundle.** Today Fast Refresh works only because the example
+  bundles its own dev React in dev — `window.shinyreact.React` is a production
+  build (`js/vite.config.ts` pins `NODE_ENV=production`) and cannot drive
+  `react-refresh`. A `shinyreact.dev.js` (React dev + refresh) would let the page
+  itself share one dev React, but loading it requires a backend dev switch (the
+  bundle is injected by the page dependency).
+- **A shipped dev helper / CLI** so authors don't hand-copy the `vite.config`
+  stub plugin + `shiny-bridge` indirection.
