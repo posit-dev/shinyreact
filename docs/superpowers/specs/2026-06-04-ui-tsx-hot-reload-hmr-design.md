@@ -2,9 +2,9 @@
 
 **Issue:** [#132](https://github.com/posit-dev/shinyreact/issues/132)
 **Date:** 2026-06-04
-**Status:** Design approved. Revised after finding that `window.shinyreact.React`
-is a *production* React build (see "Constraint" below) — dev now uses a
-bring-your-own dev React, pending a de-risking spike.
+**Status:** Design approved and **de-risking spike PASSED** (see "Spike results"
+below). Approach A (bring-your-own dev React) delivers true Fast Refresh on a
+Shiny-served page with no backend change. Ready for an implementation plan.
 
 ## Problem
 
@@ -90,9 +90,17 @@ A small **Vite plugin in the example's `vite.config`** owns both modes.
   to `www/app.js` when the dev server starts:
 
   ```js
-  // www/app.js — generated in dev (gitignored, like the built bundle)
-  import "http://localhost:5173/@vite/client";
-  import "http://localhost:5173/src/ui.tsx";
+  // www/app.js — generated in dev (gitignored, like the built bundle).
+  // Installs the React Fast Refresh preamble, then dynamically imports the HMR
+  // client + entry. See "Spike results" for why the preamble + dynamic import
+  // are mandatory.
+  import RefreshRuntime from "http://localhost:5173/@react-refresh";
+  RefreshRuntime.injectIntoGlobalHook(window);
+  window.$RefreshReg$ = () => {};
+  window.$RefreshSig$ = () => (type) => type;
+  window.__vite_plugin_react_preamble_installed__ = true;
+  await import("http://localhost:5173/@vite/client");
+  await import("http://localhost:5173/src/ui.tsx");
   ```
 
 `index.html` is written once and never swapped across modes:
@@ -151,25 +159,89 @@ Two React copies then coexist on the page in dev: the prod one inside
 `shiny-react` hooks talk to the global `window.Shiny` client, so the dev copy can
 drive inputs/outputs independently.
 
-**This is the load-bearing risk and MUST be a throwaway spike before the full
-plan is committed.** The spike must confirm that a second `shiny-react` copy
-(running on its own dev React) registers inputs and captures output values
-without conflicting with the prod bundle's bindings. If the spike fails, fall
-back to the smaller "instant full reload" option (see Future follow-ups) and
-treat the dev `shinyreact` bundle as the real fix.
-
 Pin the example's dev `react`/`react-dom` to the vendored major
-(`^19.2.3`, per `js/package.json`).
+(`^19.2.3`, per `js/package.json`), and `resolve.dedupe: ["react", "react-dom"]`
+so the user's components and the bundled `shiny-react` source share one React
+copy.
+
+**Why the two copies don't conflict (confirmed by code + spike):**
+`shiny-react`'s registry init (`ensureShinyReactInitialized` →
+`initializeReactRegistry` + `createReactOutputBinding`) is **lazy** — called from
+inside each hook (`js/src/shiny-react/use-shiny.ts:84,218,…`), guarded by a
+module-level flag. In the `ui.tsx` pattern the prod `shinyreact.js` bundle runs
+*no* hooks itself, so it never initializes the registry. Only the dev copy does,
+exactly once, storing the registry on the shared `window.Shiny.reactRegistry`
+singleton — no double-binding, no duplicate output ids.
+
+## Spike results (2026-06-04) — PASSED
+
+A throwaway spike (`.context/spike-hmr/`, gitignored) ran the real stack: Shiny
+serving `www/index.html` + the committed prod `shinyreact.js`, a Vite dev server
+on `:5173` serving the user modules with their own dev React + the vendored
+`shiny-react` source, driven through a browser.
+
+Confirmed:
+- **Round-trip works.** Clicking the counter pushed `count` to Shiny and read
+  back the server-computed `doubled` (3 → 6) — the dev copy's freshly-initialized
+  registry talks to the server with no conflict from the prod bundle.
+- **True Fast Refresh.** Editing the heading text updated the DOM while the React
+  `count` state stayed at 3 **and** a `window.__spikeMarker` planted before the
+  edit survived — i.e. no full page reload. A second edit behaved identically.
+- **Clean console** on normal component edits (only a benign `favicon.ico` 404).
+
+Two **load-bearing structural requirements** the spike surfaced — both must be
+baked into the example:
+
+1. **Split the mount from the components.** A single file that both defines the
+   component *and* calls `createRoot().render()` is **not** a Fast Refresh
+   boundary — `@vitejs/plugin-react` bails to a full page reload (count reset to
+   0, marker gone). Fix: components live in `App.tsx` (exported = refresh
+   boundary); the entry `ui.tsx` only imports `App` and mounts it. Editing
+   `App.tsx` → Fast Refresh; editing `ui.tsx` → full reload (rare, acceptable).
+2. **The dev stub must install the React Fast Refresh preamble and use *dynamic*
+   imports.** Because Shiny (not Vite) serves the page, the preamble
+   `@vitejs/plugin-react` normally injects into HTML must be installed by the
+   stub itself, *before* the entry evaluates. Static `import` statements hoist
+   and would run the entry first, so the stub installs the preamble then
+   `await import(...)`s `@vite/client` and the entry. Working stub:
+
+   ```js
+   import RefreshRuntime from "http://localhost:5173/@react-refresh";
+   RefreshRuntime.injectIntoGlobalHook(window);
+   window.$RefreshReg$ = () => {};
+   window.$RefreshSig$ = () => (type) => type;
+   window.__vite_plugin_react_preamble_installed__ = true;
+   await import("http://localhost:5173/@vite/client");
+   await import("http://localhost:5173/src/ui.tsx");
+   ```
+
+Vite config notes from the spike: `server.cors` is on by default (cross-origin
+module load from `:5173` into the `:8000` page works); `server.fs.allow` had to
+include the repo root only because the spike imported the *in-repo* vendored
+`shiny-react` source — a downstream app installs `@posit/shiny-react` as a normal
+dependency and won't need that. `server.strictPort: true` keeps the stub's
+hard-coded `:5173` honest.
 
 ## Example
 
-A new minimal example: **`examples/ui-tsx/08-hmr`** (number to be confirmed
-against the current example list at implementation time).
+A new minimal example: **`examples/ui-tsx/09-hmr`** (09 is the next free number;
+01–08 are taken).
 
 - A counter whose state visibly **survives** a `.tsx` edit — the whole point is
   to demonstrate Fast Refresh, so state preservation is front-and-center.
-- Carries the reference `vite.config` (the stub plugin + the serve-mode alias)
-  that other authors copy.
+- **Component/mount split is mandatory** (see Spike results): `src/App.tsx`
+  exports the component (the refresh boundary); `src/ui.tsx` only imports `App`
+  and calls `createRoot().render()`. Keep `createRoot` in the entry alone.
+- Carries the reference `vite.config` (the dev-stub plugin, `resolve.dedupe`,
+  `server` block) that other authors copy.
+- Dev imports the `shiny-react` hooks (in this repo, from the **vendored source**
+  at `js/src/shiny-react/` via relative path + `server.fs.allow`, as the spike
+  did, since `shiny-react` is vendored not published — see `decisions/`;
+  downstream apps would use a published `@posit/shiny-react` instead); prod
+  externalizes them to `window.shinyreact`. A small per-mode indirection module
+  (aliased in `serve` vs `build`) keeps `App.tsx` import lines identical. *(How
+  the example references the vendored hooks cleanly is the main open detail for
+  the plan.)*
 - `www/app.js` is gitignored (generated by either `build` or `dev`).
 - README documents the two-terminal workflow and a manual "verify HMR" checklist.
 
