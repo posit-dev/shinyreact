@@ -79,27 +79,55 @@ function startMountObserver(): void {
   });
 }
 
+// Seed mounts present now, then watch for any inserted later. A stable module
+// reference so install listeners can be deregistered (used by tests).
+function seedAndObserve(): void {
+  seedInlineSpecs();
+  startMountObserver();
+}
+
 /**
- * Seed static mounts present at load, then watch for any inserted later. Safe
- * to call at bundle load; runs immediately if the document is already parsed.
+ * Install seeding to run once the page's parse-time scripts have all executed,
+ * then watch for static mounts inserted later. Safe to call at bundle load.
+ *
+ * A static mount may reference React components registered by a *sibling*
+ * bundle (e.g. a downstream package). Both bundles ship as `defer` scripts, so
+ * the shinyreact bundle commonly runs first — at `readyState === "interactive"`
+ * — *before* the sibling has registered its components. Seeding right then
+ * renders against an incomplete registry: the renderer throws on the unknown
+ * component and the mount's React root is poisoned for good (a later seed pass
+ * skips it via `hasRoot`). See issue #123.
+ *
+ * `DOMContentLoaded` fires only after every parse-time `defer`/module script has
+ * executed, so by then all sibling registrations have landed. We wait for it
+ * rather than seeding immediately. `load` is a safety net for the rare case
+ * where this runs after `DOMContentLoaded` has already fired but before `load`
+ * (e.g. a non-`defer` injection); seeding is idempotent, so a double fire is
+ * harmless. When the document is already `complete` there is no future event to
+ * wait for, so we run at once.
+ *
+ * The post-load `MutationObserver` is started by the same deferred callback, so
+ * it only begins observing after the registry is complete — a mount it caught
+ * mid-parse would hit the same incomplete-registry trap (#123).
  */
 export function installInlineSpecSeeding(): void {
-  const init = () => {
-    seedInlineSpecs();
-    startMountObserver();
-  };
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+  if (document.readyState === "complete") {
+    seedAndObserve();
   } else {
-    init();
+    document.addEventListener("DOMContentLoaded", seedAndObserve, {
+      once: true,
+    });
+    window.addEventListener("load", seedAndObserve, { once: true });
   }
 }
 
 /**
- * Stop the post-load mount observer. Intended for tests; production code keeps
- * the observer running for the lifetime of the page.
+ * Stop the post-load mount observer and remove any pending install listeners.
+ * Intended for tests; production keeps the observer running for the page's life.
  */
 export function _stopMountObserverForTests(): void {
   mountObserver?.disconnect();
   mountObserver = null;
+  document.removeEventListener("DOMContentLoaded", seedAndObserve);
+  window.removeEventListener("load", seedAndObserve);
 }
