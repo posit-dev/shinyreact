@@ -57,7 +57,11 @@ export class InputRegistryEntry<T> {
     if (type === undefined) return;
     if (this.type !== type) {
       throw new Error(
-        `Input "${this.id}" is already registered with type=${this.type === undefined ? "undefined" : JSON.stringify(this.type)}. ` +
+        `Input "${this.id}" is already registered with type=${
+          this.type === undefined
+            ? `undefined (wire id "${this.id}:${InputRegistryEntry.DEFAULT_TYPE}")`
+            : JSON.stringify(this.type)
+        }. ` +
           `A second mount requested type=${JSON.stringify(type)}. ` +
           `An input's handler type changes server-side semantics and must be consistent ` +
           `across every useShinyInput / useSetShinyInput call for the same id.`,
