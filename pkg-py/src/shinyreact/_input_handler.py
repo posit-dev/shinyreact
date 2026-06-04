@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from shiny.session import Session
 
 
+# force=True so re-importing this module (e.g. importlib.reload during dev or
+# tests) re-registers idempotently instead of raising "already registered".
 @input_handlers.add("shinyreact.default", force=True)
 def _shinyreact_default(value: Any, name: ResolvedId, session: Session) -> Any:
     return value

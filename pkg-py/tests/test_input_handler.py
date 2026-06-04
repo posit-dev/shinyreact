@@ -1,4 +1,7 @@
+import importlib
+
 import shinyreact  # noqa: F401  (import registers the handlers)
+import shinyreact._input_handler
 from shiny.input_handler import input_handlers
 
 
@@ -14,6 +17,7 @@ def test_default_handler_returns_value_unchanged():
     assert handler([0, 100], None, None) == [0, 100]
     assert handler(5, None, None) == 5
     assert handler([], None, None) == []
+    assert handler(None, None, None) is None
 
 
 def test_asis_handler_returns_value_unchanged():
@@ -21,3 +25,13 @@ def test_asis_handler_returns_value_unchanged():
     records = [{"name": "a"}, {"name": "b"}]
     assert handler(records, None, None) == records
     assert handler([0, 100], None, None) == [0, 100]
+    assert handler(5, None, None) == 5
+    assert handler([], None, None) == []
+    assert handler(None, None, None) is None
+
+
+def test_reregistration_is_idempotent():
+    # Re-running the module re-registers both handlers; force=True must not raise.
+    importlib.reload(shinyreact._input_handler)
+    assert "shinyreact.default" in input_handlers
+    assert "shinyreact.asis" in input_handlers
