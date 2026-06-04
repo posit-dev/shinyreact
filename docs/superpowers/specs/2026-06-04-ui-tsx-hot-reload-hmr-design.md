@@ -2,7 +2,9 @@
 
 **Issue:** [#132](https://github.com/posit-dev/shinyreact/issues/132)
 **Date:** 2026-06-04
-**Status:** Design approved, pending spec review
+**Status:** Design approved. Revised after finding that `window.shinyreact.React`
+is a *production* React build (see "Constraint" below) — dev now uses a
+bring-your-own dev React, pending a de-risking spike.
 
 ## Problem
 
@@ -112,32 +114,52 @@ production bundle must therefore be loadable as a module script (build as ESM, o
 confirm the IIFE output executes correctly when loaded as a module). The plan
 should settle the build `format` so dev and prod share one `index.html`.
 
-## React-singleton handling in dev
+## Constraint: `window.shinyreact.React` is a production React
 
-The production config externalizes React to the shared global:
+The obvious dev approach — alias `react` → `window.shinyreact.React` so dev
+modules share the one React instance — keeps a single instance, but it's the
+**production** build:
 
-```js
-rollupOptions: {
-  external: ["react", "react-dom", "react-dom/client"],
-  output: { globals: { react: "window.shinyreact.React", /* … */ } },
-}
-```
+- `js/vite.config.ts` hardcodes `define: { "process.env.NODE_ENV":
+  JSON.stringify("production") }` and bundles React with no externals.
+- The shipped `js/dist/shinyreact.js` contains only `"production"` and no
+  `react-refresh` / `jsxDEV` markers.
 
-`output.globals` is **build-only** — it does nothing for the dev server. In
-`serve` mode the dev modules (and `@vitejs/plugin-react`'s Fast Refresh runtime)
-would otherwise resolve their own copy of React, and the `window.shinyreact`
-hooks — which dispatch against the IIFE's React — would throw "invalid hook
-call" / dual-React errors.
+React **Fast Refresh requires the development build** (prod strips the refresh
+hooks `react-refresh` drives). Aliasing to the shared prod instance would make
+Vite fall back to a **full page reload** — defeating the "partial refresh" ask.
+The page's React is fixed by the backend-injected `shinyreact.js` dependency, so
+an example alone cannot change it to a dev build.
 
-Dev therefore needs an equivalent: a `resolve.alias` active only when
-`command === "serve"`, mapping `react` / `react-dom` / `react-dom/client` to a
-tiny shim module that re-exports from `window.shinyreact.React` /
-`window.shinyreact.ReactDOM`. This keeps a single React instance across the IIFE
-and the HMR'd modules.
+## React handling in dev: bring-your-own dev React (Approach A)
 
-This aliasing is the part most likely to need a **small spike early in
-implementation** — named-export enumeration for the shim and Fast Refresh runtime
-resolution are the unknowns.
+Resolve the constraint without a backend change by accepting a dev/prod
+asymmetry in *the example's build*:
+
+- **Prod (`vite build`)** — externalize `react` / `react-dom` / `react-dom/client`
+  to `window.shinyreact.*` via `rollupOptions.output.globals` (today's pattern),
+  so the shipped bundle shares the one React.
+- **Dev (`vite` serve)** — do **not** alias to `window.shinyreact`. Let the dev
+  modules bundle their **own dev React** (`react`/`react-dom` from
+  `node_modules`, `NODE_ENV=development`) and a **dev copy of the `shiny-react`
+  hooks** (from the vendored source), so `@vitejs/plugin-react` Fast Refresh has a
+  refresh-capable React to drive.
+
+Two React copies then coexist on the page in dev: the prod one inside
+`shinyreact.js` (which, in the `ui.tsx` pattern, renders nothing — there are no
+`.shinyreact-output` placeholders) and the dev one that owns `#root`. The
+`shiny-react` hooks talk to the global `window.Shiny` client, so the dev copy can
+drive inputs/outputs independently.
+
+**This is the load-bearing risk and MUST be a throwaway spike before the full
+plan is committed.** The spike must confirm that a second `shiny-react` copy
+(running on its own dev React) registers inputs and captures output values
+without conflicting with the prod bundle's bindings. If the spike fails, fall
+back to the smaller "instant full reload" option (see Future follow-ups) and
+treat the dev `shinyreact` bundle as the real fix.
+
+Pin the example's dev `react`/`react-dom` to the vendored major
+(`^19.2.3`, per `js/package.json`).
 
 ## Example
 
@@ -170,8 +192,16 @@ HMR is flaky to drive end-to-end in CI, so:
 
 ## Future follow-ups (explicitly not in this issue)
 
-- A shipped `shinyreact` dev helper or CLI that automates the stub + alias so
-  authors don't copy `vite.config` boilerplate.
+- **Fallback if the spike fails — "instant full reload":** keep the Vite dev
+  server (so saves are near-instant, no `vite build --watch` wait) but accept a
+  fast *full* page reload. Component state is lost; not true partial refresh.
+- **The "correct" larger fix (Approach B):** ship a dev variant of the
+  `shinyreact` bundle (`shinyreact.dev.js`, React dev + `react-refresh`). Because
+  that bundle is injected by the page dependency, loading it in dev needs a
+  backend dev switch — deliberately deferred, as it breaks the JS-only and
+  example-only scope.
+- A shipped `shinyreact` dev helper or CLI that automates the stub so authors
+  don't copy `vite.config` boilerplate.
 - A single `dev` command wrapping both processes.
 - R-side parity is automatic (JS-only), but an R example could mirror the Python
   one later.
