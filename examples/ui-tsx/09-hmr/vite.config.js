@@ -39,7 +39,6 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: "www",
     emptyOutDir: false,
-    cssCodeSplit: false,
     lib: {
       entry: path.resolve(__dirname, ENTRY),
       formats: ["iife"],
