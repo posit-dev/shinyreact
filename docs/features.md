@@ -89,6 +89,7 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 | [06-data-frame](../examples/ui-tsx/06-data-frame/) | Working | Embeds `@render.data_frame` via `ShinyOutput` and `set_react_page()` |
 | [07-plotly](../examples/ui-tsx/07-plotly/) | Working | Embeds `@render_plotly` via `ShinyOutput` and `set_react_page()` |
 | [08-input-handler](../examples/ui-tsx/08-input-handler/) | Working | Demonstrates `useShinyInput` with `type="shiny.datetime"` — client sends unix seconds; server `input.when()` is a `datetime.datetime` via Shiny's built-in handler |
+| [09-hmr](../examples/ui-tsx/09-hmr/) | Working | React Fast Refresh in dev (Vite dev server alongside Shiny); the `app.py` and no-build `www/app.js` paths reload too |
 
 ### Design decisions
 
