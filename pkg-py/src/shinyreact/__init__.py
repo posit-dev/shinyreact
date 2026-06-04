@@ -1,3 +1,4 @@
+from . import _input_handler as _input_handler  # noqa: F401  (registers input handlers)
 from ._output import output_react
 from ._page import page_bare, page_react, page_react_dep, set_react_page
 from ._reactive_output import reactive_output

@@ -1,0 +1,23 @@
+import shinyreact  # noqa: F401  (import registers the handlers)
+from shiny.input_handler import input_handlers
+
+
+def test_both_handlers_are_registered():
+    assert "shinyreact.default" in input_handlers
+    assert "shinyreact.asis" in input_handlers
+
+
+def test_default_handler_returns_value_unchanged():
+    handler = input_handlers["shinyreact.default"]
+    records = [{"name": "a", "size": 1}, {"name": "b", "size": 2}]
+    assert handler(records, None, None) == records
+    assert handler([0, 100], None, None) == [0, 100]
+    assert handler(5, None, None) == 5
+    assert handler([], None, None) == []
+
+
+def test_asis_handler_returns_value_unchanged():
+    handler = input_handlers["shinyreact.asis"]
+    records = [{"name": "a"}, {"name": "b"}]
+    assert handler(records, None, None) == records
+    assert handler([0, 100], None, None) == [0, 100]
