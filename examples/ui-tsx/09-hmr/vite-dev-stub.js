@@ -20,3 +20,39 @@ export function makeDevStub(origin, entry) {
     `await import(${JSON.stringify(`${origin}/${entry}`)});\n`
   );
 }
+
+// Vite plugin (serve only). On dev-server start it writes `outFile` (e.g.
+// www/app.js) as the dev stub, and removes it on shutdown so a later plain
+// `shiny run` doesn't load a stub pointing at a dead dev server. `vite build`
+// (apply:"serve" excludes this plugin) overwrites `outFile` with the real bundle.
+export function shinyreactDevStub({ entry, outFile }) {
+  let stubPath;
+  return {
+    name: "shinyreact-dev-stub",
+    apply: "serve",
+    configResolved(config) {
+      stubPath = path.resolve(config.root, outFile);
+    },
+    configureServer(server) {
+      const port = server.config.server.port ?? 5173;
+      const origin = `http://localhost:${port}`;
+      fs.writeFileSync(stubPath, makeDevStub(origin, entry));
+      server.config.logger.info(`  shinyreact: wrote dev stub ${outFile} -> ${origin}`);
+
+      const remove = () => {
+        try {
+          fs.unlinkSync(stubPath);
+        } catch {
+          /* already gone */
+        }
+      };
+      server.httpServer?.once("close", remove);
+      for (const sig of ["SIGINT", "SIGTERM"]) {
+        process.once(sig, () => {
+          remove();
+          process.exit(0);
+        });
+      }
+    },
+  };
+}
