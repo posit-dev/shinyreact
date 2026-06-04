@@ -36,7 +36,7 @@ node <- function(type, ..., props = list()) {
 as.tags.shinyreact_node <- function(x, ...) {
   parts <- serialize_ui(x)
   # Serialize script-safe so a payload containing "</script>" (or "<!--",
-  # U+2028/U+2029, …) cannot break out of the inline
+  # U+2028/U+2029, ...) cannot break out of the inline
   # <script type="application/json">. The escapes are decoded back by
   # JSON.parse on the client. See .script_safe_json() in wire.R.
   spec_json <- .script_safe_json(parts$payload)

@@ -182,14 +182,14 @@ as_wire.shinyreact_node <- function(x, deps) {
 # the round-trip is lossless. Escaping "<", ">", and "&" neutralizes
 # "</script>", "<!--", "-->", and "<![CDATA[" breakouts; U+2028 and U+2029 are
 # valid in JSON but illegal unescaped in a JS string literal. Mirrors Python's
-# `script_safe_json()` in pkg-py/src/shinyreact/_spec.py — keep the two in
+# `script_safe_json()` in pkg-py/src/shinyreact/_spec.py -- keep the two in
 # lockstep.
 .SCRIPT_SAFE_ESCAPES <- c(
   "<" = "\\u003c",
   ">" = "\\u003e",
   "&" = "\\u0026",
-  " " = "\\u2028",
-  " " = "\\u2029"
+  "\u2028" = "\\u2028",
+  "\u2029" = "\\u2029"
 )
 
 #' Serialize an R value to JSON safe to embed in an HTML `<script>` (internal)

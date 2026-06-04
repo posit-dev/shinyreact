@@ -9,14 +9,14 @@ test_that("as.tags.shinyreact_node emits a static mount with inline JSON", {
 })
 
 test_that(".script_safe_json escapes script-dangerous characters losslessly", {
-  raw <- "</script><!-- -->    a & b"
+  raw <- "</script><!-- --> \u2028\u2029 a & b"
   out <- .script_safe_json(list(x = jsonlite::unbox(raw)))
   # No raw dangerous character survives in the serialized text.
   expect_false(grepl("<", out, fixed = TRUE))
   expect_false(grepl(">", out, fixed = TRUE))
   expect_false(grepl("&", out, fixed = TRUE))
-  expect_false(grepl(" ", out, fixed = TRUE))
-  expect_false(grepl(" ", out, fixed = TRUE))
+  expect_false(grepl("\u2028", out, fixed = TRUE))
+  expect_false(grepl("\u2029", out, fixed = TRUE))
   # The escape is lossless.
   expect_identical(jsonlite::fromJSON(out)$x, raw)
 })
