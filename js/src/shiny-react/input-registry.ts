@@ -5,6 +5,10 @@ import { MISSING } from "./missing";
 import { createDebouncedFn, type DebouncedFunction } from "./utils";
 
 export class InputRegistryEntry<T> {
+  /** Wire-id suffix applied when no explicit `type` is set, so untyped inputs
+   * route through shinyreact's server-side handler (clean records on R). */
+  private static readonly DEFAULT_TYPE = "shinyreact.default";
+
   id: string; // Shiny input ID
   value: T;
   useStateSetValueFns: Set<(value: T) => void>;
@@ -32,7 +36,7 @@ export class InputRegistryEntry<T> {
   }
 
   private setShinyInputValue(value: T) {
-    const wireId = this.type ? `${this.id}:${this.type}` : this.id;
+    const wireId = `${this.id}:${this.type ?? InputRegistryEntry.DEFAULT_TYPE}`;
     getShiny()?.setInputValue?.(wireId, value, this.opts);
   }
 
