@@ -37,13 +37,32 @@ export function seedInlineSpecs(): void {
 }
 
 /**
- * Install `seedInlineSpecs` to run once the DOM is ready. Safe to call at
- * bundle load; runs immediately if the document is already parsed.
+ * Install `seedInlineSpecs` to run once the page's parse-time scripts have all
+ * executed. Safe to call at bundle load.
+ *
+ * A static mount may reference React components registered by a *sibling*
+ * bundle (e.g. a downstream package). Both bundles ship as `defer` scripts, so
+ * the shinyreact bundle commonly runs first — at `readyState === "interactive"`
+ * — *before* the sibling has registered its components. Seeding right then
+ * renders against an incomplete registry: the renderer throws on the unknown
+ * component and the mount's React root is poisoned for good (a later seed pass
+ * skips it via `hasRoot`). See issue #123.
+ *
+ * `DOMContentLoaded` fires only after every parse-time `defer`/module script has
+ * executed, so by then all sibling registrations have landed. We wait for it
+ * rather than seeding immediately. `load` is a safety net for the rare case
+ * where this runs after `DOMContentLoaded` has already fired but before `load`
+ * (e.g. a non-`defer` injection); `seedInlineSpecs` is idempotent, so a double
+ * fire is harmless. When the document is already `complete` there is no future
+ * event to wait for, so we seed at once.
  */
 export function installInlineSpecSeeding(): void {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", seedInlineSpecs);
-  } else {
+  if (document.readyState === "complete") {
     seedInlineSpecs();
+  } else {
+    document.addEventListener("DOMContentLoaded", seedInlineSpecs, {
+      once: true,
+    });
+    window.addEventListener("load", seedInlineSpecs, { once: true });
   }
 }
