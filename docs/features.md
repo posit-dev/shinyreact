@@ -67,6 +67,7 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 | `useShinyInput` | Working | Full `[value, setValue]` — stable defaultValue via `useRef`; debounce + priority options; optional `type=` routes values through a Shiny input handler (e.g. `shiny.datetime`) |
 | `useShinyInputValue` | Working | Read-only consumer hook — returns just the current value, with mount-order-safe subscription to a producer registered elsewhere |
 | `useSetShinyInput` | Working | Write-only producer hook — returns just the setter; same `defaultValue` + options as `useShinyInput`; optional `type=` routes values through a Shiny input handler (e.g. `shiny.datetime`) |
+| **Built-in input handlers** | Working | `shinyreact.default` is applied automatically to every untyped input (JS appends `:shinyreact.default` to the wire id). On R it delivers arrays of objects as a clean list of records while scalar arrays still flatten to atomic vectors; on Python it is a no-op. `shinyreact.asis` (opt-in via `type="shinyreact.asis"`) returns the parsed value completely untouched. Both handlers are registered in R and Python. |
 | `useShinyOutputValue` | Working | Subscribes to a Shiny output binding; receives `Jsonifiable` values from `reactive_output`. Returns just the value |
 | `useShinyOutputStatus` | Working | Returns the lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` — for a Shiny output binding |
 | `useShinyMessageHandler` | Working | Stable handler ref; no unnecessary re-registration on inline arrow functions |
