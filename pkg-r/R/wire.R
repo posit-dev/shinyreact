@@ -176,6 +176,38 @@ as_wire.shinyreact_node <- function(x, deps) {
   ))
 }
 
+# Characters that are dangerous inside an HTML <script> element or illegal
+# unescaped in a JavaScript string literal, each mapped to its JSON \uXXXX
+# escape. JSON.parse() decodes the escapes back to the original characters, so
+# the round-trip is lossless. Escaping "<", ">", and "&" neutralizes
+# "</script>", "<!--", "-->", and "<![CDATA[" breakouts; U+2028 and U+2029 are
+# valid in JSON but illegal unescaped in a JS string literal. Mirrors Python's
+# `script_safe_json()` in pkg-py/src/shinyreact/_spec.py -- keep the two in
+# lockstep.
+.SCRIPT_SAFE_ESCAPES <- c(
+  "<" = "\\u003c",
+  ">" = "\\u003e",
+  "&" = "\\u0026",
+  "\u2028" = "\\u2028",
+  "\u2029" = "\\u2029"
+)
+
+#' Serialize an R value to JSON safe to embed in an HTML `<script>` (internal)
+#'
+#' Produces `jsonlite::toJSON(x, auto_unbox = FALSE)` with the script-dangerous
+#' characters (`<`, `>`, `&`, U+2028, U+2029) replaced by their `\uXXXX` JSON
+#' escapes. The escapes are decoded back to the original characters by
+#' `JSON.parse` on the client, so embedding is lossless. Length-1 atomic values
+#' must be wrapped in `jsonlite::unbox()` by the caller to serialize as scalars.
+#' @keywords internal
+.script_safe_json <- function(x) {
+  out <- as.character(jsonlite::toJSON(x, auto_unbox = FALSE))
+  for (char in names(.SCRIPT_SAFE_ESCAPES)) {
+    out <- gsub(char, .SCRIPT_SAFE_ESCAPES[[char]], out, fixed = TRUE)
+  }
+  out
+}
+
 #' Serialize a UI value to a wire payload + harvested dependencies (internal)
 #'
 #' @keywords internal

@@ -25,6 +25,36 @@ def _translate_attrs(attrs: dict[str, Any]) -> dict[str, Any]:
     return {_ATTR_MAP.get(k, k): v for k, v in attrs.items()}
 
 
+# Characters that are dangerous inside an HTML <script> element or illegal
+# unescaped in a JavaScript string literal, each mapped to its JSON \uXXXX
+# escape. JSON.parse() (and json.loads) decode the escapes back to the original
+# characters, so the round-trip is lossless. Escaping "<", ">", and "&"
+# neutralizes "</script>", "<!--", "-->", and "<![CDATA[" breakouts; U+2028 and
+# U+2029 are valid in JSON but illegal unescaped in a JS string literal.
+# Mirrors R's `.script_safe_json()` in pkg-r/R/wire.R — keep the two in lockstep.
+_SCRIPT_SAFE_ESCAPES = {
+    "<": "\\u003c",
+    ">": "\\u003e",
+    "&": "\\u0026",
+    " ": "\\u2028",
+    " ": "\\u2029",
+}
+
+
+def script_safe_json(value: Any) -> str:
+    """Serialize ``value`` to JSON safe to embed in an HTML ``<script>``.
+
+    Produces ``json.dumps(value)`` with the script-dangerous characters
+    (``<``, ``>``, ``&``, U+2028, U+2029) replaced by their ``\\uXXXX`` JSON
+    escapes. The escapes are decoded back to the original characters by
+    ``JSON.parse`` on the client, so embedding is lossless.
+    """
+    out = json.dumps(value)
+    for char, escape in _SCRIPT_SAFE_ESCAPES.items():
+        out = out.replace(char, escape)
+    return out
+
+
 def _walk_all(
     children: Iterable[Any], deps: list[HTMLDependency]
 ) -> list[dict[str, Any]]:
@@ -128,10 +158,10 @@ class Node:
         from ._output import _dep
 
         node, deps = self.serialize()
-        # Escape "<" as \\u003c (still valid JSON, parses back to "<" on the
-        # client) so a payload containing "</script>" cannot break out of the
-        # script element.
-        spec_json = json.dumps(node).replace("<", "\\u003c")
+        # Serialize script-safe so a payload containing "</script>" (or "<!--",
+        # U+2028/U+2029, …) cannot break out of the inline <script>. The escapes
+        # are decoded back by JSON.parse on the client. See script_safe_json.
+        spec_json = script_safe_json(node)
         # htmltools requires a `.tagify()` implementation to return a fully
         # tagified value; call `.tagify()` on the assembled TagList so nested
         # Tags (the mount div, the dep) are tagified too.
@@ -152,4 +182,3 @@ class Node:
         harvest them.
         """
         return self._to_wire([])
-
