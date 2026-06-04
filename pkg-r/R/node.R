@@ -35,19 +35,11 @@ node <- function(type, ..., props = list()) {
 #' @exportS3Method htmltools::as.tags
 as.tags.shinyreact_node <- function(x, ...) {
   parts <- serialize_ui(x)
-  # HACK (see #125): blanket-escape every "<" as the JSON unicode escape
-  # < so a payload containing "</script>" can't break out of the inline
-  # <script type="application/json">. < is valid JSON and JSON.parse()
-  # decodes it back to "<", so the round-trip is lossless. This is a crude
-  # post-serialization string replace (it over-escapes all "<", not just
-  # "</"/"<!--", and ignores U+2028/U+2029); #125 tracks replacing it with a
-  # proper script-safe serializer helper shared with Python's Node.tagify().
-  spec_json <- gsub(
-    "<",
-    "\\u003c",
-    as.character(jsonlite::toJSON(parts$payload, auto_unbox = FALSE)),
-    fixed = TRUE
-  )
+  # Serialize script-safe so a payload containing "</script>" (or "<!--",
+  # U+2028/U+2029, …) cannot break out of the inline
+  # <script type="application/json">. The escapes are decoded back by
+  # JSON.parse on the client. See .script_safe_json() in wire.R.
+  spec_json <- .script_safe_json(parts$payload)
   htmltools::tagList(
     shinyreact_dep(),
     parts$deps,

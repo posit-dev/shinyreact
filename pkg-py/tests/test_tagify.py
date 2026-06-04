@@ -2,11 +2,29 @@ import json
 import re
 
 from htmltools import HTMLDependency, TagList, tags
-from shinyreact._spec import Node
+from shinyreact._spec import Node, script_safe_json
 
 
 def _render(node: Node) -> str:
     return str(TagList(node.tagify()))
+
+
+def test_script_safe_json_escapes_dangerous_chars_losslessly():
+    # Every character that is dangerous inside an HTML <script> element or
+    # illegal unescaped in a JS string literal must be \\uXXXX-escaped, and the
+    # result must JSON.parse (json.loads) back to the original.
+    raw = "</script><!-- -->    a & b"
+    out = script_safe_json({"x": raw})
+    # No raw dangerous character survives in the serialized text.
+    for char in ("<", ">", "&", " ", " "):
+        assert char not in out, f"{char!r} should have been escaped"
+    # The escape is lossless.
+    assert json.loads(out) == {"x": raw}
+
+
+def test_script_safe_json_uses_unicode_escapes():
+    out = script_safe_json("</script>")
+    assert out == '"\\u003c/script\\u003e"'
 
 
 def test_tagify_returns_fully_tagified_value_when_nested_in_a_tag():
@@ -61,7 +79,18 @@ def test_tagify_escapes_script_breakout():
 
     node = Node(type="Card", props={}, children=[HTML("</script><script>x</script>")])
     html = _render(node)
-    # The "<" of the embedded </script> is escaped, so it cannot close the
-    # inline-spec <script> early.
+    # The breakout payload's "</script>" is escaped, so it cannot close the
+    # inline-spec <script> early — only the wrapper's real closing tag remains.
     assert "</script><script>x" not in html
-    assert "\\u003c/script>" in html
+    # The inline script's content round-trips back to the original wire node.
+    script_m = re.search(
+        r'<script type="application/json">(.*?)</script>', html, re.DOTALL
+    )
+    assert script_m, html
+    payload = json.loads(script_m.group(1))
+    assert payload == {
+        "type": "react",
+        "name": "Card",
+        "props": {},
+        "children": [{"type": "html", "html": "</script><script>x</script>"}],
+    }

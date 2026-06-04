@@ -8,6 +8,28 @@ test_that("as.tags.shinyreact_node emits a static mount with inline JSON", {
   expect_true(any(vapply(deps, function(d) d$name == "shinyreact", logical(1))))
 })
 
+test_that(".script_safe_json escapes script-dangerous characters losslessly", {
+  raw <- "</script><!-- -->    a & b"
+  out <- .script_safe_json(list(x = jsonlite::unbox(raw)))
+  # No raw dangerous character survives in the serialized text.
+  expect_false(grepl("<", out, fixed = TRUE))
+  expect_false(grepl(">", out, fixed = TRUE))
+  expect_false(grepl("&", out, fixed = TRUE))
+  expect_false(grepl(" ", out, fixed = TRUE))
+  expect_false(grepl(" ", out, fixed = TRUE))
+  # The escape is lossless.
+  expect_identical(jsonlite::fromJSON(out)$x, raw)
+})
+
+test_that(".script_safe_json uses unicode escapes for </script>", {
+  out <- .script_safe_json(jsonlite::unbox("</script>"))
+  expect_match(out, "\\u003c", fixed = TRUE)
+  expect_match(out, "\\u003e", fixed = TRUE)
+  expect_false(grepl("<", out, fixed = TRUE))
+  expect_false(grepl(">", out, fixed = TRUE))
+  expect_identical(jsonlite::fromJSON(out), "</script>")
+})
+
 test_that("static mount escapes < to prevent </script> breakout", {
   tagobj <- htmltools::as.tags(node(
     "Card",
