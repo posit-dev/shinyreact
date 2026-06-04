@@ -27,9 +27,16 @@ Document guidance on when to use which. The principle remains: prefer `reactive_
 
 The chat example requires `OPENAI_API_KEY` and the `chatlas` package. It cannot be smoke-tested without credentials. Consider adding a mock/echo mode for demo purposes.
 
-## Python-side input handlers for useShinyInput values
+## User-registered input handlers for useShinyInput values
 
-Currently, values sent from `useShinyInput` on the JS side arrive directly as `input.xxx()` with no server-side interception. Shiny's built-in inputs (e.g., `actionButton`) use Python input handlers to validate and transform incoming values — for example, the action button handler can reject or coerce values before they reach reactive code. `shinyreact` should support registering Python input handlers for `useShinyInput` IDs so that the server can intercept, validate, or deny values sent from the client. This would also enable patterns like the action button's `ignore_init` behavior to be handled at the input layer rather than requiring `@reactive.event(ignore_init=True)` at every call site.
+As of #124, every untyped `useShinyInput` value is routed through shinyreact's
+built-in `shinyreact.default` handler (with `shinyreact.asis` available opt-in),
+so values now flow through Shiny's server-side input-handler dispatch. Still
+open: a first-class way for app authors to register their *own* per-id handlers
+to validate, coerce, or deny incoming values (today they must call
+`shiny.input_handler.input_handlers.add(...)` and set `type=` themselves), and a
+way to handle the action button's `ignore_init` behavior at the input layer
+rather than via `@reactive.event(ignore_init=True)` at each call site.
 
 ## XSS in chat example renderMarkdown (07-chat)
 

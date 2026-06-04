@@ -124,7 +124,7 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     }
   });
 
-  it("omits suffix when type is not set", async () => {
+  it("uses the shinyreact.default suffix when type is not set", async () => {
     render(<ProducerFull id="foo" />);
     await flushAll();
 
@@ -136,7 +136,7 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     const calls = mockSetInputValue.mock.calls.filter((c) => c[0].startsWith("foo"));
     expect(calls.length).toBeGreaterThan(0);
     for (const call of calls) {
-      expect(call[0]).toBe("foo");
+      expect(call[0]).toBe("foo:shinyreact.default");
     }
   });
 

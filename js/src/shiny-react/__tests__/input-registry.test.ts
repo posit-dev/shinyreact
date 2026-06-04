@@ -73,7 +73,7 @@ describe("InputRegistryEntry", () => {
     vi.advanceTimersByTime(200);
 
     expect(mockSetInputValue).toHaveBeenCalledWith(
-      "test",
+      "test:shinyreact.default",
       42,
       expect.objectContaining({ debounceMs: 100 }),
     );
@@ -111,7 +111,7 @@ describe("InputRegistryEntry", () => {
     entry.setValue(300 as any);
     vi.advanceTimersByTime(200);
     expect(mockSetInputValue).toHaveBeenCalledWith(
-      "test",
+      "test:shinyreact.default",
       300,
       expect.objectContaining({ debounceMs: 100 }),
     );
@@ -127,7 +127,7 @@ describe("InputRegistryEntry", () => {
     vi.advanceTimersByTime(200);
 
     expect(mockSetInputValue).toHaveBeenCalledWith(
-      "test",
+      "test:shinyreact.default",
       null,
       expect.objectContaining({ debounceMs: 100 }),
     );
@@ -144,7 +144,7 @@ describe("InputRegistryEntry", () => {
     expect(entry.isEmpty()).toBe(false);
   });
 
-  it("type defaults to undefined and the wire id has no suffix", () => {
+  it("type defaults to undefined and the wire id has the shinyreact.default suffix", () => {
     vi.mocked(getShiny).mockReturnValue({
       setInputValue: mockSetInputValue,
     } as any);
@@ -154,7 +154,7 @@ describe("InputRegistryEntry", () => {
     vi.advanceTimersByTime(200);
 
     expect(mockSetInputValue).toHaveBeenCalledWith(
-      "foo",
+      "foo:shinyreact.default",
       1,
       expect.objectContaining({ debounceMs: 100 }),
     );
@@ -243,7 +243,7 @@ describe("InputRegistryEntry", () => {
     entry.setValue(1);
     vi.advanceTimersByTime(200);
     expect(mockSetInputValue).toHaveBeenCalledWith(
-      "foo",
+      "foo:shinyreact.default",
       1,
       expect.anything(),
     );

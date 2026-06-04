@@ -178,29 +178,15 @@ server <- function(input, output, session) {
     if (is.null(files) || length(files) == 0) {
       return(NULL)
     }
-    # shinyreact delivers the JS file-metadata array as a flat *named* character
-    # vector with the names "name"/"size"/"type" repeating once per file
-    # (length 3 * number of files) — not a data.frame or list of records. Pull
-    # each field out by name. (Python's input.filein() is a list of dicts; the
-    # R wire shape differs.)
-    nm <- names(files)
-    field <- function(key) unname(files[nm == key])
-    fnames <- field("name")
-    fsizes <- field("size")
-    ftypes <- field("type")
-    if (length(fnames) == 0) {
-      return(NULL)
-    }
+    # shinyreact's default input handler delivers the JS file-metadata array as
+    # a clean list of records (one named list per file), matching Python's
+    # list of dicts — so we can index each file's fields directly.
     summaries <- vapply(
-      seq_along(fnames),
-      function(i) {
-        size_kb <- round(as.numeric(fsizes[[i]]) / 1024, 1)
-        type_str <- if (i <= length(ftypes) && nzchar(ftypes[[i]])) {
-          ftypes[[i]]
-        } else {
-          "unknown type"
-        }
-        paste0(fnames[[i]], " (", size_kb, " KB, ", type_str, ")")
+      files,
+      function(f) {
+        size_kb <- round(as.numeric(f$size) / 1024, 1)
+        type_str <- if (nzchar(f$type)) f$type else "unknown type"
+        paste0(f$name, " (", size_kb, " KB, ", type_str, ")")
       },
       character(1)
     )

@@ -224,6 +224,26 @@ def _():
 
 The handler name is a server-side contract: once an input id has been registered with a `type` (or with no `type`), a later mount disagreeing with that policy throws. Validation rejects empty strings, whitespace, and `:` characters at hook mount.
 
+### Arrays of records arrive clean on R (zero config)
+
+shinyreact routes every untyped `useShinyInput` value through a built-in
+`shinyreact.default` input handler (the JS hook appends `:shinyreact.default`
+to the wire id automatically). On R this means a JS component sending an array
+of objects — e.g. `[{name, size, type}, ...]` — arrives as a clean list of
+records, so `for (f in input$x) f$size` works just like Python's
+`for f in input.x(): f["size"]`. Scalar arrays (`[0, 100]`, `["a", "b"]`) are
+still flattened to atomic vectors, exactly as Shiny does by default.
+
+If you need the parsed value returned completely untouched (e.g. a nested array
+the default would flatten), opt into the pass-through handler:
+
+```js
+useShinyInput("coords", [], { type: "shinyreact.asis" });
+```
+
+Both `shinyreact.default` and `shinyreact.asis` are registered in R and Python,
+so the same React component is portable across both servers.
+
 ### Avoiding flicker on input changes (use status correctly, don't conflate states)
 
 The four output-status values exist for a reason — collapsing them into one boolean leaks DOM churn into the UI. Wrong:
