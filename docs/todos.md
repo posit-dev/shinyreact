@@ -27,6 +27,17 @@ Document guidance on when to use which. The principle remains: prefer `reactive_
 
 The chat example requires `OPENAI_API_KEY` and the `chatlas` package. It cannot be smoke-tested without credentials. Consider adding a mock/echo mode for demo purposes.
 
+## User-registered input handlers for useShinyInput values
+
+As of #124, every untyped `useShinyInput` value is routed through shinyreact's
+built-in `shinyreact.default` handler (with `shinyreact.asis` available opt-in),
+so values now flow through Shiny's server-side input-handler dispatch. Still
+open: a first-class way for app authors to register their *own* per-id handlers
+to validate, coerce, or deny incoming values (today they must call
+`shiny.input_handler.input_handlers.add(...)` and set `type=` themselves), and a
+way to handle the action button's `ignore_init` behavior at the input layer
+rather than via `@reactive.event(ignore_init=True)` at each call site.
+
 ## XSS in chat example renderMarkdown (07-chat)
 
 The `renderMarkdown()` function in `examples/app-py/07-chat/chat.js` escapes code blocks via `escapeHtml()` but passes all other text (inline code, bold, italic, plain text) as raw HTML into `dangerouslySetInnerHTML`. If the AI model returns markup like `<img src=x onerror=...>`, it will execute as script. Options: integrate a sanitization library (e.g. DOMPurify), build a React element tree instead of an HTML string, or escape-first then apply formatting. The current inline TODO at `chat.js:216` documents the risk.
