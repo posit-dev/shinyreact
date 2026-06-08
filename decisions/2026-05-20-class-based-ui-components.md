@@ -133,15 +133,15 @@ A small, fixed lattice:
 UiComponent (ABC; tagify() -> Tag; html_dependencies ClassVar)
 ├── UiInput            (marker for "this provides an input value")
 ├── UiOutput           (marker for "this is a render target")
-└── UiLayout           (marker for "this is structural")
+└── UiLayout(AllowsChildren)   (marker for "this is structural"; always has children)
 
 AllowsChildren         (mixin: children: list[TagChild]; __enter__/__exit__)
 ```
 
 - `UiComponent` is abstract. Subclasses **must** implement `tagify()`.
-- `AllowsChildren` is a mixin used by anything that can contain children (cards, accordions, layouts). It owns the `__enter__` / `__exit__` protocol; inputs and outputs deliberately do not inherit from it, so `with ui.input_slider(...)` is a `TypeError`.
-  - Maybe `UiLayout` adopts this functionality permanently? "Has children" is arguably the defining feature of a layout.
-- The three markers (`UiInput`, `UiOutput`, `UiLayout`) carry no methods of their own under `ClassComponents`. They exist so downstream code can write `isinstance(c, UiInput)` against a stable, public surface (today this is private inside `shiny.ui`).
+- `AllowsChildren` is a mixin owning the `children` list and the `__enter__` / `__exit__` protocol.
+- **`UiLayout` inherits from `AllowsChildren`.** Having children is the defining feature of a layout, so the two are folded together: every `UiLayout` can contain children and be used as a `with`-block. `UiInput` and `UiOutput` do **not** inherit it, so `with ui.input_slider(...)` is a `TypeError`. (A non-layout component that nonetheless needs children can still mix in `AllowsChildren` directly, but in practice "allows children" and "is a layout" coincide.)
+- The three markers (`UiInput`, `UiOutput`, `UiLayout`) carry no methods beyond what `UiLayout` gains from `AllowsChildren`. They exist so downstream code can write `isinstance(c, UiInput)` against a stable, public surface (today this is private inside `shiny.ui`).
 
 The `shinyuiclassonly` package in this repo is the reference implementation for `ClassComponents`. Per-component files own their `__init__` + `tagify()` in one place — the *"co-located metadata"* benefit from the [type-system memo](./2026-05-19-class-based-ui-type-system.md#3-co-located-metadata-per-component-structural-leveraged-by-ergonomics).
 
@@ -150,7 +150,7 @@ The `shinyuiclassonly` package in this repo is the reference implementation for 
 `@overload` on `__init__` gives both call styles a single class:
 
 ```python
-class card(UiLayout, AllowsChildren):
+class card(UiLayout):                      # UiLayout already brings AllowsChildren
     @overload
     def __init__(self, *children: TagChild, id: str | None = None,
                  full_screen: bool = False) -> None: ...
@@ -221,7 +221,7 @@ These should be decided in a follow-up after `ClassComponents` is in place and w
 
 Roughly:
 
-- `shiny/ui/_*.py` — every component factory becomes a class (`UiInput`, `UiOutput`, or `UiLayout`+`AllowsChildren` subclass). `tagify()` keeps the old factory body verbatim.
+- `shiny/ui/_*.py` — every component factory becomes a class (a `UiInput`, `UiOutput`, or `UiLayout` subclass; `UiLayout` already carries `AllowsChildren`). `tagify()` keeps the old factory body verbatim.
 - `shiny/ui/__init__.py` — export the base classes (`UiComponent`, `UiInput`, `UiOutput`, `UiLayout`, `AllowsChildren`) for `isinstance` use.
 - (`InstanceAccessors`, later) `shiny/render/` and the input-handler / bookmark machinery move into per-component classes.
 

@@ -273,7 +273,7 @@ with tags.div(class_="row"):
 Why do this:
 
 - **Symmetry.** Authors writing low-level HTML should not need to know which library happens to own the capture mechanism.
-- **Composition.** A Shiny `card` (which subclasses `UiLayout`+`AllowsChildren`) and a `tags.div(...)` participate in the same stack, so they nest with no special-casing.
+- **Composition.** A Shiny `card` (a `UiLayout`, which carries `AllowsChildren`) and a `tags.div(...)` participate in the same stack, so they nest with no special-casing.
 - **Cleanness.** Strips Shiny-specific behaviour out of Shiny and into the right layer.
 
 The constraint: `htmltools` does not know about Shiny's session. The stack lives in a `contextvars.ContextVar[list[AllowsChildren-like]]`, which is dependency-free and works fine without Shiny. Shiny adds its own layer on top for session-scoped concerns.
