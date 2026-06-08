@@ -1,113 +1,89 @@
-# Class-based UI components and stack-based child capture
+# Stack-based child capture (and unified Core/Express mode)
 
 **Date:** 2026-05-20
-**Status:** Proposal — for review by the Shiny team Friday 2026-05-29, then Joe / Winston / Andrew sign-off
+**Status:** Proposal — **contested.** For review by the Shiny team Friday 2026-05-29, then Joe / Winston / Andrew sign-off
 **Scope:** `py-shiny` (not `shinyreact`)
+**Depends on:** [`decisions/2026-05-20-class-based-ui-components.md`](./2026-05-20-class-based-ui-components.md) — the class hierarchy. This proposal builds on it.
 **Branch plan:** prototype in a `dev` branch on `posit-dev/py-shiny`; targets a **Shiny v2 / breaking** release
 **Related:**
-- [`decisions/2026-05-19-class-based-ui-type-system.md`](./2026-05-19-class-based-ui-type-system.md) — the "why bother with classes" benefits memo.
-- `examples/app-py/14-unified-ui-prototype/` and `15-shinyui-with-blocks/` — the fuller `shinyui` vision (`.value()` / `.update()` accessors on instances).
-- `examples/app-py/16-shinyuiclassonly-core/` and `17-shinyuiclassonly-express/` — the structure-only step proposed here.
+- `examples/app-py/16-shinyuiclassonly-core/` and `17-shinyuiclassonly-express/` — prototypes whose `AllowsChildren` already carries the context stack.
 
-> **Where this work lives today.** The two prototype packages (`shinyui`, `shinyuiclassonly`) and the four end-to-end examples (14–17) live in this `shinyreact` monorepo as the proof-of-concept playground. They are **independent of `shinyreact`** — none of these changes require React or the JSON-spec bridge. When the team approves the direction, the work moves to a `dev` branch on `posit-dev/py-shiny` for the actual implementation.
+> **Two documents, two ideas.** Early feedback was that the **class hierarchy is acceptable** but **replacing the capture mechanism with a stack is not** — at least not yet. This doc isolates the contested half so it can be debated, deferred, or rejected without holding up [class-based UI components](./2026-05-20-class-based-ui-components.md). Read that doc first; everything here assumes components are already classes.
 
 ---
 
 ## TL;DR — for decision makers
 
-We are proposing five staged changes to how `py-shiny` defines UI. The names describe what the step does; numbering is implementation order:
+This proposal changes *how* a UI component's children are collected when you write a `with` block, and what that unlocks. Three stages:
 
-1. **`ClassComponents`** — UI components become classes. Today `ui.card(...)` is a function that returns an `htmltools.Tag`. We change it to a class whose `__init__` records arguments and whose `tagify()` produces the `Tag` at render time. The call site looks identical; the change is in what the symbol *is*.
-2. **`StackCapture`** — replace Express's "print to capture" trick with an explicit stack. Express today uses Python's display hook (`sys.displayhook`) to detect that a UI element was created at the top of a `with` block and stitch it into the parent. We replace that with an explicit push/pop context stack maintained by the class. The class captures children when it is constructed inside a `with` block.
-3. **`HtmlToolsStack`** — push the stack primitive down into `htmltools` once `StackCapture` is in. Plain `htmltools.tags.div(...)` participates in the same stack, so the mechanism is shared between Shiny and any other consumer of `htmltools`.
-4. **`UnifiedMode`** — collapse "Core mode" and "Express mode" into one mode. Once child capture is explicit, the two runtimes converge: the same app file works whether or not a `server` function is present, with `with global_session():` as the opt-in for declarations that should *not* be session-scoped.
-5. **`InstanceAccessors`** (door left open) — build `.value()` / `.update()` accessors on input/layout instances (the fuller `shinyui` vision in examples 14–15). Not in this proposal's required scope; technical questions are still open.
+1. **`StackCapture`** — replace Express's "print to capture" trick with an explicit stack. Express today uses Python's display hook (`sys.displayhook`) to detect that a UI element was created at the top of a `with` block and stitch it into the parent. We replace that with an explicit push/pop context stack maintained by the class. A component captures children when it is *constructed* inside a `with` block, not when it is printed.
+2. **`HtmlToolsStack`** — push the stack primitive down into `htmltools` once `StackCapture` is in. Plain `htmltools.tags.div(...)` participates in the same stack, so the mechanism is shared between Shiny and any other consumer of `htmltools`.
+3. **`UnifiedMode`** — collapse "Core mode" and "Express mode" into one mode. Once child capture is explicit, the two runtimes converge: the same app file works whether or not a `server` function is present, with `with global_session():` as the opt-in for declarations that should *not* be session-scoped.
 
-### Why now
+### Why this is contested
 
-- **One symbol per component, two call styles.** `card(...)` works as a function call in Core and as a `with`-block in Express. Today we maintain two parallel surfaces.
-- **Context managers in Core.** Authors get the nested-`with` style they like in Express without committing to Express's display-hook semantics.
-- **Decouple "what is rendered" from "how it is rendered."** Once components are classes that defer `tagify()`, the door opens to alternative renderers — React, raw HTML, JSON to a separate client — without changing user code. This is the long-term enabling step for things like `shinyreact`.
-- **Better typing and discoverability.** `isinstance(x, UiInput)`, IDE auto-complete on the right overload, `.value` / `.update` as methods rather than free floating functions.
+`StackCapture` is a **breaking change to Express**. Today a bare literal at the top of a `with` block (`"text"`, `42`) renders because the display hook catches it. Under construction-time capture there is no hook on bare values, so they silently fall through unless wrapped (`ui.markdown("text")`). That is a pervasive, if mechanical, migration — and it commits us to a Shiny v2.
+
+The upside is real (context managers in Core, one mental model, a path to alternative renderers), but the cost is high enough that the team's current read is "classes yes, stack not yet."
+
+### What it buys
+
+- **Context managers in Core.** Authors get the nested-`with` composition style without Express's display-hook semantics — in plain scripts, notebooks, anywhere.
+- **One mental model.** The Core/Express split (server function vs display hook) collapses to a single runtime; "Express" becomes a writing style, not a separate dispatch path.
+- **A cleaner primitive.** Capture stops depending on `sys.displayhook` — which Shiny shares with Jupyter/IPython and has to fight with.
 
 ### What it costs
 
-- **Shiny v2.** `StackCapture` is a breaking change to Express: every UI element placed at the top of a `with` block must be a recognised component. Bare literals (`42`, `"text"`) and unwrapped raw values no longer render. Migration is mechanical (wrap in `ui.markdown(...)` or similar) but pervasive.
+- **Shiny v2 / breaking.** Every top-level value in a `with` block must be a recognised component. Bare literals no longer render. Migration is mechanical but pervasive.
 - **Documentation overhaul.** The website, tutorials, and examples need a re-pass to reflect the unified mental model.
 - **Notebook-render behaviour to validate.** Display hooks are used by Jupyter/IPython for rich output. The stack approach needs an explicit story for "I'm in a notebook, top-level objects should still render."
 
 ### Recommended path
 
-- Land `ClassComponents` and `StackCapture` together in the `dev` branch. They are mutually reinforcing and both are required to unlock the Express simplification.
-- Land `HtmlToolsStack` immediately after `StackCapture` is stable.
-- Land `UnifiedMode` as a follow-up, once team and users are comfortable with the new model.
-- Defer `InstanceAccessors` to a separate proposal — the structural change stands on its own merits and `InstanceAccessors` has open syntax questions that should not gate the rest.
+- Treat this as a **separate decision from classes.** It can be deferred indefinitely without blocking [class-based UI components](./2026-05-20-class-based-ui-components.md).
+- If pursued: land `StackCapture` and `HtmlToolsStack` together, then `UnifiedMode` as a follow-up.
+- If deferred: the class hierarchy continues to use today's display-hook capture; revisit when there is appetite for a breaking release.
 
 ---
 
-## What we are asking decision makers to approve
+## What we are asking decision makers to approve (or reject)
 
-1. The direction: **classes + stack capture as the single way to compose UI in Shiny v2**.
-2. The breaking-change commitment: **Express mode requires all rendered top-level values to be wrapped components** post-v2.
-3. The staging order: **`ClassComponents` + `StackCapture` together, then `HtmlToolsStack`, then `UnifiedMode`, then `InstanceAccessors`**.
-4. The work plan: **a `dev` branch on `posit-dev/py-shiny`**, with the prototypes from this repo as the starting point.
-5. A standing review cadence (every two weeks) until v2 ships.
+1. Whether to **replace display-hook capture with construction-time stack capture** at all.
+2. If yes, the **breaking-change commitment**: Express requires all rendered top-level values to be wrapped components, post-v2.
+3. If yes, the staging: **`StackCapture` + `HtmlToolsStack` together, then `UnifiedMode`**.
 
-A "no" answer at this point means we stop the prototype line and continue to maintain Core + Express as two surfaces. A "yes, but stage `UnifiedMode` / `InstanceAccessors` later" answer is fully supported by the proposal.
+A "no" answer keeps today's Express capture and is fully compatible with shipping class-based UI. A "not yet" answer parks this doc until a v2 is on the table.
 
 ---
 
 ## What changes for an app author
 
-### Today (Shiny 1.x)
+### Express today (Shiny 1.x)
 
 ```python
-# Core
-from shiny import App, ui, render, reactive
-
-app_ui = ui.page_fluid(
-    ui.card(
-        "Title",
-        ui.input_slider("n", "N", 1, 100, 10),
-        ui.output_plot("plot"),
-        id="main",
-    )
-)
-
-def server(input, output, session):
-    @render.plot
-    def plot(): ...
-
-app = App(app_ui, server)
-```
-
-```python
-# Express — same UI, different runtime, different idiom
 from shiny.express import ui, render, input
 
 with ui.card(id="main"):
-    "Title"
+    "Title"                                  # renders — caught by display hook
     ui.input_slider("n", "N", 1, 100, 10)
 
     @render.plot
     def plot(): ...
 ```
 
-Two surfaces, two mental models. Express mode renders a top-level `ui.input_slider(...)` only because Python's display hook is hijacked.
+The top-level `"Title"` and `ui.input_slider(...)` render because Python's display hook is hijacked.
 
 ### Under this proposal (Shiny v2)
 
 ```python
-# One file, one set of imports. Works in both styles.
-from shiny import App, ui, render, reactive
+from shiny import App, ui, render
 
 with ui.card(id="main") as main:
-    ui.markdown("title"),
+    ui.markdown("Title")                     # MUST wrap — no display hook to catch a bare str
     ui.input_slider("n", "N", 1, 100, 10)
     ui.output_plot("plot")
 
-# Core: keep an explicit server function.
-def server(input, output, session): ...
+def server(input, output, session): ...        # optional, see UnifiedMode
 
 app = App(main, server)
 ```
@@ -115,17 +91,16 @@ app = App(main, server)
 Or, when `UnifiedMode` lands:
 
 ```python
-# No server function — session-scoped by default.
 from shiny import ui, render
 
 with ui.card(id="main") as main:
-    ui.markdown("title")
+    ui.markdown("Title")
     ui.input_slider("n", "N", 1, 100, 10)
 
     @render.plot
     def plot(): ...
 
-app = App(main)   # session-lazy under the hood
+app = App(main)   # session-lazy under the hood; no server function needed
 ```
 
 ### Migration in one sentence
@@ -136,11 +111,10 @@ Wrap top-level bare values in a component (`ui.markdown("text")`, etc.); everyth
 
 ## Open questions called out for the team
 
-- **How does an author read an input from a class instance?** The `shinyui` examples (14/15) propose `slider.value()` returning a reactive. Garrick floated `slider.value = 42` as a setter (Marimo-style). Joe-style concern: setter syntax hides reactivity. **Not resolved.** `InstanceAccessors` is gated on this. The proposal here works fine with the existing `input.<id>()` read pattern in the meantime.
-- **Multiple input values per component** (plot click, hover, brush; data-frame selection): if `.value()` lands, what is the shape for a component with several? `value.click()` / `value.brush()` collected under a `value` namespace? Prefix all values, such as `value_click()`? **Not resolved.**
 - **Notebook display hook.** Shiny shares the `sys.displayhook` mechanism with Jupyter. The stack approach must not break notebook rendering; one possibility is "print only when stack depth is zero." **Needs prototype validation.**
 - **`auto_page` in Express.** Today Express's "auto-page" wrapping inspects what was displayed at the top level to decide between `page_fluid` / `page_sidebar` / `page_navbar`. Under the stack model, this becomes explicit (`App(main_layout)`) — confirming this is acceptable to users is part of the v2 messaging.
 - **Reactives declared inside a `with` block.** A `@reactive.calc` inside a `with ui.card():` block should still be a function (Joe's "explicit reactivity" principle); under the unified mode we want it to be session-lazy so it can be defined once and resolved per session. **Solvable; needs spec.**
+- **Detecting the dropped-value error.** When a bare literal falls through, we want a clear "wrap this in `ui.markdown(...)`" message, not silent loss. The detection mechanism (a per-block tracer?) is **TBD**.
 
 ---
 
@@ -151,17 +125,16 @@ Wrap top-level bare values in a component (`ui.markdown("text")`, etc.); everyth
 | Migration noise for existing Express apps | High | Medium | Mechanical fix; clear error messages; codemod script if needed. |
 | Notebook rendering regressions | Medium | High | Step-zero spike: validate display-hook behaviour against Jupyter, Quarto, VS Code interactive. |
 | Documentation debt blocks v2 release | High | Medium | Liz involved from day one; doc rewrite tracked as a parallel workstream. |
-| `InstanceAccessors` drags on indefinitely | Medium | Low | Explicitly *not* a v2 blocker. Ship the first four steps first. |
 | Authors confused by "where does this render?" | Medium | Medium | Stack rule is simple: "constructed inside a `with` → goes into that parent; else → top level." Document with a flowchart. |
+| Team appetite for a breaking v2 is low | Medium | High | This doc is deferrable; classes ship regardless. |
 
 ---
 
 ## Timeline
 
-- **2026-05-29 (Fri):** team review of this doc.
+- **2026-05-29 (Fri):** team review of this doc (alongside the class-based doc).
 - **By 2026-06-02:** Joe / Winston / Andrew gut-check in Boston (in person, ~1–2 hours).
-- **2026-06+:** prototype lift to `posit-dev/py-shiny@dev`. Standing review every two weeks.
-- **Shiny v2 release:** date deliberately not committed here; depends on doc rewrite and v2 messaging plan.
+- **Shiny v2 release:** date deliberately not committed here; depends on doc rewrite, v2 messaging plan, and whether this proposal is accepted at all.
 
 ---
 ---
@@ -170,58 +143,7 @@ Wrap top-level bare values in a component (`ui.markdown("text")`, etc.); everyth
 
 This section is the implementation reference. Decision makers do not need to read past this line.
 
-## `ClassComponents` — UI components as classes
-
-### Class hierarchy
-
-A small, fixed lattice:
-
-```
-UiComponent (ABC; tagify() -> Tag; html_dependencies ClassVar)
-├── UiInput            (marker for "this provides an input value")
-├── UiOutput           (marker for "this is a render target")
-└── UiLayout           (marker for "this is structural")
-
-AllowsChildren         (mixin: children: list[TagChild]; __enter__/__exit__)
-```
-
-- `UiComponent` is abstract. Subclasses **must** implement `tagify()`.
-- `AllowsChildren` is a mixin used by anything that can contain children (cards, accordions, layouts). It owns the `__enter__` / `__exit__` protocol; inputs and outputs deliberately do not inherit from it, so `with ui.input_slider(...)` is a `TypeError`.
-  - Maybe `UiLayout` adopts this functionality permanently?
-- The three markers (`UiInput`, `UiOutput`, `UiLayout`) carry no methods of their own under `ClassComponents`. They exist so downstream code can write `isinstance(c, UiInput)` against a stable, public surface (today this is private inside `shiny.ui`).
-
-The `shinyuiclassonly` package in this repo is the reference implementation for `ClassComponents`. Per-component files own their `__init__` + `tagify()` in one place — the *"co-located metadata"* benefit from the [type-system memo](./2026-05-19-class-based-ui-type-system.md#3-co-located-metadata-per-component-structural-leveraged-by-ergonomics).
-
-### Two call styles, one symbol
-
-`@overload` on `__init__` gives both call styles a single class:
-
-```python
-class card(UiLayout, AllowsChildren):
-    @overload
-    def __init__(self, *children: TagChild, id: str | None = None,
-                 full_screen: bool = False) -> None: ...
-    @overload
-    def __init__(self, *, id: str | None = None,
-                 full_screen: bool = False) -> None: ...
-    def __init__(self, *children, id=None, full_screen=False):
-        self._id = id
-        self._full_screen = full_screen
-        super().__init__(*children)        # AllowsChildren stores children
-
-    def tagify(self) -> Tag:
-        # ... existing shiny.ui.card logic, just deferred
-```
-
-IDE auto-complete picks the overload by call form: `card(child1, child2)` vs `with card() as c:`.
-
-### Lazy `tagify()`
-
-Today, `ui.card(...)` does the work of building a `Tag` immediately. With classes, `__init__` only records arguments — the `Tag` is constructed when an outer consumer calls `.tagify()`. The lazy-tagify property is what makes the rest of this proposal possible:
-
-- Express layout components (e.g. `layout_column_wrap`) needed access to *children* at tagify time but the current factory pattern couldn't see them. With classes, tagify runs *after* the entire `with` block has populated `children`.
-- Late binding of session-dependent details (HTML dependencies, role attrs, ARIA wiring) becomes natural — `tagify()` can consult the active session if one is in scope.
-- Decoupling intent from rendering: alternative `tagify()`-equivalents (e.g. `to_react_spec()`, `to_json()`) can be added without touching user code. This is the long-term hook for `shinyreact` and similar.
+Everything below assumes the [class hierarchy](./2026-05-20-class-based-ui-components.md) (`UiComponent`, `AllowsChildren`, etc.) is already in place.
 
 ## `StackCapture` — stack-based child capture
 
@@ -256,7 +178,7 @@ def active_parent() -> AllowsChildren | None:
     stack = _stack.get()
     return stack[-1] if stack else None
 
-# AllowsChildren mixin
+# AllowsChildren mixin (from the class-hierarchy doc) gains push/pop
 class AllowsChildren:
     children: list[TagChild]
 
@@ -387,7 +309,7 @@ The public API needs naming: a user-facing `with no_capture(): ...` context mana
 
 ### The mental model
 
-After `ClassComponents` + `StackCapture` + `HtmlToolsStack`, the two-runtime distinction collapses:
+After `StackCapture` + `HtmlToolsStack`, the two-runtime distinction collapses:
 
 - **Core today** = a UI value passed to `App(ui, server)`. No display semantics in the UI definition.
 - **Express today** = a script that uses display hooks to capture top-level expressions and an `auto-page` step to wrap them.
@@ -450,7 +372,7 @@ with ui.card() as main:
 
 Why the empty signature is enough:
 
-- **Inputs** come from the input-class instances themselves (`go.value()`), not from a passed-in `input` object. This is the `InstanceAccessors` end state; until that lands, authors can read inputs via `input.<id>()` imported at module scope.
+- **Inputs** come from the input-class instances themselves (`go.value()`), not from a passed-in `input` object. This relies on the `InstanceAccessors` stage from the [class-based doc](./2026-05-20-class-based-ui-components.md); until that lands, authors can read inputs via `input.<id>()` imported at module scope.
 - **`output`** is no longer a parameter app authors interact with. Render decorators register themselves directly; if a render needs the legacy registry, it can reach it via the active session.
 - **`session`** is rarely needed once `.update()` / `.value()` live on instances. When something genuinely needs it (custom messages, lifecycle hooks), call `shiny.session.require_active_session()` from inside the module body.
 
@@ -476,35 +398,14 @@ The decorator inspects the signature and passes only the names the function decl
 - `with global_session():` is the explicit opt-out from session scoping.
 - `auto-page` heuristics are replaced with explicit page wrappers — authors say `App(page_sidebar(...))` rather than relying on inference.
 
-## `InstanceAccessors` — `.value()` / `.update()` on instances (NOT in this proposal)
-
-Sketched fully in [`decisions/2026-05-19-class-based-ui-type-system.md`](./2026-05-19-class-based-ui-type-system.md) and examples 14–15. The structural change here doesn't require it. Open questions:
-
-- Reading: `slider.value()` (reactive calc method, explicit) vs `slider.value` (property, implicit reactivity) vs Marimo-style `slider.value = 42` setter (Joe-style concern: hides reactivity).
-- Multiple values per component: namespace them (`plot.value.click()`, `plot.value.brush()`) so they auto-complete together — or prefix individually (`plot.value_click()`, `plot.value_brush()`).
-- Update method placement: `Updatable` as a separate mixin vs. always-present on `UiInput`.
-
-These should be decided in a follow-up after `UnifiedMode` is in place and we have real per-session ergonomics to compare against.
-
 ## Implementation notes
-
-### Where the prototypes live today
-
-| Package | Purpose | Notes |
-|---|---|---|
-| `pkg-py/src/shinyuiclassonly/` | `ClassComponents` reference: class hierarchy + `AllowsChildren` + `_ctx_stack` | Stand-in for what gets ported to `posit-dev/py-shiny` for `ClassComponents` + `StackCapture` + `HtmlToolsStack` |
-| `pkg-py/src/shinyui/` | `InstanceAccessors` reference: above + session-bound `.value()` / `.update()` / per-session id registry | Demonstrates the fuller vision; not required by this proposal |
-| `examples/app-py/14-unified-ui-prototype/` | `shinyui` in Core form | |
-| `examples/app-py/15-shinyui-with-blocks/` | `shinyui` in Express `with`-block form | |
-| `examples/app-py/16-shinyuiclassonly-core/` | `shinyuiclassonly` in Core form (this proposal's structural step) | |
-| `examples/app-py/17-shinyuiclassonly-express/` | `shinyuiclassonly` in Express `with`-block form | |
 
 ### Files that change in `py-shiny`
 
 Roughly:
 
-- `shiny/ui/_*.py` — every component factory becomes a class (`UiInput`, `UiOutput`, or `UiLayout`+`AllowsChildren` subclass). `tagify()` keeps the old factory body verbatim.
 - `shiny/_utils/_ctx_stack.py` (new) — the push/pop primitive used by `AllowsChildren` and by `htmltools` after `HtmlToolsStack`.
+- `shiny/ui/_*.py` — `AllowsChildren.__enter__` / `__exit__` and `UiComponent.__init__` gain the stack hooks (the class lattice itself comes from the [class-based doc](./2026-05-20-class-based-ui-components.md)).
 - `shiny/express/` — `_recall.py` and display-hook plumbing collapse into a thin compatibility shim, eventually deletable.
 - `shiny/render/` and `shiny/reactive/` — `@render.*` and `@reactive.calc` gain a session-lazy resolution mode (`UnifiedMode`).
 - `htmltools/_core.py` — `Tag.__enter__` / `Tag.__exit__` adopt the same `contextvars` stack (`HtmlToolsStack`).
@@ -527,18 +428,18 @@ This needs a spike to confirm Jupyter, Quarto-Python, and VS Code interactive al
 
 ### Non-goals for this proposal
 
-- React rendering / `shinyreact` integration. The "decouple intent from rendering" framing is the long-term enabling argument, but `shinyreact` continues with its current `ui.tsx` and JSON-spec approach independent of this work. The two converge later, on their own timelines.
-- `.value()` / `.update()` ergonomics (`InstanceAccessors`). Tracked separately.
+- The class hierarchy itself. Tracked in the [class-based doc](./2026-05-20-class-based-ui-components.md); this proposal assumes it and only changes the capture mechanism.
+- React rendering / `shinyreact` integration. Independent of this work.
 - R-package equivalent. Out of scope; revisit once the Python design stabilises.
 
 ---
 
 ## Appendix — meeting context
 
-This proposal crystallises the 2026-05-20 meeting with Barret, Carson, Liz, and Garrick. Key resolutions captured:
+This proposal isolates the stack-capture portion of the 2026-05-20 meeting with Barret, Carson, Liz, and Garrick. Key points captured:
 
-- Use stack-based capture, not display hooks, as the canonical mechanism (Carson + Liz agreed).
-- "Things must be wrapped" — accepted as the price of stack capture (all four).
-- `auto-page` is replaced by explicit `App(page_*(...))` (Garrick raised; agreed).
-- `InstanceAccessors` is deferred (`slider.value()` vs `slider.value` is unresolved).
+- Stack-based capture vs display hooks was discussed as the canonical mechanism; the appeal is context managers in Core and one mental model.
+- "Things must be wrapped" was acknowledged as the price of stack capture, and as a breaking change requiring a v2.
+- `auto-page` would be replaced by explicit `App(page_*(...))` (Garrick raised).
+- Garrick suggested staging: prove the class hierarchy first; keep the two modes; only later evaluate how far to push toward unification. Subsequent feedback narrowed this further — classes are acceptable, the stack change is not (yet) — which is why this doc is split out as the contested half.
 - Doc target: Friday 2026-05-29 for team review; Joe / Winston / Andrew sign-off in Boston.
