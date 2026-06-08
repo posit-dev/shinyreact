@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `shinyreact` is a monorepo providing Shiny UI infrastructure for JSON-driven React rendering. It provides zero UI components — it is pure plumbing for downstream packages (e.g. `shinyshadcn`) to build on top of.
 
-Two first-class patterns ship from this repo: the **`app.py` pattern** (`page_react` + `reactive_output`, server describes UI as a JSON spec built from Python/R objects in the Shiny app file) and the **`ui.tsx` pattern** (`set_react_page` + a React client whose entry conventionally lives in `ui.tsx`, server contains only reactive computation). See `DESIGN.md` and `docs/app-py-vs-ui-tsx.md` for context.
+Two first-class patterns ship from this repo: the **`app.py` pattern** (`page_react` + `render_react`, server describes UI as a JSON spec built from Python/R objects in the Shiny app file) and the **`ui.tsx` pattern** (`set_react_page` + a React client whose entry conventionally lives in `ui.tsx`, server contains only reactive computation). See `DESIGN.md` and `docs/app-py-vs-ui-tsx.md` for context.
 
 ## Terminology — canonical pair
 
 Use **`app.py`** (or **`app.py`/`app.R`** when cross-language matters) and **`ui.tsx`** consistently. **Never write "SPA", "Single Page App", "Single-Page Application", "traditional pattern", `client-ui`, or `ui-object`** in new content (docs, comments, commit messages, PR/issue text).
 
-- **`app.py` pattern** — UI defined as Python or R objects in the Shiny app file (`app.py` / `app.R`) via `page_react()`, `Spec`, etc.
+- **`app.py` pattern** — UI defined as Python or R objects in the Shiny app file (`app.py` / `app.R`) via `page_react()`, `Node`, etc.
 - **`ui.tsx` pattern** — UI defined in a client-side codebase whose entry is conventionally `ui.tsx` (or `App.jsx`, or `app.js` for no-build); bootstrapped from the app file via `set_react_page()`. `ui.tsx` is the *idiomatic* canonical name — examples may use simpler variants like `www/app.js` (no-build) or `src/App.jsx` (Vite + JSX). Treat `ui.tsx` as a *role label* for the React entry, not a strict filename requirement.
 
 Naming inspired by [Shiny's "Build your entire UI with HTML"](https://shiny.posit.co/r/articles/build/html-ui/) (UI object vs HTML UI), reframed around the canonical entry filenames the team actually edits.
@@ -26,11 +26,16 @@ js/                         # TypeScript/React Vite IIFE bundle
   src/                      # index.ts, registry.ts, renderer.tsx, shiny.d.ts, shinyreact.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
-pkg-py/                     # Python package
-  src/shinyreact/           # Package: set_react_page, reactive_output, page_react, Spec/Element/Node
+pkg-py/                     # Python packages (three shipped from one wheel)
+  src/shinyreact/           # Core JSON-spec / React-bridge package
     www/                    # Bundled JS
-  tests/                    # pytest tests
-pkg-r/                      # R package (placeholder — not yet implemented)
+  src/shinyui/              # Class-per-component UI hierarchy prototype (session-aware)
+  src/shinyuiclassonly/     # Class-per-component UI hierarchy, structure only (no session)
+  tests/                    # pytest tests for all three packages
+pkg-r/                      # R package — mirrors the Python API in R
+  R/                         # node.R, output.R, render.R, page.R, wire.R, message.R, bookmark.R, dep.R
+  inst/lib/shiny/            # Bundled JS (R counterpart of pkg-py www/)
+  tests/testthat/            # testthat tests (incl. wire-format fixtures shared with Python)
 examples/
   app-py/                   # app.py pattern examples (01-hello-world … 10-columns)
   ui-tsx/                   # ui.tsx pattern examples (01-hello … 07-plotly)
@@ -39,6 +44,16 @@ decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
 ```
+
+## Sibling packages: shinyui and shinyuiclassonly
+
+Two prototype packages explore a class-per-component UI hierarchy as a possible direction for `py-shiny`'s `ui.*` surface. They share the same component vocabulary (`card`, `accordion`, `input_slider`, …) but differ in what server-side machinery comes attached.
+
+- **`shinyui`** — the full prototype. Every component is a `Tagifiable` class that *also* captures the active session at construction, registers itself with a per-session id→instance map, exposes typed reactive accessors (`slider.value()`, `card.value_full_screen()`, `acc.open_panels()`), supports server-driven `update(...)`, owns its input handler and bookmark serializer, and ships a `render_plot` with derived-input accessors (`value_click`, `value_brush`, …). This is what the umbrella design (`docs/superpowers/specs/2026-05-06-unified-ui-component-class-design.md`) proposes for upstream `py-shiny`. Examples 14 and 15 demonstrate it in Core (positional) and Express (`with`-block) form respectively.
+
+- **`shinyuiclassonly`** — the *small delta* the team can compare against today's `ui.*`. Same component classes and same hierarchy (`UiComponent`, `UiInput`, `UiOutput`, `UiLayout`, `AllowsChildren`, parent-tag context stack), but with **none** of the session-bound machinery: no `_session` capture, no `.value()` / `.update()` / `.value_click()` accessors, no input-handler or bookmark registration, no per-session instance registry, no `reactive_calc_method`. Components are pure `Tagifiable` objects. Server code reads inputs via `input.<id>()` and pushes updates via `shiny.ui.update_*` — exactly like today. Examples 16 and 17 mirror 14 and 15 line-for-line so the diff is small enough to read in one sitting.
+
+Use **`shinyuiclassonly`** when motivating "what does the class hierarchy give us, structurally, before we add server-side ergonomics?" — it's the cheapest possible step from `ui.card(...)` → `card(...)`. Use **`shinyui`** when motivating the full vision (typed accessors, `update()` on the instance, auto-placement of renderers).
 
 ## Commands
 
@@ -89,27 +104,39 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 
 ### Python package
 
-- `shinyreact.ui_output(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyreact-output">` with the shinyreact HTMLDependency
+- `shinyreact.output_react(id, extra_deps=[...])` — creates `<div id="{id}" class="shinyreact-output">` with the shinyreact HTMLDependency (the placeholder `render_react` renders into)
 - `shinyreact.page_react(...)` — full-page React app with `#root` + the shinyreact HTMLDependency
-- `@shinyreact.reactive_output` — `Renderer[Spec | Jsonifiable]` subclass; converts `Spec` → dict or passes raw JSON through for `useShinyOutputValue()` hooks
-- `shinyreact.Spec(root, elements)` / `shinyreact.Element(type, props, children)` — the data model sent to the browser (app.py pattern)
-- `shinyreact.Node` — nested tree API; `.to_spec()` auto-flattens to `Spec`
+- `@shinyreact.render_react` — `Renderer[Node | TagChild]` subclass (app.py pattern); walks `Node`/htmltools content into the JSON wire tree, rendered into a matching `output_react()` placeholder. `auto_output_ui()` returns `output_react(id)`
+- `@shinyreact.reactive_output` — `Renderer[Jsonifiable]` subclass (ui.tsx pattern); passes raw JSON data through for `useShinyOutputValue()` hooks, with no placeholder (`auto_output_ui()` returns `None`)
+- `shinyreact.Node(type, props, children)` — the nested-tree authoring API for the app.py pattern; `children` may mix nested `Node`s, htmltools content, and scalars. The walker turns it into the JSON wire tree (`{"type": "react", "name", "props", "children"}`, plus `tag`/`text`/`html` nodes). `.serialize()` → `(wire_tree, deps)`; `.to_dict()` → wire tree (discards harvested `HTMLDependency`); `.tagify()` → a static `.shinyreact-static` mount for embedding in page chrome
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
 - `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html` (the ui.tsx pattern); auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
+
+### R package
+
+The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `node`, `output_react`, `render_react`, `reactive_output`, `page_react`, `page_bare`, `page_react_html`, `page_react_dep`, `send_message`. Key shape differences from Python:
+
+- `node(type, ..., props = list())` — children are the `...` args (vs Python's `children` list); produces the same JSON wire tree. Serialize via `as_wire()` / `serialize_ui()` (see `pkg-r/R/wire.R`).
+- `render_react(expr, ...)` / `reactive_output(expr, ...)` are **functions** assigned to `output$id`, not decorator/`Renderer` classes.
+- `page_react_html(path = "www/index.html")` is R's equivalent of Python's `set_react_page()` (the ui.tsx pattern entry).
+- `output_react(id, extra_deps = list())` and `send_message(session, type, data)` match Python.
+
+The wire format is identical across languages — `make r-check-fixtures` verifies R's output matches Python's shared fixtures.
 
 ### Downstream package pattern
 
 Downstream packages (e.g. `shinyshadcn`) extend shinyreact by:
 
 1. **JS:** own IIFE bundle that calls `window.shinyreact.registerComponents(catalog, registry)` at load time
-2. **Python UI:** `shinyreact.ui_output(id, extra_deps=[my_dep()])`
+2. **Python UI:** `shinyreact.output_react(id, extra_deps=[my_dep()])`
 3. **Python render subclass:**
    ```python
-   class render(shinyreact.reactive_output):
+   class render(shinyreact.render_react):
        async def transform(self, value: MyComponent) -> Any:
-           return value.to_spec().to_dict()
+           # Convert your component into a shinyreact.Node, then the wire dict
+           return value.to_node().to_dict()
    ```
-   Inject the package's `HTMLDependency` on the UI side via `shinyreact.ui_output(id, extra_deps=[...])` (step 2) — `reactive_output` does not read an `extra_deps` class attribute.
+   Inject the package's `HTMLDependency` on the UI side via `shinyreact.output_react(id, extra_deps=[...])` (step 2) — `render_react` does not read an `extra_deps` class attribute.
 
 ### Built assets
 
@@ -178,6 +205,44 @@ The hook surface follows the Jotai/Recoil cadence — each hook has one responsi
 | **Output status** | | `useShinyOutputStatus(id)` → `"pending" \| "ready" \| "recalculating" \| "error"` | |
 
 Pick the narrowest hook that fits the call site. A button that pushes events but never reads its own state should use `useSetShinyInput`, not `useShinyInput` with a discarded `[value]`. A display card that just reads should use `useShinyInputValue` / `useShinyOutputValue`. Narrow hooks make data-flow direction visible at the call site, prevent accidental writes from read-only components, and avoid spurious re-renders from subscribing to channels you don't observe.
+
+### Routing input values through Shiny input handlers (`type=`)
+
+`useShinyInput` and `useSetShinyInput` accept an optional `type` that appends `:type` to the wire id, opting into Shiny's server-side input-handler dispatch:
+
+```js
+const [when, setWhen] = useShinyInput("when", Math.floor(Date.now() / 1000), {
+  type: "shiny.datetime",
+});
+```
+
+```python
+@reactive.effect
+def _():
+    print(type(input.when()))  # datetime.datetime
+```
+
+The handler name is a server-side contract: once an input id has been registered with a `type` (or with no `type`), a later mount disagreeing with that policy throws. Validation rejects empty strings, whitespace, and `:` characters at hook mount.
+
+### Arrays of records arrive clean on R (zero config)
+
+shinyreact routes every untyped `useShinyInput` value through a built-in
+`shinyreact.default` input handler (the JS hook appends `:shinyreact.default`
+to the wire id automatically). On R this means a JS component sending an array
+of objects — e.g. `[{name, size, type}, ...]` — arrives as a clean list of
+records, so `for (f in input$x) f$size` works just like Python's
+`for f in input.x(): f["size"]`. Scalar arrays (`[0, 100]`, `["a", "b"]`) are
+still flattened to atomic vectors, exactly as Shiny does by default.
+
+If you need the parsed value returned completely untouched (e.g. a nested array
+the default would flatten), opt into the pass-through handler:
+
+```js
+useShinyInput("coords", [], { type: "shinyreact.asis" });
+```
+
+Both `shinyreact.default` and `shinyreact.asis` are registered in R and Python,
+so the same React component is portable across both servers.
 
 ### Avoiding flicker on input changes (use status correctly, don't conflate states)
 

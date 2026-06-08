@@ -50,7 +50,7 @@ _blended_dep = HTMLDependency(
     stylesheet={"href": "styles.css"},
 )
 
-app_ui = shinyreact.ui_output("main", extra_deps=[_blended_dep])
+app_ui = shinyreact.output_react("main", extra_deps=[_blended_dep])
 
 
 # ---------------------------------------------------------------------------
@@ -106,7 +106,7 @@ def settings_panel(
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def main():
         return sidebar_app(
             "Blended Demo",

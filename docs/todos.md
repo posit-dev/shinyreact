@@ -27,9 +27,16 @@ Document guidance on when to use which. The principle remains: prefer `reactive_
 
 The chat example requires `OPENAI_API_KEY` and the `chatlas` package. It cannot be smoke-tested without credentials. Consider adding a mock/echo mode for demo purposes.
 
-## Python-side input handlers for useShinyInput values
+## User-registered input handlers for useShinyInput values
 
-Currently, values sent from `useShinyInput` on the JS side arrive directly as `input.xxx()` with no server-side interception. Shiny's built-in inputs (e.g., `actionButton`) use Python input handlers to validate and transform incoming values — for example, the action button handler can reject or coerce values before they reach reactive code. `shinyreact` should support registering Python input handlers for `useShinyInput` IDs so that the server can intercept, validate, or deny values sent from the client. This would also enable patterns like the action button's `ignore_init` behavior to be handled at the input layer rather than requiring `@reactive.event(ignore_init=True)` at every call site.
+As of #124, every untyped `useShinyInput` value is routed through shinyreact's
+built-in `shinyreact.default` handler (with `shinyreact.asis` available opt-in),
+so values now flow through Shiny's server-side input-handler dispatch. Still
+open: a first-class way for app authors to register their *own* per-id handlers
+to validate, coerce, or deny incoming values (today they must call
+`shiny.input_handler.input_handlers.add(...)` and set `type=` themselves), and a
+way to handle the action button's `ignore_init` behavior at the input layer
+rather than via `@reactive.event(ignore_init=True)` at each call site.
 
 ## XSS in chat example renderMarkdown (07-chat)
 
@@ -51,7 +58,7 @@ Define what a well-formed `shinyreact` UI component looks like from the downstre
 
 ## What render methods are useful?
 
-Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyreact.reactive_output` returns `Spec` or raw JSON for `useShinyOutputValue`. Are there other render shapes that would be useful — e.g., rendering a single element without a full Spec, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
+Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyreact.render_react` returns a `Spec`/`Node` tree (app.py pattern) and `@shinyreact.reactive_output` returns raw JSON for `useShinyOutputValue` (ui.tsx pattern). Are there other render shapes that would be useful — e.g., rendering a single element without a full Spec, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
 
 ## Nested bullet structure of every feature or benefit
 
@@ -59,22 +66,71 @@ Create a comprehensive nested bullet list cataloging every feature and benefit `
 
 ## Can dynamic UI be supported? Can any render output be supported, or should it always be components?
 
-Investigate whether `shinyreact` can support dynamic UI patterns where the server controls what gets rendered (not just data updates to fixed components). For example: can a render function return arbitrary Shiny UI (like `ui.tags`, `ui.input_slider`, etc.) mixed with `shinyreact` components? Should render output always be a component tree, or could it include raw HTML, plain text, or other Shiny outputs? This has implications for how flexible the framework is versus how predictable the rendering contract remains.
+`@render_react` can now return a `Node`, which is a `Tagifiable` that nests htmltools `tags.*`, `HTML`, strings, and other `Node`s at arbitrary depth. Raw HTML, plain text, and htmltools wrappers are all supported in the wire tree. See `docs/superpowers/specs/2026-05-29-htmltools-spec-nesting-design.md` and `examples/app-py/14-nesting` for the design and a working example.
+
+Still open: whether traditional Shiny input widgets (e.g., `ui.input_slider`) embedded inside a `@render_react` tree work end-to-end (input bindings, server-side `input.xxx()` reads). That path is untested.
 
 ## Nest UI functions into `shinyreact.ui.*` submodule
 
-Currently `ui_output`, `page_react`, and `page_bare` are flat top-level exports. Later, restructure into a `shinyreact.ui` submodule: `ui.output()`, `ui.page_react()`, `ui.page_bare()`.
+Currently `output_react`, `page_react`, and `page_bare` are flat top-level exports. Later, restructure into a `shinyreact.ui` submodule: `ui.output()`, `ui.page_react()`, `ui.page_bare()`.
 
 ## `HTMLDependency` support for `page_react()`
 
 `page_react()` currently accepts `js_file`/`css_file` string paths. Consider accepting `extra_deps: list[HTMLDependency]` instead of or in addition to string paths, for consistency with the rest of the API.
 
-## Evaluate `extra_deps` on `ui_output()`
+## Evaluate `extra_deps` on `output_react()`
 
-Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `ui_output()` to simplify the API.
+Should HTML dependencies be handled exclusively at the render subclass or page level? If so, `extra_deps` could be removed from `output_react()` to simplify the API.
+
+## R bookmark restore value shape vs Python ([#27](https://github.com/posit-dev/shinyreact/issues/27))
+
+R's bookmark restore serializer uses `jsonlite::toJSON(auto_unbox = TRUE)`, so a
+length-1 R vector (e.g. a checkbox-group with one selected value) serializes as
+a JSON scalar `"a"`, whereas Python `json.dumps` emits `["a"]`. This can seed the
+wrong shape into the JS input registry for single-value multi-value inputs on
+restore. Needs a cross-language bookmark-payload fixture and a shape-preserving
+fix (hard due to R's lack of scalar vs. vector distinction). See issue
+[#27](https://github.com/posit-dev/shinyreact/issues/27).
+
+## R tag boolean/NA attribute serialization vs Python
+
+R's `as_wire.shiny.tag` walker passes attribute values through after key
+translation, so an HTML boolean attribute like `tags$input(checked = NA)`
+serializes to `"checked": null`, whereas Python's `tags.input(checked=True)`
+emits `"checked": ""`. Different falsy representations of an HTML boolean
+attribute. Only affects DOM-`tag` node attrs (not `node()` props), is an
+htmltools R-vs-Python idiom difference, and no parity fixture covers it.
+Acceptable v1 limitation; revisit if a downstream component relies on boolean
+attributes round-tripping identically across languages (would want a shared
+fixture + agreed canonical encoding).
+
+## Re-parent `Node` onto `UiReact(UiComponent, AllowsChildren)` (after #69)
+
+`Node` is currently a standalone `Tagifiable` dataclass (see
+`docs/superpowers/specs/2026-05-29-htmltools-spec-nesting-design.md`). Once #69
+lands the `UiComponent` / `AllowsChildren` hierarchy, re-categorize `Node` as
+`UiReact(UiComponent, AllowsChildren)`. This is cosmetic — it changes `Node`'s
+base classes, not its `tagify()` / serialization behavior. Keep `Node`'s
+`tagify()` and dependency surface aligned with what #69 expects of a
+`UiComponent`.
 
 ## Tracked as GitHub issues
 
 - [#28 — Shiny client runtime as an npm package](https://github.com/posit-dev/shinyreact/issues/28)
 - [#35 — JSON Patch value-equality dedup](https://github.com/posit-dev/shinyreact/issues/35)
 - [#36 — JSON Patch wire format](https://github.com/posit-dev/shinyreact/issues/36)
+
+## Hot reload: ship the ergonomics (follow-up to #132)
+
+`examples/ui-tsx/09-hmr/` proves React Fast Refresh for the `ui.tsx` pattern with
+no backend change (a Vite dev server alongside Shiny; the dev stub swaps
+`www/app.js`). Two follow-ups remain:
+
+- **Dev `shinyreact` bundle.** Today Fast Refresh works only because the example
+  bundles its own dev React in dev — `window.shinyreact.React` is a production
+  build (`js/vite.config.ts` pins `NODE_ENV=production`) and cannot drive
+  `react-refresh`. A `shinyreact.dev.js` (React dev + refresh) would let the page
+  itself share one dev React, but loading it requires a backend dev switch (the
+  bundle is injected by the page dependency).
+- **A shipped dev helper / CLI** so authors don't hand-copy the `vite.config`
+  stub plugin + `shiny-bridge` indirection.

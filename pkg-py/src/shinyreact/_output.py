@@ -36,18 +36,18 @@ def _dep_page() -> TagChild:
     """Page-level shinyreact dependency: bundle + bookmark restore script.
 
     Use from page entry points (``page_react``, ``set_react_page``'s page
-    function). Per-output consumers (``ui_output``) should keep calling
+    function). Per-output consumers (``output_react``) should keep calling
     ``_dep()`` — they do not carry page-level restore state.
     """
     restore = _restore_script_tag()  # may be None
     return TagList(_dep(), restore) if restore is not None else _dep()
 
 
-def ui_output(id: str, extra_deps: Sequence[HTMLDependency] | None = None) -> Tag:
-    """Create a Shiny output placeholder for a shinyreact renderer.
+def output_react(id: str, extra_deps: Sequence[HTMLDependency] | None = None) -> Tag:
+    """Create a Shiny output placeholder for a shinyreact ``render_react`` renderer.
 
     Args:
-        id: The output ID. Must match the server-side ``@shinyreact.reactive_output``
+        id: The output ID. Must match the server-side ``@shinyreact.render_react``
             function name.
         extra_deps: Additional HTML dependencies to include. Used by downstream
             packages to inject their own JS/CSS (e.g. ``shinyshadcn``).

@@ -1,37 +1,48 @@
 import type { ComponentType, ReactNode } from "react";
 
 /**
- * A single node in a Spec. `children` is a list of element IDs (strings) that
- * reference other entries in the parent Spec's `elements` map.
- *
- * Mirrors the Python dataclass in `pkg-py/src/shinyreact/_spec.py`.
+ * A node in the wire tree. `type` is a closed discriminant; `name` carries the
+ * component name (`react`) or DOM tag name (`tag`). Mirrors the Python walker
+ * output in `pkg-py/src/shinyreact/_spec.py`.
  */
-export interface Element {
-  type: string;
+export interface ComponentElement {
+  type: "react";
+  name: string;
   props: Record<string, unknown>;
-  children?: string[];
+  children?: Element[];
 }
 
+export interface TagElement {
+  type: "tag";
+  name: string;
+  props: Record<string, unknown>;
+  children?: Element[];
+}
+
+export interface TextElement {
+  type: "text";
+  value: string;
+}
+
+export interface HtmlElement {
+  type: "html";
+  html: string;
+}
+
+export type Element = ComponentElement | TagElement | TextElement | HtmlElement;
+
 /**
- * A flat map of element IDs to `Element` nodes, plus a `root` ID that
- * identifies the entry point for rendering.
+ * The root payload rendered into a `.shinyreact-output` element: a single
+ * node, or several sibling nodes (e.g. a Python `TagList`).
  */
-export interface Spec {
-  root: string;
-  elements: Record<string, Element>;
-}
+export type Spec = Element | Element[];
 
 /**
- * Props passed to registered React components.
- *
- * Registered components receive the raw `Element` plus already-rendered
- * `children`. They are responsible for reading `element.props` themselves.
- *
- * Intrinsic HTML tags (e.g. `"div"`, `"span"`) are NOT registered components;
- * the renderer creates them with `element.props` spread directly.
+ * Props passed to registered React components. They receive the raw `react`
+ * element plus already-rendered `children`, and read `element.props`.
  */
 export interface RegisteredComponentProps {
-  element: Element;
+  element: ComponentElement;
   children: ReactNode;
 }
 

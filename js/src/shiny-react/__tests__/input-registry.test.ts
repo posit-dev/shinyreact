@@ -73,7 +73,7 @@ describe("InputRegistryEntry", () => {
     vi.advanceTimersByTime(200);
 
     expect(mockSetInputValue).toHaveBeenCalledWith(
-      "test",
+      "test:shinyreact.default",
       42,
       expect.objectContaining({ debounceMs: 100 }),
     );
@@ -111,7 +111,7 @@ describe("InputRegistryEntry", () => {
     entry.setValue(300 as any);
     vi.advanceTimersByTime(200);
     expect(mockSetInputValue).toHaveBeenCalledWith(
-      "test",
+      "test:shinyreact.default",
       300,
       expect.objectContaining({ debounceMs: 100 }),
     );
@@ -127,7 +127,7 @@ describe("InputRegistryEntry", () => {
     vi.advanceTimersByTime(200);
 
     expect(mockSetInputValue).toHaveBeenCalledWith(
-      "test",
+      "test:shinyreact.default",
       null,
       expect.objectContaining({ debounceMs: 100 }),
     );
@@ -142,6 +142,111 @@ describe("InputRegistryEntry", () => {
     const entry = new InputRegistryEntry("test", 0);
     entry.addUseStateSetValueFn(vi.fn());
     expect(entry.isEmpty()).toBe(false);
+  });
+
+  it("type defaults to undefined and the wire id has the shinyreact.default suffix", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("foo", 0);
+
+    entry.setValue(1);
+    vi.advanceTimersByTime(200);
+
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "foo:shinyreact.default",
+      1,
+      expect.objectContaining({ debounceMs: 100 }),
+    );
+  });
+
+  it("updateType(string) causes wire id to be 'id:type'", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("foo", 0);
+    entry.updateType("shiny.datetime");
+
+    entry.setValue(1);
+    vi.advanceTimersByTime(200);
+
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "foo:shiny.datetime",
+      1,
+      expect.objectContaining({ debounceMs: 100 }),
+    );
+  });
+
+  it("updateType is set-once: same value is a no-op", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("foo", 0);
+    entry.updateType("X");
+    entry.updateType("X");
+
+    entry.setValue(1);
+    vi.advanceTimersByTime(200);
+
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "foo:X",
+      1,
+      expect.anything(),
+    );
+  });
+
+  it("updateType after a string: omission (undefined) is a no-op", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("foo", 0);
+    entry.updateType("X");
+    entry.updateType(undefined);
+
+    entry.setValue(1);
+    vi.advanceTimersByTime(200);
+
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "foo:X",
+      1,
+      expect.anything(),
+    );
+  });
+
+  it("updateType after a string: conflicting string throws and entry stays unchanged", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("foo", 0);
+    entry.updateType("X");
+
+    expect(() => entry.updateType("Y")).toThrow(/already registered with type="X"/);
+
+    entry.setValue(1);
+    vi.advanceTimersByTime(200);
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "foo:X",
+      1,
+      expect.anything(),
+    );
+  });
+
+  it("updateType after undefined finalizes 'no type'; later string throws", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("foo", 0);
+    entry.updateType(undefined);
+
+    expect(() => entry.updateType("X")).toThrow(/already registered with type=undefined/);
+
+    entry.setValue(1);
+    vi.advanceTimersByTime(200);
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "foo:shinyreact.default",
+      1,
+      expect.anything(),
+    );
   });
 });
 

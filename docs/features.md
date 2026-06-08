@@ -4,20 +4,20 @@ The `shinyreact` package ships two first-class patterns. See [`docs/app-py-vs-ui
 
 ---
 
-## `app.py` pattern (`page_react` + `reactive_output`)
+## `app.py` pattern (`page_react` + `render_react`)
 
-UI is defined as Python (or R) objects in the app file via `page_react()` / `Spec` / `Element` / `Node`. The server emits JSON specs that the client renders into a React tree using `shinyreact`'s in-house Spec walker (`js/src/renderer.tsx`). Lives at `pkg-py/src/shinyreact/`. Examples in `examples/app-py/`.
+UI is defined as Python (or R) objects in the app file via `page_react()` / `Node`. The server emits a JSON wire tree that the client renders into a React tree using `shinyreact`'s in-house walker (`js/src/renderer.tsx`). Lives at `pkg-py/src/shinyreact/`. Examples in `examples/app-py/`.
 
 ### Python public API
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| `shinyreact.ui_output()` | Working | Creates output div with HTMLDependency; accepts `extra_deps` |
+| `shinyreact.output_react()` | Working | Creates output div with HTMLDependency; accepts `extra_deps`. Placeholder that `render_react` renders into |
 | `shinyreact.page_react()` | Working | Full-page React app with `#root` + the shinyreact HTMLDependency |
 | `shinyreact.page_bare()` | Working | Bare HTML page wrapper |
-| `@shinyreact.reactive_output` | Working | Renders `Spec` or passes raw JSON for `useShinyOutputValue` |
-| `shinyreact.Spec` / `Element` | Working | Flat-map data model for component trees |
-| `shinyreact.Node` | Working | Nested tree API; `.to_spec()` auto-flattens to `Spec` |
+| `@shinyreact.render_react` | Working | Walks `Node`/htmltools content into the JSON wire tree, rendered into a matching `output_react()` placeholder. (Raw JSON data for `useShinyOutputValue` uses `reactive_output`, in the `ui.tsx` section below) |
+| `shinyreact.Node` | Working | Recursive component tree; `.to_dict()` serializes to the JSON wire tree |
+| **Interleaved htmltools + React content** | Working | `Node` is a `Tagifiable`; htmltools `tags.*`/`HTML`/strings and `Node`s nest at arbitrary depth in one tree. Serialized to a discriminated-union wire format (`react` \| `tag` \| `text` \| `html`); HTML dependencies are harvested in the same traversal. Static `Node`s in page chrome are delivered via an inline `<script type="application/json">` inside a `.shinyreact-static` mount. See `examples/app-py/14-nesting` |
 | `shinyreact.send_message()` | Working | Server-to-client custom messages |
 | Bookmark restoration | Working | `page_react()` and `set_react_page()` emit a head `<script>` carrying restored input values; `useShinyInput` adopts them as initial values. URL and server-stored bookmark modes both supported |
 
@@ -25,7 +25,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 
 | Example | Status | Description |
 |---------|--------|-------------|
-| [01-hello-world](../examples/app-py/01-hello-world/) | Working | Decomposed components (Card, TextInput, Divider, OutputDisplay) composed from Python via Spec |
+| [01-hello-world](../examples/app-py/01-hello-world/) | Working | Decomposed components (Card, TextInput, Divider, OutputDisplay) composed from Python via `Node` |
 | [02-inputs](../examples/app-py/02-inputs/) | Working | 10 input types (text, number, checkbox, radio, select, slider, date, button, file, batch form) |
 | [03-outputs](../examples/app-py/03-outputs/) | Working | Data table, statistics, matplotlib plot via ImageOutput |
 | [04-messages](../examples/app-py/04-messages/) | Working | Server-to-client messaging with send_message, auto-dismissing toasts |
@@ -36,12 +36,13 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Spe
 | [09-blended](../examples/app-py/09-blended/) | Working | Tabbed sidebar layout, matplotlib plot, data table, settings panel |
 | [10-columns](../examples/app-py/10-columns/) | Working | Drag-between-columns demo; `render.ui`-driven approach |
 | [13-bookmarking](../examples/app-py/13-bookmarking/) | Working | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via a head `<script>` emitted by `page_react()` |
+| [14-nesting](../examples/app-py/14-nesting/) | Working | htmltools `tags.*` and `Node`s interleaved at arbitrary depth; static React component in page chrome + reactive `Node` with mixed htmltools/React children |
 
 ### Design decisions
 
-- **Treat element keys as internal/opaque.** When using `Node`, element keys in the flat `elements` map (e.g., `"auto_001"`) are auto-generated internal plumbing. Callers can still manually construct `Spec(elements={...})` with arbitrary keys, so this is guidance rather than a hard API guarantee. These keys have no relationship to DOM IDs or Shiny input/output IDs: Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server needs to know about.
+- **React keys are positional by default.** The wire tree is a recursive structure with no synthetic element-key map; React reconciles children positionally. For lists or reorderable content, pass an explicit `key` in a node's props (React reads it natively and it is not emitted as a DOM attribute). Component identity has no relationship to DOM IDs or Shiny input/output IDs — Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server needs to know about.
 - **HTMLDependency mtime versioning for examples.** Shiny caches static files by `{name}-{version}` in the URL. During development, editing a JS file doesn't bust the cache if the version string is fixed. Examples use `version=str(int(file.stat().st_mtime))` so the version changes whenever the file is saved. Development convenience only — published packages should use fixed versions.
-- **Downstream extension.** Downstream packages (e.g. `shinyshadcn`) ship their own IIFE bundle that calls `window.shinyreact.registerComponents(catalog, registry)` at load time, plus a Python render subclass with an overridden `transform()`. The package's `HTMLDependency` is injected on the UI side via `shinyreact.ui_output(id, extra_deps=[...])` (`reactive_output` does not read an `extra_deps` class attribute).
+- **Downstream extension.** Downstream packages (e.g. `shinyshadcn`) ship their own IIFE bundle that calls `window.shinyreact.registerComponents(catalog, registry)` at load time, plus a Python render subclass with an overridden `transform()`. The package's `HTMLDependency` is injected on the UI side via `shinyreact.output_react(id, extra_deps=[...])` (`render_react` does not read an `extra_deps` class attribute).
 
 ---
 
@@ -63,9 +64,10 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| `useShinyInput` | Working | Full `[value, setValue]` — stable defaultValue via `useRef`; debounce + priority options |
+| `useShinyInput` | Working | Full `[value, setValue]` — stable defaultValue via `useRef`; debounce + priority options; optional `type=` routes values through a Shiny input handler (e.g. `shiny.datetime`) |
 | `useShinyInputValue` | Working | Read-only consumer hook — returns just the current value, with mount-order-safe subscription to a producer registered elsewhere |
-| `useSetShinyInput` | Working | Write-only producer hook — returns just the setter; same `defaultValue` + options as `useShinyInput` |
+| `useSetShinyInput` | Working | Write-only producer hook — returns just the setter; same `defaultValue` + options as `useShinyInput`; optional `type=` routes values through a Shiny input handler (e.g. `shiny.datetime`) |
+| **Built-in input handlers** | Working | `shinyreact.default` is applied automatically to every untyped input (JS appends `:shinyreact.default` to the wire id). On R it delivers arrays of objects as a clean list of records while scalar arrays still flatten to atomic vectors; on Python it is a no-op. `shinyreact.asis` (opt-in via `type="shinyreact.asis"`) returns the parsed value completely untouched. Both handlers are registered in R and Python. |
 | `useShinyOutputValue` | Working | Subscribes to a Shiny output binding; receives `Jsonifiable` values from `reactive_output`. Returns just the value |
 | `useShinyOutputStatus` | Working | Returns the lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` — for a Shiny output binding |
 | `useShinyMessageHandler` | Working | Stable handler ref; no unnecessary re-registration on inline arrow functions |
@@ -86,6 +88,8 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 | [05-temperature](../examples/ui-tsx/05-temperature/) | Working | Temperature conversion app demonstrating simple reactive data flow |
 | [06-data-frame](../examples/ui-tsx/06-data-frame/) | Working | Embeds `@render.data_frame` via `ShinyOutput` and `set_react_page()` |
 | [07-plotly](../examples/ui-tsx/07-plotly/) | Working | Embeds `@render_plotly` via `ShinyOutput` and `set_react_page()` |
+| [08-input-handler](../examples/ui-tsx/08-input-handler/) | Working | Demonstrates `useShinyInput` with `type="shiny.datetime"` — client sends unix seconds; server `input.when()` is a `datetime.datetime` via Shiny's built-in handler |
+| [09-hmr](../examples/ui-tsx/09-hmr/) | Working | React Fast Refresh in dev (Vite dev server alongside Shiny); the `app.py` and no-build `www/app.js` paths reload too |
 
 ### Design decisions
 
@@ -93,3 +97,56 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 - **`set_react_page()` serves static + Shiny side-by-side.** Inside a Shiny Express app, `shinyreact.set_react_page()` reads `www/index.html` and serves it as the page body alongside reactive computation. The Python file contains reactive logic only; the `www/` directory contains `index.html` and (optionally) a bundled JS app.
 - **No build step required.** The default path uses `React.createElement` directly from a hand-written `app.js` (see ex. 01/02). Apps that want JSX or a component library opt into Vite (see ex. 03/04).
 - **Vite lib-mode IIFE for build path.** Bundled `ui.tsx` apps externalize React to `window.shinyreact` to share the bundled React instance with shinyreact's hooks and avoid duplicate React copies.
+
+---
+
+## R package (`pkg-r/`)
+
+Mirrors the Python package API for R Shiny users. Pure plumbing — no UI components. Lives at `pkg-r/`. Install with `pak::local_install("pkg-r")`.
+
+### `app.R` pattern (`page_react` + `render_react`)
+
+UI is defined as R objects (`node()`, htmltools tags, `HTML()`, strings/numbers) in the app file via `page_react()`; the server returns trees from `render_react()`. Equivalent to the Python `app.py` pattern. Examples in `examples/app-r/`.
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| `page_react(...)` | Working | Full-page React app with `#root` + page-level dep (bundle + bookmark restore script) |
+| `page_bare(...)` | Working | Minimal HTML scaffold without `#root` |
+| `output_react(id, extra_deps = list())` | Working | Output div with `shinyreact-output` class and per-output dep; `extra_deps` merged via `attachDependencies()` |
+| `render_react(expr)` | Working | Shiny renderer (app.R); walks `node()` trees (or htmltools content) into the JSON wire tree via an internal S3 walker (`as_wire()`), rendered into a matching `output_react()` placeholder. `NULL` passes through. (For raw data read by `useShinyOutputValue()`, use `reactive_output()`.) |
+| `node(type, ..., props = list())` | Working | Plain S3 (`shinyreact_node`) component node; children may interleave other `node()`s, htmltools `tags$*`, `HTML()`, strings, and numbers at arbitrary depth. Walked into the discriminated-union wire tree (`react`/`tag`/`text`/`html`). |
+| **Interleaved htmltools + React content** | Working | `node()` children accept htmltools `Tag`/`TagList`/`HTML()`/strings/numbers; the internal walker harvests `htmlDependency` objects from the tree. Mirrors Python `Node` + `serialize_ui()`. |
+| **Static mounts** | Working | `as.tags.shinyreact_node()` renders a `node()` as a `.shinyreact-static` div + inline `<script type="application/json">`, hydrated client-side by `seedInlineSpecs()`. Use in page chrome without a server round-trip. |
+| `send_message(session, type, data)` | Working | Server-to-client custom message (`shinyReactMessage`) |
+| Bookmark restoration | Working | `page_react()` and `page_react_html()` emit a head `<script>` carrying restored input values; `useShinyInput` adopts them as initial values. URL and server-stored bookmark modes both supported |
+
+### `ui.tsx` pattern (`page_react_html`)
+
+UI lives in `www/index.html` + JS; bootstrapped from R via `page_react_html()`. Server contains only reactive computation. Equivalent to the Python `ui.tsx` pattern. Examples in `examples/ui-tsx-r/`.
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| `page_react_html(path = "www/index.html")` | Working | Reads a static HTML file and attaches the page-level dep (bundle + bookmark restore script). Pass as `ui` to `shinyApp()` |
+| `page_react_dep()` | Working | `htmlDependency` for a downstream package's own JS/CSS bundle; mtime-versioned |
+| `reactive_output(expr)` | Working | Returns any `Jsonifiable` value for `useShinyOutputValue()` hooks; raw lists pass through. No UI placeholder |
+| `send_message(session, type, data)` | Working | Same as `app.R` pattern |
+
+### JS bridge hooks
+
+The shared JS bundle (`window.shinyreact`) is identical for R and Python apps. All hooks listed in the [JS bridge hooks table above](#js-bridge-hooks-jssrc-shiny-react) are accessible from R apps the same way — the client-side API is language-agnostic.
+
+### Examples
+
+| Example | Pattern | Status | Description |
+|---------|---------|--------|-------------|
+| [app-r/01-hello-world](../examples/app-r/01-hello-world/) | `app.R` | Working | Card + TextInput + OutputDisplay composed via `node()`; direct port of `app-py/01-hello-world` |
+| [app-r/02-inputs](../examples/app-r/02-inputs/) | `app.R` | Working | ~10 input widget types; bookmark demo (URL bookmark restores inputs on reload) |
+| [app-r/04-messages](../examples/app-r/04-messages/) | `app.R` | Working | `send_message()` end-to-end; auto-dismissing toasts |
+| [ui-tsx-r/01-hello](../examples/ui-tsx-r/01-hello/) | `ui.tsx` | Working | `page_react_html()` + `reactive_output()` data returns; direct port of `ui-tsx/01-hello` |
+
+### Design decisions
+
+- **`render_react()` walks via an internal S3 walker.** `as_wire()` + `serialize_ui()` produce the discriminated-union wire tree; Shiny serializes the resulting plain R list via its standard `jsonlite` call. Scalars are `unbox()`-wrapped so they serialize as JSON scalars, not 1-element arrays.
+- **Parity with Python is structural.** Cross-language wire-format parity is verified via shared fixtures; `children` order is significant, prop key order is insignificant. Python `json.dumps` and R `jsonlite` differ in whitespace by design.
+- **`shiny:::` for bookmark restore context.** R Shiny does not expose a public API for reading the restore context non-destructively. `bookmark.R` uses `shiny:::` internals, isolated in one thin wrapper, with a pinned `shiny` version floor in `DESCRIPTION`.
+- **Downstream extension.** Downstream R packages build `node("TheirComponent", ...)` trees and inject their `htmlDependency` via `output_react(id, extra_deps = list(...))`. `render_react()` is the rendering entry point for component trees (use `reactive_output()` to send raw data). Downstream can also implement `as.tags()` for their own classes as an escape hatch; `should_walk()` dispatches on the class to opt in.

@@ -36,11 +36,11 @@ from shiny import App, ui
 import shinyreact
 
 app_ui = shinyreact.page_react(
-    shinyreact.ui_output("my_output"),
+    shinyreact.output_react("my_output"),
 )
 
 def server(input, output, session):
-    @shinyreact.reactive_output
+    @shinyreact.render_react
     def my_output():
         return shinyreact.Spec(
             root="card",
@@ -172,7 +172,9 @@ See [`examples/ui-tsx/01-hello/`](../examples/ui-tsx/01-hello/) and [`examples/u
 
 The Vite build externalizes React to `window.shinyreact`, so the bundled client shares the same React instance as the `shinyreact` bridge hooks.
 
-See [`examples/ui-tsx/03-columns-shadcn/`](../examples/ui-tsx/03-columns-shadcn/) and [`examples/ui-tsx/04-shadcn/`](../examples/ui-tsx/04-shadcn/) for the Vite path.
+For **hot reloading** (React Fast Refresh: edit a component and it hot-swaps while keeping state, no full reload), run a Vite **dev server** alongside Shiny instead of `npm run build`. See [`examples/ui-tsx/09-hmr/`](../examples/ui-tsx/09-hmr/) for the worked setup. (Editing `app.py` always reloads via Shiny's `--reload`; the no-build `www/app.js` path is picked up on the next browser load.)
+
+See [`examples/ui-tsx/03-columns-shadcn/`](../examples/ui-tsx/03-columns-shadcn/) and [`examples/ui-tsx/04-shadcn/`](../examples/ui-tsx/04-shadcn/) for the Vite path, and [`examples/ui-tsx/09-hmr/`](../examples/ui-tsx/09-hmr/) for Fast Refresh.
 
 ---
 

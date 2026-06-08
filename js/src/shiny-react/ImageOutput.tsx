@@ -6,10 +6,7 @@ import {
   useShinyOutputValue,
 } from "./use-shiny";
 import { createDebouncedFn } from "./utils";
-import {
-  applyNamespace,
-  useShinyModuleNamespace,
-} from "./ShinyModuleContext";
+import { useNamespacedId } from "./ShinyModuleContext";
 
 export type ImageData = {
   src: string;
@@ -158,10 +155,7 @@ export function ImageOutput({
   onRecalculating?: (isRecalculating: boolean) => void;
   namespace?: string | null;
 }) {
-  // Apply namespace from context or explicit option
-  const contextNamespace = useShinyModuleNamespace();
-  const namespace = explicitNamespace ?? contextNamespace;
-  const namespacedId = applyNamespace(id, namespace);
+  const namespacedId = useNamespacedId(id, explicitNamespace);
 
   // IDs below already have the namespace embedded (via namespacedId), so we
   // suppress the hooks' own context-based namespacing to avoid double-prefixing.

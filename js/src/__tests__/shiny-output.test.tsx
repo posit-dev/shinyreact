@@ -3,6 +3,7 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ShinyOutput } from "../shiny-output";
+import { ShinyModuleProvider } from "../shiny-react/ShinyModuleContext";
 
 describe("ShinyOutput", () => {
   let mockBindAll: ReturnType<typeof vi.fn>;
@@ -373,6 +374,96 @@ describe("ShinyOutput", () => {
         error: boom,
       });
       expect(container.querySelector("#second")).not.toBeNull();
+    });
+  });
+
+  describe("namespace", () => {
+    it("renders the bare id when no provider and no prop are set", () => {
+      const { container } = render(<ShinyOutput id="scatter" />);
+      expect(container.querySelector("#scatter")).not.toBeNull();
+    });
+
+    it("applies the namespace from ShinyModuleProvider context", () => {
+      const { container } = render(
+        <ShinyModuleProvider namespace="a">
+          <ShinyOutput id="scatter" />
+        </ShinyModuleProvider>,
+      );
+      expect(container.querySelector("#a-scatter")).not.toBeNull();
+      expect(container.querySelector("#scatter")).toBeNull();
+    });
+
+    it("renders namespaced DOM ids for siblings under different providers", () => {
+      const { container } = render(
+        <div>
+          <ShinyModuleProvider namespace="a">
+            <ShinyOutput id="scatter" />
+          </ShinyModuleProvider>
+          <ShinyModuleProvider namespace="b">
+            <ShinyOutput id="scatter" />
+          </ShinyModuleProvider>
+        </div>,
+      );
+      expect(container.querySelector("#a-scatter")).not.toBeNull();
+      expect(container.querySelector("#b-scatter")).not.toBeNull();
+    });
+
+    it("explicit namespace prop overrides the provider context", () => {
+      const { container } = render(
+        <ShinyModuleProvider namespace="ctx">
+          <ShinyOutput id="scatter" namespace="explicit" />
+        </ShinyModuleProvider>,
+      );
+      expect(container.querySelector("#explicit-scatter")).not.toBeNull();
+      expect(container.querySelector("#ctx-scatter")).toBeNull();
+    });
+
+    it("namespace={null} suppresses the provider context", () => {
+      // Mirrors the hook convention (see use-shiny-namespace.test.tsx) for
+      // outputs whose id is already pre-namespaced.
+      const { container } = render(
+        <ShinyModuleProvider namespace="ctx">
+          <ShinyOutput id="ctx-scatter" namespace={null} />
+        </ShinyModuleProvider>,
+      );
+      expect(container.querySelector("#ctx-scatter")).not.toBeNull();
+      expect(container.querySelector("#ctx-ctx-scatter")).toBeNull();
+    });
+
+    it("re-binds when the resolved namespaced id changes", () => {
+      function App({ ns }: { ns: string }) {
+        return (
+          <ShinyModuleProvider namespace={ns}>
+            <ShinyOutput id="scatter" />
+          </ShinyModuleProvider>
+        );
+      }
+      const { rerender } = render(<App ns="a" />);
+      expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+      rerender(<App ns="b" />);
+      expect(mockUnbindAll).toHaveBeenCalledTimes(1);
+      expect(mockBindAll).toHaveBeenCalledTimes(2);
+    });
+
+    it("logs the namespaced id when bindAll fails inside a provider", () => {
+      const errorSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockBindAll.mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+
+      render(
+        <ShinyModuleProvider namespace="a">
+          <ShinyOutput id="scatter" />
+        </ShinyModuleProvider>,
+      );
+
+      expect(errorSpy.mock.calls[0][0]).toBe(
+        '[shinyreact] ShinyOutput "a-scatter" bindAll failed:',
+      );
+      errorSpy.mockRestore();
     });
   });
 

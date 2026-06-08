@@ -1,0 +1,20 @@
+{
+  "type": "react",
+  "name": "Card",
+  "props": {},
+  "children": [
+    {
+      "type": "tag",
+      "name": "span",
+      "props": {
+        "className": "x"
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "hi"
+        }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,10 @@ import { MISSING } from "./missing";
 import { createDebouncedFn, type DebouncedFunction } from "./utils";
 
 export class InputRegistryEntry<T> {
+  /** Wire-id suffix applied when no explicit `type` is set, so untyped inputs
+   * route through shinyreact's server-side handler (clean records on R). */
+  private static readonly DEFAULT_TYPE = "shinyreact.default";
+
   id: string; // Shiny input ID
   value: T;
   useStateSetValueFns: Set<(value: T) => void>;
@@ -12,6 +16,10 @@ export class InputRegistryEntry<T> {
   opts: { priority?: EventPriority; debounceMs: number } = {
     debounceMs: 100,
   };
+  // Input-handler type suffix. Set once via updateType(); subsequent
+  // mismatches throw. `undefined` is a valid finalized state ("no suffix").
+  private type?: string;
+  private typeFinalized = false;
 
   constructor(id: string, value: T) {
     this.id = id;
@@ -28,7 +36,8 @@ export class InputRegistryEntry<T> {
   }
 
   private setShinyInputValue(value: T) {
-    getShiny()?.setInputValue?.(this.id, value, this.opts);
+    const wireId = `${this.id}:${this.type ?? InputRegistryEntry.DEFAULT_TYPE}`;
+    getShiny()?.setInputValue?.(wireId, value, this.opts);
   }
 
   updateDebounceDelay(debounceMs: number) {
@@ -37,6 +46,27 @@ export class InputRegistryEntry<T> {
 
   updatePriority(priority: EventPriority) {
     this.opts.priority = priority;
+  }
+
+  updateType(type: string | undefined): void {
+    if (!this.typeFinalized) {
+      this.type = type;
+      this.typeFinalized = true;
+      return;
+    }
+    if (type === undefined) return;
+    if (this.type !== type) {
+      throw new Error(
+        `Input "${this.id}" is already registered with type=${
+          this.type === undefined
+            ? `undefined (wire id "${this.id}:${InputRegistryEntry.DEFAULT_TYPE}")`
+            : JSON.stringify(this.type)
+        }. ` +
+          `A second mount requested type=${JSON.stringify(type)}. ` +
+          `An input's handler type changes server-side semantics and must be consistent ` +
+          `across every useShinyInput / useSetShinyInput call for the same id.`,
+      );
+    }
   }
 
   addUseStateSetValueFn(fn: (value: T) => void) {

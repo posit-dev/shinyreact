@@ -1,29 +1,19 @@
-# TODO: Enable when R package is implemented (has DESCRIPTION file).
-# Uncomment the on: block below and remove the workflow_dispatch-only trigger.
-#
-# on:
-#   push:
-#     branches: [main]
-#     paths:
-#       - "pkg-r/**"
-#       - ".github/workflows/check-r.yaml"
-#   pull_request:
-#     paths:
-#       - "pkg-r/**"
-#       - ".github/workflows/check-r.yaml"
-
 name: check-r
 
 on:
-  workflow_dispatch:
-
-permissions: read-all
+  push:
+    branches: [main]
+    paths:
+      - "pkg-r/**"
+      - ".github/workflows/check-r.yaml"
+  pull_request:
+    paths:
+      - "pkg-r/**"
+      - ".github/workflows/check-r.yaml"
 
 jobs:
   routine:
     uses: rstudio/shiny-workflows/.github/workflows/routine.yaml@v1
-    permissions:
-      contents: write
     with:
       working-directory: pkg-r
       format-r-code: true

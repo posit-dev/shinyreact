@@ -6,7 +6,7 @@ A minimal **Shiny Express** app that mixes traditional Express UI (`ui.input_tex
 
 ## What it shows
 
-- Subclassing `shinyreact.reactive_output` with `extra_deps` to inject the custom-components JS bundle.
+- Subclassing `shinyreact.render_react` with `extra_deps` to inject the custom-components JS bundle.
 - A `Card` / `Badge` / `Button` component trio registered in `demo_components.js`.
 - Reactive updates: typing in the sidebar text box and moving the slider both retrigger the `@render_demo` function, which returns a fresh `Node` tree.
 

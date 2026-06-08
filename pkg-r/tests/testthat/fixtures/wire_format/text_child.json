@@ -1,0 +1,15 @@
+{
+  "type": "react",
+  "name": "Card",
+  "props": {},
+  "children": [
+    {
+      "type": "text",
+      "value": "plain text"
+    },
+    {
+      "type": "text",
+      "value": "42"
+    }
+  ]
+}
