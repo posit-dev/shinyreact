@@ -12,7 +12,7 @@ _dep = HTMLDependency(
     script={"src": "modules.js", "defer": ""},
 )
 
-app_ui = shinyreact.ui_output("main", extra_deps=[_dep])
+app_ui = shinyreact.output_react("main", extra_deps=[_dep])
 
 
 @module.server
