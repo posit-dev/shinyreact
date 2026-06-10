@@ -1,3 +1,4 @@
+import pytest
 from htmltools import HTMLDependency, Tag
 from shinyreact._page import page_bare, page_react
 
@@ -85,3 +86,31 @@ def test_page_react_dep_falls_back_to_cwd_without_file(tmp_path, monkeypatch):
     assert isinstance(dep, HTMLDependency)
     # Source resolved to CWD, so dep_name is the CWD's basename.
     assert dep.name == tmp_path.name
+
+
+def test_page_react_html_attaches_dep(tmp_path):
+    from shinyreact import page_react_html
+
+    index = tmp_path / "index.html"
+    index.write_text("<div id='root'></div>")
+    ui = page_react_html(index)
+    deps = ui.get_dependencies()
+    dep_names = [d.name for d in deps]
+    assert "shinyreact" in dep_names
+
+
+def test_page_react_html_includes_file_html(tmp_path):
+    from shinyreact import page_react_html
+
+    index = tmp_path / "index.html"
+    index.write_text('<div id="root"></div>')
+    ui = page_react_html(index)
+    rendered = str(ui.tagify())
+    assert 'id="root"' in rendered  # the user's own mount, from their file
+
+
+def test_page_react_html_missing_file_raises(tmp_path):
+    from shinyreact import page_react_html
+
+    with pytest.raises(FileNotFoundError, match="not found"):
+        page_react_html(tmp_path / "nope.html")
