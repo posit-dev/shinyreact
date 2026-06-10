@@ -1,6 +1,6 @@
 # TODOs
 
-Known issues and open work items. See `features.md` for what already exists.
+Known issues and open work items. See the [examples catalog](../examples/README.md) for what already exists.
 
 ## Safeguard `reactive_output` against use outside the `ui.tsx` pattern
 
@@ -43,7 +43,7 @@ Define what a well-formed `shinyreact` UI component looks like from the downstre
 
 ## What render methods are useful?
 
-Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyreact.render_react` returns a `Spec`/`Node` tree (app.py pattern) and `@shinyreact.reactive_output` returns raw JSON for `useShinyOutputValue` (ui.tsx pattern). Are there other render shapes that would be useful — e.g., rendering a single element without a full Spec, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
+Evaluate which Python-side render patterns are most valuable for downstream packages. Currently `@shinyreact.render_react` returns a `Node` tree (app.py pattern) and `@shinyreact.reactive_output` returns raw JSON for `useShinyOutputValue` (ui.tsx pattern). Are there other render shapes that would be useful — e.g., rendering a single element without a full tree, streaming partial updates, returning pre-built HTML fragments, or rendering lists of components? Understanding the useful render surface area will guide API design.
 
 ## Nested bullet structure of every feature or benefit
 

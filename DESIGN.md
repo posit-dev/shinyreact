@@ -8,7 +8,7 @@ AI changes the equation. When Claude can generate a complete React app — with 
 
 This document was originally written to propose a ui.tsx-first architecture as a new direction. **As of May 2026, `shinyreact` ships both patterns as first-class peers:**
 
-- **app.py pattern** (`page_react` + `render_react`) — server describes UI as a JSON spec (`Spec`/`Element`/`Node`), the JS bundle renders it into a React tree. Authors work entirely in Python/R; no JS required.
+- **app.py pattern** (`page_react` + `render_react`) — server describes UI as a JSON wire tree (a `Node` tree), the JS bundle renders it into a React tree. Authors work entirely in Python/R; no JS required.
 - **ui.tsx pattern** (`set_react_page()`) — server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler`. UI logic lives on the client.
 
 The tenets and analysis below describe the ui.tsx-first reasoning that motivated the architecture. Both patterns coexist and neither is deprecated. See [`docs/app-py-vs-ui-tsx.md`](docs/app-py-vs-ui-tsx.md) for guidance on choosing between them.
@@ -321,8 +321,8 @@ The R package (`pkg-r/`) was planned for feature parity with the Python package.
 The ui.tsx-first prototype proposed in this document has been built and validated. Both the ui.tsx pattern and the app.py JSON spec pattern now ship in `shinyreact` as first-class peers. The open questions in Section 7 remain relevant — the items below reflect the current status:
 
 1. **Design tenets (Section 2) are the guiding principles.** Both patterns respect them: the app file contains server logic; the framework handles reactivity; the app is a polished product.
-2. **Both patterns are implemented and working.** The ui.tsx pattern (`set_react_page()`, `reactive_output`) and the app.py pattern (`page_react`, `render_react`, `Spec`/`Element`/`Node`) ship from the same package.
-3. **The JSON spec transfer layer is retained for the app.py pattern.** The `Spec`/`Element`/`Node` data model and the in-house renderer walker serve the app.py use case well. For ui.tsx apps, the layer is bypassed — `reactive_output` sends raw JSON that the client renders directly.
+2. **Both patterns are implemented and working.** The ui.tsx pattern (`set_react_page()`, `reactive_output`) and the app.py pattern (`page_react`, `render_react`, the `Node` tree) ship from the same package.
+3. **The JSON wire-tree transfer layer is retained for the app.py pattern.** The `Node` data model and the in-house renderer walker serve the app.py use case well. For ui.tsx apps, the layer is bypassed — `reactive_output` sends raw JSON that the client renders directly.
 4. **The bridge library is stable.** `useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`, `ShinyModuleProvider`, and `ImageOutput` are vendored from `@posit/shiny-react` and re-exported on `window.shinyreact`.
 5. **Remaining open work** is tracked in [`docs/todos.md`](docs/todos.md) and the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues).
 

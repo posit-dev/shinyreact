@@ -60,6 +60,5 @@ See [`examples/app-r/01-hello-world/`](https://github.com/posit-dev/shinyreact/t
 ## Get started
 
 - **Function reference:** <https://posit-dev.github.io/shinyreact/r>
-- **Examples:** [`examples/app-r/`](https://github.com/posit-dev/shinyreact/tree/main/examples/app-r) (the `app.R` pattern) and [`examples/ui-tsx-r/`](https://github.com/posit-dev/shinyreact/tree/main/examples/ui-tsx-r) (the `ui.tsx` pattern)
-- **Feature inventory:** [`docs/features.md`](https://github.com/posit-dev/shinyreact/blob/main/docs/features.md)
+- **Examples:** the [examples catalog](https://github.com/posit-dev/shinyreact/blob/main/examples/README.md) — R apps are in [`examples/app-r/`](https://github.com/posit-dev/shinyreact/tree/main/examples/app-r) (the `app.R` pattern) and [`examples/ui-tsx-r/`](https://github.com/posit-dev/shinyreact/tree/main/examples/ui-tsx-r) (the `ui.tsx` pattern)
 - **Which pattern?** [`docs/app-py-vs-ui-tsx.md`](https://github.com/posit-dev/shinyreact/blob/main/docs/app-py-vs-ui-tsx.md)
