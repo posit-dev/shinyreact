@@ -25,10 +25,20 @@ def test_page_react_returns_tag():
     assert isinstance(result, Tag)
 
 
-def test_page_react_has_root_div():
+def test_page_react_emits_no_root_div():
     result = page_react()
     rendered = str(result.tagify())
-    assert 'id="root"' in rendered
+    assert 'id="root"' not in rendered
+
+
+def test_page_react_renders_output_placeholder():
+    """The app.py pattern works without a #root div."""
+    from shinyreact import output_react
+
+    result = page_react(output_react("hello"))
+    rendered = str(result.tagify())
+    assert "shinyreact-output" in rendered
+    assert 'id="hello"' in rendered
 
 
 def test_page_react_includes_shinyreact_dep():

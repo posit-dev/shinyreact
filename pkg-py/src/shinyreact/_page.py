@@ -51,8 +51,8 @@ def page_react(
 ) -> Tag:
     """Create a full-page React app served by Shiny.
 
-    Creates an HTML page with the shinyreact dependency and a ``#root`` div for
-    mounting a React app. Shiny runs in the background for reactivity.
+    Creates an HTML page with the shinyreact dependency. Shiny runs in the
+    background for reactivity.
 
     Pass :class:`~htmltools.HTMLDependency` objects (e.g. from
     :func:`page_react_dep`) as positional arguments to include app JS/CSS.
@@ -65,7 +65,6 @@ def page_react(
     """
     return page_bare(
         _dep_page(),
-        tags.div(id="root"),
         *args,
         title=title,
         lang=lang,
