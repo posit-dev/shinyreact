@@ -1,11 +1,10 @@
 import React from "react";
 import * as ReactDOM from "react-dom/client";
-import type { ComponentRegistry, Spec } from "./types";
+import type { ComponentRegistry } from "./types";
 import { registerComponents } from "./registry";
-import { ShinyreactRenderer } from "./renderer";
 import { ShinyOutput } from "./shiny-output";
-import { getOrCreateRoot, hasRoot, unmountRoot } from "./roots";
 import { installInlineSpecSeeding, seedInlineSpecs } from "./inline-spec";
+import { registerShinyreactOutputBinding } from "./output-binding";
 import "./shinyreact.css";
 
 // Re-export @posit/shiny-react hooks and components.
@@ -80,36 +79,7 @@ window.shinyreact = Object.assign(window.shinyreact || {}, {
   ReactDOM,
 });
 
-// Shiny output binding for .shinyreact-output elements
-class ShinyreactOutputBinding extends Shiny.OutputBinding {
-  find(scope: Element): ArrayLike<Element> {
-    return $(scope).find(".shinyreact-output");
-  }
-
-  renderValue(el: Element, data: Spec | null): void {
-    if (!data) {
-      if (hasRoot(el)) unmountRoot(el);
-      return;
-    }
-    const root = getOrCreateRoot(el as HTMLElement);
-    root.render(React.createElement(ShinyreactRenderer, { spec: data }));
-  }
-
-  renderError(el: Element, err: { message: string }): void {
-    const root = getOrCreateRoot(el as HTMLElement);
-    root.render(
-      React.createElement(
-        "div",
-        { style: { color: "red", padding: "8px" } },
-        err.message,
-      ),
-    );
-  }
-}
-
-// Register with Shiny — Shiny is always loaded before this script
-// because HTMLDependency ordering places Shiny's scripts first.
-Shiny.outputBindings.register(new ShinyreactOutputBinding(), "shinyreact.output");
+registerShinyreactOutputBinding();
 
 // Render any static Node specs embedded in page chrome (inline JSON scripts).
 installInlineSpecSeeding();
