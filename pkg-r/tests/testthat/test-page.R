@@ -1,7 +1,7 @@
-test_that("page_react includes #root and the shinyreact dep", {
+test_that("page_react emits no #root div but includes the shinyreact dep", {
   ui <- page_react()
   html <- as.character(ui)
-  expect_match(html, 'id="root"')
+  expect_no_match(html, 'id="root"')
   deps <- htmltools::findDependencies(ui)
   expect_true(any(vapply(deps, function(d) d$name == "shinyreact", logical(1))))
 })

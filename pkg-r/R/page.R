@@ -13,7 +13,7 @@ page_bare <- function(..., title = NULL, lang = "en") {
 
 #' Full-page React app served by Shiny
 #'
-#' Creates a page with a `#root` div and the shinyreact page-level dependency
+#' Creates a page with the shinyreact page-level dependency
 #' (bundle + bookmark restore script). Pass app JS/CSS dependencies (e.g. from
 #' [page_react_dep()]) via `...`.
 #'
@@ -23,7 +23,6 @@ page_bare <- function(..., title = NULL, lang = "en") {
 page_react <- function(..., title = NULL, lang = "en") {
   page_bare(
     shinyreact_dep_page(),
-    htmltools::tags$div(id = "root"),
     ...,
     title = title,
     lang = lang
