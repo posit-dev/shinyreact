@@ -1,0 +1,843 @@
+# shinyreact — Full Component Authoring Guide
+
+shinyreact is a bridge between Shiny's reactive graph and React. It ships zero UI components. Its job is to let downstream packages register React components and wire them to Shiny inputs/outputs over a websocket.
+
+This document covers the JS registration protocol, hook patterns, Python API, and R API in full. For a quick-reference summary see `llms.txt`.
+
+---
+
+## Two patterns (know which you're building for)
+
+**`app.py` pattern** — Server describes UI as a JSON tree (`Node()`/`node()`). The JS bundle renders it. Components registered via `registerComponents` are the building blocks. Client has no app code — just the registered component library.
+
+**`ui.tsx` pattern** — Server holds only reactive data. Client is a full React app that calls Shiny hooks directly. No component registration needed; authors write React as normal and call `useShinyInput`/`useShinyOutputValue` anywhere.
+
+When building a reusable component library (e.g. a shadcn wrapper package), you're building for the `app.py` pattern: register components, expose Python/R authoring APIs. When building a one-off app UI, you're in the `ui.tsx` pattern: write React, call hooks directly.
+
+---
+
+# JS Bridge
+
+## Bundle contract
+
+The shinyreact IIFE bundle (`shinyreact.js`) exposes `window.shinyreact`. Downstream component bundles must:
+
+1. Be built as IIFE (not ESM, not CJS).
+2. **Externalize `react`** → `window.shinyreact.React`. **Externalize `react-dom/client`** → `window.shinyreact.ReactDOM`. Never bundle React — multiple React instances break all hooks.
+3. **Do not externalize `react-dom`** — `window.shinyreact.ReactDOM` is `react-dom/client` only and does not expose `createPortal`. Radix UI and other portal-based components need `createPortal` from `react-dom`. Bundle it (tree-shakes to ~2 kB gzip).
+4. Call `window.shinyreact.registerComponents(null, registry)` at load time.
+5. Load after `shinyreact.js` (HTMLDependency ordering guarantees this when you declare `shinyreact` as a dep).
+
+```js
+// vite.config.js for a downstream IIFE bundle
+export default {
+  build: {
+    lib: { entry: "src/index.jsx", formats: ["iife"], name: "MyShadcn" },
+    rollupOptions: {
+      external: ["react", "react-dom/client"],
+      output: {
+        globals: {
+          react: "window.shinyreact.React",
+          "react-dom/client": "window.shinyreact.ReactDOM",
+        },
+      },
+    },
+  },
+};
+```
+
+---
+
+## Registering components
+
+```js
+window.shinyreact.registerComponents(null, {
+  "shadcn:Button": ButtonComponent,
+  "shadcn:Slider": SliderComponent,
+  // key = the string passed as Node type / node() type in Python/R
+});
+```
+
+Call once at bundle load time. Re-registering a key emits a console warning and overwrites the previous entry. The first argument (`null`) is reserved for a future catalog/validation parameter — always pass `null`.
+
+---
+
+## What a registered component receives
+
+Every registered component is a React component receiving:
+
+```ts
+interface RegisteredComponentProps {
+  element: {
+    type: "react";
+    name: string;                      // component name (e.g. "shadcn:Button")
+    props: Record<string, unknown>;    // props sent from Python/R
+    children?: Element[];              // wire children (already rendered below)
+  };
+  children: ReactNode;                 // pre-rendered children from element.children
+}
+```
+
+Read server-sent props from `element.props`. Render `children` wherever the component allows nested content. **Do not read `element.children` directly** — use the `children` ReactNode prop which is already rendered.
+
+```jsx
+function MyCard({ element, children }) {
+  const { title, variant = "default" } = element.props;
+  return (
+    <div className={`card card-${variant}`}>
+      <h2>{title}</h2>
+      {children}
+    </div>
+  );
+}
+```
+
+---
+
+## Wire format (JSON protocol)
+
+The renderer walks this tree into React. You only need this when debugging or writing a custom renderer.
+
+```ts
+type Element =
+  | { type: "react"; name: string; props: Record<string, unknown>; children?: Element[] }
+  | { type: "tag";   name: string; props: Record<string, unknown>; children?: Element[] }
+  | { type: "text";  value: string }
+  | { type: "html";  html: string }
+
+type Spec = Element | Element[]
+```
+
+- `"react"` — registered component. `name` must be in registry.
+- `"tag"` — plain DOM element (`div`, `span`, etc.).
+- `"text"` — text node.
+- `"html"` — injected via `dangerouslySetInnerHTML` (from `HTML()` in Python/R).
+
+HTML attribute mapping: `class→className`, `for→htmlFor`, `tabindex→tabIndex`, `colspan→colSpan`, `rowspan→rowSpan`, `maxlength→maxLength`, `readonly→readOnly`, `autofocus→autoFocus`, `contenteditable→contentEditable`. `data-*` and `aria-*` pass through verbatim.
+
+---
+
+## Hook patterns by interaction type
+
+Import all hooks from a single shared file rather than destructuring `window.shinyreact` in every component:
+
+```js
+// src/hooks.js
+export const {
+  useShinyInput,
+  useShinyInputValue,
+  useSetShinyInput,
+  useShinyOutputValue,
+  useShinyOutputStatus,
+  useShinyMessageHandler,
+  useShinyInitialized,
+  useShinyBusy,
+} = window.shinyreact;
+```
+
+Pick the narrowest hook that fits — narrow hooks make data-flow visible and prevent spurious re-renders.
+
+### Pattern 1: Server-controlled display (no client state)
+
+```jsx
+function DataCard({ element }) {
+  const { output_id } = element.props;
+  const data = useShinyOutputValue(output_id);
+  return <div>{data ? JSON.stringify(data) : "Loading..."}</div>;
+}
+```
+
+### Pattern 2: Client-owned input (syncs to Shiny)
+
+```jsx
+function TextInput({ element }) {
+  const { input_id, default_value = "", placeholder = "", debounce_ms } = element.props;
+  const [value, setValue] = useShinyInput(input_id, default_value, {
+    debounceMs: debounce_ms ?? 100,
+  });
+  return (
+    <input
+      type="text"
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => setValue(e.target.value)}
+    />
+  );
+}
+```
+
+### Pattern 3: Action button (event, not state)
+
+Start at `0`, increment on click. `debounceMs: 0` delivers every click immediately. `priority: "event"` marks it as an event input.
+
+```jsx
+function ActionButton({ element }) {
+  const { input_id, label = "Click" } = element.props;
+  const [count, setCount] = useShinyInput(input_id, 0, { debounceMs: 0, priority: "event" });
+  return <button onClick={() => setCount(count + 1)}>{label}</button>;
+}
+```
+
+Server-side: `@reactive.event(input.btn, ignore_init=True)` — `ignore_init=True` prevents firing on page load when the client registers the initial `0`.
+
+### Pattern 4: Server-to-client message (push event)
+
+```jsx
+function Toast({ element }) {
+  const [message, setMessage] = React.useState(null);
+  useShinyMessageHandler("toast", (data) => {
+    setMessage(data.text);
+    setTimeout(() => setMessage(null), 3000);
+  });
+  return message ? <div className="toast">{message}</div> : null;
+}
+```
+
+Server: `await shinyreact.send_message(session, "toast", {"text": "Saved!"})`.
+
+Inline arrow functions are safe — the handler is stored in a ref internally and does not re-register on re-render.
+
+### Pattern 5: Stale-data display (avoid flicker on recompute)
+
+When the server recomputes, show stale data with a visual cue rather than unmounting.
+
+```jsx
+function LiveChart({ element }) {
+  const { output_id } = element.props;
+  const data = useShinyOutputValue(output_id);
+  const status = useShinyOutputStatus(output_id);
+
+  if (!data) return <Skeleton />;
+  return (
+    <Chart
+      data={data}
+      className={status === "recalculating" ? "stale" : ""}
+    />
+  );
+}
+```
+
+```css
+.stale { opacity: 0.6; transition: opacity 200ms; }
+```
+
+`"pending"` = no data yet. `"recalculating"` = server is computing, previous data still mounted — keep it. Never unmount on `"recalculating"`.
+
+### Pattern 6: Hybrid (reads and writes Shiny)
+
+```jsx
+function SearchBox({ element }) {
+  const { input_id, output_id } = element.props;
+  const [query, setQuery] = useShinyInput(input_id, "");
+  const results = useShinyOutputValue(output_id);
+  return (
+    <div>
+      <input value={query} onChange={(e) => setQuery(e.target.value)} />
+      <ul>{results?.map((r) => <li key={r}>{r}</li>)}</ul>
+    </div>
+  );
+}
+```
+
+### Pattern 7: Overlay components (Dialog, Popover, Select)
+
+Overlay components use portals (Radix). This is why `react-dom` must be bundled (not externalized). Bridge open state to a Shiny boolean input:
+
+```jsx
+function ShinyDialog({ element, children }) {
+  const { input_id, trigger_label = "Open", title } = element.props;
+  const [open, setOpen] = useShinyInput(input_id, false);
+  return (
+    <Dialog open={!!open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><button>{trigger_label}</button></DialogTrigger>
+      <DialogContent>
+        {title && <DialogTitle>{title}</DialogTitle>}
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+Server reads `input.<input_id>()` as `True`/`False` while the dialog is open.
+
+---
+
+## Hook reference
+
+| Hook | Signature | When to use |
+|------|-----------|-------------|
+| `useShinyInput` | `(id, default, opts?) → [value, setValue]` | Bidirectional: component both reads and writes |
+| `useShinyInputValue` | `(id) → value` | Read-only: component reads a Shiny input set elsewhere |
+| `useSetShinyInput` | `(id, default, opts?) → setValue` | Write-only: event producer (button, file upload) |
+| `useShinyOutputValue` | `(id, default?) → value` | Read server-computed data |
+| `useShinyOutputStatus` | `(id) → "pending"\|"ready"\|"recalculating"\|"error"` | Output lifecycle for stale-data UX |
+| `useShinyMessageHandler` | `(type, handler)` | Receive push events from server |
+| `useShinyInitialized` | `() → boolean` | Gate render until Shiny client ready |
+| `useShinyBusy` | `() → boolean` | App-wide busy/idle indicator |
+
+**`useShinyInput` options:**
+
+```ts
+{
+  debounceMs?: number;               // default 100. Use 0 for buttons/events.
+  priority?: "deferred" | "event";  // "event" for buttons. default "deferred".
+  type?: string;                     // appends ":type" to wire id for server-side input handlers
+                                     // e.g. type="shiny.datetime" → server gets datetime.datetime
+}
+```
+
+`defaultValue` is captured on first mount (like `useState`). Inline `{}` and `[]` are safe — stabilized via `useRef` internally.
+
+---
+
+## Module namespacing
+
+```jsx
+function ModuleCounter({ element }) {
+  const { namespace, label } = element.props;
+  return (
+    <ShinyModuleProvider namespace={namespace}>
+      <Counter label={label} />
+    </ShinyModuleProvider>
+  );
+}
+
+function Counter({ label }) {
+  const [count, setCount] = useShinyInput("count", 0);
+  return <button onClick={() => setCount(count + 1)}>{label}: {count}</button>;
+}
+```
+
+---
+
+## Wrapping an existing React component (shadcn/MUI/custom)
+
+Thin adapter: read `element.props`, wire hooks, delegate to the real component. Internal function name uses `Shiny` prefix to avoid clashing with the shadcn source function of the same name in the same file; export as the clean name:
+
+```jsx
+// Wrapping shadcn's Button — both functions in the same file
+function Button({ variant, ...props }) { /* shadcn source */ }
+
+function ShinyButton({ element }) {
+  const { input_id, label, variant = "default" } = element.props;
+  const [count, setCount] = useShinyInput(input_id, 0, { debounceMs: 0, priority: "event" });
+  return (
+    <Button variant={variant} onClick={() => setCount(count + 1)}>
+      {label}
+    </Button>
+  );
+}
+
+export { ShinyButton as Button };
+```
+
+```jsx
+// Wrapping shadcn's Slider — Radix uses array values
+function ShinySlider({ element }) {
+  const { input_id, min = 0, max = 100, step = 1, value: defaultValue = 50 } = element.props;
+  const [value, setValue] = useShinyInput(input_id, defaultValue);
+  return (
+    <Slider
+      value={[value]}                        // Radix expects array
+      onValueChange={([v]) => setValue(v)}  // destructure back to scalar
+      min={min} max={max} step={step}
+    />
+  );
+}
+```
+
+---
+
+## Common mistakes
+
+**Externalizing `react-dom`:** Causes `createPortal is not a function` for any Radix overlay (Select, Dialog, Popover, Tooltip). Fix: only externalize `react-dom/client`, not `react-dom`.
+
+**Duplicate React:** Bundling React in a downstream IIFE instead of externalizing it. Hooks silently break. Fix: externalize to `window.shinyreact.React`.
+
+**Wrong component name:** `Node("mybutton")` but registered as `"shadcn:Button"`. Names are case-sensitive and must include any namespace prefix. Fix: match exactly.
+
+**Reading `element.children` instead of `children` prop:** `element.children` is the raw wire tree. Use the `children: ReactNode` prop which is already rendered.
+
+**Debounce on buttons:** Default 100ms debounce coalesces rapid clicks. Always pass `{ debounceMs: 0, priority: "event" }` for action buttons.
+
+**Unmounting on `"recalculating"`:** Destroys chart/table DOM and causes flicker. Keep showing stale data; apply a CSS class. See Pattern 5.
+
+**Inline `HTMLDependency` in rendered output:** Dependencies inside a `render_react` return value cannot reach `<head>` after page load. Declare them in `output_react(..., extra_deps=[dep])` or at the page level.
+
+**Missing `ignore_init=True` for button handlers:** Without it, the reactive fires on page load when the client registers the initial `0`.
+
+---
+
+# Python API
+
+Install: `pip install shinyreact`. Public API is in `shinyreact/__init__.py`.
+
+```python
+import shinyreact
+from shinyreact import Node, output_react, page_react, page_react_dep
+from shinyreact import render_react, reactive_output, send_message, set_react_page
+```
+
+## `Node` — component tree authoring API
+
+```python
+Node(type: str, props: dict = {}, children: list = [])
+```
+
+- `type` — registered component name. Must match the JS `registerComponents` key exactly.
+- `props` — dict of props the React component reads from `element.props`.
+- `children` — list of `Node`, htmltools `Tag`/`TagList`/`HTML`, strings, or numbers. Nested freely.
+
+```python
+from shinyreact import Node
+from htmltools import tags, HTML
+
+Node(
+    type="shadcn:Card",
+    props={"title": "Hello", "variant": "outlined"},
+    children=[
+        Node("shadcn:Input", props={"input_id": "name", "placeholder": ""}),
+        tags.p("Static HTML child"),
+        HTML("<strong>bold</strong>"),
+        "plain text",
+    ],
+)
+```
+
+### Node methods
+
+**`.to_dict() → dict`** — serialize to wire tree, discarding harvested deps. Use when there are no `HTMLDependency` children.
+
+**`.serialize() → (dict, list[HTMLDependency])`** — serialize + harvest deps. Use when children may carry `HTMLDependency` objects.
+
+**`.tagify() → Tagified`** — makes `Node` a `Tagifiable`. Embeds as a `.shinyreact-static` static mount in page chrome (not a Shiny output). Seeded from inline JSON at page load.
+
+---
+
+## `output_react(id, extra_deps=None) → Tag`
+
+Creates the `<div>` placeholder the output binding renders into.
+
+```python
+output_react("my_output")
+output_react("my_output", extra_deps=[my_package_dep()])
+```
+
+**`extra_deps`** — always inject your package JS/CSS here or at the page level, never inside `render_react`.
+
+---
+
+## `page_react(*args, title=None, lang="en") → Tag`
+
+Full-page layout with `#root` div, the shinyreact bundle, and bookmark restore script.
+
+```python
+app_ui = page_react(
+    my_dep,
+    output_react("main"),
+    title="My App",
+)
+```
+
+## `page_react_dep(js_file="main.js", css_file="main.css") → HTMLDependency`
+
+Builds an `HTMLDependency` for the caller's JS/CSS using mtime as version (auto cache-busting). Resolves paths relative to `__file__`.
+
+```python
+dep = page_react_dep(js_file="bundle.js", css_file="bundle.css")
+```
+
+---
+
+## `@render_react` — app.py pattern renderer
+
+Assign to `output[id]`. Returns `Node | TagChild`. Walks to wire format and sends to the matching `output_react(id)` placeholder.
+
+```python
+@render_react
+def main():
+    return Node("shadcn:Card", props={"title": "Sales"}, children=[
+        Node("shadcn:Badge", props={"text": f"Revenue: {input.revenue()}"}),
+        Node("shadcn:Button", props={"input_id": "refresh", "label": "Refresh"}),
+    ])
+```
+
+`auto_output_ui()` returns `output_react(self.output_id)` — used by Shiny Express.
+
+---
+
+## `@reactive_output` — ui.tsx pattern renderer
+
+Assign to `output[id]`. Returns any JSON-serializable value. Client reads it with `useShinyOutputValue(id)`.
+
+```python
+@reactive_output
+def chart_data():
+    df = filtered_data()
+    return {
+        "labels": df["category"].tolist(),
+        "values": df["revenue"].tolist(),
+    }
+```
+
+`auto_output_ui()` returns `None` — no placeholder is created.
+
+---
+
+## `send_message(session, type, data) → Awaitable`
+
+```python
+@reactive.effect
+async def _():
+    await send_message(session, "toast", {"text": "Saved!", "level": "success"})
+```
+
+`type` is namespaced via Shiny's `resolve_id` — module-safe.
+
+---
+
+## `set_react_page(path="www/index.html") → None`
+
+Express-only. Reads the HTML file and uses it as the page. Auto-discovers `HTMLDependency` from traditional Shiny renderers.
+
+```python
+from shinyreact import set_react_page, reactive_output
+from shiny.express import input
+
+set_react_page()
+
+@reactive_output
+def data():
+    return {"value": input.slider()}
+```
+
+---
+
+## Building a downstream Python package
+
+```
+my-shinyreact-pkg/
+  src/my_pkg/
+    __init__.py          # exports: components, dep, render
+    _dep.py              # HTMLDependency for the JS bundle
+    _components.py       # Node-builder functions
+    _render.py           # Optional: render_react subclass
+    www/
+      bundle.js          # Built IIFE (registerComponents at load)
+      bundle.css
+```
+
+### `_dep.py`
+
+```python
+from pathlib import Path
+from htmltools import HTMLDependency
+
+_WWW = Path(__file__).parent / "www"
+
+def my_pkg_dep() -> HTMLDependency:
+    js = _WWW / "bundle.js"
+    return HTMLDependency(
+        name="my-pkg",
+        version=str(int(js.stat().st_mtime)),   # mtime for dev; use fixed version for release
+        source={"subdir": str(_WWW)},
+        script={"src": "bundle.js", "defer": ""},
+        stylesheet={"href": "bundle.css"},
+    )
+```
+
+### `_components.py`
+
+```python
+from shinyreact import Node
+
+def button(input_id: str, label: str = "Click", *, variant: str = "default") -> Node:
+    return Node("shadcn:Button", props={
+        "input_id": input_id,
+        "label": label,
+        "variant": variant,
+    })
+
+def card(title: str, *children: Node, variant: str = "default") -> Node:
+    return Node("shadcn:Card", props={"title": title, "variant": variant}, children=list(children))
+```
+
+### Optional `render_react` subclass
+
+```python
+from shinyreact import render_react, output_react
+from my_pkg._dep import my_pkg_dep
+from my_pkg._types import MyComponent
+
+class render(render_react):
+    async def transform(self, value: MyComponent):
+        return value.to_node().to_dict()
+
+    def auto_output_ui(self):
+        return output_react(self.output_id, extra_deps=[my_pkg_dep()])
+```
+
+---
+
+## Reactive patterns (Python)
+
+```python
+# Shared reactive.calc fans out to multiple outputs
+@reactive.calc
+def filtered():
+    df = base_data.copy()
+    if input.category():
+        df = df[df["cat"] == input.category()]
+    return df
+
+@render_react
+def summary_card():
+    return Node("shadcn:Badge", props={"text": f"{len(filtered())} rows"})
+
+@reactive_output
+def table_data():
+    return filtered().to_dict(orient="records")
+```
+
+---
+
+## Python API quick reference
+
+| Function / Class | Pattern | Returns |
+|-----------------|---------|---------|
+| `Node(type, props, children)` | both | wire-tree builder |
+| `output_react(id, extra_deps)` | app.py | `<div>` placeholder |
+| `page_react(*args, title, lang)` | app.py | full page `Tag` |
+| `page_react_dep(js_file, css_file)` | both | `HTMLDependency` |
+| `page_bare(*args, title, lang)` | both | bare page |
+| `@render_react` | app.py | `Renderer[Node\|TagChild]` |
+| `@reactive_output` | ui.tsx | `Renderer[Jsonifiable]` |
+| `send_message(session, type, data)` | both | `Awaitable` |
+| `set_react_page(path)` | ui.tsx (Express) | `None` |
+
+---
+
+# R API
+
+```r
+library(shinyreact)
+```
+
+The R package mirrors the Python API in R idioms. The wire format is identical — `node()` in R produces the same JSON as `Node()` in Python.
+
+## Key shape differences from Python
+
+| Python | R | Note |
+|--------|---|------|
+| `Node(type, props={}, children=[])` | `node(type, ..., props = list())` | Children are `...` args in R |
+| `@render_react` decorator | `output$id <- render_react({...})` | Standard Shiny render pattern |
+| `@reactive_output` decorator | `output$id <- reactive_output({...})` | Same |
+| `set_react_page(path)` | `page_react_html(path)` | R name differs |
+| `page_react_dep(js_file, css_file)` | `page_react_dep(src_dir, js_file, css_file, name)` | R takes explicit `src_dir` |
+
+---
+
+## `node()` — component tree authoring API
+
+```r
+node(type, ..., props = list())
+```
+
+- `type` — registered component name. Must match the JS `registerComponents` key exactly.
+- `...` — children: `node()` objects, `tags$*()`, `HTML()`, strings, numbers.
+- `props` — named list of props.
+
+```r
+node(
+  "shadcn:Card",
+  props = list(title = "Hello", variant = "outlined"),
+  node("shadcn:Input", props = list(input_id = "name", placeholder = "")),
+  tags$p("Static HTML child"),
+  HTML("<strong>bold</strong>"),
+  "plain text"
+)
+```
+
+`node()` is `Tagifiable` — pass it anywhere htmltools accepts tag children.
+
+---
+
+## `output_react(id, extra_deps = list()) → shiny.tag`
+
+```r
+output_react("my_output")
+output_react("my_output", extra_deps = list(my_pkg_dep()))
+```
+
+---
+
+## `page_react(..., title = NULL, lang = "en") → shiny.tag`
+
+```r
+ui <- page_react(
+  my_pkg_dep(),
+  output_react("main"),
+  title = "My App"
+)
+```
+
+## `page_react_dep(src_dir, js_file, css_file = NULL, name = basename(src_dir)) → htmlDependency`
+
+```r
+dep <- page_react_dep(
+  src_dir = normalizePath("."),
+  js_file = "bundle.js",
+  css_file = "bundle.css"
+)
+```
+
+## `page_react_html(path = "www/index.html")`
+
+R equivalent of Python's `set_react_page()`. Reads an HTML file and serves it as the Shiny UI (ui.tsx pattern).
+
+```r
+ui <- page_react_html("www/index.html")
+server <- function(input, output, session) {
+  output$data <- reactive_output({ list(value = input$slider) })
+}
+shinyApp(ui, server)
+```
+
+---
+
+## `render_react(expr) → render function`
+
+```r
+server <- function(input, output, session) {
+  output$main <- render_react({
+    node(
+      "shadcn:Card",
+      props = list(title = "Sales"),
+      node("shadcn:Badge", props = list(text = paste("Revenue:", input$revenue)))
+    )
+  })
+}
+```
+
+---
+
+## `reactive_output(expr) → render function`
+
+```r
+output$chart_data <- reactive_output({
+  df <- filtered_data()
+  list(labels = df$category, values = df$revenue)
+})
+```
+
+---
+
+## `send_message(session, type, data)`
+
+```r
+observeEvent(input$save, {
+  send_message(session, "toast", list(text = "Saved!", level = "success"))
+}, ignoreInit = TRUE)
+```
+
+---
+
+## Building a downstream R package
+
+```
+mypkg/
+  R/
+    components.R     # node() builder functions
+    dep.R            # htmlDependency builder
+  inst/lib/shiny/
+    bundle.js        # Built IIFE
+    bundle.css
+```
+
+### `R/dep.R`
+
+```r
+#' @export
+my_pkg_dep <- function() {
+  src_dir <- system.file("lib/shiny", package = "mypkg")
+  js_path <- file.path(src_dir, "bundle.js")
+  version <- as.character(as.integer(file.mtime(js_path)))  # mtime for dev
+
+  htmltools::htmlDependency(
+    name       = "mypkg",
+    version    = version,
+    src        = c(file = src_dir),
+    script     = list(src = "bundle.js", defer = ""),
+    stylesheet = "bundle.css"
+  )
+}
+```
+
+### `R/components.R`
+
+```r
+#' @export
+button <- function(input_id, label = "Click", variant = "default") {
+  node("shadcn:Button", props = list(input_id = input_id, label = label, variant = variant))
+}
+
+#' @export
+card <- function(title, ..., variant = "default") {
+  node("shadcn:Card", ..., props = list(title = title, variant = variant))
+}
+```
+
+---
+
+## Reactive patterns (R)
+
+```r
+# Shared reactive fans out to multiple outputs
+filtered <- reactive({
+  df <- base_data
+  if (!is.null(input$category) && input$category != "")
+    df <- df[df$cat == input$category, ]
+  df
+})
+
+output$summary <- render_react({
+  node("shadcn:Badge", props = list(text = paste(nrow(filtered()), "rows")))
+})
+
+output$table_data <- reactive_output({
+  df <- filtered()
+  lapply(seq_len(nrow(df)), function(i) as.list(df[i, ]))
+})
+```
+
+---
+
+## R serialization considerations
+
+**Length-1 vectors serialize as scalars** — wrap with `I()` to force an array:
+
+```r
+props = list(value = 42)      # → {"value": 42}
+props = list(value = I(42))   # → {"value": [42]}
+```
+
+**Named vs unnamed lists:** named R lists → JSON objects; unnamed lists → JSON arrays.
+
+**`NULL` in a list** serializes as JSON `null`. Use `list()` (empty list → `{}`) not `NULL` for optional prop maps.
+
+---
+
+## R API quick reference
+
+| Function | Pattern | Returns |
+|----------|---------|---------|
+| `node(type, ..., props)` | both | `shinyreact_node` (Tagifiable) |
+| `output_react(id, extra_deps)` | app.R | `shiny.tag` `<div>` |
+| `page_react(..., title, lang)` | app.R | `shiny.tag` page |
+| `page_react_dep(src_dir, js_file, css_file, name)` | both | `htmlDependency` |
+| `page_bare(..., title, lang)` | both | `shiny.tag` page |
+| `page_react_html(path)` | ui.tsx | `tagList` UI |
+| `render_react(expr)` | app.R | render function |
+| `reactive_output(expr)` | ui.tsx | render function |
+| `send_message(session, type, data)` | both | invisible |
