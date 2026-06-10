@@ -1,6 +1,6 @@
 /**
  * Minimal type declarations for Shiny's global JavaScript API.
- * Used only by the output binding in index.ts.
+ * Used only by the output binding in output-binding.ts.
  *
  * Note: shiny-react/index.ts separately declares `Window.Shiny?` as the
  * richer `ShinyClassExtended` type (from @posit/shiny). That declaration

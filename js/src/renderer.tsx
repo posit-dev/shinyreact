@@ -1,5 +1,5 @@
 import React, { type ReactNode } from "react";
-import type { ComponentRegistry, Element, Spec } from "./spec";
+import type { ComponentRegistry, Element, Spec } from "./types";
 import { getRegistry } from "./registry";
 
 // A node's explicit React key, if the wire props carry a usable one; otherwise

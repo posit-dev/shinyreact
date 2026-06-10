@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 import React from "react";
-import type { Spec } from "../spec";
+import type { Spec } from "../types";
 import { registerComponents, _resetForTests } from "../registry";
 import { ShinyreactRenderer } from "../renderer";
 

@@ -1,5 +1,5 @@
 import React from "react";
-import type { Spec } from "./spec";
+import type { Spec } from "./types";
 import { ShinyreactRenderer } from "./renderer";
 import { getOrCreateRoot, hasRoot } from "./roots";
 
