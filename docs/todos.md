@@ -14,15 +14,6 @@ Known issues and open work items. See `features.md` for what already exists.
 - Documentation guidance on which renderers are appropriate in `ui.tsx` mode.
 - Possibly a registry of "approved" renderers (`reactive_output`, `render.plot`, future `render.image`, etc.) with everything else flagged.
 
-## Clarify the two output paradigms in documentation
-
-`ui.tsx` apps now have two distinct output mechanisms:
-
-- `@reactive_output` + `useShinyOutputValue(id)` — server sends pure data, React component renders it. Best for custom UI where the client owns presentation.
-- `<ShinyOutput id class />` — traditional Shiny output binding owns the container's DOM. Best for existing widget ecosystems (htmlwidgets, data-frame, etc.) where the binding handles rendering.
-
-Document guidance on when to use which. The principle remains: prefer `reactive_output` + client rendering when possible (avoids shipping pre-rendered HTML), but `ShinyOutput` is the legitimate path for leveraging existing output bindings without rewriting them as React components.
-
 ## 07-chat requires external API key
 
 The chat example requires `OPENAI_API_KEY` and the `chatlas` package. It cannot be smoke-tested without credentials. Consider adding a mock/echo mode for demo purposes.
@@ -41,12 +32,6 @@ rather than via `@reactive.event(ignore_init=True)` at each call site.
 ## XSS in chat example renderMarkdown (07-chat)
 
 The `renderMarkdown()` function in `examples/app-py/07-chat/chat.js` escapes code blocks via `escapeHtml()` but passes all other text (inline code, bold, italic, plain text) as raw HTML into `dangerouslySetInnerHTML`. If the AI model returns markup like `<img src=x onerror=...>`, it will execute as script. Options: integrate a sanitization library (e.g. DOMPurify), build a React element tree instead of an HTML string, or escape-first then apply formatting. The current inline TODO at `chat.js:216` documents the risk.
-
-## Full React page support
-
-`page_react()` and `page_bare()` are now exported. `page_react()` creates full-page React app chrome with the shinyreact HTMLDependency. Remaining work:
-- End-to-end example app demonstrating the full React `ui.tsx` pattern.
-- Ensure all hooks and the output binding gracefully handle late Shiny arrival.
 
 ## No build step for example JS
 
