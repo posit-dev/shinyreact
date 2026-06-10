@@ -241,3 +241,6 @@ shinyui-prototype.png
 
 # Local Claude Code settings
 .claude/settings.json
+
+# Raw shadcn source downloaded by download-components.sh (local staging only)
+ui-frameworks/shadcn/js/src/components-src/
