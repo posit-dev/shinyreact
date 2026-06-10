@@ -106,6 +106,7 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 - `shinyreact.Node(type, props, children)` — the nested-tree authoring API for the app.py pattern; `children` may mix nested `Node`s, htmltools content, and scalars. The walker turns it into the JSON wire tree (`{"type": "react", "name", "props", "children"}`, plus `tag`/`text`/`html` nodes). `.serialize()` → `(wire_tree, deps)`; `.to_dict()` → wire tree (discards harvested `HTMLDependency`); `.tagify()` → a static `.shinyreact-static` mount for embedding in page chrome
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
 - `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html` (the ui.tsx pattern); auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
+- `shinyreact.page_react_html(path="www/index.html")` — Core-mode helper that serves a static `www/index.html` (the ui.tsx pattern) as the `ui` argument of `App(ui=..., server=...)`; attaches the shinyreact dep. The Core counterpart to the Express-only `set_react_page()`
 
 ### R package
 
@@ -113,7 +114,7 @@ The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `node`,
 
 - `node(type, ..., props = list())` — children are the `...` args (vs Python's `children` list); produces the same JSON wire tree. Serialize via `as_wire()` / `serialize_ui()` (see `pkg-r/R/wire.R`).
 - `render_react(expr, ...)` / `reactive_output(expr, ...)` are **functions** assigned to `output$id`, not decorator/`Renderer` classes.
-- `page_react_html(path = "www/index.html")` is R's equivalent of Python's `set_react_page()` (the ui.tsx pattern entry).
+- `page_react_html(path = "www/index.html")` matches Python's `page_react_html()` (Core-mode ui.tsx entry); Python additionally has the Express-only `set_react_page()`.
 - `output_react(id, extra_deps = list())` and `send_message(session, type, data)` match Python.
 
 The wire format is identical across languages — `make r-check-fixtures` verifies R's output matches Python's shared fixtures.
