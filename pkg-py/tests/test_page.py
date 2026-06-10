@@ -92,7 +92,7 @@ def test_page_react_html_attaches_dep(tmp_path):
     from shinyreact import page_react_html
 
     index = tmp_path / "index.html"
-    index.write_text("<div id='root'></div>")
+    index.write_text('<div id="root"></div>')
     ui = page_react_html(index)
     deps = ui.get_dependencies()
     dep_names = [d.name for d in deps]
@@ -114,3 +114,21 @@ def test_page_react_html_missing_file_raises(tmp_path):
 
     with pytest.raises(FileNotFoundError, match="not found"):
         page_react_html(tmp_path / "nope.html")
+
+
+def test_page_react_html_falls_back_to_cwd_without_file(tmp_path, monkeypatch):
+    """page_react_html() falls back to CWD when the caller has no __file__."""
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "index.html").write_text('<div id="root"></div>')
+    monkeypatch.chdir(tmp_path)
+
+    captured: dict[str, object] = {}
+    src = (
+        "from shinyreact import page_react_html\n"
+        "captured['ui'] = page_react_html()\n"  # relative default resolves to CWD
+    )
+    exec(compile(src, "<test>", "exec"), {"captured": captured})
+
+    rendered = str(captured["ui"].tagify())
+    assert 'id="root"' in rendered

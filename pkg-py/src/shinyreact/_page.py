@@ -230,6 +230,8 @@ def page_react_html(path: str | Path = "www/index.html") -> TagList:
         index_path = path
     else:
         caller_file = sys._getframe(1).f_globals.get("__file__")
+        # If the caller has no __file__ (REPL or dynamically exec'd code),
+        # fall back to the current working directory.
         caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
         index_path = caller_dir / path
     if not index_path.exists():
