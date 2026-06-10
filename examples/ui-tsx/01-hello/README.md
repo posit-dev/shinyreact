@@ -2,6 +2,8 @@
 
 The smallest possible `ui.tsx`-first Shiny app: a Python server that contains only reactive logic, plus a static React client served from `www/`. No JSX, no bundler, no `package.json`. Edit `app.js` and reload.
 
+`app.py` (Express, via `set_react_page()`) and `app-core.py` (Core, via `page_react_html()`) are two server-side entries for the same `www/` client.
+
 ## What it shows
 
 A name-input form and click counter rendered twice for direct comparison:
@@ -15,14 +17,15 @@ The point is that the same data shows up on both cards but the latency is visibl
 
 ```
 examples/ui-tsx/01-hello/
-├── app.py            # set_react_page() + 2 reactive_output outputs (greeting, click count)
+├── app.py            # Express: set_react_page() + 2 reactive_output outputs
+├── app-core.py       # Core: page_react_html() + App(app_ui, server), same outputs
 └── www/
     ├── index.html    # 3 lines: stylesheet, #root div, script
     ├── app.js        # raw React.createElement (with `h` shorthand)
     └── main.css      # body reset
 ```
 
-Four files. No `node_modules`, no Vite, no build script.
+Five files. No `node_modules`, no Vite, no build script.
 
 ## Bridge primitives used
 
@@ -36,7 +39,11 @@ Four files. No `node_modules`, no Vite, no build script.
 ## Run it
 
 ```bash
+# Express API
 uv run shiny run examples/ui-tsx/01-hello/app.py
+
+# Core API (same client, same outputs)
+uv run shiny run examples/ui-tsx/01-hello/app-core.py
 ```
 
 Open the URL printed by Shiny.
