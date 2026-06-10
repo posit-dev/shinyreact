@@ -17,7 +17,7 @@ page_react(..., title = NULL, lang = "en")
 A \code{shiny.tag} page.
 }
 \description{
-Creates a page with a \verb{#root} div and the shinyreact page-level dependency
+Creates a page with the shinyreact page-level dependency
 (bundle + bookmark restore script). Pass app JS/CSS dependencies (e.g. from
 \code{\link[=page_react_dep]{page_react_dep()}}) via \code{...}.
 }
