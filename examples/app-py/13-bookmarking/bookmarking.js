@@ -79,6 +79,6 @@
   var registry = { App: App };
   window.shinyreact.registerComponents({}, registry);
 
-  var root = window.shinyreact.ReactDOM.createRoot(document.getElementById("root"));
+  var root = window.shinyreact.ReactDOM.createRoot(document.body);
   root.render(h(App));
 })();
