@@ -32,6 +32,14 @@ shadcn_button <- function(input_id, label, variant = "default") {
   node("shadcn:Button", props = list(input_id = input_id, label = label, variant = variant))
 }
 
+#' A single-date picker. Server reads input$<input_id> as an ISO date string.
+#' The value is "YYYY-MM-DD" (or NULL). Parse with as.Date(input$<input_id>).
+#' @param input_id Shiny input id.
+#' @param selected Initial date as an ISO string "YYYY-MM-DD".
+shadcn_calendar <- function(input_id, selected = NULL) {
+  node("shadcn:Calendar", props = list(input_id = input_id, selected = selected))
+}
+
 #' A card container with an optional header title.
 #' @param title Optional card header text.
 #' @param ... Child nodes rendered inside the card body.
@@ -214,5 +222,66 @@ shadcn_dropdown_menu <- function(input_id, ..., trigger_label = "Open") {
     input_id      = input_id,
     trigger_label = trigger_label,
     items         = list(...)
+  ))
+}
+
+#' A display-only data table. No Shiny input.
+#' @param columns Character vector of header labels.
+#' @param rows List of rows; each row a list of cell values.
+#' @param caption Optional caption shown below the table.
+shadcn_table <- function(columns, rows, caption = NULL) {
+  node("shadcn:Table", props = list(columns = columns, rows = rows, caption = caption))
+}
+
+#' A single tab trigger spec for shadcn_tabs().
+#' @param value Identifier for this tab (matches the active-tab input value).
+#' @param label Text shown on the tab trigger.
+shadcn_tab <- function(value, label) {
+  list(value = value, label = label)
+}
+
+#' A tabbed panel. `tabs` defines the triggers; `...` panels are the content.
+#'
+#' Panels are matched to tabs positionally — the Nth panel renders under the
+#' Nth tab. Server reads input$<input_id> as the active tab's value.
+#'
+#' @param input_id Shiny input id for the active tab (two-way).
+#' @param tabs List of tab trigger specs, built with shadcn_tab().
+#' @param ... One content node per tab, in the same order as `tabs`.
+#' @param selected Initially active tab value (defaults to the first tab).
+shadcn_tabs <- function(input_id, tabs, ..., selected = NULL) {
+  node("shadcn:Tabs", ..., props = list(
+    input_id = input_id,
+    tabs     = tabs,
+    selected = selected
+  ))
+}
+
+# --- Toaster (server-push, message-handler pattern) -------------------------
+# A toast host has no input and no trigger — the server PUSHES toasts to it.
+# Mount shadcn_toaster() once in the UI, then call shadcn_toast() from the
+# server to display a notification.
+
+#' A toast host. Mount once; the server pushes toasts to it via shadcn_toast().
+#' @param message_type The send_message type this host listens for.
+#' @param position Corner to show toasts in (default "bottom-right").
+shadcn_toaster <- function(message_type = "toast", position = "bottom-right") {
+  node("shadcn:Toaster", props = list(message_type = message_type, position = position))
+}
+
+#' Push a toast to a shadcn_toaster() host from the server.
+#' @param session The Shiny session.
+#' @param message The toast's main text.
+#' @param description Optional secondary line.
+#' @param type One of "default", "success", "info", "warning", "error", "loading".
+#' @param duration Milliseconds to show the toast (sonner default if NULL).
+#' @param message_type Must match the host's message_type.
+shadcn_toast <- function(session, message, description = NULL, type = "default",
+                         duration = NULL, message_type = "toast") {
+  send_message(session, message_type, list(
+    message     = message,
+    description = description,
+    type        = type,
+    duration    = duration
   ))
 }

@@ -55,6 +55,25 @@ def button(
     )
 
 
+def calendar(
+    input_id: str,
+    selected: str | None = None,
+) -> shinyreact.Node:
+    """A single-date picker. Server reads ``input.<input_id>()`` as an ISO date string.
+
+    The value crosses the wire as ``"YYYY-MM-DD"`` (or ``None``). Parse it with
+    ``datetime.date.fromisoformat(input.<input_id>())``.
+
+    Args:
+        input_id: Shiny input id.
+        selected: Initial date as an ISO string ``"YYYY-MM-DD"``.
+    """
+    return shinyreact.Node(
+        type="shadcn:Calendar",
+        props={"input_id": input_id, "selected": selected},
+    )
+
+
 def card(
     *children: object,
     title: str | None = None,
@@ -381,5 +400,112 @@ def dropdown_menu(
             "input_id": input_id,
             "trigger_label": trigger_label,
             "items": list(items),
+        },
+    )
+
+
+def table(
+    columns: list[str],
+    rows: list[list[object]],
+    caption: str | None = None,
+) -> shinyreact.Node:
+    """A display-only data table. No Shiny input.
+
+    Args:
+        columns: Header labels.
+        rows: Each row is a list of cell values (strings or numbers).
+        caption: Optional caption shown below the table.
+    """
+    return shinyreact.Node(
+        type="shadcn:Table",
+        props={"columns": columns, "rows": rows, "caption": caption},
+    )
+
+
+def tab(value: str, label: str) -> dict[str, str]:
+    """A single tab trigger spec for :func:`tabs`.
+
+    Args:
+        value: Identifier for this tab (matches the active-tab input value).
+        label: Text shown on the tab trigger.
+    """
+    return {"value": value, "label": label}
+
+
+def tabs(
+    input_id: str,
+    tabs: list[dict[str, str]],
+    *panels: object,
+    selected: str | None = None,
+) -> shinyreact.Node:
+    """A tabbed panel. ``tabs`` defines the triggers; ``panels`` are the content.
+
+    Panels are matched to tabs positionally — the Nth panel renders under the
+    Nth tab. Server reads ``input.<input_id>()`` as the active tab's value.
+
+    Args:
+        input_id: Shiny input id for the active tab (two-way).
+        tabs: Tab trigger specs, built with :func:`tab`.
+        *panels: One content node per tab, in the same order as ``tabs``.
+        selected: Initially active tab value (defaults to the first tab).
+    """
+    return shinyreact.Node(
+        type="shadcn:Tabs",
+        props={"input_id": input_id, "tabs": tabs, "selected": selected},
+        children=list(panels),
+    )
+
+
+# --- Toaster (server-push, message-handler pattern) -------------------------
+# A toast host has no input and no trigger — the server PUSHES toasts to it.
+# Mount `toaster()` once in the UI, then call `toast(session, ...)` from the
+# server to display a notification.
+
+
+def toaster(
+    message_type: str = "toast",
+    position: str = "bottom-right",
+) -> shinyreact.Node:
+    """A toast host. Mount once; the server pushes toasts to it via :func:`toast`.
+
+    Args:
+        message_type: The ``send_message`` type this host listens for. Must
+            match the ``message_type`` passed to :func:`toast`.
+        position: Corner to show toasts in, e.g. "bottom-right", "top-center".
+    """
+    return shinyreact.Node(
+        type="shadcn:Toaster",
+        props={"message_type": message_type, "position": position},
+    )
+
+
+async def toast(
+    session: object,
+    message: str,
+    description: str | None = None,
+    type: Literal[
+        "default", "success", "info", "warning", "error", "loading"
+    ] = "default",
+    duration: int | None = None,
+    message_type: str = "toast",
+) -> None:
+    """Push a toast to a :func:`toaster` host from the server.
+
+    Args:
+        session: The Shiny session.
+        message: The toast's main text.
+        description: Optional secondary line.
+        type: Visual style / icon.
+        duration: Milliseconds to show the toast (sonner default if omitted).
+        message_type: Must match the host's ``message_type``.
+    """
+    await shinyreact.send_message(
+        session,
+        message_type,
+        {
+            "message": message,
+            "description": description,
+            "type": type,
+            "duration": duration,
         },
     )

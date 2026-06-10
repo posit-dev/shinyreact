@@ -10,18 +10,25 @@ When the user says "add a `<ComponentName>` component to shadcn/mui/…" or "wra
 
 ## Step 0 — Identify component type
 
-Every component falls into one of six types. The type determines which hook to use and how to structure the bridge.
+Every component falls into one of seven types. The type determines which hook to use and how to structure the bridge.
 
 | Type | Hook | Contents via | Examples |
 |------|------|------|---------|
-| **Display** | none | props | Badge, Alert, Separator |
+| **Display** | none | props (incl. `columns`/`rows` for data) | Badge, Alert, Separator, Table |
 | **Container** | none | `children` | Card |
-| **Input** | `useShinyInput` | props | Input, Slider, Select, Checkbox, Switch |
+| **Input** | `useShinyInput` | props | Input, Slider, Select, Checkbox, Switch, Calendar |
 | **Action** | `useShinyInput` with event opts | props | Button |
 | **Overlay** | `useShinyInput` for open state + `children` | `children` | Dialog, Popover, Sheet |
 | **Collection** | mix of event + state inputs | `items` prop array | DropdownMenu, Menubar, ContextMenu |
+| **Hybrid** | `useShinyInput` | metadata prop array **+** positional `children` | Tabs, Accordion |
+| **Push** | `useShinyMessageHandler` (no input) | nothing — server pushes | Sonner/Toaster |
 
-**Container/Overlay vs Collection — how to choose:** if the contents are *free-form* (arbitrary nodes the author arranges), pass them as `children`. If the contents are a *structured list of known item kinds* (menu actions, tabs, options), pass them as a data-driven `items` prop array and provide item-builder helpers. A dropdown menu is a list of actions, not free-form content — so it's a Collection, not an Overlay.
+**How to choose when contents are nested:**
+- *Free-form* content (arbitrary nodes the author arranges) → `children`. Container/Overlay.
+- *Structured list of known item kinds* (menu actions, options) → data-driven `items` prop array + item-builder helpers. Collection.
+- *Structured triggers paired with free-form panels* (each tab has a label AND a content panel) → metadata prop array for the triggers + `children` for the panels, matched **positionally**. Hybrid. The bridge uses `React.Children.toArray(children)[i]` — it does not read child props.
+
+**Push is the inverse of Input.** It has no trigger and no input value — the server *pushes* to it via `send_message()`, and the bridge listens with `useShinyMessageHandler`. Mount it once; it renders nothing until a message arrives.
 
 ---
 
@@ -219,6 +226,49 @@ For the Python/R side, provide **item-builder helpers** that return plain dicts/
 (`menu_item`, `menu_label`, `menu_separator`, `menu_checkbox`, `menu_submenu`) rather
 than making authors hand-write dicts. `menu_submenu(label, *items)` nests recursively.
 
+**Hybrid — metadata prop array + positional children:**
+
+When each "item" pairs a structured trigger with a free-form content panel (tabs,
+accordion), pass the trigger metadata as a prop array and the panels as `children`,
+matched by index. The bridge never reads child props — only their order.
+
+```jsx
+function ShinyTabs({ element, children }) {
+  const { input_id, tabs = [], selected } = element.props;
+  const [value, setValue] = useShinyInput(input_id, selected ?? tabs[0]?.value ?? "");
+  const panels = React.Children.toArray(children);  // index-matched to tabs
+  return (
+    <Tabs value={value} onValueChange={setValue}>
+      <TabsList>{tabs.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}</TabsList>
+      {tabs.map((t, i) => <TabsContent key={t.value} value={t.value}>{panels[i]}</TabsContent>)}
+    </Tabs>
+  );
+}
+```
+Python: `tabs(input_id, [tab("a","A"), tab("b","B")], panel_a, panel_b)` — panels are
+`*children` after the `tabs` metadata list. R: `shadcn_tabs(id, tabs, panel_a, panel_b)`.
+
+**Push — server pushes, no input:**
+
+A Push component has no trigger and no input value. It renders a host once and
+listens for server messages. This is the inverse of Input.
+
+```jsx
+function ShinyToaster({ element }) {
+  const { message_type = "toast", position = "bottom-right" } = element.props;
+  useShinyMessageHandler(message_type, (data) => {
+    toast[data.type ?? "message"](data.message, { description: data.description });
+  });
+  return <Toaster position={position} />;  // renders nothing until a message arrives
+}
+```
+Pair with a server-side push helper, not a Node-state builder:
+```python
+async def toast(session, message, *, type="default", message_type="toast", **rest):
+    await shinyreact.send_message(session, message_type, {"message": message, "type": type, **rest})
+```
+The `message_type` is a contract: the host's listener id must match the push helper's.
+
 ---
 
 ## Step 3 — Register in index.jsx
@@ -324,5 +374,33 @@ Check `www/<framework>.js` was produced with no errors. Run one of the example a
 - `@/hooks` — import all hooks from here, never destructure `window.shinyreact` inline
 - `@/lib/utils` — the `cn()` helper for merging Tailwind classes
 - `@/lib/trigger-button` — shared styled button for overlay triggers (Dialog, Popover, Sheet)
+- `@/lib/button-base` — shadcn's `Button` + `buttonVariants` primitive (see cross-component note below)
 - Use `radix-ui` (unified package), not individual `@radix-ui/react-*` packages
 - Do not externalize `react-dom` — Radix portals need `createPortal` from `react-dom`, which is not in `react-dom/client`
+
+## Gotchas (learned from hard components)
+
+**Cross-component imports.** Some shadcn components import others, e.g. calendar has
+`import { Button, buttonVariants } from "@/registry/new-york-v4/ui/button"`. That import
+is the *raw shadcn primitive*, not your Shiny bridge (your `button.jsx` exports an action
+button wired to an input). Extract the shared shadcn primitive into `@/lib/<name>-base.jsx`
+and repoint the import there. `button-base.jsx` already exists for this reason; the button
+bridge itself delegates to it.
+
+**class-variance-authority.** shadcn ships `cva` for variant styling (button, tabs, badge).
+This project has no cva dependency — inline the variants as a plain object and select with
+`variantClasses[variant] ?? variantClasses.default`, or a small `buttonVariants()`-style
+function. See `button-base.jsx` and `tabs.jsx`.
+
+**Dates / typed inputs.** Send dates as ISO strings (`"YYYY-MM-DD"`), not `Date` objects
+(not JSON-serializable) and not via the `shiny.datetime` handler (requires server-side
+registration you don't control). Parse with `date.fromisoformat()` (Python) / `as.Date()` (R).
+See `calendar.jsx`.
+
+**npm-backed components.** Some components need real npm packages (`sonner`,
+`react-day-picker`). Install them as `dependencies`; they get bundled into the IIFE (not
+externalized) — only `react` and `react-dom/client` are externalized. Watch bundle size:
+react-day-picker alone roughly doubled the gzip size.
+
+**Strip `next-themes`.** Components like sonner read the theme from `next-themes`. This
+project has no theme provider — replace the `useTheme()` call with a plain `theme` prop.
