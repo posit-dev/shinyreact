@@ -133,6 +133,8 @@ the test passes without any shinyreact change.
 - If it **passes** natively → Layer B is YAGNI; do not build it.
 - If it **fails** natively → build Layer B (below) and flip the test to passing.
 
+**Outcome: passes natively; Layer B not built.**
+
 ### Layer B — flush-diff dependency push (conditional, only if the dynamic test fails natively)
 
 There is no public "output added" event (`_outputs` is a plain dict; no observer).
