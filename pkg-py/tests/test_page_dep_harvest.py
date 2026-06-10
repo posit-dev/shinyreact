@@ -7,7 +7,6 @@ from htmltools import HTMLDependency, TagList, div
 from shiny.express._stub_session import ExpressStubSession
 from shiny.render.renderer import Renderer
 from shiny.session import session_context
-
 from shinyreact._page import _build_react_page_fn
 
 
