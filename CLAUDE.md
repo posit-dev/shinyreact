@@ -26,12 +26,11 @@ js/                         # TypeScript/React Vite IIFE bundle
   src/                      # index.ts, registry.ts, renderer.tsx, shiny.d.ts, shinyreact.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
-pkg-py/                     # Python packages (three shipped from one wheel)
+pkg-py/                     # Python packages (two shipped from one wheel)
   src/shinyreact/           # Core JSON-spec / React-bridge package
     www/                    # Bundled JS
   src/shinyui/              # Class-per-component UI hierarchy prototype (session-aware)
-  src/shinyuiclassonly/     # Class-per-component UI hierarchy, structure only (no session)
-  tests/                    # pytest tests for all three packages
+  tests/                    # pytest tests for both packages
 pkg-r/                      # R package — mirrors the Python API in R
   R/                         # node.R, output.R, render.R, page.R, wire.R, message.R, bookmark.R, dep.R
   inst/lib/shiny/            # Bundled JS (R counterpart of pkg-py www/)
@@ -45,15 +44,11 @@ pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
 ```
 
-## Sibling packages: shinyui and shinyuiclassonly
+## Sibling package: shinyui
 
-Two prototype packages explore a class-per-component UI hierarchy as a possible direction for `py-shiny`'s `ui.*` surface. They share the same component vocabulary (`card`, `accordion`, `input_slider`, …) but differ in what server-side machinery comes attached.
+`shinyui` is a prototype package exploring a class-per-component UI hierarchy as a possible direction for `py-shiny`'s `ui.*` surface, with the component vocabulary (`card`, `accordion`, `input_slider`, …) built as classes.
 
 - **`shinyui`** — the full prototype. Every component is a `Tagifiable` class that *also* captures the active session at construction, registers itself with a per-session id→instance map, exposes typed reactive accessors (`slider.value()`, `card.value_full_screen()`, `acc.open_panels()`), supports server-driven `update(...)`, owns its input handler and bookmark serializer, and ships a `render_plot` with derived-input accessors (`value_click`, `value_brush`, …). This is what the umbrella design (`docs/superpowers/specs/2026-05-06-unified-ui-component-class-design.md`) proposes for upstream `py-shiny`. Examples 14 and 15 demonstrate it in Core (positional) and Express (`with`-block) form respectively.
-
-- **`shinyuiclassonly`** — the *small delta* the team can compare against today's `ui.*`. Same component classes and same hierarchy (`UiComponent`, `UiInput`, `UiOutput`, `UiLayout`, `AllowsChildren`, parent-tag context stack), but with **none** of the session-bound machinery: no `_session` capture, no `.value()` / `.update()` / `.value_click()` accessors, no input-handler or bookmark registration, no per-session instance registry, no `reactive_calc_method`. Components are pure `Tagifiable` objects. Server code reads inputs via `input.<id>()` and pushes updates via `shiny.ui.update_*` — exactly like today. Examples 16 and 17 mirror 14 and 15 line-for-line so the diff is small enough to read in one sitting.
-
-Use **`shinyuiclassonly`** when motivating "what does the class hierarchy give us, structurally, before we add server-side ergonomics?" — it's the cheapest possible step from `ui.card(...)` → `card(...)`. Use **`shinyui`** when motivating the full vision (typed accessors, `update()` on the instance, auto-placement of renderers).
 
 ## Commands
 

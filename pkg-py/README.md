@@ -135,4 +135,4 @@ Shared `React` and `ReactDOM` instances are available at `window.shinyreact.Reac
 
 ## Also in this wheel
 
-The `shinyreact` wheel also ships two experimental prototypes — `shinyui` and `shinyuiclassonly` — that explore a class-per-component UI hierarchy. They are not part of the supported API; see the [repo](https://github.com/posit-dev/shinyreact) for details.
+The `shinyreact` wheel also ships an experimental prototype — `shinyui` — that explores a class-per-component UI hierarchy. It is not part of the supported API; see the [repo](https://github.com/posit-dev/shinyreact) for details.
