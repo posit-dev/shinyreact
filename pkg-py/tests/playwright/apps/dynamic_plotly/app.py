@@ -1,5 +1,5 @@
 import plotly.express as px
-from shiny.express import input, render  # noqa: F401  # marks Express
+from shiny.express import input, render, ui  # noqa: F401  # marks Express
 from shinyreact import set_react_page
 from shinywidgets import output_widget, render_plotly
 
@@ -15,10 +15,11 @@ def holder():
     return output_widget("scatter")
 
 
-# `scatter` is top-level, so set_react_page() harvests its ipywidget
-# dependency into <head> at startup. The dynamic part under test is that the
-# chart actually mounts inside `holder` only once the checkbox reveals the
-# output_widget — Shiny binds it and renders the figure on demand.
-@render_plotly
-def scatter():
-    return px.scatter(x=[1, 2, 3], y=[1, 4, 9])
+# `with ui.hold()` suppresses the auto-display of `scatter`'s own placeholder —
+# the chart appears only via the `output_widget("scatter")` that `holder`
+# reveals on demand, never as a stray top-level output.
+with ui.hold():
+
+    @render_plotly
+    def scatter():
+        return px.scatter(x=[1, 2, 3], y=[1, 4, 9])
