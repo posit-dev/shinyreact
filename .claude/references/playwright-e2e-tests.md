@@ -6,7 +6,9 @@ Tests live at `pkg-py/tests/playwright/`. They use `pytest-playwright` + py-shin
 
 ## 1. Spartan fixture app under `pkg-py/tests/playwright/apps/<name>/`
 
-Each fixture is the smallest Shiny app that exercises one assertion target. Three files:
+Each fixture is the smallest Shiny app that exercises one assertion target. Three files.
+
+**Never point `create_app_fixture` at a file under `examples/`.** Examples evolve as docs and have a different lifecycle than tests — coupling means example edits trip tests and the fixture inherits styling/structure the assertion doesn't need. If you're starting from an example, copy it into `pkg-py/tests/playwright/apps/<name>/` and strip layout wrappers, decorative components, unrelated reactives, CSS, and any namespace/widget instances not required by the assertion. Two of something is usually enough to prove isolation; three or more is overkill in a test.
 
 ### `app.py`
 
