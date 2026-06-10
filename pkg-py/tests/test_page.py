@@ -1,3 +1,4 @@
+import pytest
 from htmltools import HTMLDependency, Tag
 from shinyreact._page import page_bare, page_react
 
@@ -25,10 +26,20 @@ def test_page_react_returns_tag():
     assert isinstance(result, Tag)
 
 
-def test_page_react_has_root_div():
+def test_page_react_emits_no_root_div():
     result = page_react()
     rendered = str(result.tagify())
-    assert 'id="root"' in rendered
+    assert 'id="root"' not in rendered
+
+
+def test_page_react_renders_output_placeholder():
+    """The app.py pattern works without a #root div."""
+    from shinyreact import output_react
+
+    result = page_react(output_react("hello"))
+    rendered = str(result.tagify())
+    assert "shinyreact-output" in rendered
+    assert 'id="hello"' in rendered
 
 
 def test_page_react_includes_shinyreact_dep():
@@ -75,3 +86,49 @@ def test_page_react_dep_falls_back_to_cwd_without_file(tmp_path, monkeypatch):
     assert isinstance(dep, HTMLDependency)
     # Source resolved to CWD, so dep_name is the CWD's basename.
     assert dep.name == tmp_path.name
+
+
+def test_page_react_html_attaches_dep(tmp_path):
+    from shinyreact import page_react_html
+
+    index = tmp_path / "index.html"
+    index.write_text('<div id="root"></div>')
+    ui = page_react_html(index)
+    deps = ui.get_dependencies()
+    dep_names = [d.name for d in deps]
+    assert "shinyreact" in dep_names
+
+
+def test_page_react_html_includes_file_html(tmp_path):
+    from shinyreact import page_react_html
+
+    index = tmp_path / "index.html"
+    index.write_text('<div id="root"></div>')
+    ui = page_react_html(index)
+    rendered = str(ui.tagify())
+    assert 'id="root"' in rendered  # the user's own mount, from their file
+
+
+def test_page_react_html_missing_file_raises(tmp_path):
+    from shinyreact import page_react_html
+
+    with pytest.raises(FileNotFoundError, match="not found"):
+        page_react_html(tmp_path / "nope.html")
+
+
+def test_page_react_html_falls_back_to_cwd_without_file(tmp_path, monkeypatch):
+    """page_react_html() falls back to CWD when the caller has no __file__."""
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "index.html").write_text('<div id="root"></div>')
+    monkeypatch.chdir(tmp_path)
+
+    captured: dict[str, object] = {}
+    src = (
+        "from shinyreact import page_react_html\n"
+        "captured['ui'] = page_react_html()\n"  # relative default resolves to CWD
+    )
+    exec(compile(src, "<test>", "exec"), {"captured": captured})
+
+    rendered = str(captured["ui"].tagify())
+    assert 'id="root"' in rendered

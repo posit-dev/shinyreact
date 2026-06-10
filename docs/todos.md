@@ -44,7 +44,7 @@ The `renderMarkdown()` function in `examples/app-py/07-chat/chat.js` escapes cod
 
 ## Full React page support
 
-`page_react()` and `page_bare()` are now exported. `page_react()` creates a full-page React app with a `#root` div and the shinyreact HTMLDependency. Remaining work:
+`page_react()` and `page_bare()` are now exported. `page_react()` creates full-page React app chrome with the shinyreact HTMLDependency. Remaining work:
 - End-to-end example app demonstrating the full React `ui.tsx` pattern.
 - Ensure all hooks and the output binding gracefully handle late Shiny arrival.
 

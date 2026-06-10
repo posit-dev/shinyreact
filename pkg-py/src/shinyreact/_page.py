@@ -51,8 +51,8 @@ def page_react(
 ) -> Tag:
     """Create a full-page React app served by Shiny.
 
-    Creates an HTML page with the shinyreact dependency and a ``#root`` div for
-    mounting a React app. Shiny runs in the background for reactivity.
+    Creates an HTML page with the shinyreact dependency. Shiny runs in the
+    background for reactivity.
 
     Pass :class:`~htmltools.HTMLDependency` objects (e.g. from
     :func:`page_react_dep`) as positional arguments to include app JS/CSS.
@@ -65,7 +65,6 @@ def page_react(
     """
     return page_bare(
         _dep_page(),
-        tags.div(id="root"),
         *args,
         title=title,
         lang=lang,
@@ -206,6 +205,39 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
         caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
         index_path = caller_dir / path
     page_opts(page_fn=_build_react_page_fn(index_path))
+
+
+def page_react_html(path: str | Path = "www/index.html") -> TagList:
+    """Serve a static React ``index.html`` (the ui.tsx pattern, Core API).
+
+    The Core-mode counterpart to :func:`set_react_page`. Reads an HTML file,
+    attaches the shinyreact page-level dependency, and returns UI suitable for
+    use as the ``ui`` argument of :class:`shiny.App`. Use this when you write a
+    Core-style app (``App(app_ui, server)``); use :func:`set_react_page` for
+    Shiny Express apps.
+
+    Unlike :func:`set_react_page`, this does not auto-discover dependencies
+    from traditional Shiny renderers — it only attaches the shinyreact bundle.
+
+    Args:
+        path: Path to the HTML file. Absolute paths are used verbatim;
+            relative paths resolve against the caller module's directory, or
+            against :func:`pathlib.Path.cwd` when there is no caller
+            ``__file__``. Defaults to ``"www/index.html"``.
+    """
+    path = Path(path)
+    if path.is_absolute():
+        index_path = path
+    else:
+        caller_file = sys._getframe(1).f_globals.get("__file__")
+        # If the caller has no __file__ (REPL or dynamically exec'd code),
+        # fall back to the current working directory.
+        caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
+        index_path = caller_dir / path
+    if not index_path.exists():
+        raise FileNotFoundError(f"HTML file not found: {index_path}")
+    index_html = index_path.read_text()
+    return TagList(_dep_page(), HTML(index_html))
 
 
 def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:

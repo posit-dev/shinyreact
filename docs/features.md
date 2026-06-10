@@ -13,7 +13,8 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Nod
 | Feature | Status | Notes |
 |---------|--------|-------|
 | `shinyreact.output_react()` | Working | Creates output div with HTMLDependency; accepts `extra_deps`. Placeholder that `render_react` renders into |
-| `shinyreact.page_react()` | Working | Full-page React app with `#root` + the shinyreact HTMLDependency |
+| `shinyreact.page_react()` | Working | Full-page React app chrome + the shinyreact HTMLDependency (app.py pattern) |
+| `shinyreact.page_react_html()` | Working | Core-mode helper serving a static `www/index.html` (ui.tsx pattern); Core counterpart to `set_react_page()` |
 | `shinyreact.page_bare()` | Working | Bare HTML page wrapper |
 | `@shinyreact.render_react` | Working | Walks `Node`/htmltools content into the JSON wire tree, rendered into a matching `output_react()` placeholder. (Raw JSON data for `useShinyOutputValue` uses `reactive_output`, in the `ui.tsx` section below) |
 | `shinyreact.Node` | Working | Recursive component tree; `.to_dict()` serializes to the JSON wire tree |
@@ -83,7 +84,7 @@ Vendored from `@posit/shiny-react`; bundled into `js/dist/shinyreact.js` (IIFE) 
 
 | Example | Status | Description |
 |---------|--------|-------------|
-| [01-hello](../examples/ui-tsx/01-hello/) | Working | Smallest `ui.tsx` app — Python server with reactive logic only, plus a static React client (no JSX, no bundler). Side-by-side comparison of client-only state vs. server-routed state to highlight websocket latency |
+| [01-hello](../examples/ui-tsx/01-hello/) | Working | Smallest `ui.tsx` app — Python server with reactive logic only, plus a static React client (no JSX, no bundler). Ships both an Express entry (`app.py`, `set_react_page()`) and a Core entry (`app-core.py`, `page_react_html()`) for the same client. Side-by-side comparison of client-only state vs. server-routed state to highlight websocket latency |
 | [02-columns](../examples/ui-tsx/02-columns/) | Working | Drag-between-columns demo on the `ui.tsx` pattern, no build step. Server owns data only (one `move_item` event input), client owns UI. ~20 lines of server logic vs. ~80 in the `render.ui` version |
 | [03-columns-shadcn](../examples/ui-tsx/03-columns-shadcn/) | Working | Same drag-between-columns demo as 02, rendered with real shadcn/ui `Card` + `Button` and lucide-react icons. Vite lib-mode IIFE build with React externalized to `window.shinyreact`. Identical Python server to 02 |
 | [04-shadcn](../examples/ui-tsx/04-shadcn/) | Working | shadcn/ui + Tailwind v4. Mirrors `wch/shiny-react examples/5-shadcn` and adds a side-by-side matplotlib (`@render.plot` + `ImageOutput`) vs. Plotly (data-only via `@reactive_output`, client renders) comparison; Plotly hover/click/select events round-trip through `useShinyInput` |
@@ -112,7 +113,7 @@ UI is defined as R objects (`node()`, htmltools tags, `HTML()`, strings/numbers)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| `page_react(...)` | Working | Full-page React app with `#root` + page-level dep (bundle + bookmark restore script) |
+| `page_react(...)` | Working | Full-page React app chrome + page-level dep (bundle + bookmark restore script) |
 | `page_bare(...)` | Working | Minimal HTML scaffold without `#root` |
 | `output_react(id, extra_deps = list())` | Working | Output div with `shinyreact-output` class and per-output dep; `extra_deps` merged via `attachDependencies()` |
 | `render_react(expr)` | Working | Shiny renderer (app.R); walks `node()` trees (or htmltools content) into the JSON wire tree via an internal S3 walker (`as_wire()`), rendered into a matching `output_react()` placeholder. `NULL` passes through. (For raw data read by `useShinyOutputValue()`, use `reactive_output()`.) |
