@@ -29,7 +29,7 @@ Five files. No `node_modules`, no Vite, no build script.
 
 ## Bridge primitives used
 
-- `from shinyreact import reactive_output, set_react_page` (server)
+- `from shinyreact import reactive_output, set_react_page` (Express server, `app.py`) / `page_react_html` (Core server, `app-core.py`)
 - `window.shinyreact.useShinyInput(id, default, options?)` for the name field and click counter
 - `window.shinyreact.useShinyOutputValue(id, default)` for the server-computed title and count
 - `window.shinyreact.useShinyInitialized()` to suppress the placeholder UI during connection setup
