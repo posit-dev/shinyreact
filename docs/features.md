@@ -35,6 +35,7 @@ UI is defined as Python (or R) objects in the app file via `page_react()` / `Nod
 | [08-modules](../examples/app-py/08-modules/) | Working | Three counter widgets using ShinyModuleProvider namespacing |
 | [09-blended](../examples/app-py/09-blended/) | Working | Tabbed sidebar layout, matplotlib plot, data table, settings panel |
 | [10-columns](../examples/app-py/10-columns/) | Working | Drag-between-columns demo; `render.ui`-driven approach |
+| [12-express-demo](../examples/app-py/12-express-demo/) | Working | Shiny **Express** mode: traditional Express UI (`ui.input_text`, `ui.input_slider`, `ui.layout_sidebar`) mixed with one custom `shinyreact` output rendering a Card of Badges + Button via a `render_react` subclass. Older "smallest custom component" demo |
 | [13-bookmarking](../examples/app-py/13-bookmarking/) | Working | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via a head `<script>` emitted by `page_react()` |
 | [14-nesting](../examples/app-py/14-nesting/) | Working | htmltools `tags.*` and `Node`s interleaved at arbitrary depth; static React component in page chrome + reactive `Node` with mixed htmltools/React children |
 
@@ -56,7 +57,8 @@ UI is defined in a client-side codebase (`www/index.html` + JS, or built from `s
 |---------|--------|-------|
 | `set_react_page(path="www/index.html")` | Working | Configures a Shiny Express app to serve a static `index.html`; auto-discovers HTMLDependencies from traditional Shiny renderers and injects the shinyreact dep |
 | `@reactive_output` | Working | Renderer for `ui.tsx` outputs — server returns any `Jsonifiable` value, the client picks it up via `useShinyOutputValue()` |
-| `send_message(session, id, data)` | Working | Server-to-client custom message helper for `ui.tsx` apps |
+| `page_react_dep(js_file="main.js", css_file="main.css")` | Working | Builds an `HTMLDependency` for a React app's JS/CSS entry points; paths resolve against the caller's module directory and the JS mtime is the version (cache-busting). Used to attach a custom/no-build bundle to `page_react()` |
+| `send_message(session, type, data)` | Working | Server-to-client custom message helper for `ui.tsx` apps |
 
 ### JS bridge hooks (`js/src/shiny-react/`)
 
