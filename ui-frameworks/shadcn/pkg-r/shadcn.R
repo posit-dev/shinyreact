@@ -158,3 +158,61 @@ shadcn_popover <- function(input_id, ..., trigger_label = "Open", align = "cente
     align         = align
   ))
 }
+
+# --- Dropdown menu (data-driven compound component) -------------------------
+# A menu is a structured list of actions, so its contents are passed as a data
+# array (`items`), not as nested nodes. Use the menu_* builders below — they
+# return plain lists that serialize straight to the JS bridge.
+
+#' A clickable menu action. Clicking it fires the menu's input.
+#' @param value Identifier reported to the server when clicked.
+#' @param label Text shown in the menu.
+#' @param disabled Greys the item out and blocks clicks (default FALSE).
+#' @param variant "default" or "destructive" (red, for delete actions).
+shadcn_menu_item <- function(value, label, disabled = FALSE, variant = "default") {
+  list(type = "item", value = value, label = label, disabled = disabled, variant = variant)
+}
+
+#' A non-interactive section header inside a menu.
+#' @param label Header text.
+shadcn_menu_label <- function(label) {
+  list(type = "label", label = label)
+}
+
+#' A divider line between menu sections.
+shadcn_menu_separator <- function() {
+  list(type = "separator")
+}
+
+#' A toggleable menu item with its own boolean Shiny input.
+#' Server reads input$<input_id> as a boolean.
+#' @param input_id Shiny input id for this checkbox's state.
+#' @param label Text shown beside the checkmark.
+#' @param checked Initial checked state (default FALSE).
+shadcn_menu_checkbox <- function(input_id, label, checked = FALSE) {
+  list(type = "checkbox", input_id = input_id, label = label, checked = checked)
+}
+
+#' A nested submenu. \code{...} are more menu_* builders (recursive).
+#' @param label Text on the submenu trigger row.
+#' @param ... The submenu's contents.
+shadcn_menu_submenu <- function(label, ...) {
+  list(type = "submenu", label = label, items = list(...))
+}
+
+#' A dropdown menu driven by an items data array.
+#'
+#' Clicking a menu_item sets input$<input_id> to a list(value=, nonce=) — the
+#' nonce changes on every click so repeated clicks of the same item still
+#' register. Pair with observeEvent(input$<input_id>, ignoreInit = TRUE).
+#'
+#' @param input_id Shiny input id for click events.
+#' @param ... Menu contents, built with the shadcn_menu_* helpers.
+#' @param trigger_label Label on the button that opens the menu (default "Open").
+shadcn_dropdown_menu <- function(input_id, ..., trigger_label = "Open") {
+  node("shadcn:DropdownMenu", props = list(
+    input_id      = input_id,
+    trigger_label = trigger_label,
+    items         = list(...)
+  ))
+}

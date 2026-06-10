@@ -10,15 +10,18 @@ When the user says "add a `<ComponentName>` component to shadcn/mui/…" or "wra
 
 ## Step 0 — Identify component type
 
-Every component falls into one of five types. The type determines which hook to use and how to structure the bridge.
+Every component falls into one of six types. The type determines which hook to use and how to structure the bridge.
 
-| Type | Hook | Examples |
-|------|------|---------|
-| **Display** | none | Badge, Alert, Separator |
-| **Container** | none | Card (passes `children`) |
-| **Input** | `useShinyInput` | Input, Slider, Select, Checkbox, Switch |
-| **Action** | `useShinyInput` with event opts | Button |
-| **Overlay** | `useShinyInput` for open state + `children` | Dialog, Popover, Sheet |
+| Type | Hook | Contents via | Examples |
+|------|------|------|---------|
+| **Display** | none | props | Badge, Alert, Separator |
+| **Container** | none | `children` | Card |
+| **Input** | `useShinyInput` | props | Input, Slider, Select, Checkbox, Switch |
+| **Action** | `useShinyInput` with event opts | props | Button |
+| **Overlay** | `useShinyInput` for open state + `children` | `children` | Dialog, Popover, Sheet |
+| **Collection** | mix of event + state inputs | `items` prop array | DropdownMenu, Menubar, ContextMenu |
+
+**Container/Overlay vs Collection — how to choose:** if the contents are *free-form* (arbitrary nodes the author arranges), pass them as `children`. If the contents are a *structured list of known item kinds* (menu actions, tabs, options), pass them as a data-driven `items` prop array and provide item-builder helpers. A dropdown menu is a list of actions, not free-form content — so it's a Collection, not an Overlay.
 
 ---
 
@@ -144,6 +147,77 @@ Server reads `input.<input_id>()` as `True`/`False` while the overlay is open.
 const [value, setValue] = useShinyInput(input_id, default_value);
 <Slider value={[value]} onValueChange={([v]) => setValue(v)} />
 ```
+
+**Collection — data-driven `items` array, mixed event + state inputs:**
+
+Compound components with many subcomponents (DropdownMenu exports 15) are bridged
+as a *single* component fed by an `items` data array — not by registering every
+subcomponent. Keep all shadcn subcomponents as verbatim source; the bridge uses
+only the subset it needs and walks `items` recursively.
+
+```jsx
+function MenuItems({ items, onSelect }) {
+  return items.map((item, i) => {
+    switch (item.type) {
+      case "label":     return <DropdownMenuLabel key={i}>{item.label}</DropdownMenuLabel>;
+      case "separator": return <DropdownMenuSeparator key={i} />;
+      case "checkbox":  return <CheckboxMenuItem key={i} item={item} />;
+      case "submenu":
+        return (
+          <DropdownMenuSub key={i}>
+            <DropdownMenuSubTrigger>{item.label}</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <MenuItems items={item.items ?? []} onSelect={onSelect} />  {/* recursion */}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        );
+      default:          // "item"
+        return <DropdownMenuItem key={i} onSelect={() => onSelect(item.value)}>{item.label}</DropdownMenuItem>;
+    }
+  });
+}
+
+function ShinyDropdownMenu({ element }) {
+  const { input_id, trigger_label = "Open", items = [] } = element.props;
+  const setSelected = useSetShinyInput(input_id, null, { priority: "event" });
+  // Event nonce: a plain string would be deduped by Shiny, so clicking the same
+  // item twice would not re-fire. The nonce forces a distinct value each click.
+  const onSelect = (value) => setSelected({ value, nonce: Date.now() });
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild><TriggerButton>{trigger_label}</TriggerButton></DropdownMenuTrigger>
+      <DropdownMenuContent><MenuItems items={items} onSelect={onSelect} /></DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+```
+
+Two input kinds coexist in one Collection:
+- **plain items are events** → reported through the component's own `input_id` (with nonce)
+- **stateful items (checkbox/radio) own separate inputs** → each gets its own `input_id` and `useShinyInput`
+
+```jsx
+function CheckboxMenuItem({ item }) {
+  const [checked, setChecked] = useShinyInput(item.input_id, item.checked ?? false);
+  return (
+    <DropdownMenuCheckboxItem
+      checked={!!checked}
+      onCheckedChange={setChecked}
+      onSelect={(e) => e.preventDefault()}  // keep the menu open while toggling
+    >
+      {item.label}
+    </DropdownMenuCheckboxItem>
+  );
+}
+```
+
+Server reads the event input as a dict: `input.<input_id>()["value"]`, paired with
+`@reactive.event(input.<input_id>, ignore_init=True)`. Stateful items are read
+independently: `input.<checkbox_input_id>()`.
+
+For the Python/R side, provide **item-builder helpers** that return plain dicts/lists
+(`menu_item`, `menu_label`, `menu_separator`, `menu_checkbox`, `menu_submenu`) rather
+than making authors hand-write dicts. `menu_submenu(label, *items)` nests recursively.
 
 ---
 

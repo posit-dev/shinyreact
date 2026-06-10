@@ -284,3 +284,102 @@ def popover(
         },
         children=list(children),
     )
+
+
+# --- Dropdown menu (data-driven compound component) -------------------------
+# A menu is a structured list of actions, so its contents are passed as a data
+# array (`items`), not as nested Nodes. Use the menu_* builders below to make
+# each item — they return plain dicts that serialize straight to the JS bridge.
+
+
+def menu_item(
+    value: str,
+    label: str,
+    disabled: bool = False,
+    variant: Literal["default", "destructive"] = "default",
+) -> dict[str, object]:
+    """A clickable menu action. Clicking it fires the menu's ``input_id``.
+
+    Args:
+        value: Identifier reported to the server when this item is clicked.
+        label: Text shown in the menu.
+        disabled: Greys the item out and blocks clicks.
+        variant: "default" or "destructive" (red, for delete-style actions).
+    """
+    return {
+        "type": "item",
+        "value": value,
+        "label": label,
+        "disabled": disabled,
+        "variant": variant,
+    }
+
+
+def menu_label(label: str) -> dict[str, object]:
+    """A non-interactive section header inside a menu."""
+    return {"type": "label", "label": label}
+
+
+def menu_separator() -> dict[str, object]:
+    """A divider line between menu sections."""
+    return {"type": "separator"}
+
+
+def menu_checkbox(
+    input_id: str,
+    label: str,
+    checked: bool = False,
+) -> dict[str, object]:
+    """A toggleable menu item with its own boolean Shiny input.
+
+    Unlike :func:`menu_item` (an event), a checkbox holds persistent state.
+    Server reads ``input.<input_id>()`` as a boolean.
+
+    Args:
+        input_id: Shiny input id for this checkbox's state.
+        label: Text shown beside the checkmark.
+        checked: Initial checked state.
+    """
+    return {
+        "type": "checkbox",
+        "input_id": input_id,
+        "label": label,
+        "checked": checked,
+    }
+
+
+def menu_submenu(label: str, *items: dict[str, object]) -> dict[str, object]:
+    """A nested submenu. ``items`` are more menu_* builders (recursive).
+
+    Args:
+        label: Text on the submenu trigger row.
+        *items: The submenu's contents.
+    """
+    return {"type": "submenu", "label": label, "items": list(items)}
+
+
+def dropdown_menu(
+    input_id: str,
+    *items: dict[str, object],
+    trigger_label: str = "Open",
+) -> shinyreact.Node:
+    """A dropdown menu driven by an ``items`` data array.
+
+    Clicking a :func:`menu_item` sets ``input.<input_id>()`` to a dict
+    ``{"value": ..., "nonce": ...}`` — the nonce changes on every click so that
+    clicking the same item twice still registers as a new event. Pair with
+    ``@reactive.event(input.<input_id>, ignore_init=True)`` on the server.
+
+    Args:
+        input_id: Shiny input id for click events.
+        *items: Menu contents, built with the ``menu_*`` helpers.
+        trigger_label: Label on the button that opens the menu.
+    """
+    return shinyreact.Node(
+        type="shadcn:DropdownMenu",
+        props={
+            "input_id": input_id,
+            "trigger_label": trigger_label,
+            "items": list(items),
+        },
+    )

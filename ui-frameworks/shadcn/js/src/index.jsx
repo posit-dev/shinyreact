@@ -6,6 +6,7 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Checkbox } from "@/components/checkbox";
 import { Dialog } from "@/components/dialog";
+import { DropdownMenu } from "@/components/dropdown-menu";
 import { Input } from "@/components/input";
 import { Popover } from "@/components/popover";
 import { Select } from "@/components/select";
@@ -20,6 +21,7 @@ window.shinyreact.registerComponents(null, {
   "shadcn:Card": Card,
   "shadcn:Checkbox": Checkbox,
   "shadcn:Dialog": Dialog,
+  "shadcn:DropdownMenu": DropdownMenu,
   "shadcn:Input": Input,
   "shadcn:Popover": Popover,
   "shadcn:Select": Select,
