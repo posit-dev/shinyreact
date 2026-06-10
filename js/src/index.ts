@@ -1,6 +1,6 @@
 import React from "react";
 import * as ReactDOM from "react-dom/client";
-import type { ComponentRegistry, Spec } from "./spec";
+import type { ComponentRegistry, Spec } from "./types";
 import { registerComponents } from "./registry";
 import { ShinyreactRenderer } from "./renderer";
 import { ShinyOutput } from "./shiny-output";
