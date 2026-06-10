@@ -148,6 +148,14 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
     ``@render.data_frame``) are discovered automatically and injected into
     the page head.
 
+    Renderers defined inside ``@module.server`` are discovered too: every
+    renderer mounted while the app body runs is found via the session's
+    registered outputs, so module components load their JS/CSS with no extra
+    configuration. Renderers mounted *dynamically after page load* (e.g. a
+    module server called inside a ``@reactive.effect``) are not in the initial
+    page; when their UI is delivered through Shiny's dynamic-UI path
+    (``@render.ui``), Shiny injects their dependencies on render.
+
     .. note::
 
        Edits to ``index.html`` require restarting the Shiny server — see the
