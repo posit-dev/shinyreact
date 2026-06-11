@@ -883,6 +883,142 @@ def aspect_ratio(
     )
 
 
+def carousel(
+    *children: object,
+    input_id: str | None = None,
+    orientation: Literal["horizontal", "vertical"] = "horizontal",
+    loop: bool = False,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A slide carousel. Children = the slide content (one child per slide).
+
+    Args:
+        *children: Content nodes — each becomes one slide.
+        input_id: Optional Shiny input id; set to 0-based current slide index.
+        orientation: "horizontal" or "vertical".
+        loop: Whether the carousel loops around at the ends.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Carousel",
+        props={
+            "input_id": input_id,
+            "orientation": orientation,
+            "loop": loop,
+            "className": class_,
+        },
+        children=list(children),
+    )
+
+
+def input_otp(
+    input_id: str,
+    *,
+    length: int = 6,
+    separator: bool = False,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A one-time password input. Server reads ``input.<input_id>()`` as a string.
+
+    Args:
+        input_id: Shiny input id.
+        length: Number of OTP slots.
+        separator: Show a dash separator between the two halves.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:InputOtp",
+        props={
+            "input_id": input_id,
+            "length": length,
+            "separator": separator,
+            "className": class_,
+        },
+    )
+
+
+def resizable(
+    *children: object,
+    orientation: Literal["horizontal", "vertical"] = "horizontal",
+    panels: list[dict[str, object]] | None = None,
+    handle: bool = True,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A resizable panel group. Children are placed in panels separated by drag handles.
+
+    Args:
+        *children: Content nodes — each goes into one resizable panel.
+        orientation: "horizontal" (side-by-side) or "vertical" (stacked).
+        panels: Optional list of ``{"default_size": %, "min_size": %}`` per panel.
+        handle: Show the grip icon on the resize handle.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Resizable",
+        props={
+            "orientation": orientation,
+            "panels": panels or [],
+            "handle": handle,
+            "className": class_,
+        },
+        children=list(children),
+    )
+
+
+def chart_series(
+    key: str,
+    *,
+    label: str | None = None,
+    color: str | None = None,
+) -> dict[str, object]:
+    """A data series spec for :func:`chart`.
+
+    Args:
+        key: Column name in the data dicts.
+        label: Display name shown in legend/tooltip.
+        color: CSS color (e.g. ``"#4f46e5"`` or ``"hsl(221 83% 53%)``").
+    """
+    return {"key": key, "label": label, "color": color}
+
+
+def chart(
+    data: list[dict[str, object]],
+    series: list[dict[str, object]],
+    *,
+    type: Literal["bar", "line", "area", "pie"] = "bar",
+    x_key: str = "name",
+    height: int = 300,
+    legend: bool = True,
+    grid: bool = True,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A recharts chart. Display-only — no Shiny input.
+
+    Args:
+        data: List of row dicts, e.g. ``[{"month": "Jan", "sales": 120}, ...]``.
+        series: Series specs built with :func:`chart_series`.
+        type: Chart type — "bar", "line", "area", or "pie".
+        x_key: Data key used as x-axis labels (or pie slice names).
+        height: Chart height in pixels.
+        legend: Show the legend.
+        grid: Show the cartesian grid (ignored for pie).
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Chart",
+        props={
+            "type": type,
+            "data": data,
+            "series": series,
+            "x_key": x_key,
+            "height": height,
+            "legend": legend,
+            "grid": grid,
+            "className": class_,
+        },
+    )
+
+
 def drawer(
     input_id: str,
     *children: object,

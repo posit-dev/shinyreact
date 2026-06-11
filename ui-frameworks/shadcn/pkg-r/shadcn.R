@@ -526,6 +526,86 @@ shadcn_collapsible <- function(input_id, ..., trigger_label = "Toggle", open = F
   ))
 }
 
+#' A slide carousel. Children = the slide content (one child per slide).
+#' @param ... Content nodes — each becomes one slide.
+#' @param input_id Optional Shiny input id; set to 0-based current slide index.
+#' @param orientation "horizontal" (default) or "vertical".
+#' @param loop Whether the carousel loops at the ends (default FALSE).
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_carousel <- function(..., input_id = NULL, orientation = "horizontal",
+                            loop = FALSE, class = NULL) {
+  node("shadcn:Carousel", ..., props = list(
+    input_id    = input_id,
+    orientation = orientation,
+    loop        = loop,
+    className   = class
+  ))
+}
+
+#' A one-time password input. Server reads input$<input_id> as a string.
+#' @param input_id Shiny input id.
+#' @param length Number of OTP slots (default 6).
+#' @param separator Show a dash separator between the two halves (default FALSE).
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_input_otp <- function(input_id, ..., length = 6, separator = FALSE,
+                             class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:InputOtp", props = list(
+    input_id  = input_id,
+    length    = length,
+    separator = separator,
+    className = class
+  ))
+}
+
+#' A resizable panel group. Children go in panels separated by drag handles.
+#' @param ... Content nodes — each goes into one resizable panel.
+#' @param orientation "horizontal" (side-by-side, default) or "vertical".
+#' @param panels Optional list of list(default_size=%, min_size=%) per panel.
+#' @param handle Show the grip icon on the resize handle (default TRUE).
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_resizable <- function(..., orientation = "horizontal", panels = list(),
+                             handle = TRUE, class = NULL) {
+  node("shadcn:Resizable", ..., props = list(
+    orientation = orientation,
+    panels      = panels,
+    handle      = handle,
+    className   = class
+  ))
+}
+
+#' A data series spec for shadcn_chart().
+#' @param key Column name in the data list.
+#' @param label Display name shown in legend/tooltip.
+#' @param color CSS color string (e.g. "#4f46e5").
+shadcn_chart_series <- function(key, label = NULL, color = NULL) {
+  list(key = key, label = label, color = color)
+}
+
+#' A recharts chart. Display-only — no Shiny input.
+#' @param data List of row lists, e.g. list(list(month="Jan", sales=120), ...).
+#' @param series Series specs built with shadcn_chart_series().
+#' @param type "bar", "line", "area", or "pie" (default "bar").
+#' @param x_key Data key used as x-axis labels or pie slice names (default "name").
+#' @param height Chart height in pixels (default 300).
+#' @param legend Show the legend (default TRUE).
+#' @param grid Show the cartesian grid (default TRUE).
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_chart <- function(data, series, ..., type = "bar", x_key = "name",
+                         height = 300, legend = TRUE, grid = TRUE, class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Chart", props = list(
+    type      = type,
+    data      = data,
+    series    = series,
+    x_key     = x_key,
+    height    = height,
+    legend    = legend,
+    grid      = grid,
+    className = class
+  ))
+}
+
 #' A swipe drawer (vaul). Slides in from an edge; server reads input$<input_id> as boolean.
 #' @param input_id Shiny input id — TRUE while the drawer is open.
 #' @param ... Content nodes rendered inside the drawer.

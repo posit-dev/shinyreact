@@ -9,6 +9,33 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Tier 3 wrap: Carousel, InputOtp, Resizable, Chart (41 → 45)
+
+Four complex components wrapped directly (no agent delegation — reasoning about
+the bridge design mattered more than parallelism here).
+
+- **Carousel** (Hybrid): `embla-carousel-react`. Children = slides; each wrapped
+  in `CarouselItem`. Optional `input_id` tracks current 0-based slide index via
+  `api.on("select")`. Hook called unconditionally with `__noop_carousel__` guard.
+- **InputOtp** (Input): `input-otp` library. Props: `length` (slot count),
+  `separator` (dash between halves). Renders `InputOTPGroup`+`InputOTPSlot` array
+  dynamically.
+- **Resizable** (Container): `react-resizable-panels`. Children matched to panels
+  positionally; `ResizableHandle` auto-inserted between each pair. `panels` array
+  controls `defaultSize`/`minSize` per panel.
+- **Chart** (Display): `recharts` via shadcn's `ChartContainer`. Supports bar,
+  line, area, pie via `type` prop. `series` array maps `{key, label, color}` →
+  CSS variable injection via `ChartStyle`. PALETTE fallback for unspecified colors.
+  `chart_series()` / `shadcn_chart_series()` helper for series specs.
+
+New npm deps: `embla-carousel-react`, `input-otp`, `react-resizable-panels`,
+`recharts` (all bundled). Bundle grew to 919 kB / 268 kB gzip (recharts is heavy).
+
+Deferred: `sidebar` (726-line source, too many sub-parts), `form`
+(react-hook-form coupling). Can revisit when needed.
+
+---
+
 ## 2026-06-11 — Parallel-agent batch 5 (36 → 41)
 
 Second parallel batch. Same pattern: prep scripts → 5 Sonnet agents (bridges
