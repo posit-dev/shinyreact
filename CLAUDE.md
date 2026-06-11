@@ -38,7 +38,7 @@ pkg-r/                      # R package — mirrors the Python API in R
 examples/
   app-py/                   # app.py pattern examples (01-hello-world … 10-columns)
   ui-tsx/                   # ui.tsx pattern examples (01-hello … 07-plotly)
-docs/                       # todos.md, app-py-vs-ui-tsx.md, posit-conf-2026-goals.md
+docs/                       # app-py-vs-ui-tsx.md, posit-conf-2026-goals.md
 decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
@@ -282,9 +282,9 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 - **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
 - **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
 
-## docs/todos.md, examples catalog
+## Open work, examples catalog
 
-- **`docs/todos.md`** — known issues and open work. Add new entries with a descriptive heading and explanation. Remove entries when fixed (no "recent fixes" log — git history is the record). Prefer a GitHub issue for substantive work and link it from here. Keep entries concise — describe the problem and constraints.
+- **Open work / known issues** live in the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues), not a checked-in TODO file. File substantive work as an issue.
 - **`examples/README.md`** — the catalog of what exists today (every example, both patterns, both languages). Add a row when you add an example. The API surface itself is documented in `pkg-py/README.md` / `pkg-r/README.md` and the R pkgdown reference, not in a separate inventory.
 
 ## Key decisions

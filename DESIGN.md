@@ -324,7 +324,7 @@ The ui.tsx-first prototype proposed in this document has been built and validate
 2. **Both patterns are implemented and working.** The ui.tsx pattern (`set_react_page()`, `reactive_output`) and the app.py pattern (`page_react`, `render_react`, the `Node` tree) ship from the same package.
 3. **The JSON wire-tree transfer layer is retained for the app.py pattern.** The `Node` data model and the in-house renderer walker serve the app.py use case well. For ui.tsx apps, the layer is bypassed — `reactive_output` sends raw JSON that the client renders directly.
 4. **The bridge library is stable.** `useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`, `ShinyModuleProvider`, and `ImageOutput` are vendored from `@posit/shiny-react` and re-exported on `window.shinyreact`.
-5. **Remaining open work** is tracked in [`docs/todos.md`](docs/todos.md) and the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues).
+5. **Remaining open work** is tracked in the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues).
 
 ## Appendix: Previous Explorations — `@json-render/react` and Server-Driven UI
 
