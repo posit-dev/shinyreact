@@ -1355,3 +1355,59 @@ def radio_group(
             "className": class_,
         },
     )
+
+
+def empty(
+    *children: object,
+    title: str | None = None,
+    description: str | None = None,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """An empty-state placeholder. Children are rendered as the action area.
+
+    Args:
+        *children: Action nodes (e.g. a button) shown below the header.
+        title: Bold heading text for the empty state.
+        description: Muted description text below the title.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Empty",
+        props={
+            "title": title,
+            "description": description,
+            "className": class_,
+        },
+        children=list(children),
+    )
+
+
+def pagination(
+    input_id: str,
+    *,
+    total_pages: int = 10,
+    current: int = 1,
+    show_ellipsis: bool = True,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A page-number pagination bar.
+
+    Server reads ``input.<input_id>()`` as int (1-based).
+
+    Args:
+        input_id: Shiny input id — current page number (1-based).
+        total_pages: Total number of pages.
+        current: Initially selected page (default 1).
+        show_ellipsis: Collapse distant pages into ellipsis when True.
+        class_: Extra CSS classes merged onto the nav element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Pagination",
+        props={
+            "input_id": input_id,
+            "total_pages": total_pages,
+            "current": current,
+            "show_ellipsis": show_ellipsis,
+            "className": class_,
+        },
+    )

@@ -815,3 +815,33 @@ shadcn_accordion <- function(input_id, items, ..., type = "single", selected = N
     className = class
   ))
 }
+
+#' An empty-state placeholder. Children are rendered as the action area.
+#' @param ... Action nodes (e.g. a button) shown below the header.
+#' @param title Bold heading text for the empty state.
+#' @param description Muted description text below the title.
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_empty <- function(..., title = NULL, description = NULL, class = NULL) {
+  node("shadcn:Empty", ..., props = list(
+    title = title, description = description, className = class
+  ))
+}
+
+#' A page-number pagination bar. Server reads input$<input_id> as integer (1-based).
+#' @param input_id Shiny input id — current page number (1-based).
+#' @param ... Must be empty (leaf component).
+#' @param total_pages Total number of pages (default 10).
+#' @param current Initially selected page (default 1).
+#' @param show_ellipsis Collapse distant pages into ellipsis when TRUE.
+#' @param class Extra CSS classes merged onto the nav element.
+shadcn_pagination <- function(input_id, ..., total_pages = 10L, current = 1L,
+                              show_ellipsis = TRUE, class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Pagination", props = list(
+    input_id      = input_id,
+    total_pages   = total_pages,
+    current       = current,
+    show_ellipsis = show_ellipsis,
+    className     = class
+  ))
+}

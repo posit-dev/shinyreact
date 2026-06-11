@@ -9,6 +9,25 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Empty, Pagination + gallery expanded (45 → 47)
+
+Two Tier-1 components wrapped + gallery updated to 7 tabs.
+
+- **Empty** (Display/Container): `title`, `description`, children = action area.
+  Sub-components: `EmptyHeader`, `EmptyTitle`, `EmptyDescription`, `EmptyContent`.
+- **Pagination** (Input): `input_id` tracks 1-based current page. Props:
+  `total_pages`, `current`, `show_ellipsis`. Renders prev/next + page number
+  buttons; ellipsis collapses distant pages. `PaginationLink` clicks use
+  `e.preventDefault()` (renders as `<a>`).
+
+**Gallery** (`examples/gallery-py/app.py`) expanded from 4 → 7 tabs: new
+**Overlays** (Drawer, ContextMenu, ScrollArea), **Navigation** (Menubar,
+NavigationMenu, Command), **Layout** (Carousel, Resizable) tabs added. Existing
+tabs updated with Tooltip, HoverCard, Empty, Chart (Display), AlertDialog +
+Sheet (Actions), OTP + Pagination (Inputs).
+
+---
+
 ## 2026-06-11 — Tier 3 wrap: Carousel, InputOtp, Resizable, Chart (41 → 45)
 
 Four complex components wrapped directly (no agent delegation — reasoning about

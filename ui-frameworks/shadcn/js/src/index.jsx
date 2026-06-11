@@ -45,6 +45,8 @@ import { Resizable } from "@/components/resizable";
 import { ScrollArea } from "@/components/scroll-area";
 import { Sheet } from "@/components/sheet";
 import { Tooltip } from "@/components/tooltip";
+import { Empty } from "@/components/empty";
+import { Pagination } from "@/components/pagination";
 
 window.shinyreact.registerComponents(null, {
   "shadcn:Alert": Alert,
@@ -92,4 +94,6 @@ window.shinyreact.registerComponents(null, {
   "shadcn:ScrollArea": ScrollArea,
   "shadcn:Sheet": Sheet,
   "shadcn:Tooltip": Tooltip,
+  "shadcn:Empty": Empty,
+  "shadcn:Pagination": Pagination,
 });
