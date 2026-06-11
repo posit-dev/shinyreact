@@ -1,7 +1,9 @@
+import { cn } from "@/lib/utils";
+
 export function Card({ element, children }) {
-  const { title } = element.props;
+  const { title, className } = element.props;
   return (
-    <div className="rounded-xl border bg-card text-card-foreground shadow">
+    <div className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}>
       {title && (
         <div className="flex flex-col space-y-1.5 p-4 pb-2">
           <h3 className="font-semibold leading-none tracking-tight">{title}</h3>

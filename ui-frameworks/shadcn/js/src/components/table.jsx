@@ -82,9 +82,9 @@ function TableCaption({ className, ...props }) {
 // table in the ui.tsx pattern, read the data with useShinyOutputValue instead.
 
 function ShinyTable({ element }) {
-  const { columns = [], rows = [], caption } = element.props;
+  const { columns = [], rows = [], caption, className } = element.props;
   return (
-    <Table>
+    <Table className={className}>
       {caption && <TableCaption>{caption}</TableCaption>}
       {columns.length > 0 && (
         <TableHeader>

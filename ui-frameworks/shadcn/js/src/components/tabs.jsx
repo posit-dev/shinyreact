@@ -75,13 +75,13 @@ function TabsContent({ className, ...props }) {
 // Children: one panel per tab, in the same order as `tabs`.
 
 function ShinyTabs({ element, children }) {
-  const { input_id, tabs = [], selected } = element.props;
+  const { input_id, tabs = [], selected, className } = element.props;
   const firstVal = tabs.length > 0 ? tabs[0].value : "";
   const [value, setValue] = useShinyInput(input_id, selected ?? firstVal);
   const panels = React.Children.toArray(children);
 
   return (
-    <Tabs value={value} onValueChange={setValue} className="w-full">
+    <Tabs value={value} onValueChange={setValue} className={cn("w-full", className)}>
       <TabsList>
         {tabs.map((t) => (
           <TabsTrigger key={t.value} value={t.value}>

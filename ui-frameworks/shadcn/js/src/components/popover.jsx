@@ -38,14 +38,14 @@ function PopoverContent({ className, align = "center", sideOffset = 4, ...props 
 // Server reads input.<input_id>() as boolean — true while popover is open.
 
 function ShinyPopover({ element, children }) {
-  const { input_id, trigger_label = "Open", align = "center" } = element.props;
+  const { input_id, trigger_label = "Open", align = "center", className } = element.props;
   const [open, setOpen] = useShinyInput(input_id, false);
   return (
     <Popover open={!!open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <TriggerButton>{trigger_label}</TriggerButton>
       </PopoverTrigger>
-      <PopoverContent align={align}>
+      <PopoverContent align={align} className={className}>
         <div className="flex flex-col gap-3">{children}</div>
       </PopoverContent>
     </Popover>

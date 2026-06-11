@@ -52,7 +52,7 @@ function Toaster({ theme = "system", ...props }) {
 // type ∈ "success" | "info" | "warning" | "error" | "loading" | "default".
 
 function ShinyToaster({ element }) {
-  const { message_type = "toast", position = "bottom-right" } = element.props;
+  const { message_type = "toast", position = "bottom-right", className } = element.props;
 
   useShinyMessageHandler(message_type, (data) => {
     const { message, description, type = "default", duration } = data ?? {};
@@ -70,7 +70,7 @@ function ShinyToaster({ element }) {
     fn(message, opts);
   });
 
-  return <Toaster position={position} />;
+  return <Toaster position={position} className={className} />;
 }
 
 export { ShinyToaster as Toaster };

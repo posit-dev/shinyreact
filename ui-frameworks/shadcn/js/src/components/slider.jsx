@@ -48,10 +48,10 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, ...props }
 // Server reads input.<input_id>() as a number.
 
 function ShinySlider({ element }) {
-  const { input_id, min = 0, max = 100, step = 1, value: defaultValue = 50, label } = element.props;
+  const { input_id, min = 0, max = 100, step = 1, value: defaultValue = 50, label, className } = element.props;
   const [value, setValue] = useShinyInput(input_id, defaultValue);
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div className={cn("flex flex-col gap-2 w-full", className)}>
       {label && (
         <div className="flex justify-between items-center">
           <label className="text-sm font-medium">{label}</label>

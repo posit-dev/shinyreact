@@ -185,7 +185,7 @@ function isoFromDate(date) {
 }
 
 function ShinyCalendar({ element }) {
-  const { input_id, selected } = element.props;
+  const { input_id, selected, className } = element.props;
   const [iso, setIso] = useShinyInput(input_id, selected ?? null);
   const selectedDate = iso ? new Date(`${iso}T00:00:00`) : undefined;
 
@@ -194,7 +194,7 @@ function ShinyCalendar({ element }) {
       mode="single"
       selected={selectedDate}
       onSelect={(date) => setIso(date ? isoFromDate(date) : null)}
-      className="rounded-md border"
+      className={cn("rounded-md border", className)}
     />
   );
 }

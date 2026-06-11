@@ -11,6 +11,8 @@
 #     menu_submenu) keep `...` for CHILD nodes — mirroring node(type, ...).
 #     Their optional scalars (title, trigger_label, ...) sit after `...`, so
 #     they are keyword-only too. These do NOT call check_dots_empty().
+#   * Every component takes `class` (default NULL) — extra CSS classes merged
+#     onto the component's root via cn() on the JS side.
 
 #' HTMLDependency for the shadcn JS + CSS bundle.
 #' @param www_dir Absolute path to ui-frameworks/shadcn/www/
@@ -33,27 +35,32 @@ shadcn_dep <- function(www_dir) {
 #' Display a small status badge.
 #' @param text Badge label text.
 #' @param variant "default", "secondary", or "outline".
-shadcn_badge <- function(text, ..., variant = "default") {
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_badge <- function(text, ..., variant = "default", class = NULL) {
   rlang::check_dots_empty()
-  node("shadcn:Badge", props = list(text = text, variant = variant))
+  node("shadcn:Badge", props = list(text = text, variant = variant, className = class))
 }
 
 #' An action button. Server reads input$<input_id> as a click counter.
 #' @param input_id Shiny input id.
 #' @param label Button label text.
 #' @param variant "default", "outline", "secondary", or "ghost".
-shadcn_button <- function(input_id, label, ..., variant = "default") {
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_button <- function(input_id, label, ..., variant = "default", class = NULL) {
   rlang::check_dots_empty()
-  node("shadcn:Button", props = list(input_id = input_id, label = label, variant = variant))
+  node("shadcn:Button", props = list(
+    input_id = input_id, label = label, variant = variant, className = class
+  ))
 }
 
 #' A single-date picker. Server reads input$<input_id> as an ISO date string.
 #' The value is "YYYY-MM-DD" (or NULL). Parse with as.Date(input$<input_id>).
 #' @param input_id Shiny input id.
 #' @param selected Initial date as an ISO string "YYYY-MM-DD".
-shadcn_calendar <- function(input_id, ..., selected = NULL) {
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_calendar <- function(input_id, ..., selected = NULL, class = NULL) {
   rlang::check_dots_empty()
-  node("shadcn:Calendar", props = list(input_id = input_id, selected = selected))
+  node("shadcn:Calendar", props = list(input_id = input_id, selected = selected, className = class))
 }
 
 #' A text input field. Server reads input$<input_id> as the current string.
@@ -61,7 +68,9 @@ shadcn_calendar <- function(input_id, ..., selected = NULL) {
 #' @param placeholder Placeholder text shown when the input is empty.
 #' @param label Optional label displayed above the input.
 #' @param debounce_ms Debounce delay in milliseconds (default 250).
-shadcn_input <- function(input_id, ..., placeholder = "", label = NULL, debounce_ms = 250) {
+#' @param class Extra CSS classes merged onto the wrapper element.
+shadcn_input <- function(input_id, ..., placeholder = "", label = NULL,
+                         debounce_ms = 250, class = NULL) {
   rlang::check_dots_empty()
   node(
     "shadcn:Input",
@@ -69,16 +78,18 @@ shadcn_input <- function(input_id, ..., placeholder = "", label = NULL, debounce
       input_id    = input_id,
       placeholder = placeholder,
       label       = label,
-      debounce_ms = debounce_ms
+      debounce_ms = debounce_ms,
+      className   = class
     )
   )
 }
 
 #' A thin rule line for visual separation.
 #' @param orientation "horizontal" (default) or "vertical".
-shadcn_separator <- function(..., orientation = "horizontal") {
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_separator <- function(..., orientation = "horizontal", class = NULL) {
   rlang::check_dots_empty()
-  node("shadcn:Separator", props = list(orientation = orientation))
+  node("shadcn:Separator", props = list(orientation = orientation, className = class))
 }
 
 #' A dropdown select. Server reads input$<input_id> as the selected string.
@@ -86,13 +97,16 @@ shadcn_separator <- function(..., orientation = "horizontal") {
 #' @param choices Character vector or list of \code{list(value=, label=)} items.
 #' @param selected Initially selected value (defaults to first choice).
 #' @param label Optional label displayed above the select.
-shadcn_select <- function(input_id, choices, ..., selected = NULL, label = NULL) {
+#' @param class Extra CSS classes merged onto the wrapper element.
+shadcn_select <- function(input_id, choices, ..., selected = NULL, label = NULL,
+                          class = NULL) {
   rlang::check_dots_empty()
   node("shadcn:Select", props = list(
-    input_id = input_id,
-    choices  = choices,
-    selected = selected,
-    label    = label
+    input_id  = input_id,
+    choices   = choices,
+    selected  = selected,
+    label     = label,
+    className = class
   ))
 }
 
@@ -103,15 +117,18 @@ shadcn_select <- function(input_id, choices, ..., selected = NULL, label = NULL)
 #' @param step Step increment (default 1).
 #' @param value Initial value (default 50).
 #' @param label Optional label (shows current value on the right).
-shadcn_slider <- function(input_id, ..., min = 0, max = 100, step = 1, value = 50, label = NULL) {
+#' @param class Extra CSS classes merged onto the wrapper element.
+shadcn_slider <- function(input_id, ..., min = 0, max = 100, step = 1, value = 50,
+                          label = NULL, class = NULL) {
   rlang::check_dots_empty()
   node("shadcn:Slider", props = list(
-    input_id = input_id,
-    min      = min,
-    max      = max,
-    step     = step,
-    value    = value,
-    label    = label
+    input_id  = input_id,
+    min       = min,
+    max       = max,
+    step      = step,
+    value     = value,
+    label     = label,
+    className = class
   ))
 }
 
@@ -119,12 +136,14 @@ shadcn_slider <- function(input_id, ..., min = 0, max = 100, step = 1, value = 5
 #' @param input_id Shiny input id.
 #' @param label Optional label shown beside the switch.
 #' @param checked Initial checked state (default FALSE).
-shadcn_switch <- function(input_id, ..., label = NULL, checked = FALSE) {
+#' @param class Extra CSS classes merged onto the wrapper element.
+shadcn_switch <- function(input_id, ..., label = NULL, checked = FALSE, class = NULL) {
   rlang::check_dots_empty()
   node("shadcn:Switch", props = list(
-    input_id = input_id,
-    label    = label,
-    checked  = checked
+    input_id  = input_id,
+    label     = label,
+    checked   = checked,
+    className = class
   ))
 }
 
@@ -132,12 +151,14 @@ shadcn_switch <- function(input_id, ..., label = NULL, checked = FALSE) {
 #' @param description Alert body text.
 #' @param title Optional bold title shown above the description.
 #' @param variant "default" (neutral) or "destructive" (red, for errors/warnings).
-shadcn_alert <- function(description, ..., title = NULL, variant = "default") {
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_alert <- function(description, ..., title = NULL, variant = "default", class = NULL) {
   rlang::check_dots_empty()
   node("shadcn:Alert", props = list(
     title       = title,
     description = description,
-    variant     = variant
+    variant     = variant,
+    className   = class
   ))
 }
 
@@ -145,12 +166,14 @@ shadcn_alert <- function(description, ..., title = NULL, variant = "default") {
 #' @param input_id Shiny input id.
 #' @param label Label text shown beside the checkbox.
 #' @param checked Initial checked state (default FALSE).
-shadcn_checkbox <- function(input_id, label, ..., checked = FALSE) {
+#' @param class Extra CSS classes merged onto the wrapper element.
+shadcn_checkbox <- function(input_id, label, ..., checked = FALSE, class = NULL) {
   rlang::check_dots_empty()
   node("shadcn:Checkbox", props = list(
-    input_id = input_id,
-    label    = label,
-    checked  = checked
+    input_id  = input_id,
+    label     = label,
+    checked   = checked,
+    className = class
   ))
 }
 
@@ -158,9 +181,12 @@ shadcn_checkbox <- function(input_id, label, ..., checked = FALSE) {
 #' @param columns Character vector of header labels.
 #' @param rows List of rows; each row a list of cell values.
 #' @param caption Optional caption shown below the table.
-shadcn_table <- function(columns, rows, ..., caption = NULL) {
+#' @param class Extra CSS classes merged onto the table element.
+shadcn_table <- function(columns, rows, ..., caption = NULL, class = NULL) {
   rlang::check_dots_empty()
-  node("shadcn:Table", props = list(columns = columns, rows = rows, caption = caption))
+  node("shadcn:Table", props = list(
+    columns = columns, rows = rows, caption = caption, className = class
+  ))
 }
 
 # --- Container components (`...` holds child nodes; no check_dots_empty) -----
@@ -168,9 +194,9 @@ shadcn_table <- function(columns, rows, ..., caption = NULL) {
 #' A card container with an optional header title.
 #' @param ... Child nodes rendered inside the card body.
 #' @param title Optional card header text.
-shadcn_card <- function(..., title = NULL) {
-  props <- if (!is.null(title)) list(title = title) else list()
-  node("shadcn:Card", ..., props = props)
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_card <- function(..., title = NULL, class = NULL) {
+  node("shadcn:Card", ..., props = list(title = title, className = class))
 }
 
 #' A modal dialog. Trigger button opens it; server reads input$<input_id> as boolean.
@@ -179,12 +205,15 @@ shadcn_card <- function(..., title = NULL) {
 #' @param trigger_label Label on the button that opens the dialog (default "Open").
 #' @param title Optional dialog title.
 #' @param description Optional muted subtitle below the title.
-shadcn_dialog <- function(input_id, ..., trigger_label = "Open", title = NULL, description = NULL) {
+#' @param class Extra CSS classes merged onto the dialog content panel.
+shadcn_dialog <- function(input_id, ..., trigger_label = "Open", title = NULL,
+                          description = NULL, class = NULL) {
   node("shadcn:Dialog", ..., props = list(
     input_id      = input_id,
     trigger_label = trigger_label,
     title         = title,
-    description   = description
+    description   = description,
+    className     = class
   ))
 }
 
@@ -193,11 +222,14 @@ shadcn_dialog <- function(input_id, ..., trigger_label = "Open", title = NULL, d
 #' @param ... Child nodes rendered inside the popover.
 #' @param trigger_label Label on the button that opens the popover (default "Open").
 #' @param align Horizontal alignment: "start", "center", or "end" (default "center").
-shadcn_popover <- function(input_id, ..., trigger_label = "Open", align = "center") {
+#' @param class Extra CSS classes merged onto the popover content panel.
+shadcn_popover <- function(input_id, ..., trigger_label = "Open", align = "center",
+                           class = NULL) {
   node("shadcn:Popover", ..., props = list(
     input_id      = input_id,
     trigger_label = trigger_label,
-    align         = align
+    align         = align,
+    className     = class
   ))
 }
 
@@ -256,11 +288,13 @@ shadcn_menu_submenu <- function(label, ...) {
 #' @param input_id Shiny input id for click events.
 #' @param ... Menu contents, built with the shadcn_menu_* helpers.
 #' @param trigger_label Label on the button that opens the menu (default "Open").
-shadcn_dropdown_menu <- function(input_id, ..., trigger_label = "Open") {
+#' @param class Extra CSS classes merged onto the menu content panel.
+shadcn_dropdown_menu <- function(input_id, ..., trigger_label = "Open", class = NULL) {
   node("shadcn:DropdownMenu", props = list(
     input_id      = input_id,
     trigger_label = trigger_label,
-    items         = list(...)
+    items         = list(...),
+    className     = class
   ))
 }
 
@@ -283,11 +317,13 @@ shadcn_tab <- function(value, label, ...) {
 #' @param tabs List of tab trigger specs, built with shadcn_tab().
 #' @param ... One content node per tab, in the same order as `tabs`.
 #' @param selected Initially active tab value (defaults to the first tab).
-shadcn_tabs <- function(input_id, tabs, ..., selected = NULL) {
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_tabs <- function(input_id, tabs, ..., selected = NULL, class = NULL) {
   node("shadcn:Tabs", ..., props = list(
-    input_id = input_id,
-    tabs     = tabs,
-    selected = selected
+    input_id  = input_id,
+    tabs      = tabs,
+    selected  = selected,
+    className = class
   ))
 }
 
@@ -299,9 +335,13 @@ shadcn_tabs <- function(input_id, tabs, ..., selected = NULL) {
 #' A toast host. Mount once; the server pushes toasts to it via shadcn_toast().
 #' @param message_type The send_message type this host listens for.
 #' @param position Corner to show toasts in (default "bottom-right").
-shadcn_toaster <- function(..., message_type = "toast", position = "bottom-right") {
+#' @param class Extra CSS classes merged onto the toaster element.
+shadcn_toaster <- function(..., message_type = "toast", position = "bottom-right",
+                           class = NULL) {
   rlang::check_dots_empty()
-  node("shadcn:Toaster", props = list(message_type = message_type, position = position))
+  node("shadcn:Toaster", props = list(
+    message_type = message_type, position = position, className = class
+  ))
 }
 
 #' Push a toast to a shadcn_toaster() host from the server.

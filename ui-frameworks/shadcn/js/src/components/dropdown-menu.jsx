@@ -228,7 +228,7 @@ function CheckboxMenuItem({ item }) {
 }
 
 function ShinyDropdownMenu({ element }) {
-  const { input_id, trigger_label = "Open", items = [] } = element.props;
+  const { input_id, trigger_label = "Open", items = [], className } = element.props;
   // Event input: write-only. Carries the clicked value plus a nonce so that
   // clicking the same item twice still produces a distinct input change.
   const setSelected = useSetShinyInput(input_id, null, { debounceMs: 0, priority: "event" });
@@ -239,7 +239,7 @@ function ShinyDropdownMenu({ element }) {
       <DropdownMenuTrigger asChild>
         <TriggerButton>{trigger_label}</TriggerButton>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent className={className}>
         <MenuItems items={items} onSelect={onSelect} />
       </DropdownMenuContent>
     </DropdownMenu>

@@ -9,6 +9,27 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — className arg on every component (Python + R + JS)
+
+Completed the className passthrough Barret asked for — end to end now:
+
+- **JS bridges**: every one of the 14 component bridges destructures
+  `className` from `element.props` and forwards it to the root via
+  `cn(componentClasses, className)` (cva sets defaults, tailwind-merge lets the
+  caller win). Lands on the sensible root per type — wrapper for inputs, content
+  panel for overlays/menus, root element for display/table/tabs.
+- **Python**: every component helper gains `class_: str | None = None`
+  (keyword-only), sent as `props["className"]`.
+- **R**: every component helper gains `class = NULL`, sent as
+  `props$className`. (Matches htmltools' `class` convention.)
+
+Verified end to end: a custom class reaches the DOM and coexists with the
+variant classes (`cn` merge), Python↔R wire parity holds, keyword-only
+enforcement still rejects positional optionals, zero JS errors. Existing
+examples unaffected (className is optional).
+
+---
+
 ## 2026-06-11 — Re-adopt class-variance-authority (cva) + className passthrough
 
 Brought back `cva` (we'd removed it earlier) so variant components stay faithful

@@ -1,4 +1,5 @@
 import { Button as ButtonBase } from "@/lib/button-base";
+import { cn } from "@/lib/utils";
 import { useShinyInput } from "@/hooks";
 
 // --- shinyreact bridge ---
@@ -6,12 +7,12 @@ import { useShinyInput } from "@/hooks";
 // Props: input_id (str), label (str), variant (str, default "default").
 
 function ShinyButton({ element }) {
-  const { input_id, label, variant = "default" } = element.props;
+  const { input_id, label, variant = "default", className } = element.props;
   const [count, setCount] = useShinyInput(input_id, 0, { debounceMs: 0, priority: "event" });
   return (
     <ButtonBase
       variant={variant}
-      className="cursor-pointer"
+      className={cn("cursor-pointer", className)}
       onClick={() => setCount(count + 1)}
     >
       {label}

@@ -112,14 +112,14 @@ function DialogFooter({ className, children, ...props }) {
 // Server reads input.<input_id>() as boolean — true while dialog is open.
 
 function ShinyDialog({ element, children }) {
-  const { input_id, trigger_label = "Open", title, description } = element.props;
+  const { input_id, trigger_label = "Open", title, description, className } = element.props;
   const [open, setOpen] = useShinyInput(input_id, false);
   return (
     <Dialog open={!!open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <TriggerButton>{trigger_label}</TriggerButton>
       </DialogTrigger>
-      <DialogContent showCloseButton>
+      <DialogContent showCloseButton className={className}>
         {(title || description) && (
           <DialogHeader>
             {title && <DialogTitle>{title}</DialogTitle>}

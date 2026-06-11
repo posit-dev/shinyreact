@@ -31,10 +31,10 @@ function Checkbox({ className, ...props }) {
 // Server reads input.<input_id>() as boolean.
 
 function ShinyCheckbox({ element }) {
-  const { input_id, label, checked: defaultChecked = false } = element.props;
+  const { input_id, label, checked: defaultChecked = false, className } = element.props;
   const [checked, setChecked] = useShinyInput(input_id, defaultChecked);
   return (
-    <div className="flex items-center gap-2">
+    <div className={cn("flex items-center gap-2", className)}>
       <Checkbox
         id={input_id}
         checked={!!checked}

@@ -25,16 +25,18 @@ def badge(
     text: str,
     *,
     variant: Literal["default", "secondary", "outline"] = "default",
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """Display a small status badge.
 
     Args:
         text: Badge label text.
         variant: Visual style — "default", "secondary", or "outline".
+        class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
         type="shadcn:Badge",
-        props={"text": text, "variant": variant},
+        props={"text": text, "variant": variant, "className": class_},
     )
 
 
@@ -43,6 +45,7 @@ def button(
     label: str,
     *,
     variant: Literal["default", "outline", "secondary", "ghost"] = "default",
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """An action button. Server reads ``input.<input_id>()`` as a click counter.
 
@@ -50,10 +53,16 @@ def button(
         input_id: Shiny input id.
         label: Button label text.
         variant: Visual style — "default", "outline", "secondary", or "ghost".
+        class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
         type="shadcn:Button",
-        props={"input_id": input_id, "label": label, "variant": variant},
+        props={
+            "input_id": input_id,
+            "label": label,
+            "variant": variant,
+            "className": class_,
+        },
     )
 
 
@@ -61,6 +70,7 @@ def calendar(
     input_id: str,
     *,
     selected: str | None = None,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A single-date picker. Server reads ``input.<input_id>()`` as an ISO date string.
 
@@ -70,26 +80,29 @@ def calendar(
     Args:
         input_id: Shiny input id.
         selected: Initial date as an ISO string ``"YYYY-MM-DD"``.
+        class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
         type="shadcn:Calendar",
-        props={"input_id": input_id, "selected": selected},
+        props={"input_id": input_id, "selected": selected, "className": class_},
     )
 
 
 def card(
     *children: object,
     title: str | None = None,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A card container with an optional header title.
 
     Args:
         *children: Child nodes rendered inside the card body.
         title: Optional card header text.
+        class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
         type="shadcn:Card",
-        props={"title": title} if title else {},
+        props={"title": title, "className": class_},
         children=list(children),
     )
 
@@ -100,6 +113,7 @@ def text_input(
     placeholder: str = "",
     label: str | None = None,
     debounce_ms: int = 250,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A text input field. Server reads ``input.<input_id>()`` as the current string.
 
@@ -108,6 +122,7 @@ def text_input(
         placeholder: Placeholder text shown when the input is empty.
         label: Optional label displayed above the input.
         debounce_ms: Debounce delay in milliseconds before the value is sent.
+        class_: Extra CSS classes merged onto the wrapper element.
     """
     return shinyreact.Node(
         type="shadcn:Input",
@@ -116,6 +131,7 @@ def text_input(
             "placeholder": placeholder,
             "label": label,
             "debounce_ms": debounce_ms,
+            "className": class_,
         },
     )
 
@@ -123,15 +139,17 @@ def text_input(
 def separator(
     *,
     orientation: Literal["horizontal", "vertical"] = "horizontal",
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A thin rule line for visual separation.
 
     Args:
         orientation: "horizontal" (full-width line) or "vertical" (full-height line).
+        class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
         type="shadcn:Separator",
-        props={"orientation": orientation},
+        props={"orientation": orientation, "className": class_},
     )
 
 
@@ -141,6 +159,7 @@ def select(
     *,
     selected: str | None = None,
     label: str | None = None,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A dropdown select. Server reads ``input.<input_id>()`` as the selected string.
 
@@ -149,6 +168,7 @@ def select(
         choices: List of strings or ``{"value": ..., "label": ...}`` dicts.
         selected: Initially selected value (defaults to first choice).
         label: Optional label displayed above the select.
+        class_: Extra CSS classes merged onto the wrapper element.
     """
     return shinyreact.Node(
         type="shadcn:Select",
@@ -157,6 +177,7 @@ def select(
             "choices": choices,
             "selected": selected,
             "label": label,
+            "className": class_,
         },
     )
 
@@ -169,6 +190,7 @@ def slider(
     step: int | float = 1,
     value: int | float = 50,
     label: str | None = None,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A numeric range slider. Server reads ``input.<input_id>()`` as a number.
 
@@ -179,6 +201,7 @@ def slider(
         step: Step increment.
         value: Initial value.
         label: Optional label displayed above the slider (current value shown right).
+        class_: Extra CSS classes merged onto the wrapper element.
     """
     return shinyreact.Node(
         type="shadcn:Slider",
@@ -189,6 +212,7 @@ def slider(
             "step": step,
             "value": value,
             "label": label,
+            "className": class_,
         },
     )
 
@@ -198,6 +222,7 @@ def switch(
     *,
     label: str | None = None,
     checked: bool = False,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A toggle switch. Server reads ``input.<input_id>()`` as a boolean.
 
@@ -205,6 +230,7 @@ def switch(
         input_id: Shiny input id.
         label: Optional label shown beside the switch.
         checked: Initial checked state.
+        class_: Extra CSS classes merged onto the wrapper element.
     """
     return shinyreact.Node(
         type="shadcn:Switch",
@@ -212,6 +238,7 @@ def switch(
             "input_id": input_id,
             "label": label,
             "checked": checked,
+            "className": class_,
         },
     )
 
@@ -221,6 +248,7 @@ def alert(
     *,
     title: str | None = None,
     variant: Literal["default", "destructive"] = "default",
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A status alert box. Display-only — no Shiny input.
 
@@ -228,6 +256,7 @@ def alert(
         description: Alert body text.
         title: Optional bold title shown above the description.
         variant: "default" (neutral) or "destructive" (red, for errors/warnings).
+        class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
         type="shadcn:Alert",
@@ -235,6 +264,7 @@ def alert(
             "title": title,
             "description": description,
             "variant": variant,
+            "className": class_,
         },
     )
 
@@ -244,6 +274,7 @@ def checkbox(
     label: str,
     *,
     checked: bool = False,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A checkbox. Server reads ``input.<input_id>()`` as a boolean.
 
@@ -251,6 +282,7 @@ def checkbox(
         input_id: Shiny input id.
         label: Label text shown beside the checkbox.
         checked: Initial checked state.
+        class_: Extra CSS classes merged onto the wrapper element.
     """
     return shinyreact.Node(
         type="shadcn:Checkbox",
@@ -258,6 +290,7 @@ def checkbox(
             "input_id": input_id,
             "label": label,
             "checked": checked,
+            "className": class_,
         },
     )
 
@@ -268,6 +301,7 @@ def dialog(
     trigger_label: str = "Open",
     title: str | None = None,
     description: str | None = None,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A modal dialog. Server reads ``input.<input_id>()`` as bool (open state).
 
@@ -277,6 +311,7 @@ def dialog(
         trigger_label: Label on the button that opens the dialog.
         title: Optional dialog title.
         description: Optional muted subtitle shown below the title.
+        class_: Extra CSS classes merged onto the dialog content panel.
     """
     return shinyreact.Node(
         type="shadcn:Dialog",
@@ -285,6 +320,7 @@ def dialog(
             "trigger_label": trigger_label,
             "title": title,
             "description": description,
+            "className": class_,
         },
         children=list(children),
     )
@@ -295,6 +331,7 @@ def popover(
     *children: object,
     trigger_label: str = "Open",
     align: Literal["start", "center", "end"] = "center",
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A floating popover. Server reads ``input.<input_id>()`` as bool (open state).
 
@@ -303,6 +340,7 @@ def popover(
         *children: Content nodes rendered inside the popover.
         trigger_label: Label on the button that opens the popover.
         align: Horizontal alignment of the panel relative to the trigger.
+        class_: Extra CSS classes merged onto the popover content panel.
     """
     return shinyreact.Node(
         type="shadcn:Popover",
@@ -310,6 +348,7 @@ def popover(
             "input_id": input_id,
             "trigger_label": trigger_label,
             "align": align,
+            "className": class_,
         },
         children=list(children),
     )
@@ -393,6 +432,7 @@ def dropdown_menu(
     input_id: str,
     *items: dict[str, object],
     trigger_label: str = "Open",
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A dropdown menu driven by an ``items`` data array.
 
@@ -405,6 +445,7 @@ def dropdown_menu(
         input_id: Shiny input id for click events.
         *items: Menu contents, built with the ``menu_*`` helpers.
         trigger_label: Label on the button that opens the menu.
+        class_: Extra CSS classes merged onto the menu content panel.
     """
     return shinyreact.Node(
         type="shadcn:DropdownMenu",
@@ -412,6 +453,7 @@ def dropdown_menu(
             "input_id": input_id,
             "trigger_label": trigger_label,
             "items": list(items),
+            "className": class_,
         },
     )
 
@@ -421,6 +463,7 @@ def table(
     rows: list[list[object]],
     *,
     caption: str | None = None,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A display-only data table. No Shiny input.
 
@@ -428,10 +471,16 @@ def table(
         columns: Header labels.
         rows: Each row is a list of cell values (strings or numbers).
         caption: Optional caption shown below the table.
+        class_: Extra CSS classes merged onto the table element.
     """
     return shinyreact.Node(
         type="shadcn:Table",
-        props={"columns": columns, "rows": rows, "caption": caption},
+        props={
+            "columns": columns,
+            "rows": rows,
+            "caption": caption,
+            "className": class_,
+        },
     )
 
 
@@ -450,6 +499,7 @@ def tabs(
     tabs: list[dict[str, str]],
     *panels: object,
     selected: str | None = None,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A tabbed panel. ``tabs`` defines the triggers; ``panels`` are the content.
 
@@ -461,10 +511,16 @@ def tabs(
         tabs: Tab trigger specs, built with :func:`tab`.
         *panels: One content node per tab, in the same order as ``tabs``.
         selected: Initially active tab value (defaults to the first tab).
+        class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
         type="shadcn:Tabs",
-        props={"input_id": input_id, "tabs": tabs, "selected": selected},
+        props={
+            "input_id": input_id,
+            "tabs": tabs,
+            "selected": selected,
+            "className": class_,
+        },
         children=list(panels),
     )
 
@@ -479,6 +535,7 @@ def toaster(
     *,
     message_type: str = "toast",
     position: str = "bottom-right",
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """A toast host. Mount once; the server pushes toasts to it via :func:`toast`.
 
@@ -486,10 +543,15 @@ def toaster(
         message_type: The ``send_message`` type this host listens for. Must
             match the ``message_type`` passed to :func:`toast`.
         position: Corner to show toasts in, e.g. "bottom-right", "top-center".
+        class_: Extra CSS classes merged onto the toaster element.
     """
     return shinyreact.Node(
         type="shadcn:Toaster",
-        props={"message_type": message_type, "position": position},
+        props={
+            "message_type": message_type,
+            "position": position,
+            "className": class_,
+        },
     )
 
 

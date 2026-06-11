@@ -29,10 +29,10 @@ function Switch({ className, size = "default", ...props }) {
 // Server reads input.<input_id>() as boolean.
 
 function ShinySwitch({ element }) {
-  const { input_id, label, checked: defaultChecked = false } = element.props;
+  const { input_id, label, checked: defaultChecked = false, className } = element.props;
   const [checked, setChecked] = useShinyInput(input_id, defaultChecked);
   return (
-    <div className="flex items-center gap-3">
+    <div className={cn("flex items-center gap-3", className)}>
       <Switch checked={!!checked} onCheckedChange={setChecked} />
       {label && <label className="text-sm font-medium">{label}</label>}
     </div>

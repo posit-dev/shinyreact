@@ -101,13 +101,13 @@ function SelectValue({ ...props }) {
 // Server reads input.<input_id>() as the selected string.
 
 function ShinySelect({ element }) {
-  const { input_id, choices = [], selected, label } = element.props;
+  const { input_id, choices = [], selected, label, className } = element.props;
   const firstVal = choices.length > 0
     ? (typeof choices[0] === "object" ? choices[0].value : choices[0])
     : "";
   const [value, setValue] = useShinyInput(input_id, selected ?? firstVal);
   return (
-    <div className="flex flex-col gap-1.5 w-full">
+    <div className={cn("flex flex-col gap-1.5 w-full", className)}>
       {label && <label className="text-sm font-medium">{label}</label>}
       <Select value={value} onValueChange={setValue}>
         <SelectTrigger><SelectValue /></SelectTrigger>
