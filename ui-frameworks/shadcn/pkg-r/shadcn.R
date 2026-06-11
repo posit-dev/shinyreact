@@ -34,7 +34,7 @@ shadcn_dep <- function(www_dir) {
 
 #' Display a small status badge.
 #' @param text Badge label text.
-#' @param variant "default", "secondary", or "outline".
+#' @param variant default, secondary, destructive, outline, ghost, or link.
 #' @param class Extra CSS classes merged onto the root element.
 shadcn_badge <- function(text, ..., variant = "default", class = NULL) {
   rlang::check_dots_empty()
@@ -44,12 +44,14 @@ shadcn_badge <- function(text, ..., variant = "default", class = NULL) {
 #' An action button. Server reads input$<input_id> as a click counter.
 #' @param input_id Shiny input id.
 #' @param label Button label text.
-#' @param variant "default", "outline", "secondary", or "ghost".
+#' @param variant default, secondary, destructive, outline, ghost, or link.
+#' @param size "default", "sm", "lg", or "icon".
 #' @param class Extra CSS classes merged onto the root element.
-shadcn_button <- function(input_id, label, ..., variant = "default", class = NULL) {
+shadcn_button <- function(input_id, label, ..., variant = "default", size = "default",
+                          class = NULL) {
   rlang::check_dots_empty()
   node("shadcn:Button", props = list(
-    input_id = input_id, label = label, variant = variant, className = class
+    input_id = input_id, label = label, variant = variant, size = size, className = class
   ))
 }
 
@@ -359,5 +361,60 @@ shadcn_toast <- function(session, message, ..., description = NULL, type = "defa
     description = description,
     type        = type,
     duration    = duration
+  ))
+}
+
+# --- More display / input components ----------------------------------------
+
+#' A multi-line text input. Server reads input$<input_id> as a string.
+#' @param input_id Shiny input id.
+#' @param placeholder Placeholder text shown when empty.
+#' @param label Optional label displayed above the textarea.
+#' @param debounce_ms Debounce delay in milliseconds (default 250).
+#' @param class Extra CSS classes merged onto the wrapper element.
+shadcn_textarea <- function(input_id, ..., placeholder = "", label = NULL,
+                            debounce_ms = 250, class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Textarea", props = list(
+    input_id    = input_id,
+    placeholder = placeholder,
+    label       = label,
+    debounce_ms = debounce_ms,
+    className   = class
+  ))
+}
+
+#' A display-only text label.
+#' @param text Label text.
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_label <- function(text, ..., class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Label", props = list(text = text, className = class))
+}
+
+#' A loading placeholder. Size it via `class` (e.g. "h-4 w-32"). No input.
+#' @param class CSS classes setting the placeholder's size/shape.
+shadcn_skeleton <- function(..., class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Skeleton", props = list(className = class))
+}
+
+#' A determinate progress bar. Display-only.
+#' @param value Fill percentage, 0-100.
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_progress <- function(value = 0, ..., class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Progress", props = list(value = value, className = class))
+}
+
+#' A user avatar. Shows `src` if it loads, else the `fallback` initials.
+#' @param src Image URL (optional).
+#' @param fallback Text shown when there's no image (usually initials).
+#' @param size "default", "sm", or "lg".
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_avatar <- function(..., src = NULL, fallback = "", size = "default", class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Avatar", props = list(
+    src = src, fallback = fallback, size = size, className = class
   ))
 }

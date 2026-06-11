@@ -21,17 +21,23 @@ def _dep() -> HTMLDependency:
     )
 
 
+_Variant = Literal["default", "secondary", "destructive", "outline", "ghost", "link"]
+BadgeVariant = _Variant
+ButtonVariant = _Variant
+ButtonSize = Literal["default", "sm", "lg", "icon"]
+
+
 def badge(
     text: str,
     *,
-    variant: Literal["default", "secondary", "outline"] = "default",
+    variant: BadgeVariant = "default",
     class_: str | None = None,
 ) -> shinyreact.Node:
     """Display a small status badge.
 
     Args:
         text: Badge label text.
-        variant: Visual style — "default", "secondary", or "outline".
+        variant: Visual style — default, secondary, destructive, outline, ghost, link.
         class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
@@ -44,7 +50,8 @@ def button(
     input_id: str,
     label: str,
     *,
-    variant: Literal["default", "outline", "secondary", "ghost"] = "default",
+    variant: ButtonVariant = "default",
+    size: ButtonSize = "default",
     class_: str | None = None,
 ) -> shinyreact.Node:
     """An action button. Server reads ``input.<input_id>()`` as a click counter.
@@ -52,7 +59,8 @@ def button(
     Args:
         input_id: Shiny input id.
         label: Button label text.
-        variant: Visual style — "default", "outline", "secondary", or "ghost".
+        variant: Visual style — default, secondary, destructive, outline, ghost, link.
+        size: "default", "sm", "lg", or "icon".
         class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
@@ -61,6 +69,7 @@ def button(
             "input_id": input_id,
             "label": label,
             "variant": variant,
+            "size": size,
             "className": class_,
         },
     )
@@ -585,4 +594,96 @@ async def toast(
             "type": type,
             "duration": duration,
         },
+    )
+
+
+def textarea(
+    input_id: str,
+    *,
+    placeholder: str = "",
+    label: str | None = None,
+    debounce_ms: int = 250,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A multi-line text input. Server reads ``input.<input_id>()`` as a string.
+
+    Args:
+        input_id: Shiny input id.
+        placeholder: Placeholder text shown when empty.
+        label: Optional label displayed above the textarea.
+        debounce_ms: Debounce delay in milliseconds before the value is sent.
+        class_: Extra CSS classes merged onto the wrapper element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Textarea",
+        props={
+            "input_id": input_id,
+            "placeholder": placeholder,
+            "label": label,
+            "debounce_ms": debounce_ms,
+            "className": class_,
+        },
+    )
+
+
+def label(text: str, *, class_: str | None = None) -> shinyreact.Node:
+    """A display-only text label.
+
+    Args:
+        text: Label text.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Label",
+        props={"text": text, "className": class_},
+    )
+
+
+def skeleton(*, class_: str | None = None) -> shinyreact.Node:
+    """A loading placeholder. Size it via ``class_`` (e.g. ``"h-4 w-32"``).
+
+    Args:
+        class_: CSS classes setting the placeholder's size/shape.
+    """
+    return shinyreact.Node(
+        type="shadcn:Skeleton",
+        props={"className": class_},
+    )
+
+
+def progress(
+    value: int | float = 0,
+    *,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A determinate progress bar. Display-only.
+
+    Args:
+        value: Fill percentage, 0–100.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Progress",
+        props={"value": value, "className": class_},
+    )
+
+
+def avatar(
+    *,
+    src: str | None = None,
+    fallback: str = "",
+    size: Literal["default", "sm", "lg"] = "default",
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A user avatar. Shows ``src`` if it loads, else the ``fallback`` initials.
+
+    Args:
+        src: Image URL (optional).
+        fallback: Text shown when there's no image (usually initials).
+        size: "default", "sm", or "lg".
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Avatar",
+        props={"src": src, "fallback": fallback, "size": size, "className": class_},
     )
