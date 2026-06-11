@@ -8,13 +8,17 @@ import { Card } from "@/components/card";
 import { Checkbox } from "@/components/checkbox";
 import { Dialog } from "@/components/dialog";
 import { DropdownMenu } from "@/components/dropdown-menu";
+import { AspectRatio } from "@/components/aspect-ratio";
 import { Input } from "@/components/input";
+import { Kbd } from "@/components/kbd";
 import { Label } from "@/components/label";
 import { Popover } from "@/components/popover";
 import { Progress } from "@/components/progress";
+import { RadioGroup } from "@/components/radio-group";
 import { Select } from "@/components/select";
 import { Separator } from "@/components/separator";
 import { Skeleton } from "@/components/skeleton";
+import { Spinner } from "@/components/spinner";
 import { Slider } from "@/components/slider";
 import { Switch } from "@/components/switch";
 import { Table } from "@/components/table";
@@ -33,13 +37,17 @@ window.shinyreact.registerComponents(null, {
   "shadcn:Checkbox": Checkbox,
   "shadcn:Dialog": Dialog,
   "shadcn:DropdownMenu": DropdownMenu,
+  "shadcn:AspectRatio": AspectRatio,
   "shadcn:Input": Input,
+  "shadcn:Kbd": Kbd,
   "shadcn:Label": Label,
   "shadcn:Popover": Popover,
   "shadcn:Progress": Progress,
+  "shadcn:RadioGroup": RadioGroup,
   "shadcn:Select": Select,
   "shadcn:Separator": Separator,
   "shadcn:Skeleton": Skeleton,
+  "shadcn:Spinner": Spinner,
   "shadcn:Slider": Slider,
   "shadcn:Switch": Switch,
   "shadcn:Table": Table,

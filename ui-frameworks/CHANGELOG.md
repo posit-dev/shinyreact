@@ -9,6 +9,17 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Bulk wrap batch 2 via the script (23 → 27)
+
+First batch wrapped with `prep-component.mjs`: **Kbd, Spinner, AspectRatio,
+RadioGroup**. The script did the strip/scaffold; only the bridges were filled by
+hand (RadioGroup is a single-select Input over a `choices` array; the rest are
+Display/Container). Registered + Python + R helpers. Smoke-tested: kbd/spinner
+render, radio group selects (size=lg on click), zero JS errors. The script made
+this noticeably faster per component.
+
+---
+
 ## 2026-06-11 — Codegen script + Toggle (22 → 23)
 
 Built `js/scripts/prep-component.mjs` to do the mechanical, token-heavy part of

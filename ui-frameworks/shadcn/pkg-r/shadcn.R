@@ -438,3 +438,44 @@ shadcn_avatar <- function(..., src = NULL, fallback = "", size = "default", clas
     src = src, fallback = fallback, size = size, className = class
   ))
 }
+
+#' A keyboard-key hint. Display-only.
+#' @param text The key label (e.g. "Cmd+K").
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_kbd <- function(text, ..., class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Kbd", props = list(text = text, className = class))
+}
+
+#' A loading spinner. Size it via `class` (e.g. "size-6"). Display-only.
+#' @param class CSS classes setting the spinner's size.
+shadcn_spinner <- function(..., class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Spinner", props = list(className = class))
+}
+
+#' A fixed aspect-ratio container.
+#' @param ... Content rendered inside (e.g. an image).
+#' @param ratio Width / height (e.g. 16 / 9).
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_aspect_ratio <- function(..., ratio = 1, class = NULL) {
+  node("shadcn:AspectRatio", ..., props = list(ratio = ratio, className = class))
+}
+
+#' A single-select radio group. Server reads input$<input_id> as a string.
+#' @param input_id Shiny input id.
+#' @param choices Character vector or list of list(value=, label=) items.
+#' @param selected Initially selected value (defaults to first choice).
+#' @param label Optional label displayed above the group.
+#' @param class Extra CSS classes merged onto the wrapper element.
+shadcn_radio_group <- function(input_id, choices, ..., selected = NULL, label = NULL,
+                               class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:RadioGroup", props = list(
+    input_id  = input_id,
+    choices   = choices,
+    selected  = selected,
+    label     = label,
+    className = class
+  ))
+}

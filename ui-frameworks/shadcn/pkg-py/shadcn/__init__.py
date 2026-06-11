@@ -719,3 +719,70 @@ def avatar(
         type="shadcn:Avatar",
         props={"src": src, "fallback": fallback, "size": size, "className": class_},
     )
+
+
+def kbd(text: str, *, class_: str | None = None) -> shinyreact.Node:
+    """A keyboard-key hint. Display-only.
+
+    Args:
+        text: The key label (e.g. "⌘K").
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(type="shadcn:Kbd", props={"text": text, "className": class_})
+
+
+def spinner(*, class_: str | None = None) -> shinyreact.Node:
+    """A loading spinner. Size it via ``class_`` (e.g. ``"size-6"``). Display-only.
+
+    Args:
+        class_: CSS classes setting the spinner's size.
+    """
+    return shinyreact.Node(type="shadcn:Spinner", props={"className": class_})
+
+
+def aspect_ratio(
+    *children: object,
+    ratio: int | float = 1.0,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A fixed aspect-ratio container.
+
+    Args:
+        *children: Content rendered inside (e.g. an image).
+        ratio: Width / height (e.g. ``16 / 9``).
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:AspectRatio",
+        props={"ratio": ratio, "className": class_},
+        children=list(children),
+    )
+
+
+def radio_group(
+    input_id: str,
+    choices: list[Union[str, dict[str, str]]],
+    *,
+    selected: str | None = None,
+    label: str | None = None,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A single-select radio group. Server reads ``input.<input_id>()`` as a string.
+
+    Args:
+        input_id: Shiny input id.
+        choices: List of strings or ``{"value": ..., "label": ...}`` dicts.
+        selected: Initially selected value (defaults to first choice).
+        label: Optional label displayed above the group.
+        class_: Extra CSS classes merged onto the wrapper element.
+    """
+    return shinyreact.Node(
+        type="shadcn:RadioGroup",
+        props={
+            "input_id": input_id,
+            "choices": choices,
+            "selected": selected,
+            "label": label,
+            "className": class_,
+        },
+    )
