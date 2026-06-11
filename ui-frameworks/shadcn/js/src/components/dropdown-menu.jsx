@@ -231,7 +231,7 @@ function ShinyDropdownMenu({ element }) {
   const { input_id, trigger_label = "Open", items = [] } = element.props;
   // Event input: write-only. Carries the clicked value plus a nonce so that
   // clicking the same item twice still produces a distinct input change.
-  const setSelected = useSetShinyInput(input_id, null, { priority: "event" });
+  const setSelected = useSetShinyInput(input_id, null, { debounceMs: 0, priority: "event" });
   const onSelect = (value) => setSelected({ value, nonce: Date.now() });
 
   return (

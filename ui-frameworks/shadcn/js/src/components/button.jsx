@@ -11,7 +11,7 @@ function ShinyButton({ element }) {
   return (
     <ButtonBase
       variant={variant}
-      className="w-full cursor-pointer"
+      className="cursor-pointer"
       onClick={() => setCount(count + 1)}
     >
       {label}
