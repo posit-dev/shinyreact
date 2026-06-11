@@ -40,54 +40,48 @@ Every component falls into one of seven types. The type determines which hook to
 
 ---
 
-## Step 1 — Get the component source
+## Step 1 — Run the prep script (shadcn)
 
-### shadcn (copy-paste framework)
-
-Fetch the source via the shadcn MCP tool or GitHub API, then strip TypeScript annotations (`type`, `interface`, `: Type` return types, `as Type` casts). Do **not** strip `"use client"` markers as comments — just delete them.
+**Don't read/strip the `.tsx` by hand — the script does the mechanical, token-heavy
+parts.** From `js/`:
 
 ```bash
-# Alternative: shadcn CLI from the js/ directory
-cd ui-frameworks/shadcn/js
-npx shadcn@latest add <component-name>
-# Move the generated file: src/components/ui/<name>.tsx → src/components/<name>.jsx
-# Strip TypeScript
+node scripts/prep-component.mjs <name>     # e.g. toggle
 ```
+
+It reads `src/components-src/<name>.tsx` (download once via `download-components.sh`),
+strips TypeScript (keeps JSX), drops `"use client"`, neutralizes the shadcn `export`s,
+fixes import paths (`@/registry/.../ui/X` → `@/components/X`; button → `@/lib/button-base`),
+appends a bridge stub, and writes `src/components/<name>.jsx`. It then prints the exact
+`index.jsx` lines and Python/R helper stubs to paste in Steps 3–5.
+
+You only do the **fuzzy** part: open the written file, look at the props/exports the script
+left, and fill the bridge (Step 2). You generally don't need to read the original `.tsx`.
 
 ### npm library (MUI, Mantine, etc.)
 
-No source to copy — the component imports directly from the npm package. Skip to Step 2.
+No source to strip — write the file by hand importing from the npm package (the structure
+below). Skip the script.
 
 ---
 
-## Step 2 — Write the component file
+## Step 2 — Fill the bridge stub
 
-Create `ui-frameworks/<framework>/js/src/components/<component-name>.jsx`.
-
-The file has two sections separated by a comment:
-1. **shadcn source** (or npm import) — unchanged from the original
-2. **shinyreact bridge** — reads `element.props`, wires the hook, delegates to the source component
-
-### File structure
+The script wrote `src/components/<name>.jsx` = shadcn source (stripped) + a TODO bridge
+stub. Replace the stub with the real bridge: pick the component type, wire the hook, read
+`element.props`, forward `className`. Final shape:
 
 ```jsx
 import * as React from "react";
-import { SomeIcon } from "lucide-react";
-import { ComponentPrimitive } from "radix-ui";   // shadcn: from radix-ui
-// OR: import { Component } from "@mui/material"; // npm library
-import { cn } from "@/lib/utils";                 // shadcn only
-import { useShinyInput } from "@/hooks";          // only if component needs a hook
+import { ComponentPrimitive } from "radix-ui";   // (script kept the source's imports)
+import { cn } from "@/lib/utils";
+import { useShinyInput } from "@/hooks";          // add if the component needs a hook
 
-// --- shadcn source (or npm imports above, no source section needed) ---
+// --- shadcn source (written by the script; leave as-is) ---
+function ComponentName({ className, ...props }) { /* … */ }
 
-function ComponentName({ className, ...props }) {
-  // exact shadcn source here, TypeScript stripped
-}
-
-// --- shinyreact bridge ---
+// --- shinyreact bridge (you fill this) ---
 // Props: input_id (str), label (str, optional), className (str, optional), ...
-// Server reads input.<input_id>() as <type>.
-
 function ShinyComponentName({ element, children }) {
   const { input_id, label, default_value = "", className } = element.props;
   const [value, setValue] = useShinyInput(input_id, default_value);
@@ -100,6 +94,8 @@ function ShinyComponentName({ element, children }) {
 
 export { ShinyComponentName as ComponentName };
 ```
+
+(For an npm-library framework with no script, write the whole file in this shape by hand.)
 
 **Every bridge forwards `className`.** Destructure `className` from `element.props`
 and pass it to the component's root, which merges it last via
@@ -554,30 +550,25 @@ framework-CSS concern, not a per-component one: fix it once in `styles.css`, not
 each component. Verify by *measuring* (`getComputedStyle(el).fontSize`) and screenshotting,
 not just asserting visibility.
 
-## Registry as the source of truth (codegen direction)
+## Why the script + fill split saves tokens
 
-The manual 5-step flow above is the fallback. The intended scaled workflow treats
-`index.jsx`'s `registerComponents(null, { "framework:Name": Fn })` map as the **canonical
-list of components**, and splits authoring into a deterministic half (a script) and a
-fuzzy half (Claude) so most of it is cheap and repeatable:
+The per-component cost used to be dominated by Claude reading the long `.tsx`, transcribing
+the stripped source, and writing boilerplate (bridge skeleton, helper stubs, registry lines).
+`scripts/prep-component.mjs` does all of that deterministically (esbuild strips types; string
+fixups handle imports/exports; templates print the stubs) — **no model tokens.** Claude is
+left with only the irreducible judgment:
 
-**Script does the deterministic parts** (no model tokens):
-- Read the registry map → the set of component names + registry keys.
-- Parse each component's TypeScript prop types and JSDoc from the source (`.tsx`).
-- Scaffold the wrapper skeletons: function name, the registry-key string, required-vs-
-  optional split (a prop with a default is optional), the `*` / `...` + `check_dots_empty()`
-  layout from the API conventions above, and docstrings carried over from the TS docs.
-- Flag drift: registry keys with no Python/R wrapper, or wrappers with no registry entry.
-
-**Claude does the judgment the script can't** (the fuzzy parts):
-- Which prop is the `input_id` and which hook the bridge needs (Display vs Input vs Action
-  vs Overlay vs Collection vs Hybrid vs Push — see Step 0).
+- Which prop is the `input_id` and which hook (Display / Input / Action / Overlay /
+  Collection / Hybrid / Push — Step 0).
 - Value-shape quirks (Slider array-wrap, Calendar ISO string, event nonce).
-- Whether contents are free-form children or a structured `items`/metadata array.
+- Free-form children vs a structured `items`/metadata array.
 
-This is why the registry matters as the single source: the script can always re-derive the
-wrapper *surface* from it, and a human/Claude only fills the per-component semantics once.
+So the loop per component is: `prep-component.mjs <name>` → fill the bridge → paste the
+printed `index.jsx`/Python/R stubs (filling props) → build → verify. Keep wrappers
+mechanically derivable from the registry (consistent names/keys + the API conventions) so
+the script stays the source of the *surface* and humans only own the *semantics*.
 
-**Status:** direction, not yet built. Until the script exists, follow Steps 1–6 by hand —
-but keep wrappers mechanically derivable from the registry (consistent names, keys, and the
-API conventions) so the generator can take over later without a rewrite.
+**Possible next extensions to the script** (each removes more manual editing): auto-insert
+the `index.jsx` import + registry line (idempotent), and append the Python/R helper stubs to
+the package files. Left manual for now because both still need the fuzzy prop list — but the
+registry-drift check (registry keys with no Python/R wrapper) is pure win and worth adding.

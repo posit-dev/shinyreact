@@ -21,6 +21,7 @@ import { Table } from "@/components/table";
 import { Tabs } from "@/components/tabs";
 import { Textarea } from "@/components/textarea";
 import { Toaster } from "@/components/sonner";
+import { Toggle } from "@/components/toggle";
 import { Avatar } from "@/components/avatar";
 
 window.shinyreact.registerComponents(null, {
@@ -45,5 +46,6 @@ window.shinyreact.registerComponents(null, {
   "shadcn:Tabs": Tabs,
   "shadcn:Textarea": Textarea,
   "shadcn:Toaster": Toaster,
+  "shadcn:Toggle": Toggle,
   "shadcn:Avatar": Avatar,
 });

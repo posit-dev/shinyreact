@@ -668,6 +668,38 @@ def progress(
     )
 
 
+def toggle(
+    input_id: str,
+    label: str,
+    *,
+    pressed: bool = False,
+    variant: Literal["default", "outline"] = "default",
+    size: Literal["default", "sm", "lg"] = "default",
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A two-state toggle button. Server reads ``input.<input_id>()`` as a boolean.
+
+    Args:
+        input_id: Shiny input id.
+        label: Text/aria-label shown on the toggle.
+        pressed: Initial pressed state.
+        variant: "default" or "outline".
+        size: "default", "sm", or "lg".
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Toggle",
+        props={
+            "input_id": input_id,
+            "label": label,
+            "pressed": pressed,
+            "variant": variant,
+            "size": size,
+            "className": class_,
+        },
+    )
+
+
 def avatar(
     *,
     src: str | None = None,

@@ -9,6 +9,24 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Codegen script + Toggle (22 → 23)
+
+Built `js/scripts/prep-component.mjs` to do the mechanical, token-heavy part of
+wrapping: esbuild strips TypeScript (keeps JSX), drops `"use client"`,
+neutralizes shadcn `export`s, fixes import paths, appends a bridge stub, writes
+`src/components/<name>.jsx`, and prints the `index.jsx` + Python/R stubs. Claude
+only fills the fuzzy bridge logic now — no reading/transcribing the `.tsx`.
+
+Validated end-to-end on **Toggle** (component #23): `prep-component.mjs toggle`
+→ filled the Input/boolean bridge → registered + Python/R helpers (variant +
+size) → built → clicking toggles the boolean input. Zero JS errors.
+
+Skill (`scaffold-component`) Steps 1–2 rewritten around the script; the "registry
+as source of truth" section updated from "not yet built" to the live workflow +
+token rationale.
+
+---
+
 ## 2026-06-11 — Bulk wrap batch 1 (17 → 22 components)
 
 Started scaling toward the full shadcn set. Batch 1 (trivial Display/Input,

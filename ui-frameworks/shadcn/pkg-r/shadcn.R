@@ -407,6 +407,26 @@ shadcn_progress <- function(value = 0, ..., class = NULL) {
   node("shadcn:Progress", props = list(value = value, className = class))
 }
 
+#' A two-state toggle button. Server reads input$<input_id> as a boolean.
+#' @param input_id Shiny input id.
+#' @param label Text/aria-label shown on the toggle.
+#' @param pressed Initial pressed state (default FALSE).
+#' @param variant "default" or "outline".
+#' @param size "default", "sm", or "lg".
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_toggle <- function(input_id, label, ..., pressed = FALSE, variant = "default",
+                          size = "default", class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Toggle", props = list(
+    input_id = input_id,
+    label    = label,
+    pressed  = pressed,
+    variant  = variant,
+    size     = size,
+    className = class
+  ))
+}
+
 #' A user avatar. Shows `src` if it loads, else the `fallback` initials.
 #' @param src Image URL (optional).
 #' @param fallback Text shown when there's no image (usually initials).
