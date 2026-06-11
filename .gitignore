@@ -244,3 +244,6 @@ shinyui-prototype.png
 
 # Raw shadcn source downloaded by download-components.sh (local staging only)
 ui-frameworks/shadcn/js/src/components-src/
+
+# Comparison/presentation deck — one-off artifact, not part of the package
+ui-frameworks/comparison-deck/
