@@ -2,7 +2,7 @@ import * as React from "react";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 import { TriggerButton } from "@/lib/trigger-button";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 // --- shadcn source (converted from TS) ---
 

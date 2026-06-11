@@ -1,6 +1,6 @@
 import { Button as ButtonBase } from "@/lib/button-base";
 import { cn } from "@/lib/utils";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 // --- shinyreact bridge ---
 // Action button. Server reads input.<input_id>() as a click counter.

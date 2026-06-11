@@ -1,7 +1,7 @@
 import { CircleIcon } from "lucide-react";
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 function RadioGroup({
   className,
   ...props

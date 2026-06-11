@@ -7,7 +7,7 @@ import {
   TriangleAlertIcon,
 } from "lucide-react";
 import { Toaster as Sonner, toast } from "sonner";
-import { useShinyMessageHandler } from "@/hooks";
+import { useShinyMessageHandler } from "shinyreact";
 
 // --- shadcn source (converted from TS) ---
 // shadcn's version reads the theme from next-themes. This project has no theme

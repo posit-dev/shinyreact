@@ -3,7 +3,7 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 import { TriggerButton } from "@/lib/trigger-button";
-import { useShinyInput, useSetShinyInput } from "@/hooks";
+import { useShinyInput, useSetShinyInput } from "shinyreact";
 
 // --- shadcn source (converted from TS) ---
 

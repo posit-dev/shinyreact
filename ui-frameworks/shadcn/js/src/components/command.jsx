@@ -1,7 +1,7 @@
 import { Command as CommandPrimitive } from "cmdk";
 import { SearchIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 function Command({
   className,
   ...props

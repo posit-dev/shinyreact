@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 // --- shadcn source (converted from TS) ---
 

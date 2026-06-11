@@ -1,6 +1,6 @@
 import { Drawer as DrawerPrimitive } from "vaul";
 import { cn } from "@/lib/utils";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 import { TriggerButton } from "@/lib/trigger-button";
 function Drawer({
   ...props

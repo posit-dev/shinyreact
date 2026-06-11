@@ -1,6 +1,6 @@
 import { Collapsible as CollapsiblePrimitive } from "radix-ui";
 import { TriggerButton } from "@/lib/trigger-button";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 function Collapsible({
   ...props

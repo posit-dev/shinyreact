@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 export function Input({ element }) {
   const { input_id, placeholder = "", label, debounce_ms = 250, className } = element.props;

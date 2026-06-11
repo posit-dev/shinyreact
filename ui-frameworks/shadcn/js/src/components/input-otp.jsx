@@ -1,6 +1,6 @@
 import * as React from "react";
 import { OTPInput, OTPInputContext } from "input-otp";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 import { MinusIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 function InputOTP({

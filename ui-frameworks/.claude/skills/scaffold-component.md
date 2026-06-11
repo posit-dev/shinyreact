@@ -152,7 +152,7 @@ After filling the bridge and annotation:
 ## Strict rules
 
 **RULE 1 — Imports belong at the top.**
-All `import` statements must appear before any function definitions. Placing `import { useShinyInput } from "@/hooks"` after the `// --- shinyreact bridge ---` comment will cause a Vite build error ("import must be at the top level"). The prep script appends a stub *after* the source functions — the first thing you do is add needed hook imports to the import block at the top.
+All `import` statements must appear before any function definitions. Placing `import { useShinyInput } from "shinyreact"` after the `// --- shinyreact bridge ---` comment will cause a Vite build error ("import must be at the top level"). The prep script appends a stub *after* the source functions — the first thing you do is add needed hook imports to the import block at the top.
 
 **RULE 2 — Always use `export { ShinyFoo as Foo }`, never `export function ShinyFoo`.**
 Consistent shape across every file. The internal name `ShinyFoo` avoids clashing with the shadcn source function `Foo` in the same file. The exported name is clean.
@@ -227,7 +227,7 @@ export { ShinyCard as Card };
 ### Input
 
 ```jsx
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 function ShinyTextInput({ element }) {
   const { input_id, placeholder = "", label, debounce_ms = 250, className } = element.props;
@@ -272,7 +272,7 @@ const slots = Array.from({ length }, (_, i) => <InputOTPSlot key={i} index={i} /
 ### Action — counter idiom (nothing to send but "it happened")
 
 ```jsx
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 function ShinyButton({ element }) {
   const { input_id, label = "Click", variant = "default", className } = element.props;
@@ -291,7 +291,7 @@ Server: `@reactive.event(input.btn, ignore_init=True)` reads `input.btn()` as an
 ### Action — nonce idiom (action carries a payload; write-only)
 
 ```jsx
-import { useSetShinyInput } from "@/hooks";
+import { useSetShinyInput } from "shinyreact";
 
 // Inside the bridge:
 const setSelected = useSetShinyInput(input_id, null, { debounceMs: 0, priority: "event" });
@@ -303,7 +303,7 @@ Server: `input.<id>()["value"]` with `@reactive.event(input.<id>, ignore_init=Tr
 ### Action — AlertDialog (two optional action ids, both unconditional)
 
 ```jsx
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 function ShinyAlertDialog({ element }) {
   const {
@@ -336,7 +336,7 @@ export { ShinyAlertDialog as AlertDialog };
 ### Overlay — open state + children
 
 ```jsx
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 import { TriggerButton } from "@/lib/trigger-button";
 
 function ShinyDialog({ element, children }) {
@@ -366,7 +366,7 @@ export { ShinyDialog as Dialog };
 Items are walked recursively. Always support: `"item"`, `"label"`, `"separator"`, `"submenu"`. Stateful items (checkbox/radio) get their own `input_id`.
 
 ```jsx
-import { useSetShinyInput, useShinyInput } from "@/hooks";
+import { useSetShinyInput, useShinyInput } from "shinyreact";
 import { TriggerButton } from "@/lib/trigger-button";
 
 function MenuItems({ items, onSelect }) {
@@ -445,7 +445,7 @@ function handleSelect(menuLabel, itemValue) {
 
 ```jsx
 import * as React from "react";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 function ShinyTabs({ element, children }) {
   const { input_id, tabs = [], selected, className } = element.props;
@@ -470,7 +470,7 @@ Python: `tabs(input_id, [tab("a", "A"), tab("b", "B")], panel_a, panel_b)` — p
 **Carousel — optional input_id + embla `setApi`:**
 ```jsx
 import * as React from "react";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 function ShinyCarousel({ element, children }) {
   const { input_id, orientation = "horizontal", loop = false, className } = element.props;
@@ -504,7 +504,7 @@ panel content = `React.Children.toArray(children)[i]`; `items` = `[{value, title
 ### Push — server sends, no input
 
 ```jsx
-import { useShinyMessageHandler } from "@/hooks";
+import { useShinyMessageHandler } from "shinyreact";
 
 function ShinyToaster({ element }) {
   const { message_type = "toast", position = "bottom-right" } = element.props;
@@ -688,7 +688,7 @@ shadcn_sheet <- function(input_id, ..., trigger_label = "Open", side = "right",
 ## shadcn-specific notes
 
 **Import paths:**
-- `@/hooks` — all hooks; never destructure `window.shinyreact` inline
+- `shinyreact` — all hooks (`import { useShinyInput } from "shinyreact"`). This is an *external* module: vite maps it to the host's `window.shinyreact` global (same mechanism as React/ReactDOM), so the hooks are never bundled. Never destructure `window.shinyreact` inline and never re-add a local hooks shim — import from `"shinyreact"`.
 - `@/lib/utils` — `cn()` helper
 - `@/lib/trigger-button` — shared styled trigger for overlay components
 - `@/lib/button-base` — shadcn `Button` + `buttonVariants` primitive (calendar, pagination)

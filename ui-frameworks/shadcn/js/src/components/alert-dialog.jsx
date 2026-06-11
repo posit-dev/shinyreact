@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 import { TriggerButton } from "@/lib/trigger-button";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";

@@ -33,11 +33,16 @@ export default defineConfig({
       // window.shinyreact.ReactDOM only exposes react-dom/client (no createPortal).
       // Radix portals need createPortal, so we bundle that slice of react-dom;
       // it tree-shakes to ~2 kB and still uses the shared window.shinyreact.React.
-      external: ["react", "react-dom/client"],
+      // The host page injects window.shinyreact at runtime — React, ReactDOM,
+      // and the Shiny hooks all live on it. We externalize all three so this
+      // bundle shares the host's single instances instead of bundling copies.
+      // Importing from "shinyreact" compiles to property access on the global.
+      external: ["react", "react-dom/client", "shinyreact"],
       output: {
         globals: {
           react: "window.shinyreact.React",
           "react-dom/client": "window.shinyreact.ReactDOM",
+          shinyreact: "window.shinyreact",
         },
       },
     },

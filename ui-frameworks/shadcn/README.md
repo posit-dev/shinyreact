@@ -159,7 +159,7 @@ Four files to touch. Use `/scaffold-component` in Claude Code to do this automat
 **1. `js/src/components/<name>.jsx`** — shadcn source (TypeScript stripped) at the top, shinyreact bridge at the bottom:
 
 ```jsx
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 
 // --- shadcn source ---
 function MyComponent({ className, ...props }) { /* exact shadcn source */ }

@@ -2,7 +2,7 @@ import * as React from "react";
 import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 import { toggleVariants } from "@/components/toggle";
-import { useShinyInput } from "@/hooks";
+import { useShinyInput } from "shinyreact";
 const ToggleGroupContext = React.createContext({
   size: "default",
   variant: "default",
