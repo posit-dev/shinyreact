@@ -1,29 +1,57 @@
 # shadcn for shinyreact
 
-shadcn/ui components wired to Shiny's reactive system via shinyreact. Ships 47 components, a Python helper package, and an R helper file. Usable from both `app.py` and `app.R` today without any installation — just `sys.path.insert` (Python) or `source()` (R) the helpers.
+shadcn/ui components wired to Shiny's reactive system through shinyreact. Ships 47 components with matching Python and R helpers. Works from both `app.py` and `app.R` today with no installation: `sys.path.insert` the Python package, or `source()` the R file.
 
-Forward-looking goals and open work are tracked in [TODO.md](TODO.md).
-
----
+Forward-looking goals and open work are tracked in [TODO.md](TODO.md). The milestone-by-milestone history lives in [../CHANGELOG.md](../CHANGELOG.md); the rationale for the initial single-file refactor is in [../updates.md](../updates.md).
 
 ## Components
 
-| Component | Type | Shiny input value |
-|-----------|------|-------------------|
-| `Alert` | Display | — |
-| `Badge` | Display | — |
-| `Card` | Container | — |
-| `Separator` | Display | — |
-| `Button` | Input | click count (integer) |
-| `Input` | Input | current string |
-| `Checkbox` | Input | boolean |
-| `Switch` | Input | boolean |
-| `Slider` | Input | number |
-| `Select` | Input | selected string |
-| `Dialog` | Overlay | boolean (open state) |
-| `Popover` | Overlay | boolean (open state) |
+All 47, grouped by role. Names are the Python helper; the R helper is the same name prefixed `shadcn_` (e.g. `button` / `shadcn_button`).
 
----
+**Inputs** report a value back to the server through a Shiny input id. See the table below for what each one reports.
+
+`button`, `text_input`, `textarea`, `checkbox`, `switch`, `slider`, `select`, `radio_group`, `toggle`, `toggle_group`, `calendar`, `input_otp`, `pagination`, `command`, `carousel`
+
+**Display** render-only, no input:
+
+`alert`, `badge`, `separator`, `label`, `skeleton`, `progress`, `avatar`, `kbd`, `spinner`, `aspect_ratio`, `tooltip`, `hover_card`, `empty`, `chart`, `breadcrumb`, `table`
+
+**Containers and layout** wrap child nodes:
+
+`card`, `tabs`, `accordion`, `collapsible`, `scroll_area`, `resizable`
+
+**Overlays** track an open/close state through an input id (`alert_dialog` instead reports confirm and cancel click counts):
+
+`dialog`, `popover`, `sheet`, `drawer`, `alert_dialog`
+
+**Menus** build their items from data:
+
+`dropdown_menu`, `context_menu`, `menubar`, `navigation_menu`
+
+**Feedback** is pushed from the server, not read as an input:
+
+`toaster` (Sonner), driven by `send_message`
+
+### Reactive inputs
+
+| Helper | Reports to the server |
+|--------|------------------------|
+| `button` | click count (integer, event input) |
+| `text_input` | current string |
+| `textarea` | current string |
+| `input_otp` | current string |
+| `checkbox` | boolean |
+| `switch` | boolean |
+| `toggle` | boolean |
+| `slider` | number |
+| `select` | selected value (string) |
+| `radio_group` | selected value (string) |
+| `toggle_group` | selected value(s), single or multiple |
+| `calendar` | selected date as an ISO `"YYYY-MM-DD"` string |
+| `pagination` | current page (1-based integer) |
+| `command` | selected item value |
+| `carousel` | current slide index (0-based) |
+| `dialog`, `popover`, `sheet`, `drawer` | open state (boolean) |
 
 ## Directory layout
 
@@ -31,70 +59,62 @@ Forward-looking goals and open work are tracked in [TODO.md](TODO.md).
 shadcn/
   js/
     src/
-      components/       ← shadcn source + shinyreact bridge, one file per component
+      components/          one file per component: shadcn source on top, shinyreact bridge below
       lib/
-        utils.js        ← cn() helper (clsx + tailwind-merge)
-        trigger-button.jsx  ← shared trigger button for overlay components
-      hooks.js          ← single destructure of window.shinyreact hooks
-      index.jsx         ← registerComponents entry point
-      styles.css        ← Tailwind v4 @theme tokens + Bootstrap compatibility layer
+        utils.js           cn() helper (clsx + tailwind-merge)
+        button-base.jsx    shadcn Button + buttonVariants, shared by Button and Calendar
+        trigger-button.jsx shared trigger for overlay components
+      index.jsx            registerComponents entry point (all 47)
+      styles.css           Tailwind v4 @theme tokens + the Bootstrap compatibility layer
+      shinyreact.d.ts      ambient types for the host hooks imported from "shinyreact"
+    scripts/
+      prep-component.mjs     strips a shadcn source file to a bridge-ready stub
+      finalize-component.mjs wires the stub into the registry + Python + R helpers
     vite.config.js
     package.json
   pkg-py/
-    shadcn/__init__.py  ← Python helper functions (badge, button, card, ...)
+    shadcn/__init__.py     Python helpers (badge, button, card, ...)
   pkg-r/
-    shadcn.R            ← R helper functions (shadcn_badge, shadcn_button, ...)
-  examples/
-    app-py/             ← Basic demo: all 12 components in one card (Python)
-    app-r/              ← Same in R
-    settings-py/        ← User preferences panel demo (Python)
-    settings-r/         ← Same in R
-    overlay-py/         ← Dialog + Popover + Select demo (Python)
-    overlay-r/          ← Same in R
+    shadcn.R               R helpers (shadcn_badge, shadcn_button, ...)
+  examples/                see "Run examples" below
   www/
-    shadcn.js           ← Built IIFE bundle (committed)
-    style.css           ← Built CSS (committed)
+    shadcn.js              built IIFE bundle (committed)
+    style.css              built CSS (committed)
+  download-components.sh   fetches new-york-v4 shadcn sources into a gitignored staging dir
 ```
 
----
+The host hooks (`useShinyInput`, `useShinyOutputValue`, ...) are not vendored. They are imported from `"shinyreact"`, which the bundler treats as an external mapped to `window.shinyreact`, the same way `react` is externalized. `shinyreact.d.ts` supplies their types for the editor.
 
 ## Build
 
 ```bash
 cd js
 npm install
-npm run build       # → www/shadcn.js + www/style.css
+npm run build       # -> www/shadcn.js + www/style.css
+npm run dev         # watch mode
 ```
-
-Watch mode for development:
-
-```bash
-npm run dev
-```
-
----
 
 ## Run examples
 
-### Python
+Each example ships in Python, R, or both.
+
+| Example | What it shows | Languages |
+|---------|---------------|-----------|
+| `shinyreact-shadcn` | Component Explorer: every component and variant, one at a time | Python, R |
+| `gallery` | Showcase grouped into Inputs / Display / Overlays / Navigation / Layout / Feedback | Python, R |
+| `app` | Basic demo, a handful of components in one card | Python, R |
+| `variants` | Reference sheet of each component across its variants, sizes, and states | Python, R |
+| `settings` | A user-preferences panel | Python, R |
+| `overlay` | Dialog + Popover + Select | Python, R |
+| `dropdown`, `calendar`, `tabs-table`, `toast` | Focused single-component demos | Python |
 
 ```bash
-# from repo root
-uv run shiny run ui-frameworks/shadcn/examples/app-py/app.py
-uv run shiny run ui-frameworks/shadcn/examples/settings-py/app.py
-uv run shiny run ui-frameworks/shadcn/examples/overlay-py/app.py
+# Python (from repo root)
+uv run shiny run ui-frameworks/shadcn/examples/shinyreact-shadcn/app.py
+
+# R (from an R console)
+shiny::runApp("ui-frameworks/shadcn/examples/shinyreact-shadcn/app.R")
 ```
-
-### R
-
-```r
-# from R console
-shiny::runApp("ui-frameworks/shadcn/examples/app-r/app.R")
-shiny::runApp("ui-frameworks/shadcn/examples/settings-r/app.R")
-shiny::runApp("ui-frameworks/shadcn/examples/overlay-r/app.R")
-```
-
----
 
 ## Using in your own app
 
@@ -152,60 +172,37 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
----
-
 ## Adding a new component
 
-Four files to touch. Use `/scaffold-component` in Claude Code to do this automatically.
+The fastest path is `/scaffold-component` in Claude Code, which runs the two-phase codegen below. By hand it is three steps:
 
-**1. `js/src/components/<name>.jsx`** — shadcn source (TypeScript stripped) at the top, shinyreact bridge at the bottom:
+1. **Prep.** `node js/scripts/prep-component.mjs <name>` strips a downloaded shadcn source to a bridge-ready `js/src/components/<name>.jsx`: TypeScript removed, `"use client"` dropped, shadcn exports neutralized, imports fixed, and a `@shiny`-annotated bridge stub appended.
+2. **Fill the bridge.** This is the only step that needs judgment. Map `element.props` into the component and wire Shiny state with the hooks, then name and export it:
 
-```jsx
-import { useShinyInput } from "shinyreact";
+   ```jsx
+   import { useShinyInput } from "shinyreact";
 
-// --- shadcn source ---
-function MyComponent({ className, ...props }) { /* exact shadcn source */ }
+   // shadcn source (TypeScript stripped) sits above
 
-// --- shinyreact bridge ---
-function ShinyMyComponent({ element, children }) {
-  const { input_id, ...rest } = element.props;
-  const [value, setValue] = useShinyInput(input_id, "");
-  return <MyComponent value={value} onChange={setValue} />;
-}
+   function ShinyMyComponent({ element, children }) {
+     const { input_id, ...rest } = element.props;
+     const [value, setValue] = useShinyInput(input_id, "");
+     return <MyComponent value={value} onChange={setValue} {...rest} />;
+   }
 
-export { ShinyMyComponent as MyComponent };
-```
+   export { ShinyMyComponent as MyComponent };
+   ```
 
-**2. `js/src/index.jsx`** — add import and register:
+3. **Finalize.** `node js/scripts/finalize-component.mjs <name>` reads the `@shiny` annotation and idempotently adds the `index.jsx` import + registry entry, the Python helper, and the R helper.
 
-```jsx
-import { MyComponent } from "@/components/my-component";
-// in registerComponents:
-"shadcn:MyComponent": MyComponent,
-```
-
-**3. `pkg-py/shadcn/__init__.py`** — add Python helper:
-
-```python
-def my_component(input_id: str, ...) -> shinyreact.Node:
-    return shinyreact.Node(type="shadcn:MyComponent", props={"input_id": input_id, ...})
-```
-
-**4. `pkg-r/shadcn.R`** — add R helper:
-
-```r
-shadcn_my_component <- function(input_id, ...) {
-  node("shadcn:MyComponent", props = list(input_id = input_id, ...))
-}
-```
-
-Then rebuild: `cd js && npm run build`.
-
----
+Then `cd js && npm run build`.
 
 ## Architecture notes
 
-- **Single-file per component** — shadcn source and shinyreact bridge live in the same file. No `components/` + `wrappers/` split.
-- **`export { ShinyFoo as Foo }`** — internal bridge function uses `Shiny` prefix to avoid naming clash with the shadcn source function of the same name in the same file; exported under the clean name.
-- **`react-dom` bundled, not externalized** — `window.shinyreact.ReactDOM` is `react-dom/client` only and lacks `createPortal`. Radix overlay components (Dialog, Select, Popover) need `createPortal`, so `react-dom` is bundled (~2 kB gzip). Only `react` and `react-dom/client` are externalized.
-- **Tailwind v4 `@theme`** — design tokens live in `styles.css`. Add new color tokens here when wrapping components that use Tailwind classes not covered by the base theme.
+- **One file per component.** shadcn source and the shinyreact bridge live together. There is no `components/` plus `wrappers/` split. The bridge is named `ShinyFoo` to avoid clashing with the shadcn `Foo` in the same file, and re-exported as `export { ShinyFoo as Foo }`.
+- **`react-dom` is bundled, not externalized.** `window.shinyreact.ReactDOM` is `react-dom/client` only and has no `createPortal`. Radix overlays (Dialog, Popover, Select, ...) need it, so `react` and `react-dom/client` stay external while `react-dom` is bundled (about 2 kB gzipped).
+- **`class-variance-authority` is kept.** Variant components use shadcn's real `cva(...)`, so default and compound variants stay faithful to upstream.
+- **`className` passes through.** Every bridge merges a caller `className` last via `cn(variants(), className)`. Python helpers take `class_`; R helpers take `class`.
+- **Bootstrap compatibility layer in `styles.css`.** Shiny loads Bootstrap unlayered, which beats Tailwind's layered utilities. A small compat layer scoped to `.shinyreact-output` resets typography, re-asserts the grid columns, and force-generates layout utilities used only in app files via `@source inline(...)`.
+- **Tailwind v4 `@theme`.** Design tokens live in `styles.css`. Add new color tokens there when wrapping a component that needs classes the base theme does not cover.
+```
