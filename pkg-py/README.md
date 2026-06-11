@@ -86,6 +86,13 @@ async def notify():
 
 On the JS side, consume with `useShinyMessageHandler("notification", handler)`.
 
+## Examples
+
+Runnable apps for both patterns live in [`examples/`](../examples/) — see the
+[examples catalog](../examples/README.md) for the full list. Python examples are
+in [`examples/app-py/`](../examples/app-py/) (the `app.py` pattern) and
+[`examples/ui-tsx/`](../examples/ui-tsx/) (the `ui.tsx` pattern).
+
 ## Extending shinyreact (package authors)
 
 `shinyreact` is designed to be extended by downstream packages that supply their own React components. Three parts:

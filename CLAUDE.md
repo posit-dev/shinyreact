@@ -38,7 +38,7 @@ pkg-r/                      # R package — mirrors the Python API in R
 examples/
   app-py/                   # app.py pattern examples (01-hello-world … 10-columns)
   ui-tsx/                   # ui.tsx pattern examples (01-hello … 07-plotly)
-docs/                       # todos.md, features.md, app-py-vs-ui-tsx.md, timeline.md
+docs/                       # app-py-vs-ui-tsx.md, posit-conf-2026-goals.md
 decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
@@ -282,15 +282,13 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 - **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
 - **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
 
-## docs/todos.md, features.md
+## Open work, examples catalog
 
-These files are the primary documentation source:
-
-- **`docs/todos.md`** — known issues and open work. Add new entries with a descriptive heading and explanation. Remove entries when fixed (no "recent fixes" log — git history is the record). Prefer a GitHub issue for substantive work and link it from here.
-- **`docs/features.md`** — feature inventory for both the `app.py` pattern and the `ui.tsx` pattern; JS bridge hooks; examples.
-- Keep entries concise. TODOs describe the problem and constraints; feature tables describe what exists today.
+- **Open work / known issues** live in the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues), not a checked-in TODO file. File substantive work as an issue.
+- **`examples/README.md`** — the catalog of what exists today (every example, both patterns, both languages). Add a row when you add an example. The API surface itself is documented in `pkg-py/README.md` / `pkg-r/README.md` and the R pkgdown reference, not in a separate inventory.
 
 ## Key decisions
 
 - `decisions/` contains architecture decision records. `decisions/2026-03-17-playwright-testing-architecture.md` documents the recommended approach (code-gen from TypeScript) for future browser testing — not yet implemented.
 - `shiny-react` is vendored at `js/src/shiny-react/` rather than installed as an npm dependency (commit `4137071`).
+- **React keys are positional by default.** The wire tree has no synthetic element-key map; React reconciles children positionally. For lists or reorderable content, pass an explicit `key` in a node's props (React reads it natively; it is not emitted as a DOM attribute). Component identity is unrelated to DOM IDs or Shiny input/output IDs — Shiny IDs are passed as component props (`input_id`, `output_id`) and are the only IDs the server tracks.

@@ -18,7 +18,7 @@ Not sure whether to use the `app.py`/`app.R` pattern or the `ui.tsx` pattern? Se
 `shinyreact` ships two first-class patterns, both available in Python and R:
 
 **`app.py` / `app.R` pattern** — UI defined as Python or R objects in the Shiny app file:
-1. Server code builds a component tree — a `Spec` of `Element`s in Python, a `node()` tree in R (which may interleave htmltools tags)
+1. Server code builds a component tree — a `Node` tree in Python, a `node()` tree in R (either may interleave htmltools tags)
 2. `shinyreact` serializes the tree as JSON and sends it to the browser via a Shiny output binding
 3. The JS bundle renders the JSON into a live React component tree
 4. Downstream packages register their own React components so the renderer can resolve `type` strings like `"Card"` or `"Button"`
@@ -54,7 +54,7 @@ registerComponents(catalog, registry);
 ```python
 class render(shinyreact.render_react):
     async def transform(self, value: MyComponent) -> Any:
-        return value.to_spec().to_dict()
+        return value.to_node().to_dict()
 
 shinyreact.output_react("my_output", extra_deps=[my_html_dependency()])
 ```
@@ -85,7 +85,7 @@ Shared `React` and `ReactDOM` instances are also available at `window.shinyreact
 ## Architecture
 
 - **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`. Registers a Shiny `OutputBinding` for `.shinyreact-output` elements. Shared by both language packages.
-- **Python package** (`pkg-py/`): `Spec` / `Element` / `Node` data model, `render_react` (app.py) + `reactive_output` (ui.tsx) renderers, `output_react()` + `page_react()` helpers, `set_react_page()` for the `ui.tsx` pattern, and `send_message()` for server-to-client communication.
+- **Python package** (`pkg-py/`): `Node` tree data model, `render_react` (app.py) + `reactive_output` (ui.tsx) renderers, `output_react()` + `page_react()` helpers, `set_react_page()` for the `ui.tsx` pattern, and `send_message()` for server-to-client communication.
 - **R package** (`pkg-r/`): `node()` tree data model, `render_react()` (app.R) + `reactive_output()` (ui.tsx) renderers, `output_react()` + `page_react()` helpers, `page_react_html()` for the `ui.tsx` pattern, and `send_message()`. Same wire format and JS bundle as Python.
 
 ## Development

@@ -42,10 +42,7 @@ app_ui = shinyreact.page_react(
 def server(input, output, session):
     @shinyreact.render_react
     def my_output():
-        return shinyreact.Spec(
-            root="card",
-            elements={"card": shinyreact.Element(type="Card", props={"title": "Hello"})},
-        )
+        return shinyreact.Node(type="Card", props={"title": "Hello"})
 
 app = App(app_ui, server)
 ```
@@ -236,4 +233,4 @@ The two patterns coexist in `shinyreact`. You do not have to choose one for your
 - You can run an `app.py` `shinyreact` app today and migrate individual output slots to the `ui.tsx` pattern incrementally.
 - There is no deprecation of the `app.py` pattern. Both are first-class in `shinyreact`.
 
-For the R package (not yet implemented), the same two patterns will apply — the client side is language-agnostic React.
+The R package mirrors both patterns (`page_react()` + `render_react()` for the `app.R` pattern; `page_react_html()` + `reactive_output()` for the `ui.tsx` pattern) — the client side is language-agnostic React. See [`pkg-r/README.md`](../pkg-r/README.md) and the [R pkgdown reference](https://posit-dev.github.io/shinyreact/r) for the R API.

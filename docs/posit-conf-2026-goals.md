@@ -46,7 +46,7 @@ The plumbing just works. Downstream packages can build on it confidently.
   - **Full React page support** — remaining work for `page_react()` layout, graceful late-Shiny-arrival for all hooks, example app.
   - **Feature/benefit catalog** — comprehensive nested bullet list of every feature and benefit for documentation source-of-truth.
 
-### 5. Migrate Shiny JavaScript to its own repo
+### 2. Migrate Shiny JavaScript to its own repo
 
 The vendored `shiny-react` code at `js/src/shiny-react/` and the broader Shiny JS infrastructure should live in its own repository, independent of `shinyreact`. This enables:
 
@@ -54,7 +54,7 @@ The vendored `shiny-react` code at `js/src/shiny-react/` and the broader Shiny J
 - Independent versioning and release cycle
 - Cleaner separation of concerns between Shiny's JS plumbing and `shinyreact`'s rendering
 
-### 2. shinyshadcn (or equivalent) exists as a proof-of-concept
+### 3. shinyshadcn (or equivalent) exists as a proof-of-concept
 
 `shinyshadcn` is a *reference implementation* — it shows the pattern works with a real design system. It is not the only option. Companies/groups could implement their own component library on top of `shinyreact` using their own design system for high-quality, consistent apps.
 
@@ -62,7 +62,7 @@ The vendored `shiny-react` code at `js/src/shiny-react/` and the broader Shiny J
 - Shows that the extension mechanism (registerComponents, render subclass, extra_deps) works in practice
 - Provides a meaningful set of components for demo purposes
 
-### 3. Claude can reliably generate shinyreact apps
+### 4. Claude can reliably generate shinyreact apps
 
 The API surface is AI-friendly. This has three dimensions:
 
@@ -72,11 +72,11 @@ The API surface is AI-friendly. This has three dimensions:
 
 **100 examples by conf.** The example gallery should grow to 100 — a comprehensive showcase of what `shinyreact` can do. This serves double duty: it proves the framework handles real-world use cases, and it gives Claude a rich training set to draw from when generating apps. Many of these examples should themselves be AI-generated, dogfooding the "AI-first" story.
 
-### 6. Architecture article: "Where is Shiny useful?"
+### 5. Architecture article: "Where is Shiny useful?"
 
 A written piece that articulates where Shiny fits in the modern app landscape — what problems it solves, where it's the right tool vs. alternatives, and how the AI-first approach changes the calculus. Helps frame the posit::conf narrative and gives the community a reference to point to.
 
-### 4. R package has feature parity with Python
+### 6. R package has feature parity with Python
 
 Full feature parity — not just a demo, the real thing:
 
