@@ -201,7 +201,7 @@ and adapt; it has four parts:
 /* 4. Typography reset — neutralize Bootstrap inside the React tree. */
 .shinyreact-output {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 0.875rem;            /* shadcn base = text-sm (14px) */
+  font-size: 1rem;                /* shadcn base = 16px; controls opt into text-sm */
   line-height: 1.5;
   color: hsl(240 10% 3.9%);
   -webkit-font-smoothing: antialiased;
@@ -211,8 +211,17 @@ and adapt; it has four parts:
   font-size: inherit; font-weight: inherit; line-height: inherit; margin: 0;
 }
 .shinyreact-output :is(input, button, select, textarea) {
-  font-size: inherit !important; line-height: inherit; font-family: inherit;
+  font-size: inherit; line-height: inherit; font-family: inherit;
 }
+/* Re-assert Tailwind text sizes (font-size only) so a component's text-* class
+   beats unlayered Bootstrap. This is what keeps the base at 16px while controls
+   render at their intended text-sm (14px) — don't force-flatten to one size. */
+.shinyreact-output .text-xs { font-size: 0.75rem !important; }
+.shinyreact-output .text-sm { font-size: 0.875rem !important; }
+.shinyreact-output .text-base { font-size: 1rem !important; }
+.shinyreact-output .text-lg { font-size: 1.125rem !important; }
+.shinyreact-output .text-xl { font-size: 1.25rem !important; }
+.shinyreact-output .text-2xl { font-size: 1.5rem !important; }
 .shinyreact-output p { margin: 0; }
 /* Bootstrap 5 ships its own 12-column .grid — re-assert the cols utilities. */
 .shinyreact-output .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }

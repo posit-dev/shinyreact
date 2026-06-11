@@ -9,6 +9,42 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Bulk wrap batch 1 (17 → 22 components)
+
+Started scaling toward the full shadcn set. Batch 1 (trivial Display/Input,
+no new deps): **Textarea, Label, Skeleton, Progress, Avatar** — JS bridges +
+Python + R helpers + registry. Smoke-tested: all render, zero JS errors.
+
+Remaining ~34 to go, by tier:
+- Tier 1 (trivial, next): toggle, toggle-group, radio-group, aspect-ratio, kbd,
+  spinner, breadcrumb, pagination, empty.
+- Tier 2 (overlay/collection repeats): sheet, drawer, tooltip, hover-card,
+  alert-dialog, collapsible, accordion, context-menu, menubar, navigation-menu,
+  scroll-area, command.
+- Tier 3 (involved): sidebar, carousel, resizable, input-otp, form, chart.
+- Skip/defer: combobox (Base UI, not Radix), native-select, direction, and the
+  layout helpers (field, item, input-group, button-group).
+
+---
+
+## 2026-06-11 — Variants gallery + expanded button/badge options
+
+Sizing default corrected first: container base was 14px (too small); set to 16px
+(shadcn's real base) and re-assert text-* utilities so controls keep their own
+text-sm — the whole UI no longer feels shrunk.
+
+Exposed the variants/sizes the cva already supported but the helpers didn't:
+- `button`: variant now default/secondary/destructive/outline/ghost/link; new
+  `size` arg (default/sm/lg/icon) — JS bridge forwards `size`.
+- `badge`: variant expanded to the full six.
+
+New **variants gallery** (`examples/variants-py`, `examples/variants-r`): a
+reference sheet showing each component across its variants, sizes, and states in
+rows — plus className customizations (custom color button, pill, colored badge)
+to show the override path. Both verified by screenshot, zero JS errors.
+
+---
+
 ## 2026-06-11 — Skill revision (captured session learnings)
 
 Revised `scaffold-component` and `scaffold-framework` with everything learned

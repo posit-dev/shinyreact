@@ -492,6 +492,19 @@ Pair it with `className` passthrough so callers can override: the component dest
 className)` — cva sets the defaults, tailwind-merge lets the caller win on conflicts. The
 bridge forwards `element.props.className` through. See `button-base.jsx`, `badge.jsx`.
 
+**Expose the full variant/size set the cva defines — don't under-expose.** The Python/R
+helper's `variant`/`size` options should match what `fooVariants` actually supports (e.g.
+button has 6 variants + 4 sizes; badge has 6 variants). Mirror them in the `Literal` (Python)
+and the doc (R), and forward `size` through the bridge if present. A good way to keep this
+honest is a **variants gallery** (`examples/variants-{py,r}`) — a reference sheet showing
+each component across every variant/size/state in rows; it doubles as living docs and a
+visual regression check.
+
+**Don't make the base font tiny.** The framework's base (`styles.css`) should be **16px**
+(shadcn's real base); controls opt into `text-sm` (14px) via their own classes. Setting the
+base to 14px — or force-flattening all controls to one size — makes the whole UI feel
+shrunk. See scaffold-framework Step 7.
+
 **Icon-grid layouts (e.g. Alert).** Some shadcn components reserve a leading-icon column
 with `grid grid-cols-[0_1fr]` + `col-start-2` on their sub-parts. If your bridge never
 renders an icon, that grid collapses the content column (text wraps to min-content). Keep
