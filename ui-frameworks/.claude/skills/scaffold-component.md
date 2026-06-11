@@ -33,15 +33,93 @@ Pick it in Step 0 — everything else follows automatically.
 
 ---
 
+## Two-phase workflow (shadcn)
+
+The work is split between a script (mechanical) and you (semantic). Every manual step that
+can be automated is in a script — you only do the parts that require judgment.
+
+```
+Phase 1 — prep (script)
+  node scripts/prep-component.mjs <name>
+  → strips TS, fixes imports, writes src/components/<name>.jsx with a bridge stub + @shiny template
+  → prints two-step instructions
+
+Phase 2 — fill (you / Claude)
+  a. Add any missing hook imports at the TOP of the file (never mid-file)
+  b. Install any missing npm deps (e.g. npm install vaul)
+  c. Fill the @shiny annotation: type=, children=, props=
+  d. Write the bridge logic
+
+Phase 3 — finalize (script)
+  node scripts/finalize-component.mjs <name>
+  → reads @shiny annotation → inserts import + registry into index.jsx
+  → appends Python helper to pkg-py/shadcn/__init__.py
+  → appends R helper    to pkg-r/shadcn.R
+  → all three writes are idempotent (safe to re-run)
+
+Phase 4 — build + verify
+  npm run build
+  (then test in an example app)
+```
+
+---
+
+## @shiny annotation format
+
+The annotation is a single comment line in the bridge block. The finalize script reads it.
+
+```jsx
+// @shiny type=Input children=false props=input_id:str,total_pages:int=10,current:int=1,show_ellipsis:bool=True,class_:str=None
+```
+
+| Field | Values | Meaning |
+|---|---|---|
+| `type` | `Display` `Container` `Input` `Action` `Overlay` `Collection` `Hybrid` `Push` | Bridge type — determines hook and structure |
+| `children` | `true` / `false` | `true` = takes `*children` / `...`; Python gets `*children: object`, R skips `check_dots_empty()` |
+| `props` | `name:type[=default]` | Comma-separated prop specs (see below) |
+
+**Prop spec rules:**
+- `name:type` — required positional (no default)
+- `name:type=None` — optional, null default
+- `name:type=value` — optional with default (`str` values need no quotes; type is context)
+- `class_:str=None` — **always the last prop**; the script maps it to `className` on the wire and `class` in R. Auto-added if omitted (with a warning).
+
+**Types:** `str` `int` `float` `bool` `list`
+
+**Examples:**
+
+```
+// Leaf Input:
+// @shiny type=Input children=false props=input_id:str,total_pages:int=10,show_ellipsis:bool=True,class_:str=None
+
+// Overlay with children:
+// @shiny type=Overlay children=true props=input_id:str,trigger_label:str=Open,side:str=right,title:str=None,class_:str=None
+
+// Display with no input_id:
+// @shiny type=Display children=false props=text:str,variant:str=default,class_:str=None
+
+// Container (children only):
+// @shiny type=Container children=true props=title:str=None,class_:str=None
+```
+
+The finalize script generates correctly-typed Python + R helpers from these specs — multi-line
+Python signatures (always under ruff's 88-char limit), aligned R props lists, `check_dots_empty()`
+on leaves, `children=list(children)` on containers.
+
+**After running finalize:** fill in the `TODO` descriptions in the generated helpers — the
+script can't know what `total_pages` means. Everything else is ready to use.
+
+---
+
 ## Pre-flight checklist
 
 Run these before writing any bridge code.
 
 - [ ] **Identify type** (table above). Write it down — it determines the hook and bridge shape.
-- [ ] **Run the prep script** (shadcn): `cd js && node scripts/prep-component.mjs <name>`. Reads `src/components-src/<name>.tsx`, strips TS/exports/bad imports, appends a bridge stub to `src/components/<name>.jsx`. Prints `index.jsx` + Python/R stubs.
+- [ ] **Run the prep script** (shadcn): `cd js && node scripts/prep-component.mjs <name>`. Reads `src/components-src/<name>.tsx`, strips TS/exports/bad imports, appends a bridge stub with `@shiny` template.
 - [ ] **Scan the generated file's imports.** Look for any `@/registry/…/ui/X` paths — the script fixes most but some slip through. Map them to the correct local path or `@/lib/button-base`.
-- [ ] **Check for npm deps.** Does the source import from an npm package not in `package.json`? (e.g. `vaul`, `cmdk`, `embla-carousel-react`, `input-otp`, `react-resizable-panels`, `recharts`). Install *before* writing: `npm install <pkg>`. A missing dep gives a Vite "could not resolve" error at build time, not at write time.
-- [ ] **Check for cross-component shadcn imports.** Does the source import `DialogHeader`, `Button`, etc. from sibling shadcn files? Our bridges export only the Shiny wrapper (`ShinyFoo as Foo`) — sibling imports that expect sub-components (e.g. `DialogHeader`) will fail at build. Decide: use a shared lib file (`@/lib/button-base`), or strip the import if the feature is unused in the bridge.
+- [ ] **Check for npm deps.** Does the source import from a package not in `package.json`? (e.g. `vaul`, `cmdk`, `embla-carousel-react`, `input-otp`, `react-resizable-panels`, `recharts`). Install *before* writing: `npm install <pkg>`. A missing dep gives a Vite "could not resolve" error at build time, not at write time.
+- [ ] **Check for cross-component shadcn imports.** Does the source import `DialogHeader`, `Button`, etc. from sibling shadcn files? Our bridges export only the Shiny wrapper — sibling imports that expect sub-components will fail at build. Decide: use a shared lib file (`@/lib/button-base`), or strip the unused import.
 
 ---
 
@@ -51,6 +129,7 @@ Fill the stub in `src/components/<name>.jsx` in this order.
 
 - [ ] **Add missing imports at the TOP of the file** — immediately after the existing imports, before any function definitions. NEVER place `import { useShinyInput }` or any hook import after the bridge comment; Vite/esbuild requires all imports at the top. This is the single most common mistake made by agents and humans alike.
 - [ ] **Replace the TODO stub** with the bridge for the identified type (see patterns below).
+- [ ] **Fill the `@shiny` annotation** — set `type=`, `children=`, and the complete `props=` list. This is what the finalize script reads; a placeholder will cause an error.
 - [ ] **Destructure `className` from `element.props`** and forward it to the component root.
 - [ ] **Coerce round-tripped booleans with `!!`** on every prop that controls a Radix `open`/`checked`/`disabled`.
 - [ ] **Apply the unconditional-hook-with-noop guard** for any optional `input_id` (see Rule 6).
@@ -58,15 +137,14 @@ Fill the stub in `src/components/<name>.jsx` in this order.
 
 ---
 
-## Post-build checklist
+## Post-bridge checklist
 
-After filling the bridge:
+After filling the bridge and annotation:
 
-- [ ] **Register in `index.jsx`**: add the import and registry entry.
-- [ ] **Python helper**: add to `__init__.py` following the API conventions table.
-- [ ] **R helper**: add to `<framework>.R` following the API conventions table.
+- [ ] **Run finalize**: `node scripts/finalize-component.mjs <name>` — inserts index.jsx entry, appends Python + R helpers. All idempotent.
+- [ ] **Fill in `TODO` descriptions** in the generated Python docstring and R roxygen comments. The script can't know what each prop means.
 - [ ] **Build**: `cd js && npm run build` — zero errors, no unresolved imports.
-- [ ] **Wire-format test**: assert `.to_dict()` shape from the Python builder. Minimum: props keyed correctly, children list present if needed, item arrays serialize. This is required by the testing policy.
+- [ ] **Wire-format test**: assert `.to_dict()` shape from the Python builder. Minimum: props keyed correctly, children list present if needed. Required by the testing policy.
 - [ ] **R parity**: run `make r-check-fixtures`. A component is not done if R is untested.
 
 ---
@@ -647,20 +725,37 @@ shadcn_sheet <- function(input_id, ..., trigger_label = "Open", side = "right",
 
 When wrapping 5+ components at once:
 
-1. **Prep scripts first** — run `prep-component.mjs <name>` for every component. This produces N independent `.jsx` stub files.
-2. **One agent per file** — spawn one Sonnet agent per component, each scoped to its own `.jsx` file only. Do NOT have agents touch `index.jsx`, `__init__.py`, or `shadcn.R` — these are the contention points.
-3. **Main session integrates** — after all agents complete, add registry entries, Python helpers, and R helpers in the main session (serial, no conflicts).
-4. **Build once** — after all integration edits, run `npm run build` once.
-5. **Audit imports** — agents frequently place `import { useShinyInput }` after the bridge comment (mid-file). Grep every new file: `grep -n "^import" js/src/components/<name>.jsx` and confirm all imports are at the top.
+1. **Prep scripts first** — run `prep-component.mjs <name>` for every component. Produces N independent `.jsx` stub files, each with the `@shiny` annotation template.
+2. **One agent per file** — spawn one Sonnet agent per component, each scoped to its own `.jsx` file only. Each agent: fills the bridge + fills the `@shiny` annotation. Do NOT have agents touch `index.jsx`, `__init__.py`, or `shadcn.R`.
+3. **Audit imports** — agents frequently place `import { useShinyInput }` after the bridge comment (mid-file). Before finalizing: `grep -n "^import" js/src/components/<name>.jsx` and confirm all imports are at the top.
+4. **Run finalize for each** — `node scripts/finalize-component.mjs <name>` for every component in sequence. Each call is idempotent. This replaces the previous manual integration of 3 files × N components.
+5. **Build once** — `npm run build` after all finalize calls complete.
 
 ---
 
-## Why the script + fill split
+## Why the two-phase script design saves tokens
 
-The per-component cost was previously dominated by reading long `.tsx` files, transcribing stripped source, and writing boilerplate. The script does all of that deterministically — esbuild strips types, string fixups handle imports/exports, templates print stubs. **No model tokens.** Only the irreducible judgment remains:
+The per-component cost used to be:
+1. Reading the long `.tsx` (tokens)
+2. Transcribing the stripped source (tokens)
+3. Writing boilerplate: import + registry + Python helper + R helper (tokens + error-prone)
 
-- Which prop is `input_id`, which hook (type from the table above)
+**Phase 1 (`prep-component.mjs`)** does (1) and (2) deterministically — esbuild strips types, string fixups handle imports/exports. Zero model tokens.
+
+**Phase 3 (`finalize-component.mjs`)** does (3) deterministically — reads the `@shiny` annotation and generates correctly-typed Python + R helpers, plus idempotent index.jsx edits. Zero model tokens.
+
+**Only the irreducible judgment remains (Phase 2):**
+- Which type (Display / Input / Overlay / …)
 - Value-shape quirks (Slider array-wrap, Calendar ISO string, event nonce, Carousel `setApi`)
-- Free-form `children` vs structured `items` array vs metadata + `children`
+- Hook wiring, noop guard, `e.preventDefault()` for anchors
+- The `@shiny` annotation prop list
 
-Loop per component: `prep-component.mjs <name>` → fill bridge → paste stubs → build → verify.
+Loop per component:
+```
+prep-component.mjs <name>
+→ fill bridge + @shiny annotation
+→ finalize-component.mjs <name>
+→ npm run build + verify
+```
+
+The `@shiny` annotation is also the canonical record of the component's API surface — it's what the finalize script uses to derive helpers, and it documents the props in a machine-readable way that future scripts (e.g. a registry-drift checker) can also consume.

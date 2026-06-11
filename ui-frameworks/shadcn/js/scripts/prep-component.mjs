@@ -68,14 +68,16 @@ jsx = jsx.replace(/\bexport\s+(function|const|class)\b/g, "$1"); // export funct
 
 const bridge = `
 // --- shinyreact bridge ---
-// TODO(you): choose the component type and wire it. Types:
-//   Display      -> no hook; read props.
-//   Input        -> useShinyInput(input_id, default)
-//   Action       -> useShinyInput(id, 0, { debounceMs: 0, priority: "event" })
-//   Overlay      -> useShinyInput(id, false) for open state + children
-//   Collection   -> items prop array (see dropdown-menu.jsx)
-//   Hybrid/Push  -> see tabs.jsx / sonner.jsx
-// Forward className to the root via the component (it merges with cn()).
+// @shiny type=TODO children=false props=PROP:TYPE
+//   type    : Display | Container | Input | Action | Overlay | Collection | Hybrid | Push
+//   children: true (takes *children / ...) | false (leaf)
+//   props   : comma-separated  name:type[=default]
+//     types : str  int  float  bool  list
+//     no =  : required positional; =None : optional null; =val : optional with default
+//     class_:str=None is always the last prop — maps to className on the wire
+//   e.g.  @shiny type=Input children=false props=input_id:str,label:str=None,class_:str=None
+//   e.g.  @shiny type=Overlay children=true props=input_id:str,trigger_label:str=Open,class_:str=None
+//   When done: node scripts/finalize-component.mjs ${name}
 function Shiny${pascal}({ element, children }) {
   const { className } = element.props;
   return (
@@ -91,26 +93,21 @@ export { Shiny${pascal} as ${pascal} };
 writeFileSync(outPath, jsx.replace(/\n{3,}/g, "\n\n").trimEnd() + "\n" + bridge);
 
 const snake = name.replace(/-/g, "_");
-console.log(`✓ wrote src/components/${name}.jsx (shadcn source stripped + bridge stub)
+console.log(`✓ wrote src/components/${name}.jsx
 
-Next (fill the fuzzy parts):
+Two-phase workflow:
 
-1. index.jsx — add:
-     import { ${pascal} } from "@/components/${name}";
-     "shadcn:${pascal}": ${pascal},
+Phase 1 — fill the bridge (you / Claude):
+  a. Open src/components/${name}.jsx
+  b. Replace type=TODO with the real type, fill props=, set children=true/false
+  c. Write the bridge logic (hook, props destructure, JSX)
 
-2. pkg-py/shadcn/__init__.py — add (class_ last, keyword-only):
-     def ${snake}(input_id: str, *, class_: str | None = None) -> shinyreact.Node:
-         return shinyreact.Node(
-             type="shadcn:${pascal}",
-             props={"input_id": input_id, "className": class_},
-         )
+Phase 2 — mechanical integration (script):
+  node scripts/finalize-component.mjs ${name}
+  → reads @shiny annotation, writes index.jsx + Python + R helpers automatically
 
-3. pkg-r/shadcn.R — add (\`...\` separator + check_dots_empty, class last):
-     shadcn_${snake} <- function(input_id, ..., class = NULL) {
-       rlang::check_dots_empty()
-       node("shadcn:${pascal}", props = list(input_id = input_id, className = class))
-     }
+Then build + verify:
+  npm run build
 
-4. Fill the bridge in src/components/${name}.jsx, then \`npm run build\` and screenshot.
+See scaffold-component skill for bridge patterns and the @shiny annotation format.
 `);

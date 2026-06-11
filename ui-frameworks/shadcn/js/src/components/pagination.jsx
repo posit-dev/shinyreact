@@ -84,7 +84,7 @@ function PaginationEllipsis({
 }
 
 // --- shinyreact bridge ---
-// Input: input_id tracks current page (1-based). total_pages controls range.
+// @shiny type=Input children=false props=input_id:str,total_pages:int=10,current:int=1,show_ellipsis:bool=True,class_:str=None
 function ShinyPagination({ element }) {
   const {
     input_id,
