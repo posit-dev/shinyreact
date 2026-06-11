@@ -2,9 +2,19 @@
 
 /* Force-generate layout utilities used by example apps (Tailwind only scans
    js/src, not app.py/app.R, so app-only classes must be listed here). */
-@source inline("grid grid-cols-1 grid-cols-2 flex-wrap uppercase tracking-wide");
+@source inline("grid grid-cols-1 grid-cols-2 col-span-2 flex-wrap uppercase tracking-wide tracking-tight");
 /* Utilities used by the variants gallery to demo className customization. */
 @source inline("bg-sky-600 hover:bg-sky-700 bg-emerald-600 text-white rounded-full");
+/* Full layout vocabulary for the shinyreact-shadcn Component Explorer gallery. */
+@source inline("flex flex-col flex-wrap flex-1 items-center items-start justify-center justify-between");
+@source inline("gap-1 gap-2 gap-3 gap-4 gap-5 gap-6");
+@source inline("p-4 p-5 p-10 px-1 px-3 py-1 py-2 py-4 py-8 pb-4 pb-6");
+@source inline("mb-3 mb-6 mb-8 mb-10 mb-16 mt-1 mt-2 mt-3 mx-auto");
+@source inline("rounded-lg rounded-md rounded-full border border-b bg-card bg-muted");
+@source inline("text-xs text-sm text-base text-lg text-2xl text-3xl text-center text-muted-foreground");
+@source inline("font-medium font-semibold font-bold select-none");
+@source inline("w-full w-max w-20 w-28 w-1/2 w-3/4 w-5/6 shrink-0");
+@source inline("h-3 h-4 h-5 h-24 h-32 h-36 h-full size-4 size-6 size-8 size-10 size-12");
 
 /*
   Bootstrap compatibility layer — must be outside @layer so these rules take
@@ -132,4 +142,7 @@
 }
 .shinyreact-output .grid-cols-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.shinyreact-output .col-span-2 {
+  grid-column: span 2 / span 2 !important;
 }
