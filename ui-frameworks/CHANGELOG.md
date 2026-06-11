@@ -9,6 +9,44 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Parallel-agent batch 5 (36 → 41)
+
+Second parallel batch. Same pattern: prep scripts → 5 Sonnet agents (bridges
+only) → main integrates + builds once.
+
+**Components**: Drawer (Overlay, vaul, `direction` prop), ContextMenu (Collection,
+right-click trigger = children), Menubar (Collection, horizontal bar of menus,
+fires `{menu, value, nonce}`), NavigationMenu (Collection, data-driven nav links
++ dropdowns, optional `input_id` for click tracking), Command (Input+Collection,
+cmdk-powered filterable palette, `items`/`group` grouping).
+
+New npm deps installed: `vaul`, `cmdk` (bundled, not externalized).
+
+Import-order fix: agents placed `import { useShinyInput }` after the bridge
+comment (mid-file) — rolled those to the top before building. Build: 931ms,
+zero errors.
+
+---
+
+## 2026-06-11 — Parallel-agent batch 4 (31 → 36)
+
+First batch wrapped with parallel Sonnet agents. 5 prep scripts ran first
+(`prep-component.mjs` for each), then 5 agents filled the bridges concurrently —
+each scoped to one `.jsx` file only. Main session integrated registry + helpers
+serially and built once.
+
+**Components**: ScrollArea (Container: `height`/`orientation`), Tooltip (Display:
+`content`/`side`), HoverCard (Display: `trigger_label` hover trigger + children
+card body), AlertDialog (Action: `confirm_id`/`cancel_id` counters via
+`debounceMs:0, priority:"event"`, hooks called unconditionally with `__noop_*__`
+fallback ids), Sheet (Overlay: `input_id` open-state + `side` prop, same shape as
+Dialog/Collapsible).
+
+Wall-clock: 5 bridges in parallel vs sequential. Shared-file contention avoided
+by keeping agents author-only (no index.jsx / py / R writes). Zero build errors.
+
+---
+
 ## 2026-06-11 — Bulk wrap batch 3 via the script (27 → 31)
 
 ToggleGroup, Breadcrumb, Collapsible, Accordion. Patterns: ToggleGroup =

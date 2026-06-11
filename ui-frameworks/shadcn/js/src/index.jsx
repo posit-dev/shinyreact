@@ -31,6 +31,16 @@ import { Textarea } from "@/components/textarea";
 import { Toaster } from "@/components/sonner";
 import { Toggle } from "@/components/toggle";
 import { Avatar } from "@/components/avatar";
+import { AlertDialog } from "@/components/alert-dialog";
+import { Command } from "@/components/command";
+import { ContextMenu } from "@/components/context-menu";
+import { Drawer } from "@/components/drawer";
+import { HoverCard } from "@/components/hover-card";
+import { Menubar } from "@/components/menubar";
+import { NavigationMenu } from "@/components/navigation-menu";
+import { ScrollArea } from "@/components/scroll-area";
+import { Sheet } from "@/components/sheet";
+import { Tooltip } from "@/components/tooltip";
 
 window.shinyreact.registerComponents(null, {
   "shadcn:Alert": Alert,
@@ -64,4 +74,14 @@ window.shinyreact.registerComponents(null, {
   "shadcn:Toaster": Toaster,
   "shadcn:Toggle": Toggle,
   "shadcn:Avatar": Avatar,
+  "shadcn:AlertDialog": AlertDialog,
+  "shadcn:Command": Command,
+  "shadcn:ContextMenu": ContextMenu,
+  "shadcn:Drawer": Drawer,
+  "shadcn:HoverCard": HoverCard,
+  "shadcn:Menubar": Menubar,
+  "shadcn:NavigationMenu": NavigationMenu,
+  "shadcn:ScrollArea": ScrollArea,
+  "shadcn:Sheet": Sheet,
+  "shadcn:Tooltip": Tooltip,
 });

@@ -526,6 +526,193 @@ shadcn_collapsible <- function(input_id, ..., trigger_label = "Toggle", open = F
   ))
 }
 
+#' A swipe drawer (vaul). Slides in from an edge; server reads input$<input_id> as boolean.
+#' @param input_id Shiny input id — TRUE while the drawer is open.
+#' @param ... Content nodes rendered inside the drawer.
+#' @param trigger_label Label on the button that opens the drawer (default "Open").
+#' @param direction Edge the drawer slides from: "bottom", "top", "right", or "left".
+#' @param title Optional drawer header title.
+#' @param description Optional muted description below the title.
+#' @param class Extra CSS classes merged onto the drawer content panel.
+shadcn_drawer <- function(input_id, ..., trigger_label = "Open", direction = "bottom",
+                          title = NULL, description = NULL, class = NULL) {
+  node("shadcn:Drawer", ..., props = list(
+    input_id      = input_id,
+    trigger_label = trigger_label,
+    direction     = direction,
+    title         = title,
+    description   = description,
+    className     = class
+  ))
+}
+
+#' A right-click context menu. Children = the trigger area; items = menu contents.
+#'
+#' Clicking a menu item sets input$<input_id> to list(value=, nonce=).
+#' Use the shadcn_menu_* helpers to build items (same format as shadcn_dropdown_menu).
+#'
+#' @param input_id Shiny input id for click events.
+#' @param ... The area the user right-clicks on (child nodes).
+#' @param items Menu contents built with shadcn_menu_* helpers.
+#' @param class Extra CSS classes merged onto the trigger wrapper.
+shadcn_context_menu <- function(input_id, ..., items = list(), class = NULL) {
+  node("shadcn:ContextMenu", ..., props = list(
+    input_id  = input_id,
+    items     = items,
+    className = class
+  ))
+}
+
+#' A single menu in a shadcn_menubar() (label + items).
+#' @param label Text shown on the menu trigger in the bar.
+#' @param ... Menu items built with shadcn_menu_* helpers.
+shadcn_menubar_menu <- function(label, ...) {
+  list(label = label, items = list(...))
+}
+
+#' A horizontal menu bar. Clicking an item sets input$<input_id> to
+#' list(menu=, value=, nonce=).
+#' @param input_id Shiny input id for click events.
+#' @param ... Menu specs built with shadcn_menubar_menu().
+#' @param class Extra CSS classes merged onto the bar element.
+shadcn_menubar <- function(input_id, ..., class = NULL) {
+  node("shadcn:Menubar", props = list(
+    input_id  = input_id,
+    menus     = list(...),
+    className = class
+  ))
+}
+
+#' A navigation item for shadcn_navigation_menu().
+#' @param label Text shown on the nav trigger.
+#' @param href Optional link URL (plain link). Omit for dropdown triggers.
+#' @param description Optional description shown in sub-item dropdowns.
+#' @param items Optional list of sub-items (makes this a dropdown trigger).
+shadcn_nav_item <- function(label, href = NULL, description = NULL, items = NULL) {
+  d <- list(label = label)
+  if (!is.null(href)) d$href <- href
+  if (!is.null(description)) d$description <- description
+  if (!is.null(items)) d$items <- items
+  d
+}
+
+#' A horizontal navigation bar. Data-driven from an items array.
+#'
+#' If input_id is provided, clicking a link fires input$<input_id> as
+#' list(value=label, nonce=) instead of navigating.
+#'
+#' @param ... Nav items built with shadcn_nav_item().
+#' @param input_id Optional Shiny input id for click tracking.
+#' @param class Extra CSS classes merged onto the nav root.
+shadcn_navigation_menu <- function(..., input_id = NULL, class = NULL) {
+  node("shadcn:NavigationMenu", props = list(
+    items     = list(...),
+    input_id  = input_id,
+    className = class
+  ))
+}
+
+#' A command palette / filterable list. Server reads input$<input_id> as the
+#' selected item's value string.
+#' @param input_id Shiny input id.
+#' @param items List of list(value=, label=, group=) items.
+#'   group is optional — items with the same group appear under one heading.
+#' @param placeholder Search input placeholder text (default "Search...").
+#' @param empty_label Text shown when no items match (default "No results found.").
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_command <- function(input_id, items, ..., placeholder = "Search...",
+                           empty_label = "No results found.", class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:Command", props = list(
+    input_id    = input_id,
+    items       = items,
+    placeholder = placeholder,
+    empty_label = empty_label,
+    className   = class
+  ))
+}
+
+#' A scrollable container. Children are the scroll content.
+#' @param ... Content nodes rendered inside the scrollable area.
+#' @param height CSS height string (default "300px").
+#' @param orientation "vertical", "horizontal", or "both".
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_scroll_area <- function(..., height = "300px", orientation = "vertical", class = NULL) {
+  node("shadcn:ScrollArea", ..., props = list(
+    height = height, orientation = orientation, className = class
+  ))
+}
+
+#' A hover tooltip. Children = the trigger element; content = tooltip text.
+#' @param ... The element(s) the user hovers over to see the tooltip.
+#' @param content Text shown in the tooltip bubble.
+#' @param side Which side the tooltip appears on: "top", "right", "bottom", or "left".
+#' @param class Extra CSS classes merged onto the tooltip content.
+shadcn_tooltip <- function(..., content = "", side = "top", class = NULL) {
+  node("shadcn:Tooltip", ..., props = list(
+    content = content, side = side, className = class
+  ))
+}
+
+#' A hover card. Children = card body; trigger_label = the trigger text.
+#' @param ... Content nodes rendered inside the card panel.
+#' @param trigger_label Text shown as the hover trigger link (default "Hover").
+#' @param side Which side the card appears on (default "bottom").
+#' @param align Horizontal alignment: "start", "center", or "end" (default "center").
+#' @param class Extra CSS classes merged onto the card content panel.
+shadcn_hover_card <- function(..., trigger_label = "Hover", side = "bottom",
+                              align = "center", class = NULL) {
+  node("shadcn:HoverCard", ..., props = list(
+    trigger_label = trigger_label, side = side, align = align, className = class
+  ))
+}
+
+#' A confirmation dialog. Server reads input$<confirm_id> as a click counter.
+#' @param confirm_id Shiny input id incremented when the user confirms.
+#' @param cancel_id Optional Shiny input id incremented on cancel.
+#' @param trigger_label Label on the button that opens the dialog (default "Open").
+#' @param title Dialog title (default "Are you sure?").
+#' @param description Optional muted description text.
+#' @param confirm_label Label on the confirm button (default "Continue").
+#' @param cancel_label Label on the cancel button (default "Cancel").
+#' @param class Extra CSS classes merged onto the dialog content panel.
+shadcn_alert_dialog <- function(confirm_id, ..., cancel_id = NULL,
+                                trigger_label = "Open", title = "Are you sure?",
+                                description = NULL, confirm_label = "Continue",
+                                cancel_label = "Cancel", class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:AlertDialog", props = list(
+    confirm_id    = confirm_id,
+    cancel_id     = cancel_id,
+    trigger_label = trigger_label,
+    title         = title,
+    description   = description,
+    confirm_label = confirm_label,
+    cancel_label  = cancel_label,
+    className     = class
+  ))
+}
+
+#' A side-panel sheet. Server reads input$<input_id> as boolean (open state).
+#' @param input_id Shiny input id — TRUE while sheet is open.
+#' @param ... Content nodes rendered inside the sheet.
+#' @param trigger_label Label on the button that opens the sheet (default "Open").
+#' @param side Edge the sheet slides from: "right", "left", "top", or "bottom".
+#' @param title Optional sheet header title.
+#' @param description Optional muted description below the title.
+#' @param class Extra CSS classes merged onto the sheet content panel.
+shadcn_sheet <- function(input_id, ..., trigger_label = "Open", side = "right",
+                         title = NULL, description = NULL, class = NULL) {
+  node("shadcn:Sheet", ..., props = list(
+    input_id      = input_id,
+    trigger_label = trigger_label,
+    side          = side,
+    title         = title,
+    description   = description,
+    className     = class
+  ))
+}
+
 #' An accordion section header for shadcn_accordion() (value + title).
 #' @param value Identifier for this section.
 #' @param title Header text.

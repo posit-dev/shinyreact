@@ -883,6 +883,315 @@ def aspect_ratio(
     )
 
 
+def drawer(
+    input_id: str,
+    *children: object,
+    trigger_label: str = "Open",
+    direction: Literal["bottom", "top", "right", "left"] = "bottom",
+    title: str | None = None,
+    description: str | None = None,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A swipe drawer (vaul). Slides in from an edge; server reads open state as bool.
+
+    Args:
+        input_id: Shiny input id — ``True`` while the drawer is open.
+        *children: Content nodes rendered inside the drawer.
+        trigger_label: Label on the button that opens the drawer.
+        direction: Edge the drawer slides from — "bottom", "top", "right", or "left".
+        title: Optional drawer header title.
+        description: Optional muted description below the title.
+        class_: Extra CSS classes merged onto the drawer content panel.
+    """
+    return shinyreact.Node(
+        type="shadcn:Drawer",
+        props={
+            "input_id": input_id,
+            "trigger_label": trigger_label,
+            "direction": direction,
+            "title": title,
+            "description": description,
+            "className": class_,
+        },
+        children=list(children),
+    )
+
+
+def context_menu(
+    input_id: str,
+    *children: object,
+    items: list[dict[str, object]] | None = None,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A right-click context menu. Children = the trigger area; items = menu contents.
+
+    Clicking a menu item sets ``input.<input_id>()`` to ``{"value": ..., "nonce": ...}``
+    (nonce changes on every click so repeated clicks still register).
+    Use the same ``menu_item``/``menu_label``/``menu_separator`` helpers as
+    :func:`dropdown_menu`.
+
+    Args:
+        input_id: Shiny input id for click events.
+        *children: The area the user right-clicks on.
+        items: Menu contents built with the ``menu_*`` helpers.
+        class_: Extra CSS classes merged onto the trigger wrapper.
+    """
+    return shinyreact.Node(
+        type="shadcn:ContextMenu",
+        props={"input_id": input_id, "items": items or [], "className": class_},
+        children=list(children),
+    )
+
+
+def menubar_menu(label: str, *items: dict[str, object]) -> dict[str, object]:
+    """A single menu in a :func:`menubar` (label + items).
+
+    Args:
+        label: Text shown on the menu trigger in the bar.
+        *items: Menu items built with the ``menu_*`` helpers.
+    """
+    return {"label": label, "items": list(items)}
+
+
+def menubar(
+    input_id: str,
+    *menus: dict[str, object],
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A horizontal menu bar. Clicking an item sets ``input.<input_id>()`` to
+    ``{"menu": ..., "value": ..., "nonce": ...}``.
+
+    Args:
+        input_id: Shiny input id for click events.
+        *menus: Menu specs built with :func:`menubar_menu`.
+        class_: Extra CSS classes merged onto the bar element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Menubar",
+        props={"input_id": input_id, "menus": list(menus), "className": class_},
+    )
+
+
+def nav_item(
+    label: str,
+    href: str | None = None,
+    *,
+    description: str | None = None,
+    items: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
+    """A navigation item for :func:`navigation_menu`.
+
+    Args:
+        label: Text shown on the nav trigger.
+        href: Link URL for plain links (omit for dropdown triggers).
+        description: Optional description shown in sub-item dropdowns.
+        items: Sub-items (makes this a dropdown trigger, not a plain link).
+    """
+    d: dict[str, object] = {"label": label}
+    if href is not None:
+        d["href"] = href
+    if description is not None:
+        d["description"] = description
+    if items is not None:
+        d["items"] = items
+    return d
+
+
+def navigation_menu(
+    *items: dict[str, object],
+    input_id: str | None = None,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A horizontal navigation bar. Data-driven from an ``items`` array.
+
+    If ``input_id`` is provided, clicking a link fires ``input.<input_id>()``
+    as ``{"value": label, "nonce": ...}`` instead of navigating.
+
+    Args:
+        *items: Nav items built with :func:`nav_item`.
+        input_id: Optional Shiny input id for click tracking.
+        class_: Extra CSS classes merged onto the nav root.
+    """
+    return shinyreact.Node(
+        type="shadcn:NavigationMenu",
+        props={"items": list(items), "input_id": input_id, "className": class_},
+    )
+
+
+def command(
+    input_id: str,
+    items: list[dict[str, object]],
+    *,
+    placeholder: str = "Search...",
+    empty_label: str = "No results found.",
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A command palette / filterable list. Server reads ``input.<input_id>()`` as
+    the selected item's value string.
+
+    Args:
+        input_id: Shiny input id.
+        items: List of ``{"value": ..., "label": ..., "group": ...}`` dicts.
+            ``group`` is optional — items with the same group appear under one heading.
+        placeholder: Search input placeholder text.
+        empty_label: Text shown when no items match the search.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Command",
+        props={
+            "input_id": input_id,
+            "items": items,
+            "placeholder": placeholder,
+            "empty_label": empty_label,
+            "className": class_,
+        },
+    )
+
+
+def scroll_area(
+    *children: object,
+    height: str = "300px",
+    orientation: Literal["vertical", "horizontal", "both"] = "vertical",
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A scrollable container. Children are the scroll content.
+
+    Args:
+        *children: Content nodes rendered inside the scrollable area.
+        height: CSS height string (e.g. ``"300px"``).
+        orientation: "vertical", "horizontal", or "both".
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:ScrollArea",
+        props={"height": height, "orientation": orientation, "className": class_},
+        children=list(children),
+    )
+
+
+def tooltip(
+    *children: object,
+    content: str = "",
+    side: Literal["top", "right", "bottom", "left"] = "top",
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A hover tooltip. Children = the trigger element; ``content`` = tooltip text.
+
+    Args:
+        *children: The element(s) the user hovers over to see the tooltip.
+        content: Text shown in the tooltip bubble.
+        side: Which side the tooltip appears on.
+        class_: Extra CSS classes merged onto the tooltip content.
+    """
+    return shinyreact.Node(
+        type="shadcn:Tooltip",
+        props={"content": content, "side": side, "className": class_},
+        children=list(children),
+    )
+
+
+def hover_card(
+    *children: object,
+    trigger_label: str = "Hover",
+    side: Literal["top", "right", "bottom", "left"] = "bottom",
+    align: Literal["start", "center", "end"] = "center",
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A hover card. Children = card body; ``trigger_label`` = the trigger text.
+
+    Args:
+        *children: Content nodes rendered inside the card panel.
+        trigger_label: Text shown as the hover trigger link.
+        side: Which side the card appears on.
+        align: Horizontal alignment of the card relative to the trigger.
+        class_: Extra CSS classes merged onto the card content panel.
+    """
+    return shinyreact.Node(
+        type="shadcn:HoverCard",
+        props={
+            "trigger_label": trigger_label,
+            "side": side,
+            "align": align,
+            "className": class_,
+        },
+        children=list(children),
+    )
+
+
+def alert_dialog(
+    confirm_id: str,
+    *,
+    cancel_id: str | None = None,
+    trigger_label: str = "Open",
+    title: str = "Are you sure?",
+    description: str | None = None,
+    confirm_label: str = "Continue",
+    cancel_label: str = "Cancel",
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A confirmation dialog. Server reads ``input.<confirm_id>()`` as a click counter.
+
+    Args:
+        confirm_id: Shiny input id incremented when the user confirms.
+        cancel_id: Optional Shiny input id incremented on cancel.
+            If omitted, cancel just closes the dialog without firing.
+        trigger_label: Label on the button that opens the dialog.
+        title: Dialog title.
+        description: Optional muted description text.
+        confirm_label: Label on the confirm button.
+        cancel_label: Label on the cancel button.
+        class_: Extra CSS classes merged onto the dialog content panel.
+    """
+    return shinyreact.Node(
+        type="shadcn:AlertDialog",
+        props={
+            "confirm_id": confirm_id,
+            "cancel_id": cancel_id,
+            "trigger_label": trigger_label,
+            "title": title,
+            "description": description,
+            "confirm_label": confirm_label,
+            "cancel_label": cancel_label,
+            "className": class_,
+        },
+    )
+
+
+def sheet(
+    input_id: str,
+    *children: object,
+    trigger_label: str = "Open",
+    side: Literal["right", "left", "top", "bottom"] = "right",
+    title: str | None = None,
+    description: str | None = None,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A side-panel sheet. Server reads ``input.<input_id>()`` as bool (open state).
+
+    Args:
+        input_id: Shiny input id — ``True`` while the sheet is open.
+        *children: Content nodes rendered inside the sheet.
+        trigger_label: Label on the button that opens the sheet.
+        side: Edge the sheet slides in from — "right", "left", "top", or "bottom".
+        title: Optional sheet header title.
+        description: Optional muted description below the title.
+        class_: Extra CSS classes merged onto the sheet content panel.
+    """
+    return shinyreact.Node(
+        type="shadcn:Sheet",
+        props={
+            "input_id": input_id,
+            "trigger_label": trigger_label,
+            "side": side,
+            "title": title,
+            "description": description,
+            "className": class_,
+        },
+        children=list(children),
+    )
+
+
 def radio_group(
     input_id: str,
     choices: list[Union[str, dict[str, str]]],
