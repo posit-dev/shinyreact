@@ -23,6 +23,7 @@ def _dep() -> HTMLDependency:
 
 def badge(
     text: str,
+    *,
     variant: Literal["default", "secondary", "outline"] = "default",
 ) -> shinyreact.Node:
     """Display a small status badge.
@@ -40,6 +41,7 @@ def badge(
 def button(
     input_id: str,
     label: str,
+    *,
     variant: Literal["default", "outline", "secondary", "ghost"] = "default",
 ) -> shinyreact.Node:
     """An action button. Server reads ``input.<input_id>()`` as a click counter.
@@ -57,6 +59,7 @@ def button(
 
 def calendar(
     input_id: str,
+    *,
     selected: str | None = None,
 ) -> shinyreact.Node:
     """A single-date picker. Server reads ``input.<input_id>()`` as an ISO date string.
@@ -93,6 +96,7 @@ def card(
 
 def text_input(
     input_id: str,
+    *,
     placeholder: str = "",
     label: str | None = None,
     debounce_ms: int = 250,
@@ -117,6 +121,7 @@ def text_input(
 
 
 def separator(
+    *,
     orientation: Literal["horizontal", "vertical"] = "horizontal",
 ) -> shinyreact.Node:
     """A thin rule line for visual separation.
@@ -133,6 +138,7 @@ def separator(
 def select(
     input_id: str,
     choices: list[Union[str, dict[str, str]]],
+    *,
     selected: str | None = None,
     label: str | None = None,
 ) -> shinyreact.Node:
@@ -157,6 +163,7 @@ def select(
 
 def slider(
     input_id: str,
+    *,
     min: int | float = 0,
     max: int | float = 100,
     step: int | float = 1,
@@ -188,6 +195,7 @@ def slider(
 
 def switch(
     input_id: str,
+    *,
     label: str | None = None,
     checked: bool = False,
 ) -> shinyreact.Node:
@@ -210,6 +218,7 @@ def switch(
 
 def alert(
     description: str,
+    *,
     title: str | None = None,
     variant: Literal["default", "destructive"] = "default",
 ) -> shinyreact.Node:
@@ -233,6 +242,7 @@ def alert(
 def checkbox(
     input_id: str,
     label: str,
+    *,
     checked: bool = False,
 ) -> shinyreact.Node:
     """A checkbox. Server reads ``input.<input_id>()`` as a boolean.
@@ -314,6 +324,7 @@ def popover(
 def menu_item(
     value: str,
     label: str,
+    *,
     disabled: bool = False,
     variant: Literal["default", "destructive"] = "default",
 ) -> dict[str, object]:
@@ -347,6 +358,7 @@ def menu_separator() -> dict[str, object]:
 def menu_checkbox(
     input_id: str,
     label: str,
+    *,
     checked: bool = False,
 ) -> dict[str, object]:
     """A toggleable menu item with its own boolean Shiny input.
@@ -407,6 +419,7 @@ def dropdown_menu(
 def table(
     columns: list[str],
     rows: list[list[object]],
+    *,
     caption: str | None = None,
 ) -> shinyreact.Node:
     """A display-only data table. No Shiny input.
@@ -463,6 +476,7 @@ def tabs(
 
 
 def toaster(
+    *,
     message_type: str = "toast",
     position: str = "bottom-right",
 ) -> shinyreact.Node:
@@ -482,6 +496,7 @@ def toaster(
 async def toast(
     session: object,
     message: str,
+    *,
     description: str | None = None,
     type: Literal[
         "default", "success", "info", "warning", "error", "loading"
