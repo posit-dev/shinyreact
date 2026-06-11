@@ -1,7 +1,7 @@
-# Component gallery — every shadcn x shinyreact component in one app.
+# Component gallery — every shadcn x shinyreact component in one showcase.
 #
-# Organized with Tabs into Inputs / Display / Actions / Feedback. Each panel is
-# live-wired so you can interact and watch the reactive values update.
+# Each component sits in a labeled preview box (like shadcn's own docs), grouped
+# into tabs. Every panel is live-wired so you can interact and watch values update.
 # Run: shiny::runApp("ui-frameworks/shadcn/examples/gallery-r")
 
 library(shiny)
@@ -13,28 +13,37 @@ dep <- shadcn_dep(file.path(app_dir, "../../www"))
 
 ui <- page_react(
   tags$div(
-    # Outer div is page chrome (htmltools, not React), so a string style is fine.
-    # Inside render_react, use class = with Tailwind utilities — React rejects
-    # string styles (error #62).
     output_react("gallery", extra_deps = list(dep)),
-    style = "max-width:640px; margin:2rem auto; padding:0 1rem;"
+    style = "max-width:720px; margin:2.5rem auto; padding:0 1rem;"
   ),
   title = "shadcn x shinyreact gallery"
 )
 
+# A labeled preview box wrapping one component (shadcn-docs style).
+demo <- function(label, ...) {
+  tags$div(
+    tags$div(
+      label,
+      class = "text-xs font-medium uppercase tracking-wide text-muted-foreground"
+    ),
+    tags$div(..., class = "flex flex-col gap-3"),
+    class = "rounded-lg border p-4 flex flex-col gap-3"
+  )
+}
+
+grid <- function(...) tags$div(..., class = "grid grid-cols-2 gap-4")
+stack <- function(...) tags$div(..., class = "flex flex-col gap-4")
+
 server <- function(input, output, session) {
   last_menu <- reactiveVal("none")
 
-  observeEvent(input$g_menu, {
-    last_menu(input$g_menu$value)
+  observeEvent(input$menu_action, {
+    last_menu(input$menu_action$value)
   }, ignoreInit = TRUE)
 
-  observeEvent(input$g_toast, {
-    shadcn_toast(
-      session,
-      "Saved!",
-      description = "Your settings were updated.",
-      type = "success"
+  observeEvent(input$toast_btn, {
+    shadcn_toast(session, "Saved!",
+      description = "Your settings were updated.", type = "success"
     )
   }, ignoreInit = TRUE)
 
@@ -47,25 +56,31 @@ server <- function(input, output, session) {
     notify <- isTRUE(input$g_notify)
     terms  <- isTRUE(input$g_terms)
     picked <- if (!is.null(input$g_date)) input$g_date else NULL
-    when   <- if (!is.null(picked)) format(as.Date(picked), "%b %d, %Y") else "none"
+    when   <- if (!is.null(picked)) format(as.Date(picked), "%b %d, %Y") else "—"
 
-    tags$div(
-      shadcn_input("g_name", placeholder = "Your name…", label = "Text input"),
-      shadcn_select(
-        "g_fruit",
-        choices = list(
-          list(value = "apple", label = "Apple"),
-          list(value = "banana", label = "Banana"),
-          list(value = "cherry", label = "Cherry")
-        ),
-        selected = "apple",
-        label = "Select"
+    stack(
+      demo("Text input", shadcn_input("g_name", placeholder = "Your name…")),
+      demo(
+        "Select",
+        shadcn_select(
+          "g_fruit",
+          choices = list(
+            list(value = "apple", label = "Apple"),
+            list(value = "banana", label = "Banana"),
+            list(value = "cherry", label = "Cherry")
+          ),
+          selected = "apple"
+        )
       ),
-      shadcn_slider("g_level", min = 0, max = 100, step = 5, value = 40, label = "Slider"),
-      shadcn_switch("g_notify", label = "Switch — notifications", checked = TRUE),
-      shadcn_checkbox("g_terms", label = "Checkbox — accept terms"),
-      shadcn_calendar("g_date"),
-      shadcn_separator(),
+      demo(
+        "Slider",
+        shadcn_slider("g_level", min = 0, max = 100, step = 5, value = 40, label = "Level")
+      ),
+      grid(
+        demo("Switch", shadcn_switch("g_notify", label = "Notifications", checked = TRUE)),
+        demo("Checkbox", shadcn_checkbox("g_terms", label = "Accept terms"))
+      ),
+      demo("Calendar", shadcn_calendar("g_date")),
       shadcn_alert(
         paste0(
           "name=", if (nzchar(name)) name else "∅",
@@ -73,95 +88,101 @@ server <- function(input, output, session) {
           " · notify=", notify, " · terms=", terms, " · date=", when
         ),
         title = "Live input values"
-      ),
-      class = "flex flex-col gap-4"
+      )
     )
   }
 
   display_panel <- function() {
-    tags$div(
-      tags$div(
-        shadcn_badge("default"),
-        shadcn_badge("secondary", variant = "secondary"),
-        shadcn_badge("outline", variant = "outline"),
-        class = "flex gap-2"
+    stack(
+      demo(
+        "Badge",
+        tags$div(
+          shadcn_badge("default"),
+          shadcn_badge("secondary", variant = "secondary"),
+          shadcn_badge("outline", variant = "outline"),
+          class = "flex gap-2 flex-wrap"
+        )
       ),
-      shadcn_alert("A neutral, informational message.", title = "Default alert"),
-      shadcn_alert(
-        "Something needs your attention.",
-        title = "Destructive alert",
-        variant = "destructive"
+      demo(
+        "Alert",
+        shadcn_alert("A neutral, informational message.", title = "Heads up"),
+        shadcn_alert("Something needs your attention.",
+          title = "Error", variant = "destructive"
+        )
       ),
-      shadcn_separator(),
-      shadcn_table(
-        columns = c("Name", "Role", "Commits"),
-        rows = list(
-          list("Ada", "Author", 128L),
-          list("Linus", "Maintainer", 4096L),
-          list("Grace", "Reviewer", 64L)
-        ),
-        caption = "Table — contributor activity"
-      ),
-      class = "flex flex-col gap-4"
+      demo(
+        "Table",
+        shadcn_table(
+          columns = c("Name", "Role", "Commits"),
+          rows = list(
+            list("Ada", "Author", 128L),
+            list("Linus", "Maintainer", 4096L),
+            list("Grace", "Reviewer", 64L)
+          ),
+          caption = "Contributor activity"
+        )
+      )
     )
   }
 
   actions_panel <- function() {
     clicks <- if (!is.null(input$g_btn)) input$g_btn else 0L
-    tags$div(
-      tags$div(
-        shadcn_button("g_btn", "Button"),
-        shadcn_dropdown_menu(
-          "g_menu",
-          shadcn_menu_label("Actions"),
-          shadcn_menu_item("edit", "Edit"),
-          shadcn_menu_item("duplicate", "Duplicate"),
-          shadcn_menu_submenu(
-            "Move to",
-            shadcn_menu_item("inbox", "Inbox"),
-            shadcn_menu_item("archive", "Archive")
-          ),
-          shadcn_menu_separator(),
-          shadcn_menu_item("delete", "Delete", variant = "destructive"),
-          trigger_label = "Dropdown menu"
+    stack(
+      grid(
+        demo("Button", shadcn_button("g_btn", "Click me")),
+        demo(
+          "Dropdown menu",
+          shadcn_dropdown_menu(
+            "menu_action",
+            shadcn_menu_label("Actions"),
+            shadcn_menu_item("edit", "Edit"),
+            shadcn_menu_item("duplicate", "Duplicate"),
+            shadcn_menu_submenu(
+              "Move to",
+              shadcn_menu_item("inbox", "Inbox"),
+              shadcn_menu_item("archive", "Archive")
+            ),
+            shadcn_menu_separator(),
+            shadcn_menu_item("delete", "Delete", variant = "destructive"),
+            trigger_label = "Open menu"
+          )
         ),
-        class = "flex gap-2"
+        demo(
+          "Popover",
+          shadcn_popover(
+            "g_pop",
+            shadcn_badge("Inside a popover"),
+            shadcn_input("g_pop_text", placeholder = "Type here…"),
+            trigger_label = "Open popover"
+          )
+        ),
+        demo(
+          "Dialog",
+          shadcn_dialog(
+            "g_dialog",
+            shadcn_input("g_dialog_name", label = "Name"),
+            shadcn_slider("g_dialog_age", min = 18, max = 99, value = 30, label = "Age"),
+            trigger_label = "Open dialog",
+            title = "Edit profile",
+            description = "Make changes and close when done."
+          )
+        )
       ),
-      tags$div(
-        shadcn_popover(
-          "g_pop",
-          shadcn_badge("Inside a popover"),
-          shadcn_input("g_pop_text", placeholder = "Type here…"),
-          trigger_label = "Popover"
-        ),
-        shadcn_dialog(
-          "g_dialog",
-          shadcn_input("g_dialog_name", label = "Name"),
-          shadcn_slider("g_dialog_age", min = 18, max = 99, value = 30, label = "Age"),
-          trigger_label = "Dialog",
-          title = "Edit profile",
-          description = "Make changes and close when done."
-        ),
-        class = "flex gap-2"
-      ),
-      shadcn_separator(),
       shadcn_alert(
         paste0("button clicks=", clicks, " · last menu action=", last_menu()),
         title = "Live action state"
-      ),
-      class = "flex flex-col gap-4"
+      )
     )
   }
 
   feedback_panel <- function() {
-    tags$div(
+    stack(
       shadcn_toaster(),
-      shadcn_alert(
-        "Click the button to have the server push a toast notification.",
-        title = "Toast (server push)"
-      ),
-      shadcn_button("g_toast", "Show toast"),
-      class = "flex flex-col gap-4"
+      demo(
+        "Toast (server push)",
+        shadcn_alert("Click below; the server pushes a toast notification."),
+        shadcn_button("toast_btn", "Show toast")
+      )
     )
   }
 
@@ -170,6 +191,14 @@ server <- function(input, output, session) {
   output$gallery <- render_react({
     active <- if (!is.null(input$gallery_tabs)) input$gallery_tabs else "inputs"
     shadcn_card(
+      tags$div(
+        tags$div("Component Gallery", class = "text-lg font-semibold"),
+        tags$div(
+          "shadcn x shinyreact — every component, live-wired.",
+          class = "text-sm text-muted-foreground"
+        ),
+        class = "flex flex-col gap-1"
+      ),
       shadcn_tabs(
         "gallery_tabs",
         tabs = list(
@@ -184,12 +213,10 @@ server <- function(input, output, session) {
         feedback_panel(),
         selected = "inputs"
       ),
-      shadcn_separator(),
       tags$div(
         shadcn_badge(paste0("viewing: ", active), variant = "secondary"),
         class = "flex"
-      ),
-      title = "shadcn x shinyreact — Component Gallery"
+      )
     )
   })
 }
