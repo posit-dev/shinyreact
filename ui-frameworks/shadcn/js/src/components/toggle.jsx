@@ -65,4 +65,5 @@ function ShinyToggle({ element }) {
   );
 }
 
-export { ShinyToggle as Toggle };
+// toggleVariants is re-exported so toggle-group can share the cva (shadcn does this).
+export { ShinyToggle as Toggle, toggleVariants };

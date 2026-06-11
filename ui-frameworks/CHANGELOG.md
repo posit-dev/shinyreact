@@ -9,6 +9,16 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Bulk wrap batch 3 via the script (27 → 31)
+
+ToggleGroup, Breadcrumb, Collapsible, Accordion. Patterns: ToggleGroup =
+single/multi Input over choices; Breadcrumb = Display collection (crumb items);
+Collapsible = Overlay-lite (open-state + children); Accordion = Hybrid (items
+metadata + positional panels + open-state input). Exported `toggleVariants`
+from toggle.jsx so toggle-group can share the cva. Smoke-tested, zero JS errors.
+
+---
+
 ## 2026-06-11 — Bulk wrap batch 2 via the script (23 → 27)
 
 First batch wrapped with `prep-component.mjs`: **Kbd, Spinner, AspectRatio,

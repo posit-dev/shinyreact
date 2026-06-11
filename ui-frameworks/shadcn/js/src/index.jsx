@@ -8,7 +8,10 @@ import { Card } from "@/components/card";
 import { Checkbox } from "@/components/checkbox";
 import { Dialog } from "@/components/dialog";
 import { DropdownMenu } from "@/components/dropdown-menu";
+import { Accordion } from "@/components/accordion";
 import { AspectRatio } from "@/components/aspect-ratio";
+import { Breadcrumb } from "@/components/breadcrumb";
+import { Collapsible } from "@/components/collapsible";
 import { Input } from "@/components/input";
 import { Kbd } from "@/components/kbd";
 import { Label } from "@/components/label";
@@ -22,6 +25,7 @@ import { Spinner } from "@/components/spinner";
 import { Slider } from "@/components/slider";
 import { Switch } from "@/components/switch";
 import { Table } from "@/components/table";
+import { ToggleGroup } from "@/components/toggle-group";
 import { Tabs } from "@/components/tabs";
 import { Textarea } from "@/components/textarea";
 import { Toaster } from "@/components/sonner";
@@ -37,7 +41,10 @@ window.shinyreact.registerComponents(null, {
   "shadcn:Checkbox": Checkbox,
   "shadcn:Dialog": Dialog,
   "shadcn:DropdownMenu": DropdownMenu,
+  "shadcn:Accordion": Accordion,
   "shadcn:AspectRatio": AspectRatio,
+  "shadcn:Breadcrumb": Breadcrumb,
+  "shadcn:Collapsible": Collapsible,
   "shadcn:Input": Input,
   "shadcn:Kbd": Kbd,
   "shadcn:Label": Label,
@@ -51,6 +58,7 @@ window.shinyreact.registerComponents(null, {
   "shadcn:Slider": Slider,
   "shadcn:Switch": Switch,
   "shadcn:Table": Table,
+  "shadcn:ToggleGroup": ToggleGroup,
   "shadcn:Tabs": Tabs,
   "shadcn:Textarea": Textarea,
   "shadcn:Toaster": Toaster,

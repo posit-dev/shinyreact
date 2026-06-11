@@ -479,3 +479,72 @@ shadcn_radio_group <- function(input_id, choices, ..., selected = NULL, label = 
     className = class
   ))
 }
+
+#' A group of toggle buttons. Server reads input$<input_id> as the selected
+#' value (string for "single", character vector for "multiple").
+#' @param input_id Shiny input id.
+#' @param choices Character vector or list of list(value=, label=) items.
+#' @param type "single" (one active) or "multiple".
+#' @param selected Initial value.
+#' @param variant "default" or "outline".
+#' @param size "default", "sm", or "lg".
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_toggle_group <- function(input_id, choices, ..., type = "single", selected = NULL,
+                                variant = "outline", size = "default", class = NULL) {
+  rlang::check_dots_empty()
+  node("shadcn:ToggleGroup", props = list(
+    input_id = input_id, choices = choices, type = type, selected = selected,
+    variant = variant, size = size, className = class
+  ))
+}
+
+#' A breadcrumb item for shadcn_breadcrumb() (label + optional href).
+#' @param label Item text.
+#' @param href Optional link URL.
+shadcn_crumb <- function(label, href = NULL) {
+  list(label = label, href = href)
+}
+
+#' A breadcrumb trail. Display-only.
+#' @param ... Items built with shadcn_crumb(); the last is the current page.
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_breadcrumb <- function(..., class = NULL) {
+  node("shadcn:Breadcrumb", props = list(items = list(...), className = class))
+}
+
+#' A disclosure: a trigger reveals/hides its children. Server reads
+#' input$<input_id> as a boolean (open).
+#' @param input_id Shiny input id.
+#' @param ... Content shown when open.
+#' @param trigger_label Label on the toggle button (default "Toggle").
+#' @param open Initial open state (default FALSE).
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_collapsible <- function(input_id, ..., trigger_label = "Toggle", open = FALSE,
+                               class = NULL) {
+  node("shadcn:Collapsible", ..., props = list(
+    input_id = input_id, trigger_label = trigger_label, open = open, className = class
+  ))
+}
+
+#' An accordion section header for shadcn_accordion() (value + title).
+#' @param value Identifier for this section.
+#' @param title Header text.
+shadcn_accordion_item <- function(value, title) {
+  list(value = value, title = title)
+}
+
+#' A vertical accordion. `items` are section headers; `...` panels are the
+#' content, matched positionally. Server reads input$<input_id> as the open value(s).
+#' @param input_id Shiny input id.
+#' @param items List of section specs, built with shadcn_accordion_item().
+#' @param ... One content node per item, in the same order.
+#' @param type "single" (one open) or "multiple".
+#' @param selected Initially open value(s).
+#' @param class Extra CSS classes merged onto the root element.
+shadcn_accordion <- function(input_id, items, ..., type = "single", selected = NULL,
+                             class = NULL) {
+  node("shadcn:Accordion", ..., props = list(
+    input_id = input_id, items = items, type = type, selected = selected,
+    className = class
+  ))
+}

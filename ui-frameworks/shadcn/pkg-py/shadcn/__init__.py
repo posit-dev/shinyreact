@@ -721,6 +721,130 @@ def avatar(
     )
 
 
+def toggle_group(
+    input_id: str,
+    choices: list[Union[str, dict[str, str]]],
+    *,
+    type: Literal["single", "multiple"] = "single",
+    selected: object | None = None,
+    variant: Literal["default", "outline"] = "outline",
+    size: Literal["default", "sm", "lg"] = "default",
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A group of toggle buttons. Server reads ``input.<input_id>()`` as the
+    selected value (string for "single", list for "multiple").
+
+    Args:
+        input_id: Shiny input id.
+        choices: List of strings or ``{"value": ..., "label": ...}`` dicts.
+        type: "single" (one active) or "multiple" (many).
+        selected: Initial value (str or list).
+        variant: "default" or "outline".
+        size: "default", "sm", or "lg".
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:ToggleGroup",
+        props={
+            "input_id": input_id,
+            "choices": choices,
+            "type": type,
+            "selected": selected,
+            "variant": variant,
+            "size": size,
+            "className": class_,
+        },
+    )
+
+
+def crumb(label: str, href: str | None = None) -> dict[str, str]:
+    """A breadcrumb item for :func:`breadcrumb` (label + optional href)."""
+    return {"label": label, "href": href}
+
+
+def breadcrumb(
+    *items: dict[str, str],
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A breadcrumb trail. Display-only.
+
+    Args:
+        *items: Items built with :func:`crumb`; the last is the current page.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Breadcrumb",
+        props={"items": list(items), "className": class_},
+    )
+
+
+def collapsible(
+    input_id: str,
+    *children: object,
+    trigger_label: str = "Toggle",
+    open: bool = False,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A disclosure: a trigger reveals/hides its children. Server reads
+    ``input.<input_id>()`` as a boolean (open).
+
+    Args:
+        input_id: Shiny input id.
+        *children: Content shown when open.
+        trigger_label: Label on the toggle button.
+        open: Initial open state.
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Collapsible",
+        props={
+            "input_id": input_id,
+            "trigger_label": trigger_label,
+            "open": open,
+            "className": class_,
+        },
+        children=list(children),
+    )
+
+
+def accordion_item(value: str, title: str) -> dict[str, str]:
+    """An accordion section header for :func:`accordion` (value + title)."""
+    return {"value": value, "title": title}
+
+
+def accordion(
+    input_id: str,
+    items: list[dict[str, str]],
+    *panels: object,
+    type: Literal["single", "multiple"] = "single",
+    selected: object | None = None,
+    class_: str | None = None,
+) -> shinyreact.Node:
+    """A vertical accordion. ``items`` are the section headers; ``panels`` are the
+    content, matched positionally. Server reads ``input.<input_id>()`` as the open
+    value(s) — string for "single", list for "multiple".
+
+    Args:
+        input_id: Shiny input id.
+        items: Section specs, built with :func:`accordion_item`.
+        *panels: One content node per item, in the same order.
+        type: "single" (one open) or "multiple".
+        selected: Initially open value(s).
+        class_: Extra CSS classes merged onto the root element.
+    """
+    return shinyreact.Node(
+        type="shadcn:Accordion",
+        props={
+            "input_id": input_id,
+            "items": items,
+            "type": type,
+            "selected": selected,
+            "className": class_,
+        },
+        children=list(panels),
+    )
+
+
 def kbd(text: str, *, class_: str | None = None) -> shinyreact.Node:
     """A keyboard-key hint. Display-only.
 
