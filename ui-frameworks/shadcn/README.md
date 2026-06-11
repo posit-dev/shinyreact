@@ -1,6 +1,8 @@
 # shadcn for shinyreact
 
-shadcn/ui components wired to Shiny's reactive system via shinyreact. Ships 12 components, a Python helper package, and an R helper file. Usable from both `app.py` and `app.R` today without any installation — just `sys.path.insert` (Python) or `source()` (R) the helpers.
+shadcn/ui components wired to Shiny's reactive system via shinyreact. Ships 47 components, a Python helper package, and an R helper file. Usable from both `app.py` and `app.R` today without any installation — just `sys.path.insert` (Python) or `source()` (R) the helpers.
+
+Forward-looking goals and open work are tracked in [TODO.md](TODO.md).
 
 ---
 
