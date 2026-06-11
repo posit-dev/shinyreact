@@ -152,7 +152,8 @@ Adjust the className to match the framework's design language.
 
 ## Step 7 — src/styles.css (Tailwind frameworks only)
 
-**This is the most important file to get right.** Shiny serves pages with
+**This is the most important file to get right, and the one most likely to make
+components look broken without touching any component code.** Shiny serves pages with
 **Bootstrap loaded unlayered**, and unlayered CSS beats Tailwind's *layered*
 utilities regardless of specificity. So out of the box Bootstrap silently wins on
 every element it targets: bare headings (card title → Bootstrap's 28px), form
@@ -353,3 +354,19 @@ this integration actually hits are visual and only show in a render:
 
 A component "renders" is not the same as "looks right." Screenshot every example
 tab once and eyeball it before declaring done.
+
+---
+
+## Pre-commit hook behavior (shadcn / Python-backed packages)
+
+The pre-commit hooks run automatically on `git commit`. They modify files and exit
+non-zero — the commit does NOT land. The correct response is to re-stage and retry:
+
+1. `trailing-whitespace` — fixes `www/<framework>.js` automatically. Re-stage it.
+2. `ruff-format` — auto-reformats Python files. Re-stage the reformatted file.
+3. `ruff-check` — reports violations but does NOT fix them. Fix manually:
+   - **E501 line too long (>88):** break docstring lines before column 88.
+   - Other violations: address as reported.
+
+Always run `git add` on every modified file the hooks touched, then retry the commit.
+Never use `--no-verify` to skip hooks — they enforce the project's code style contract.
