@@ -9,6 +9,96 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Hooks consumed as an external module (removed `hooks.js`)
+
+Replaced the hand-written `src/hooks.js` shim with bundler externalization —
+treating the host's `window.shinyreact` global the same way React is already
+treated.
+
+- **Why:** `hooks.js` did `export const { useShinyInput, … } = window.shinyreact`
+  — an *eager destructure of a runtime global at module-eval time*, plus a
+  hand-maintained hook list that had to stay in sync with core. That reinvented,
+  by hand, what `vite.config.js` already does for `react` / `react-dom/client`.
+  `window.shinyreact` is a host-injected runtime dependency — architecturally
+  identical to React — so it should be an *external*, not a local file reaching
+  into a global.
+- **Change:** added `shinyreact` to `rollupOptions.external` + `output.globals`
+  (→ `window.shinyreact`). The 28 component bridges now
+  `import { useShinyInput } from "shinyreact"`; the bundler rewrites named imports
+  to property access on the global and tree-shakes unused ones. Deleted
+  `src/hooks.js`.
+- **Types:** new `src/shinyreact.d.ts` (ambient `declare module "shinyreact"`)
+  types all 8 hooks for editor IntelliSense. Interim — these declarations
+  ultimately belong in the core package (fully TS, owns the API).
+- **Verified:** build clean; `useShinyInput` appears exactly 28× (call sites) with
+  zero bundled implementation — confirming it resolves through the injected
+  global. App boots, no errors. Runtime is unchanged by construction (same global,
+  same property; lazy access instead of eager destructure).
+
+Skill (`scaffold-component`), shadcn README, and updates.md §2 updated to the
+`from "shinyreact"` import path.
+
+---
+
+## 2026-06-11 — Component Explorer gallery (`shinyreact-shadcn`, Python + R)
+
+New standalone gallery `examples/shinyreact-shadcn/` (app.py + app.R) — a
+reference explorer showing **all 47 components, every variant, individually**
+(no combined demos). The existing `gallery-py`/`gallery-r` is left as-is. Layout:
+hero + a category toggle-group nav (Inputs/Display/Overlays/Navigation/Layout/
+Feedback) that lazily renders one category at a time; each component is a section
+of variant cards in an even 2-column grid (`col-span-2` for wide content).
+
+Two skill-documented anti-patterns were hit while building it, and fixed per the
+skill's prescription (worth re-stating since they recur):
+
+- **No string `style=` inside a `render_react` tree** (React error #62). The
+  first draft set `style="position:sticky; …"` on wrapper divs *inside* the
+  rendered tree. Moved the only legitimate inline style to the page-chrome div
+  wrapping `output_react` (outside the React tree — the one safe place); every
+  in-tree wrapper uses `class_=` Tailwind.
+- **App-only Tailwind classes silently no-op** — Tailwind scans `js/src`, not app
+  files, so `max-w-screen-xl`, `bg-card`, `col-span-2`, `size-10`, `w-5/6`, etc.
+  were never compiled. Registered the gallery's full class vocabulary via
+  `@source inline(...)` in `styles.css` and added a `.shinyreact-output
+  .col-span-2` Bootstrap-precedence override (next to the existing grid-cols
+  overrides). Dropped Bootstrap-fighting bits (responsive `xl:`/`sm:` grid
+  prefixes, sticky/backdrop) for a robust fixed `grid-cols-2` + `col-span-2`.
+
+Verified both languages: all 47 sections render and serialize to the wire format
+(Python ~140 KB across 6 categories; R 47 sections); both servers boot HTTP 200;
+`ruff` clean, R formatted with `air`.
+
+---
+
+## 2026-06-11 — `finalize-component.mjs` + scaffold-component skill overhaul
+
+Completed the two-phase codegen workflow and made the skill strict/checklist-driven.
+
+- **`js/scripts/finalize-component.mjs`** — the "after" half of the loop: reads a
+  machine-readable `@shiny` annotation in the bridge block and *idempotently*
+  inserts the `index.jsx` import + registry entry, appends the Python helper
+  (multi-line signature, always < 88 chars), and appends the R helper (aligned
+  props list, `check_dots_empty()` on leaves / `...` on containers). `class_`→
+  `className` / `class` mapping handled; required props → positional, optional →
+  keyword-only. Derives snake-case names from the *export* name (handles
+  `sonner.jsx → Toaster → toaster`).
+- **`prep-component.mjs`** — bridge stub now emits the `@shiny` annotation
+  template; printed instructions describe the two-phase (prep → fill → finalize)
+  flow.
+- **`scaffold-component.md`** — comprehensive rewrite: two-phase workflow diagram,
+  `@shiny` annotation format table, pre-flight/bridge/post-bridge checklists, 12
+  strict rules, copy-paste bridge patterns for all 8 component types, a
+  symptom→cause→fix gotchas table, API conventions, and the npm-package table.
+  `scaffold-framework.md` gained the pre-commit-hook behavior notes.
+
+Per-component cost is now: `prep` (deterministic, zero tokens) → fill bridge +
+`@shiny` annotation (judgment only) → `finalize` (deterministic, zero tokens) →
+build. The annotation doubles as the machine-readable record of each component's
+API surface.
+
+---
+
 ## 2026-06-11 — Empty, Pagination + gallery expanded (45 → 47)
 
 Two Tier-1 components wrapped + gallery updated to 7 tabs.

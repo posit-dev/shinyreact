@@ -30,7 +30,7 @@ The shadcn source lives at the top of the file (converted from TypeScript, struc
 
 ---
 
-## 2. `hooks.js` — single destructure of `window.shinyreact`
+## 2. Hooks consumed as an external module, not a hand-written shim
 
 **Before**
 
@@ -40,31 +40,29 @@ Every interactive component file repeated:
 const { useShinyInput } = window.shinyreact;
 ```
 
-or pulled in `window.shinyreact.useShinyInput` inline. Five files, five repetitions. If the hook name changes or a new hook is needed across components, every file needs updating.
+or pulled in `window.shinyreact.useShinyInput` inline. An interim improvement collapsed this into a single `src/hooks.js` that destructured the global once and re-exported under a `@/hooks` alias. That removed the repetition but kept two smells: it was a hand-maintained list that had to be synced with core, and it *eagerly destructured a runtime global at module-eval time* — reinventing, by hand, what the bundler already does for React.
 
 **After**
 
-```js
-// src/hooks.js
-export const {
-  useShinyInput,
-  useShinyInputValue,
-  useSetShinyInput,
-  useShinyOutputValue,
-  useShinyOutputStatus,
-  useShinyMessageHandler,
-  useShinyInitialized,
-  useShinyBusy,
-} = window.shinyreact;
-```
-
-All interactive components now do:
+`window.shinyreact` is a host-injected runtime dependency — architecturally identical to React, which `vite.config.js` already externalizes. So the hooks are externalized the same way:
 
 ```js
-import { useShinyInput } from "@/hooks";
+// vite.config.js
+external: ["react", "react-dom/client", "shinyreact"],
+output: { globals: {
+  react: "window.shinyreact.React",
+  "react-dom/client": "window.shinyreact.ReactDOM",
+  shinyreact: "window.shinyreact",
+} },
 ```
 
-One place to maintain. Every hook is available to any component without copy-pasting the destructure.
+Components import from the external specifier; the bundler rewrites named imports to property access on the global (and tree-shakes the unused ones):
+
+```js
+import { useShinyInput } from "shinyreact";
+```
+
+No shim file, no eager destructure, no hand-synced list. The entire host API (React, ReactDOM, hooks) is now consumed through **one** mechanism. Editor types come from `src/shinyreact.d.ts`, an ambient `declare module "shinyreact"` (interim — these declarations ultimately belong in the core package, which is fully TypeScript and owns the API).
 
 ---
 
@@ -189,6 +187,12 @@ Radix handles focus management, keyboard interaction, and ARIA attributes. The v
 
 ## 6. Removed `class-variance-authority` (CVA)
 
+> **Superseded (2026-06-11):** CVA was later **re-adopted** so variant components
+> stay faithful to shadcn source and get `defaultVariants` / compound variants for
+> free — the lowest-edit path for scaling and good out-of-the-box defaults. The
+> removal below was an early-refactor simplification, not the current state. See
+> the "Re-adopt class-variance-authority" entry in [CHANGELOG.md](CHANGELOG.md).
+
 **Before**
 
 `package.json` listed `class-variance-authority` as a dependency. It was introduced when the components were first scaffolded but none of the current components use it — variant logic was handled inline with a plain object (`const variants = { default: "...", outline: "..." }`).
@@ -258,3 +262,6 @@ globals: {
 ```
 
 `react-dom` (the base package, ~2 kB tree-shaken gzip) is now bundled. `react-dom/client` remains externalized so `createRoot` calls share the same root as shinyreact. All portals work. The shared React instance is preserved — no broken hooks.
+
+> This block shows only the `react-dom` change. The current external list also
+> includes `"shinyreact"` (the hooks), added later — see §2 above.
