@@ -85,14 +85,14 @@ function ComponentName({ className, ...props }) {
 }
 
 // --- shinyreact bridge ---
-// Props: input_id (str), label (str, optional), ...
+// Props: input_id (str), label (str, optional), className (str, optional), ...
 // Server reads input.<input_id>() as <type>.
 
 function ShinyComponentName({ element, children }) {
-  const { input_id, label, default_value = "" } = element.props;
+  const { input_id, label, default_value = "", className } = element.props;
   const [value, setValue] = useShinyInput(input_id, default_value);
   return (
-    <ComponentName value={value} onChange={setValue}>
+    <ComponentName value={value} onChange={setValue} className={className}>
       {children}
     </ComponentName>
   );
@@ -100,6 +100,20 @@ function ShinyComponentName({ element, children }) {
 
 export { ShinyComponentName as ComponentName };
 ```
+
+**Every bridge forwards `className`.** Destructure `className` from `element.props`
+and pass it to the component's root, which merges it last via
+`cn(componentClasses, className)` — variant defaults come from cva, the caller's
+class wins on conflict (tailwind-merge). For a hand-rolled root, wrap its class
+string in `cn("...", className)` and add a `cn` import. This pairs with the
+`class_` (Python) / `class` (R) helper arg (Steps 4–5) so app authors can restyle
+any component. Lands on the sensible root: wrapper for inputs, content panel for
+overlays/menus, root element for display/table/tabs.
+
+**Don't hard-code layout into a component.** Width/margin/placement are the
+caller's job — e.g. the button is auto-width, *not* `w-full`; a baked-in `w-full`
+breaks every horizontal row. Ship only the component's own look; let `className`
+and the parent layout decide size and position.
 
 **Why `export { ShinyFoo as Foo }`:** The bridge function is named `ShinyFoo` to avoid clashing with the shadcn source function `Foo` defined above it in the same file. The exported name is clean.
 
@@ -341,39 +355,46 @@ optional args can be added later without breaking callers:
   child nodes through `*children` (Python) / `...` (R) — mirroring `node(type, ...)`.
   Their optional scalars go *after* the children sink, which makes them keyword-only
   too. These do **not** call `check_dots_empty()` (the dots are legitimately children).
+- **Every component takes a class override.** The last optional is `class_` (Python)
+  / `class` (R), default `None`/`NULL`, passed through as the `className` prop. The JS
+  bridge forwards it and merges via `cn()`. Wire key is always `className`.
 
 | | leaf (scalar options) | container (children) |
 |---|---|---|
-| Python | `def x(req, *, opt=…)` | `def x(req, *children, opt=…)` |
-| R | `x <- function(req, ..., opt=…)` + `check_dots_empty()` | `x <- function(req, ..., opt=…)` (no check) |
+| Python | `def x(req, *, opt=…, class_=None)` | `def x(req, *children, opt=…, class_=None)` |
+| R | `x <- function(req, ..., opt=…, class=NULL)` + `check_dots_empty()` | `x <- function(req, ..., opt=…, class=NULL)` (no check) |
 
 ## Step 4 — Add Python helper
 
 Add to `ui-frameworks/<framework>/pkg-py/<framework>/__init__.py`:
 
 ```python
-# Leaf: optional args are keyword-only (bare *).
+# Leaf: optional args are keyword-only (bare *); class_ is always last.
 def component_name(
     input_id: str,
     *,
     label: str | None = None,
+    class_: str | None = None,
 ) -> shinyreact.Node:
     """One-line description. Server reads ``input.<input_id>()`` as <type>.
 
     Args:
         input_id: Shiny input id.
         label: Optional label text.
+        class_: Extra CSS classes merged onto the root element.
     """
     return shinyreact.Node(
         type="<framework>:ComponentName",
-        props={"input_id": input_id, "label": label},
+        props={"input_id": input_id, "label": label, "className": class_},
     )
 
 # Container: children via *children; optional scalars after are keyword-only.
-def dialog(input_id: str, *children: object, trigger_label: str = "Open") -> shinyreact.Node:
+def dialog(
+    input_id: str, *children: object, trigger_label: str = "Open", class_: str | None = None
+) -> shinyreact.Node:
     return shinyreact.Node(
         type="<framework>:Dialog",
-        props={"input_id": input_id, "trigger_label": trigger_label},
+        props={"input_id": input_id, "trigger_label": trigger_label, "className": class_},
         children=list(children),
     )
 ```
@@ -389,14 +410,19 @@ Add to `ui-frameworks/<framework>/pkg-r/<framework>.R`:
 #' One-line description. Server reads \code{input$<input_id>} as <type>.
 #' @param input_id Shiny input id.
 #' @param label Optional label text.
-<framework>_component_name <- function(input_id, ..., label = NULL) {
+#' @param class Extra CSS classes merged onto the root element.
+<framework>_component_name <- function(input_id, ..., label = NULL, class = NULL) {
   rlang::check_dots_empty()
-  node("<framework>:ComponentName", props = list(input_id = input_id, label = label))
+  node("<framework>:ComponentName", props = list(
+    input_id = input_id, label = label, className = class
+  ))
 }
 
 # Container: `...` collects child nodes (node() convention) — no check_dots_empty.
-<framework>_dialog <- function(input_id, ..., trigger_label = "Open") {
-  node("<framework>:Dialog", ..., props = list(input_id = input_id, trigger_label = trigger_label))
+<framework>_dialog <- function(input_id, ..., trigger_label = "Open", class = NULL) {
+  node("<framework>:Dialog", ..., props = list(
+    input_id = input_id, trigger_label = trigger_label, className = class
+  ))
 }
 ```
 
@@ -503,10 +529,17 @@ which htmltools renders to real HTML.
 
 **Tailwind only ships utilities it sees in `js/src`.** The build scans component source,
 not `app.py`/`app.R`. A class used only in an app (e.g. `flex-wrap`, `grid-cols-2`) won't be
-in the bundle and silently no-ops. Stick to utilities some component already uses
-(`flex`, `flex-col`, `gap-2/3/4`, `items-center`, `justify-between`, `w-full`, `text-sm`,
-`text-muted-foreground`, …). If an app needs more, add it to a scanned source file or the
-`@theme`/CSS — don't rely on it appearing.
+in the bundle and silently no-ops. The fix is `@source inline("…")` in `styles.css` —
+force-generate the layout utilities apps need. Otherwise stick to utilities some component
+already uses (`flex`, `flex-col`, `gap-2/3/4`, `items-center`, `text-sm`, `text-muted-foreground`).
+
+**Bootstrap (loaded by Shiny) inflates component sizes.** It's unlayered, so it beats
+Tailwind utilities on headings, form controls, and `.grid`. If components render too big
+or a `grid-cols-2` shows as 12 columns, the fix is the `.shinyreact-output` compat layer in
+`styles.css` (typography reset + grid override) — see scaffold-framework Step 7. This is a
+framework-CSS concern, not a per-component one: fix it once in `styles.css`, not by hacking
+each component. Verify by *measuring* (`getComputedStyle(el).fontSize`) and screenshotting,
+not just asserting visibility.
 
 ## Registry as the source of truth (codegen direction)
 

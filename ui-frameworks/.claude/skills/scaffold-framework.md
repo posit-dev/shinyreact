@@ -152,9 +152,25 @@ Adjust the className to match the framework's design language.
 
 ## Step 7 — src/styles.css (Tailwind frameworks only)
 
+**This is the most important file to get right.** Shiny serves pages with
+**Bootstrap loaded unlayered**, and unlayered CSS beats Tailwind's *layered*
+utilities regardless of specificity. So out of the box Bootstrap silently wins on
+every element it targets: bare headings (card title → Bootstrap's 28px), form
+controls (inputs → 16px not 14px), `.grid` (Bootstrap's 12 columns override
+`grid-cols-2`), `<p>` margins, colors. The component sizes are *correct*; Bootstrap
+inflates them. The styles.css below re-asserts the framework's defaults with an
+unlayered, `.shinyreact-output`-scoped compat layer. Copy `ui-frameworks/shadcn/js/src/styles.css`
+and adapt; it has four parts:
+
 ```css
 @import "tailwindcss";
 
+/* 1. Force-generate layout utilities used only in app.py/app.R. Tailwind scans
+   js/src, NOT the apps, so app-only classes (grid, grid-cols-2, flex-wrap, …)
+   must be listed here or they silently no-op. */
+@source inline("grid grid-cols-1 grid-cols-2 flex-wrap uppercase tracking-wide");
+
+/* 2. Design tokens. */
 @theme {
   --color-background: hsl(0 0% 100%);
   --color-foreground: hsl(240 10% 3.9%);
@@ -172,10 +188,40 @@ Adjust the className to match the framework's design language.
   --color-input: hsl(240 5.9% 90%);
   --color-ring: hsl(240 5% 64.9%);
   --color-destructive: hsl(0 84.2% 60.2%);
+  --radius: 0.5rem;
 }
+
+/* 3. Bootstrap color compat — redeclare the utilities Bootstrap overrides, with
+   !important + the .shinyreact-output scope so they beat unlayered Bootstrap. */
+.shinyreact-output .bg-primary { background-color: hsl(240 5.9% 10%) !important; }
+.shinyreact-output .text-primary-foreground { color: hsl(0 0% 98%) !important; }
+.shinyreact-output .border { border-color: hsl(240 5.9% 90%) !important; }
+/* …add bg-secondary, bg-card, rounded-*, shadow as needed… */
+
+/* 4. Typography reset — neutralize Bootstrap inside the React tree. */
+.shinyreact-output {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.875rem;            /* shadcn base = text-sm (14px) */
+  line-height: 1.5;
+  color: hsl(240 10% 3.9%);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.shinyreact-output :is(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit; font-weight: inherit; line-height: inherit; margin: 0;
+}
+.shinyreact-output :is(input, button, select, textarea) {
+  font-size: inherit !important; line-height: inherit; font-family: inherit;
+}
+.shinyreact-output p { margin: 0; }
+/* Bootstrap 5 ships its own 12-column .grid — re-assert the cols utilities. */
+.shinyreact-output .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)) !important; }
+.shinyreact-output .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 ```
 
-Add tokens as needed when wrapping components that use Tailwind classes not covered above.
+**Why this matters beyond the gallery:** without the typography reset, *every*
+component renders at Bootstrap's sizes in a real Shiny app, not just examples. This
+is core to the framework being usable, not cosmetic.
 
 ---
 
@@ -287,4 +333,14 @@ npm install
 npm run build      # should produce www/<framework>.js with no errors
 ```
 
-Run the example app. Confirm all components render and Shiny inputs update correctly.
+Run the example app and **verify visually, not just with assertions** — drive it
+headless with Playwright and *screenshot* it, then look at the image. Text
+assertions ("element is visible") pass even when the layout is broken; the bugs
+this integration actually hits are visual and only show in a render:
+- Bootstrap inflating sizes (headings/inputs too big) — measure computed
+  `fontSize` of a label/input and confirm it matches the framework's intent.
+- A 12-column `.grid` where you expected 2 — check `gridTemplateColumns`.
+- Portal/overlay failures — assert **zero console errors**, not just visibility.
+
+A component "renders" is not the same as "looks right." Screenshot every example
+tab once and eyeball it before declaring done.

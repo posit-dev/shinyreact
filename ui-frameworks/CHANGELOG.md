@@ -9,6 +9,51 @@ working milestone rather than published versions.
 
 ---
 
+## 2026-06-11 — Skill revision (captured session learnings)
+
+Revised `scaffold-component` and `scaffold-framework` with everything learned
+shipping the components:
+
+- **scaffold-framework Step 7 (styles.css)** rewritten as the most important
+  file — the full Bootstrap-interop compat layer (typography reset, grid-cols
+  override, `@source inline`, tokens), with the "Bootstrap-unlayered-beats-
+  Tailwind-layered" explanation. Was previously just color tokens.
+- **scaffold-framework Step 14** now requires *visual* verification (screenshot +
+  measure computed sizes), since text assertions pass on broken layouts.
+- **scaffold-component**: className passthrough is now a documented standard
+  (bridge forwards it + `class_`/`class` helper arg + cn merge); added
+  "don't hard-code layout (no `w-full`)" rule; gotchas point to the styles.css
+  compat layer and `@source inline` as the fixes for size/grid issues.
+
+---
+
+## 2026-06-11 — Better defaults + redesigned gallery
+
+Root cause of "components look off": **Shiny loads Bootstrap unlayered**, so it
+beat Tailwind's layered utilities on every element it targets — bare headings
+(card title rendered at Bootstrap's 28px), form controls (inputs at 16px not
+14px), and even `.grid` (Bootstrap's 12-column grid overrode `grid-cols-2`).
+shadcn's own sizes were correct; Bootstrap was inflating them.
+
+Fixes in `styles.css` (unlayered compat layer, scoped to `.shinyreact-output`):
+- Typography reset: system font stack + antialiasing, 14px base, headings
+  inherit (no Bootstrap h1–h6 sizes), form controls inherit the font.
+- Re-assert `grid-cols-1/2` with `!important` to beat Bootstrap's `.grid`.
+- `@source inline(...)` to force-generate layout utilities used only in apps
+  (`grid`, `grid-cols-2`, `flex-wrap`, …) — Tailwind scans `js/src`, not apps.
+- Added `--radius` token.
+- Card: `<h3>` title → `<div>` (avoids Bootstrap heading), shadcn padding (px-6).
+
+Result (verified by screenshot): input 16→14px, card title 28→18px, system
+font, correct spacing.
+
+Redesigned gallery (Python + R): a real showcase — header with title/subtitle,
+each component in a labeled preview box (shadcn-docs style), 2-column grids
+where compact, full-width where the content needs it. Both verified, zero JS
+errors.
+
+---
+
 ## 2026-06-11 — className arg on every component (Python + R + JS)
 
 Completed the className passthrough Barret asked for — end to end now:
