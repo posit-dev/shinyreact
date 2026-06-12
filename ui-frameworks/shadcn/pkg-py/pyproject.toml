@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "shinyshadcn"
+version = "0.0.1"
+description = "shadcn/ui components for Shiny, wired through shinyreact"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "shinyreact",
+    "htmltools>=0.7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/posit-dev/shinyreact"
+Repository = "https://github.com/posit-dev/shinyreact"
+
+# A custom build hook copies the shared ../www assets into src/shinyshadcn/www
+# at build time (see hatch_build.py), so both the wheel and sdist ship them.
+[tool.hatch.build.hooks.custom]
+
+# src/ layout: the import package is shinyshadcn.
+[tool.hatch.build.targets.wheel]
+packages = ["src/shinyshadcn"]
+artifacts = ["src/shinyshadcn/www"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "README.md", "hatch_build.py"]
+artifacts = ["src/shinyshadcn/www"]

@@ -72,8 +72,12 @@ shadcn/
       finalize-component.mjs wires the stub into the registry + Python + R helpers
     vite.config.js
     package.json
-  pkg-py/
-    shadcn/__init__.py     Python helpers (badge, button, card, ...)
+  pkg-py/                  installable Python package "shinyshadcn"
+    pyproject.toml         hatchling backend, built with uv
+    hatch_build.py         build hook: copies the shared www/ into the wheel
+    src/shinyshadcn/       helpers split by category (_inputs, _display, _overlays,
+                           _menus, _layout, _feedback, _dep, _types), re-exported
+                           from __init__.py
   pkg-r/
     shadcn.R               R helpers (shadcn_badge, shadcn_button, ...)
   examples/                see "Run examples" below
@@ -120,11 +124,13 @@ shiny::runApp("ui-frameworks/shadcn/examples/shinyreact-shadcn/app.R")
 
 ### Python
 
+Install it (`cd ui-frameworks/shadcn/pkg-py && uv build`, then `pip install dist/*.whl`), or run straight from the source tree by adding `pkg-py/src` to `sys.path` as below.
+
 ```python
 import sys
-sys.path.insert(0, "path/to/ui-frameworks/shadcn/pkg-py")
+sys.path.insert(0, "path/to/ui-frameworks/shadcn/pkg-py/src")
 
-import shadcn as sc
+import shinyshadcn as sc
 import shinyreact
 from shiny import App, ui
 

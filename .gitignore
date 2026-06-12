@@ -247,3 +247,6 @@ ui-frameworks/shadcn/js/src/components-src/
 
 # Comparison/presentation deck — one-off artifact, not part of the package
 ui-frameworks/comparison-deck/
+
+# shinyshadcn: www assets are copied in at build time (hatch_build.py)
+ui-frameworks/shadcn/pkg-py/src/shinyshadcn/www/
