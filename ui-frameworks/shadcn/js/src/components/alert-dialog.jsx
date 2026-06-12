@@ -147,8 +147,8 @@ function ShinyAlertDialog({ element }) {
     className,
   } = element.props;
 
-  const [, setConfirm] = useShinyInput(confirm_id ?? "__noop_confirm__", 0, { debounceMs: 0, priority: "event" });
-  const [, setCancel] = useShinyInput(cancel_id ?? "__noop_cancel__", 0, { debounceMs: 0, priority: "event" });
+  const [confirm, setConfirm] = useShinyInput(confirm_id ?? "__noop_confirm__", 0, { debounceMs: 0, priority: "event" });
+  const [cancel, setCancel] = useShinyInput(cancel_id ?? "__noop_cancel__", 0, { debounceMs: 0, priority: "event" });
 
   return (
     <AlertDialog>
@@ -161,8 +161,8 @@ function ShinyAlertDialog({ element }) {
           {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => { if (cancel_id) setCancel(n => n + 1); }}>{cancel_label}</AlertDialogCancel>
-          <AlertDialogAction onClick={() => setConfirm(n => n + 1)}>{confirm_label}</AlertDialogAction>
+          <AlertDialogCancel onClick={() => { if (cancel_id) setCancel(cancel + 1); }}>{cancel_label}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => setConfirm(confirm + 1)}>{confirm_label}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

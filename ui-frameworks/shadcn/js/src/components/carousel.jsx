@@ -1,6 +1,6 @@
 import * as React from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { useShinyInput } from "shinyreact";
+import { useSetShinyInput } from "shinyreact";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/lib/button-base";
@@ -159,14 +159,6 @@ function CarouselNext({
 }
 
 // --- shinyreact bridge ---
-// TODO(you): choose the component type and wire it. Types:
-//   Display      -> no hook; read props.
-//   Input        -> useShinyInput(input_id, default)
-//   Action       -> useShinyInput(id, 0, { debounceMs: 0, priority: "event" })
-//   Overlay      -> useShinyInput(id, false) for open state + children
-//   Collection   -> items prop array (see dropdown-menu.jsx)
-//   Hybrid/Push  -> see tabs.jsx / sonner.jsx
-// Forward className to the root via the component (it merges with cn()).
 // Hybrid: children = slides (each wrapped in CarouselItem); input_id (optional)
 // tracks the current 0-based slide index on the server.
 // Props: input_id?, orientation, loop, className.
@@ -177,18 +169,26 @@ function ShinyCarousel({ element, children }) {
     loop = false,
     className,
   } = element.props;
-  const [, _setValue] = useShinyInput(input_id ?? "__noop_carousel__", 0);
-  const setValue = input_id ? _setValue : null;
+  // Write-only: this bridge never reads its own slide index, so it does not
+  // subscribe (which would re-render on every slide change).
+  const setValue = useSetShinyInput(input_id ?? "__noop_carousel__", 0);
   const childArray = React.Children.toArray(children);
+  const [api, setApi] = React.useState();
+
+  // Register the embla "select" listener once per api, with cleanup, instead
+  // of via an inline setApi (whose new identity each render leaked listeners).
+  React.useEffect(() => {
+    if (!api || !input_id) return;
+    const onSelect = (a) => setValue(a.selectedScrollSnap());
+    api.on("select", onSelect);
+    return () => api.off("select", onSelect);
+  }, [api, input_id, setValue]);
 
   return (
     <Carousel
       orientation={orientation}
       opts={{ loop }}
-      setApi={(api) => {
-        if (!api || !setValue) return;
-        api.on("select", (a) => setValue(a.selectedScrollSnap()));
-      }}
+      setApi={setApi}
       className={className}
     >
       <CarouselContent>

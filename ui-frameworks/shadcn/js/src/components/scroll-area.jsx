@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 function ScrollArea({
   className,
   children,
+  orientation = "vertical",
   ...props
 }) {
   return <ScrollAreaPrimitive.Root
@@ -12,7 +13,7 @@ function ScrollArea({
   ><ScrollAreaPrimitive.Viewport
     data-slot="scroll-area-viewport"
     className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
-  >{children}</ScrollAreaPrimitive.Viewport><ScrollBar /><ScrollAreaPrimitive.Corner /></ScrollAreaPrimitive.Root>;
+  >{children}</ScrollAreaPrimitive.Viewport>{(orientation === "vertical" || orientation === "both") && <ScrollBar orientation="vertical" />}{(orientation === "horizontal" || orientation === "both") && <ScrollBar orientation="horizontal" />}<ScrollAreaPrimitive.Corner /></ScrollAreaPrimitive.Root>;
 }
 function ScrollBar({
   className,
@@ -37,12 +38,13 @@ function ScrollBar({
 
 // --- shinyreact bridge ---
 // Container: no Shiny state. Wraps children in a styled scrollable box.
+// orientation ("vertical" | "horizontal" | "both") selects which scrollbar(s)
+// the wrapper renders as Root siblings of the Viewport.
 function ShinyScrollArea({ element, children }) {
   const { height = "300px", orientation = "vertical", className } = element.props;
   return (
-    <ScrollArea style={{ height }} className={className}>
+    <ScrollArea style={{ height }} orientation={orientation} className={className}>
       {children}
-      {orientation === "both" && <ScrollBar orientation="horizontal" />}
     </ScrollArea>
   );
 }
