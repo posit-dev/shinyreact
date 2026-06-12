@@ -135,6 +135,17 @@ the test passes without any shinyreact change.
 
 **Outcome: passes natively; Layer B not built.**
 
+*Fixture hardening (post-review):* the first version of the fixture registered
+`scatter` at the top level under `ui.hold()`. `ui.hold()` suppresses display but
+not session registration, so Layer A pre-injected `ipywidget-output-binding` into
+the initial `<head>` and the dep assertion passed vacuously. The fixture now
+registers `scatter` inside a `@reactive.effect` — in the real session, after page
+HTML is frozen — and the test first asserts the dependency is *absent* from the
+initial page before checking the box. The pass therefore genuinely demonstrates
+native dynamic-UI delivery, and additionally shows that a renderer registered
+*after page load* renders correctly when its placeholder arrives via `@render.ui`
+(the #160 gap is specifically the React-supplied-placeholder case).
+
 ### Layer B — flush-diff dependency push (conditional, only if the dynamic test fails natively)
 
 There is no public "output added" event (`_outputs` is a plain dict; no observer).

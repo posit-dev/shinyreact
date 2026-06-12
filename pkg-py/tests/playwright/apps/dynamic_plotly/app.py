@@ -1,4 +1,5 @@
 import plotly.express as px
+from shiny import reactive
 from shiny.express import input, render, ui  # noqa: F401  # marks Express
 from shinyreact import set_react_page
 from shinywidgets import output_widget, render_plotly
@@ -15,11 +16,15 @@ def holder():
     return output_widget("scatter")
 
 
-# `with ui.hold()` suppresses the auto-display of `scatter`'s own placeholder —
-# the chart appears only via the `output_widget("scatter")` that `holder`
-# reveals on demand, never as a stray top-level output.
-with ui.hold():
-
+# Register `scatter` from inside an effect so registration happens in the real
+# session, *after* page HTML is generated. A top-level renderer (even under
+# `ui.hold()`) lands in the stub session's outputs and the Layer-A harvest
+# would pre-inject its ipywidget dependency into the initial <head> — making
+# any "dynamic delivery" assertion vacuous. Registered here, the dependency
+# can only reach the client through Shiny's dynamic-UI path when `holder`
+# renders the `output_widget`.
+@reactive.effect
+def _register_scatter():
     @render_plotly
     def scatter():
         return px.scatter(x=[1, 2, 3], y=[1, 4, 9])

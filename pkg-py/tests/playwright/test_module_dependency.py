@@ -29,8 +29,20 @@ def test_dynamic_ui_plotly_dep(page: Page, dynamic_plotly_app: ShinyAppProc) -> 
     Shiny's own dynamic-UI path (renderContent → renderDependencies) delivers the
     ipywidget-output-binding dependency to the client when the holder renders, so
     Layer B (flush-diff dep push) is not needed for this case.
+
+    The fixture registers `scatter` inside a `@reactive.effect` so the renderer
+    is not on the session at page-generation time — the Layer-A harvest cannot
+    pre-inject its dependency into <head>. The absence assertion below pins
+    that down; without it, a head-injected dep would satisfy the test even if
+    the dynamic-UI path delivered nothing.
     """
     page.goto(dynamic_plotly_app.url)
+
+    # The React app must be mounted (checkbox present) with the dependency NOT
+    # yet on the page — proving what follows is dynamic delivery, not initial
+    # <head> injection.
+    expect(page.locator("#show")).to_be_attached()
+    expect(page.locator("script[src*='ipywidget-output-binding']")).to_have_count(0)
 
     page.locator("#show").check()
 
