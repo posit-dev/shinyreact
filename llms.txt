@@ -17,18 +17,19 @@ Full details: see `llms-full.txt` in this repo.
 ## JS bundle contract (downstream component bundles)
 
 1. Build as IIFE (not ESM/CJS).
-2. Externalize `react` → `window.shinyreact.React`. Externalize `react-dom/client` → `window.shinyreact.ReactDOM`. **Do not externalize `react-dom`** — Radix/portal components need `createPortal` which only lives in `react-dom`, not `react-dom/client`.
+2. Externalize `react` → `window.shinyreact.React`, `react-dom/client` → `window.shinyreact.ReactDOM`, and `shinyreact` → `window.shinyreact` (so `import { useShinyInput } from "shinyreact"` resolves to the host hooks). **Do not externalize `react-dom`** — Radix/portal components need `createPortal` which only lives in `react-dom`, not `react-dom/client`.
 3. Call `window.shinyreact.registerComponents(null, registry)` at load time.
 4. Load after `shinyreact.js` (HTMLDependency ordering guarantees this).
 
 ```js
 // vite.config.js for a downstream IIFE bundle
 rollupOptions: {
-  external: ["react", "react-dom/client"],
+  external: ["react", "react-dom/client", "shinyreact"],
   output: {
     globals: {
       react: "window.shinyreact.React",
       "react-dom/client": "window.shinyreact.ReactDOM",
+      shinyreact: "window.shinyreact",
     },
   },
 },
@@ -67,10 +68,9 @@ interface RegisteredComponentProps {
 
 Key options for `useShinyInput`/`useSetShinyInput`: `debounceMs` (default 100; use `0` for buttons), `priority: "event"` (for buttons), `type` (server-side input handler name).
 
-Import all hooks from one place:
+Import hooks from the externalized `"shinyreact"` module (never a local `hooks.js` shim — the bundler maps the import to `window.shinyreact` and tree-shakes unused hooks):
 ```js
-// src/hooks.js
-export const { useShinyInput, useShinyInputValue, ... } = window.shinyreact;
+import { useShinyInput, useSetShinyInput } from "shinyreact";
 ```
 
 ---

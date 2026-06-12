@@ -23,7 +23,7 @@ This affects Step 1 (directories), Step 2 (package.json), and how component file
 ```bash
 mkdir -p ui-frameworks/<framework>/js/src/components
 mkdir -p ui-frameworks/<framework>/js/src/lib          # for cn(), trigger-button, etc.
-mkdir -p ui-frameworks/<framework>/js/www
+mkdir -p ui-frameworks/<framework>/www                 # vite build outputs here (outDir: "../www")
 mkdir -p ui-frameworks/<framework>/pkg-py/<framework>
 mkdir -p ui-frameworks/<framework>/pkg-r
 mkdir -p ui-frameworks/<framework>/examples/app-py
@@ -79,11 +79,15 @@ rollupOptions: {
   // react-dom is intentionally NOT externalized.
   // window.shinyreact.ReactDOM is react-dom/client only — no createPortal.
   // Radix/portal components need createPortal from react-dom (~2 kB gzip).
-  external: ["react", "react-dom/client"],
+  // "shinyreact" is externalized to the host global the same way react is, so
+  // bridges `import { useShinyInput } from "shinyreact"` resolve to property
+  // access on window.shinyreact (no local hooks shim — see Step 4).
+  external: ["react", "react-dom/client", "shinyreact"],
   output: {
     globals: {
       react: "window.shinyreact.React",
       "react-dom/client": "window.shinyreact.ReactDOM",
+      shinyreact: "window.shinyreact",
     },
   },
 },
@@ -97,21 +101,16 @@ plugins: [react(), tailwindcss()],
 
 ---
 
-## Step 4 — src/hooks.js
+## Step 4 — src/shinyreact.d.ts (host hook types)
 
-Create `js/src/hooks.js`. All component files import hooks from here — never destructure `window.shinyreact` inline.
+Do **not** create a `src/hooks.js` shim. The host hooks are consumed as an external module: bridges write `import { useShinyInput } from "shinyreact"`, and the externals block in Step 3 maps `"shinyreact"` to `window.shinyreact`, exactly as `react` is externalized. The bundler rewrites each named import to a property access on the global and tree-shakes the hooks a file does not use.
 
-```js
-export const {
-  useShinyInput,
-  useShinyInputValue,
-  useSetShinyInput,
-  useShinyOutputValue,
-  useShinyOutputStatus,
-  useShinyMessageHandler,
-  useShinyInitialized,
-  useShinyBusy,
-} = window.shinyreact;
+Copy `ui-frameworks/shadcn/js/src/shinyreact.d.ts` verbatim. It is an ambient `declare module "shinyreact"` that types the eight hooks for editor IntelliSense (interim — these declarations ultimately belong in the core shinyreact package). The available hooks:
+
+```
+useShinyInput, useShinyInputValue, useSetShinyInput,
+useShinyOutputValue, useShinyOutputStatus, useShinyMessageHandler,
+useShinyInitialized, useShinyBusy
 ```
 
 ---
@@ -275,9 +274,11 @@ def _dep() -> HTMLDependency:
         version=version,
         source={"subdir": str(_www)},
         script={"src": "<framework>.js", "defer": ""},
-        stylesheet={"href": "<framework>.css"},
+        stylesheet={"href": "style.css"},
     )
 ```
+
+Note: the stylesheet is `style.css`, not `<framework>.css`. Vite 5 lib mode with `cssCodeSplit: false` always emits the CSS asset as `style.css` (renaming it needs `build.lib.cssFileName`, which only exists in Vite 6+). Only the JS file is renamed, via `fileName`.
 
 Note: `_www` is three `.parent` steps up because the package lives at
 `pkg-py/<framework>/__init__.py` (two directories deep inside `pkg-py/`).
@@ -303,7 +304,7 @@ Create `ui-frameworks/<framework>/pkg-r/<framework>.R`:
     version    = ver,
     src        = c(file = www_dir),
     script     = list(src = "<framework>.js", defer = ""),
-    stylesheet = "<framework>.css"
+    stylesheet = "style.css"  # Vite 5 lib mode always emits style.css (see Step 9)
   )
 }
 ```

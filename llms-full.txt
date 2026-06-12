@@ -23,7 +23,7 @@ When building a reusable component library (e.g. a shadcn wrapper package), you'
 The shinyreact IIFE bundle (`shinyreact.js`) exposes `window.shinyreact`. Downstream component bundles must:
 
 1. Be built as IIFE (not ESM, not CJS).
-2. **Externalize `react`** → `window.shinyreact.React`. **Externalize `react-dom/client`** → `window.shinyreact.ReactDOM`. Never bundle React — multiple React instances break all hooks.
+2. **Externalize `react`** → `window.shinyreact.React`, **`react-dom/client`** → `window.shinyreact.ReactDOM`, and **`shinyreact`** → `window.shinyreact`. Never bundle React — multiple React instances break all hooks. Externalizing `shinyreact` is what makes `import { useShinyInput } from "shinyreact"` resolve to the host hooks.
 3. **Do not externalize `react-dom`** — `window.shinyreact.ReactDOM` is `react-dom/client` only and does not expose `createPortal`. Radix UI and other portal-based components need `createPortal` from `react-dom`. Bundle it (tree-shakes to ~2 kB gzip).
 4. Call `window.shinyreact.registerComponents(null, registry)` at load time.
 5. Load after `shinyreact.js` (HTMLDependency ordering guarantees this when you declare `shinyreact` as a dep).
@@ -34,11 +34,12 @@ export default {
   build: {
     lib: { entry: "src/index.jsx", formats: ["iife"], name: "MyShadcn" },
     rollupOptions: {
-      external: ["react", "react-dom/client"],
+      external: ["react", "react-dom/client", "shinyreact"],
       output: {
         globals: {
           react: "window.shinyreact.React",
           "react-dom/client": "window.shinyreact.ReactDOM",
+          shinyreact: "window.shinyreact",
         },
       },
     },
@@ -119,21 +120,13 @@ HTML attribute mapping: `class→className`, `for→htmlFor`, `tabindex→tabInd
 
 ## Hook patterns by interaction type
 
-Import all hooks from a single shared file rather than destructuring `window.shinyreact` in every component:
+Import hooks from the externalized `"shinyreact"` module. Do not write a local `hooks.js` shim that destructures `window.shinyreact`: the externals config (above) already maps the `"shinyreact"` specifier to the host global, so the bundler rewrites each named import to a property access and tree-shakes the hooks a file does not use.
 
 ```js
-// src/hooks.js
-export const {
-  useShinyInput,
-  useShinyInputValue,
-  useSetShinyInput,
-  useShinyOutputValue,
-  useShinyOutputStatus,
-  useShinyMessageHandler,
-  useShinyInitialized,
-  useShinyBusy,
-} = window.shinyreact;
+import { useShinyInput, useSetShinyInput, useShinyOutputValue } from "shinyreact";
 ```
+
+Available hooks: `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`.
 
 Pick the narrowest hook that fits — narrow hooks make data-flow visible and prevent spurious re-renders.
 
