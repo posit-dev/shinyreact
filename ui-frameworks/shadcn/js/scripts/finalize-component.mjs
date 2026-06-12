@@ -307,6 +307,24 @@ function insertIntoIndex() {
     content = content.replace(/^(\}\);)$/m, `${registryLine}\n$1`);
   }
 
+  // Both replacements are no-ops if index.jsx has drifted from the expected
+  // shape. Verify the lines actually landed before claiming success — a silent
+  // partial failure (registry entry without its import) only blows up at render.
+  const importOk   = content.includes(importLine);
+  const registerOk = content.includes(registryLine);
+  if (!importOk || !registerOk) {
+    const missing = [
+      !importOk && "import line",
+      !registerOk && "registry entry",
+    ].filter(Boolean).join(" + ");
+    throw new Error(
+      `index.jsx: could not insert ${missing} for ${exportName}. ` +
+      `The file does not match the expected shape (a blank line before ` +
+      `window.shinyreact.registerComponents, and a "});" at column 0). ` +
+      `Add the import and registry entry by hand, or fix the file shape.`,
+    );
+  }
+
   writeFileSync(indexPath, content);
   console.log(`  index.jsx       : ✓ added import + registry entry`);
 }

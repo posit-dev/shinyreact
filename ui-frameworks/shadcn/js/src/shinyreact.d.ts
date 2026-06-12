@@ -36,18 +36,21 @@ declare module "shinyreact" {
     options?: ShinyInputOptions,
   ): [T, (value: T) => void];
 
-  /** Read-only: subscribe to a Shiny input value. */
-  export function useShinyInputValue<T>(id: string): T;
+  /** Read-only: subscribe to a Shiny input value. `undefined` until it registers. */
+  export function useShinyInputValue<T>(id: string): T | undefined;
 
-  /** Write-only: get a setter for a Shiny input. */
+  /** Write-only: get a setter for a Shiny input. `defaultValue` seeds the registry on mount. */
   export function useSetShinyInput<T>(
     id: string,
-    defaultValue?: T,
+    defaultValue: T,
     options?: ShinyInputOptions,
   ): (value: T) => void;
 
-  /** Read-only: subscribe to a Shiny output value. */
-  export function useShinyOutputValue<T>(id: string, defaultValue?: T): T;
+  /** Read-only: subscribe to a Shiny output value. `undefined` before a producer registers. */
+  export function useShinyOutputValue<T>(
+    id: string,
+    defaultValue?: T,
+  ): T | undefined;
 
   /** Read-only: subscribe to a Shiny output's status. */
   export function useShinyOutputStatus(id: string): ShinyOutputStatus;
