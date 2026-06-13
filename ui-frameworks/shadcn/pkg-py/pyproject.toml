@@ -9,6 +9,7 @@ description = "shadcn/ui components for Shiny, wired through shinyreact"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
+authors = [{ name = "Samuel Bharti", email = "samuelbharti@gmail.com" }]
 dependencies = [
     "shinyreact",
     "htmltools>=0.7.0",
