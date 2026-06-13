@@ -53,12 +53,15 @@ Phase 2 — fill (you / Claude)
 Phase 3 — finalize (script)
   node scripts/finalize-component.mjs <name>
   → reads @shiny annotation → inserts import + registry into index.jsx
-  → appends Python helper to pkg-py/shadcn/__init__.py
-  → appends R helper    to pkg-r/shadcn.R
-  → all three writes are idempotent (safe to re-run)
+  → appends Python helper to pkg-py/src/shinyshadcn/_<category>.py
+    and regenerates __init__.py's re-exports + __all__
+  → appends R helper to pkg-r/R/<category>.R (roxygen incl. @export)
+  → all writes are idempotent (safe to re-run)
+  Category comes from the @shiny type= (override with category= when needed).
 
 Phase 4 — build + verify
   npm run build
+  Rscript -e 'roxygen2::roxygenise("ui-frameworks/shadcn/pkg-r")'  # refresh NAMESPACE + man/
   (then test in an example app)
 ```
 
@@ -141,8 +144,9 @@ Fill the stub in `src/components/<name>.jsx` in this order.
 
 After filling the bridge and annotation:
 
-- [ ] **Run finalize**: `node scripts/finalize-component.mjs <name>` — inserts index.jsx entry, appends Python + R helpers. All idempotent.
+- [ ] **Run finalize**: `node scripts/finalize-component.mjs <name>` — inserts the index.jsx entry, appends the Python helper to `_<category>.py` and regenerates `__init__.py`, and appends the R helper to `R/<category>.R`. All idempotent.
 - [ ] **Fill in `TODO` descriptions** in the generated Python docstring and R roxygen comments. The script can't know what each prop means.
+- [ ] **Regenerate R docs**: `Rscript -e 'roxygen2::roxygenise("ui-frameworks/shadcn/pkg-r")'` so `NAMESPACE` + `man/` pick up the new helper.
 - [ ] **Build**: `cd js && npm run build` — zero errors, no unresolved imports.
 - [ ] **Wire-format test**: assert `.to_dict()` shape from the Python builder. Minimum: props keyed correctly, children list present if needed. Required by the testing policy.
 - [ ] **R parity**: run `make r-check-fixtures`. A component is not done if R is untested.
@@ -726,10 +730,10 @@ shadcn_sheet <- function(input_id, ..., trigger_label = "Open", side = "right",
 When wrapping 5+ components at once:
 
 1. **Prep scripts first** — run `prep-component.mjs <name>` for every component. Produces N independent `.jsx` stub files, each with the `@shiny` annotation template.
-2. **One agent per file** — spawn one Sonnet agent per component, each scoped to its own `.jsx` file only. Each agent: fills the bridge + fills the `@shiny` annotation. Do NOT have agents touch `index.jsx`, `__init__.py`, or `shadcn.R`.
+2. **One agent per file** — spawn one Sonnet agent per component, each scoped to its own `.jsx` file only. Each agent: fills the bridge + fills the `@shiny` annotation. Do NOT have agents touch `index.jsx`, the Python package (`src/shinyshadcn/`), or the R package (`pkg-r/R/`) — finalize owns those.
 3. **Audit imports** — agents frequently place `import { useShinyInput }` after the bridge comment (mid-file). Before finalizing: `grep -n "^import" js/src/components/<name>.jsx` and confirm all imports are at the top.
-4. **Run finalize for each** — `node scripts/finalize-component.mjs <name>` for every component in sequence. Each call is idempotent. This replaces the previous manual integration of 3 files × N components.
-5. **Build once** — `npm run build` after all finalize calls complete.
+4. **Run finalize for each** — `node scripts/finalize-component.mjs <name>` for every component in sequence. Each call is idempotent. This replaces the previous manual integration of the registry + helper files × N components.
+5. **Build once** — `npm run build`, then `roxygen2::roxygenise()` for the R docs, after all finalize calls complete.
 
 ---
 

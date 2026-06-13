@@ -3,13 +3,19 @@
 //
 // Reads the @shiny annotation from the filled bridge and:
 //   1. Idempotently inserts import + registry entry into src/index.jsx
-//   2. Appends the Python helper to pkg-py/shadcn/__init__.py  (skips if exists)
-//   3. Appends the R helper    to pkg-r/shadcn.R               (skips if exists)
+//   2. Appends the Python helper to pkg-py/src/shinyshadcn/_<category>.py and
+//      regenerates __init__.py's re-exports (skips the append if it exists)
+//   3. Appends the R helper to pkg-r/R/<category>.R (skips if it exists); then
+//      you re-run roxygen2 to refresh NAMESPACE + man/
 //
 // ANNOTATION FORMAT — one line in the bridge comment block:
 //   // @shiny type=Input children=false props=input_id:str,total_pages:int=10,current:int=1
 //
 //   type     : Display | Container | Input | Action | Overlay | Collection | Hybrid | Push
+//   category : (optional) inputs | display | overlays | menus | layout | feedback
+//              which package module the helper lands in. Defaults from `type`;
+//              set it when the default is wrong (e.g. a Hybrid that belongs in
+//              inputs rather than layout).
 //   children : true  (takes *children / ... in Python/R)
 //              false (leaf — no children, R gets check_dots_empty)
 //   props    : comma-separated  name:type[=default]
@@ -127,6 +133,25 @@ function toSnake(pascal) {
     .replace(/^_/, "");
 }
 const snake = toSnake(exportName); // Python fn name + R fn suffix
+
+// ── Target package module (category) ───────────────────────────────────────────
+
+const CATEGORIES = ["inputs", "display", "overlays", "menus", "layout", "feedback"];
+const TYPE_TO_CATEGORY = {
+  Display: "display",
+  Container: "layout",
+  Input: "inputs",
+  Action: "inputs",
+  Overlay: "overlays",
+  Collection: "menus",
+  Hybrid: "layout",
+  Push: "feedback",
+};
+const category = ann.category ?? TYPE_TO_CATEGORY[ann.type] ?? "display";
+if (!CATEGORIES.includes(category)) {
+  console.error(`Unknown category "${category}". One of: ${CATEGORIES.join(", ")}`);
+  process.exit(1);
+}
 
 // ── Type helpers ──────────────────────────────────────────────────────────────
 
@@ -256,6 +281,8 @@ function generateR() {
       docLines.push(`#' @param ${rParam(p.name)} TODO (default ${d}).`);
     }
   }
+  docLines.push(`#' @return A \`shinyreact\` node.`);
+  docLines.push(`#' @export`);
 
   // Props list with aligned =
   const allProps = props; // includes class_
@@ -329,35 +356,69 @@ function insertIntoIndex() {
   console.log(`  index.jsx       : ✓ added import + registry entry`);
 }
 
-// ── Append Python helper (idempotent) ─────────────────────────────────────────
+// ── Append Python helper + regenerate re-exports (idempotent) ──────────────────
+
+const pySrc = join(pkgRoot, "pkg-py/src/shinyshadcn");
 
 function appendPython() {
-  const pyPath = join(pkgRoot, "pkg-py/shadcn/__init__.py");
-  let content = readFileSync(pyPath, "utf8");
+  const modPath = join(pySrc, `_${category}.py`);
+  let content = readFileSync(modPath, "utf8");
 
-  if (content.includes(`\ndef ${snake}(`)) {
-    console.log(`  __init__.py     : def ${snake}() already exists — skipped`);
-    return;
+  if (content.match(new RegExp(`^def ${snake}\\(`, "m"))) {
+    console.log(`  _${category}.py   : def ${snake}() already exists — skipped`);
+  } else {
+    writeFileSync(modPath, content.trimEnd() + "\n\n\n" + generatePython() + "\n");
+    console.log(`  _${category}.py   : ✓ appended def ${snake}()`);
   }
+  regenerateInit();
+}
 
-  writeFileSync(pyPath, content.trimEnd() + "\n" + generatePython() + "\n");
-  console.log(`  __init__.py     : ✓ appended def ${snake}()`);
+// Rebuild __init__.py from the public defs in each category module, so the new
+// helper is imported and listed in __all__. Modules are ordered the way isort
+// expects (alphabetical), so ruff stays quiet.
+function regenerateInit() {
+  const initPath = join(pySrc, "__init__.py");
+  const entries = [
+    { mod: "_dep", names: ["_dep"] },
+    { mod: "_types", names: ["BadgeVariant", "ButtonSize", "ButtonVariant"] },
+  ];
+  for (const cat of CATEGORIES) {
+    const text = readFileSync(join(pySrc, `_${cat}.py`), "utf8");
+    const names = [...text.matchAll(/^def (\w+)\(/gm)].map((m) => m[1]).sort();
+    if (names.length) entries.push({ mod: `_${cat}`, names });
+  }
+  entries.sort((a, b) => a.mod.localeCompare(b.mod));
+
+  const lines = ['"""shadcn/ui components for shinyreact (Python helpers)."""', ""];
+  const all = [];
+  for (const { mod, names } of entries) {
+    all.push(...names);
+    const oneLine = `from .${mod} import ${names.join(", ")}`;
+    if (oneLine.length <= 88) {
+      lines.push(oneLine);
+    } else {
+      lines.push(`from .${mod} import (`, ...names.map((n) => `    ${n},`), ")");
+    }
+  }
+  lines.push("", "__all__ = [", ...all.sort().map((n) => `    "${n}",`), "]");
+  writeFileSync(initPath, lines.join("\n") + "\n");
+  console.log(`  __init__.py     : ✓ regenerated re-exports (${all.length} names)`);
 }
 
 // ── Append R helper (idempotent) ──────────────────────────────────────────────
 
 function appendR() {
-  const rPath = join(pkgRoot, "pkg-r/shadcn.R");
+  const rPath = join(pkgRoot, `pkg-r/R/${category}.R`);
   let content = readFileSync(rPath, "utf8");
 
   const fnName = `shadcn_${snake}`;
   if (content.includes(`${fnName} <-`)) {
-    console.log(`  shadcn.R        : ${fnName}() already exists — skipped`);
+    console.log(`  R/${category}.R   : ${fnName}() already exists — skipped`);
     return;
   }
 
   writeFileSync(rPath, content.trimEnd() + "\n" + generateR() + "\n");
-  console.log(`  shadcn.R        : ✓ appended ${fnName}()`);
+  console.log(`  R/${category}.R   : ✓ appended ${fnName}()`);
 }
 
 // ── Run ───────────────────────────────────────────────────────────────────────
@@ -371,9 +432,10 @@ appendPython();
 appendR();
 
 console.log(`
-✓ Integration complete.
+✓ Integration complete (category: ${category}).
 
 Next:
   cd ui-frameworks/shadcn/js && npm run build
-  (then test in an example app)
+  Rscript -e 'roxygen2::roxygenise("ui-frameworks/shadcn/pkg-r")'   # refresh NAMESPACE + man/
+  (then fill the TODO docstrings and test in an example app)
 `);
