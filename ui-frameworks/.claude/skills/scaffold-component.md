@@ -591,6 +591,7 @@ export { ShinyToaster as Toaster };
 | Page load fires a reactive event | `useShinyInput` registers initial value on mount, triggering the handler | `@reactive.event(input.x, ignore_init=True)` |
 | Carousel slide index doesn't update | `select` listener registered via inline `setApi`, or not registered at all | Store the api in state and register the listener in a cleaned-up effect guarded on `input_id` (see Carousel pattern) |
 | Carousel adds a new listener every slide | Inline `setApi={(api) => api.on(...)}` re-runs the source effect each render | Use `const [api, setApi] = useState()` + a `useEffect` with `api.off` cleanup |
+| Whole tree blank + "MUI error #7 / capitalize expects a string" | An optional Python arg defaults to `None` → JSON `null` → the bridge passes it to an MUI prop that builds a class via `capitalize()` (e.g. Typography `align`/`color`); `capitalize(null)` throws and unmounts the whole render | Coerce `null`→`undefined` in the bridge so MUI uses its default: `align={align ?? undefined}`. Applies to any library prop that maps `null` to a string operation. |
 
 ### Python/R errors
 

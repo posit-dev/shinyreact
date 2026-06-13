@@ -71,7 +71,7 @@ def badge(
     return shinyreact.Node(
         type="mui:Badge",
         props={"badge_content": badge_content, "color": color, "className": class_},
-        children=list(children),
+        children=[*children],
     )
 
 
@@ -254,7 +254,7 @@ def tooltip(
     return shinyreact.Node(
         type="mui:Tooltip",
         props={"title": title, "className": class_},
-        children=list(children),
+        children=[*children],
     )
 
 

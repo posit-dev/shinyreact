@@ -4,12 +4,14 @@ from pathlib import Path
 
 from htmltools import HTMLDependency
 
-# Installed wheels bundle the built assets at shinymui/www/ (copied from the
-# shared ui-frameworks/mui/www/ by hatch_build.py). A source checkout used via
-# sys.path.insert has no such copy, so fall back to the shared directory.
-_bundled = Path(__file__).parent / "www"
+# The shared ui-frameworks/mui/www/ directory is the source of truth and stays
+# fresh in a source checkout, so prefer it. Installed wheels have no such
+# directory (only the copy hatch_build.py vendors at shinymui/www/), so fall back
+# to the bundled copy. Preferring shared avoids serving a stale build-time copy
+# after a dev rebuild.
 _shared = Path(__file__).parent.parent.parent.parent / "www"
-_www = _bundled if (_bundled / "mui.js").exists() else _shared
+_bundled = Path(__file__).parent / "www"
+_www = _shared if (_shared / "mui.js").exists() else _bundled
 
 
 def _dep() -> HTMLDependency:
