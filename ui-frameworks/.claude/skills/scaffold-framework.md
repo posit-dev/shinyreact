@@ -370,11 +370,17 @@ tab once and eyeball it before declaring done.
 The pre-commit hooks run automatically on `git commit`. They modify files and exit
 non-zero — the commit does NOT land. The correct response is to re-stage and retry:
 
-1. `trailing-whitespace` — fixes `www/<framework>.js` automatically. Re-stage it.
-2. `ruff-format` — auto-reformats Python files. Re-stage the reformatted file.
-3. `ruff-check` — reports violations but does NOT fix them. Fix manually:
+1. `ruff-format` — auto-reformats Python files. Re-stage the reformatted file.
+2. `ruff-check` — reports violations but does NOT fix them. Fix manually:
    - **E501 line too long (>88):** break docstring lines before column 88.
    - Other violations: address as reported.
 
 Always run `git add` on every modified file the hooks touched, then retry the commit.
 Never use `--no-verify` to skip hooks — they enforce the project's code style contract.
+
+**Exclude the built bundle from the binary-file hooks.** Add your framework's
+`www/` (and the R package's `inst/www/`) to the `trailing-whitespace`,
+`end-of-file-fixer`, and `check-added-large-files` `exclude:` patterns in
+`.pre-commit-config.yaml` — minified bundles must not be whitespace-normalized,
+and they exceed `check-added-large-files`' 500 KB limit. The `ui-frameworks/shadcn/`
+paths are already excluded; follow that pattern.

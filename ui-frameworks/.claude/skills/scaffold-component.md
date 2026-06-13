@@ -197,6 +197,9 @@ Server-side: `@reactive.event(input.btn, ignore_init=True)` prevents firing when
 **RULE 12 — Anchor-based interactive components need `e.preventDefault()`.**
 Components that render `<a>` for interactive buttons (e.g. shadcn Pagination's `PaginationLink`) will navigate or submit a form on click. Add `onClick={(e) => { e.preventDefault(); /* your handler */ }}`.
 
+**RULE 13 — Shiny setters take a concrete value, never a React-style updater function.**
+The setter from `useShinyInput`/`useSetShinyInput` forwards its argument verbatim to `Shiny.setInputValue`. Passing `setCount(n => n + 1)` sends a *function* over the wire, which is dropped in JSON serialization — the server never sees the change, while React local state still updates, hiding the bug. Read the current value and send the new one: `const [count, setCount] = useShinyInput(id, 0); setCount(count + 1)`. (Tracked in #164 — until that lands, updater functions silently no-op.)
+
 ---
 
 ## Bridge patterns (copy-paste and adapt)
@@ -316,8 +319,9 @@ function ShinyAlertDialog({ element }) {
     description, confirm_label = "Continue", cancel_label = "Cancel", className,
   } = element.props;
   // Both hooks unconditional — noop guard for the optional cancel_id.
-  const [, setConfirm] = useShinyInput(confirm_id ?? "__noop_confirm__", 0, { debounceMs: 0, priority: "event" });
-  const [, setCancel]  = useShinyInput(cancel_id  ?? "__noop_cancel__",  0, { debounceMs: 0, priority: "event" });
+  // Read the current count and send count + 1 (NOT a functional updater — see Rule 13).
+  const [confirm, setConfirm] = useShinyInput(confirm_id ?? "__noop_confirm__", 0, { debounceMs: 0, priority: "event" });
+  const [cancel, setCancel]   = useShinyInput(cancel_id  ?? "__noop_cancel__",  0, { debounceMs: 0, priority: "event" });
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild><TriggerButton>{trigger_label}</TriggerButton></AlertDialogTrigger>
@@ -327,8 +331,8 @@ function ShinyAlertDialog({ element }) {
           {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => { if (cancel_id) setCancel(n => n + 1); }}>{cancel_label}</AlertDialogCancel>
-          <AlertDialogAction onClick={() => setConfirm(n => n + 1)}>{confirm_label}</AlertDialogAction>
+          <AlertDialogCancel onClick={() => { if (cancel_id) setCancel(cancel + 1); }}>{cancel_label}</AlertDialogCancel>
+          <AlertDialogAction onClick={() => setConfirm(confirm + 1)}>{confirm_label}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -472,25 +476,31 @@ export { ShinyTabs as Tabs };
 Python: `tabs(input_id, [tab("a", "A"), tab("b", "B")], panel_a, panel_b)` — panels are `*children` after the metadata list.
 
 **Carousel — optional input_id + embla `setApi`:**
+
+Store the embla api in state and register the `select` listener in a cleaned-up
+effect. Do NOT pass an inline `setApi={(api) => api.on(...)}` — its new identity
+each render re-runs the source's effect and leaks a listener every time. Use
+`useSetShinyInput` (write-only) so subscribing to the value doesn't re-render the
+bridge on every slide change.
 ```jsx
 import * as React from "react";
-import { useShinyInput } from "shinyreact";
+import { useSetShinyInput } from "shinyreact";
 
 function ShinyCarousel({ element, children }) {
   const { input_id, orientation = "horizontal", loop = false, className } = element.props;
-  const [, _setValue] = useShinyInput(input_id ?? "__noop_carousel__", 0);
-  const setValue = input_id ? _setValue : null;
+  const setValue = useSetShinyInput(input_id ?? "__noop_carousel__", 0);
   const childArray = React.Children.toArray(children);
+  const [api, setApi] = React.useState();
+
+  React.useEffect(() => {
+    if (!api || !input_id) return;
+    const onSelect = (a) => setValue(a.selectedScrollSnap());
+    api.on("select", onSelect);
+    return () => api.off("select", onSelect);
+  }, [api, input_id, setValue]);
+
   return (
-    <Carousel
-      orientation={orientation}
-      opts={{ loop }}
-      setApi={(api) => {
-        if (!api || !setValue) return;
-        api.on("select", (a) => setValue(a.selectedScrollSnap()));
-      }}
-      className={className}
-    >
+    <Carousel orientation={orientation} opts={{ loop }} setApi={setApi} className={className}>
       <CarouselContent>
         {childArray.map((child, i) => <CarouselItem key={i}>{child}</CarouselItem>)}
       </CarouselContent>
@@ -553,7 +563,8 @@ export { ShinyToaster as Toaster };
 | Clicking same menu item twice doesn't re-fire | Shiny deduplicates identical consecutive values | Add nonce: `setValue({ value, nonce: Date.now() })` |
 | Pagination / anchor component navigates instead of updating input | `PaginationLink` renders as `<a>` | `onClick={(e) => { e.preventDefault(); setPage(p); }}` |
 | Page load fires a reactive event | `useShinyInput` registers initial value on mount, triggering the handler | `@reactive.event(input.x, ignore_init=True)` |
-| Carousel slide index doesn't update | Hook called with `input_id ?? "__noop_x__"` but setter always invoked | Check: `const setValue = input_id ? _setValue : null; if (setValue) setValue(...)` |
+| Carousel slide index doesn't update | `select` listener registered via inline `setApi`, or not registered at all | Store the api in state and register the listener in a cleaned-up effect guarded on `input_id` (see Carousel pattern) |
+| Carousel adds a new listener every slide | Inline `setApi={(api) => api.on(...)}` re-runs the source effect each render | Use `const [api, setApi] = useState()` + a `useEffect` with `api.off` cleanup |
 
 ### Python/R errors
 
@@ -561,7 +572,7 @@ export { ShinyToaster as Toaster };
 |---------|-------|-----|
 | `ruff: E501 line too long` on commit | Docstring line > 88 chars | Wrap long docstring lines before 88 chars |
 | `ruff-format: 1 file reformatted` on commit | Code style drift | `git add` the reformatted file and retry commit |
-| `trailing whitespace` in `www/<framework>.js` on commit | Pre-commit hook fixes it automatically | Re-stage `www/<framework>.js` and retry commit |
+| `check-added-large-files` blocks `www/*.js` or `pkg-r/inst/www/*` | Built bundles exceed 500 KB | Exclude the bundle paths in `.pre-commit-config.yaml` (the shadcn paths already are) |
 | R: `unused arguments (...)` | Leaf R helper missing `check_dots_empty()` | Add `rlang::check_dots_empty()` as first line |
 | R single-column table row auto-unboxes | jsonlite unboxes length-1 vectors to scalars | Use `I()` to force array: `rows = list(I(c("Ada")))` |
 
