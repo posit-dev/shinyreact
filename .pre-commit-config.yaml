@@ -3,14 +3,14 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^(js/dist/|pkg-py/src/shinyreact/www/|pkg-r/inst/lib/shiny/|ui-frameworks/shadcn/www/|ui-frameworks/shadcn/pkg-r/inst/www/)
+        exclude: ^(js/dist/|pkg-py/src/shinyreact/www/|pkg-r/inst/lib/shiny/|ui-frameworks/(shadcn|mui)/www/|ui-frameworks/(shadcn|mui)/pkg-r/inst/www/)
       - id: end-of-file-fixer
-        exclude: ^(js/dist/|pkg-py/src/shinyreact/www/|pkg-r/inst/lib/shiny/|ui-frameworks/shadcn/www/|ui-frameworks/shadcn/pkg-r/inst/www/)
+        exclude: ^(js/dist/|pkg-py/src/shinyreact/www/|pkg-r/inst/lib/shiny/|ui-frameworks/(shadcn|mui)/www/|ui-frameworks/(shadcn|mui)/pkg-r/inst/www/)
       - id: check-yaml
       - id: check-merge-conflict
       - id: check-added-large-files
         # Built component bundles (committed so the R package ships its assets).
-        exclude: ^ui-frameworks/shadcn/(www/|pkg-r/inst/www/)
+        exclude: ^ui-frameworks/(shadcn|mui)/(www/|pkg-r/inst/www/)
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.6

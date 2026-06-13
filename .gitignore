@@ -254,3 +254,9 @@ ui-frameworks/shadcn/pkg-py/src/shinyshadcn/www/
 # R package build/check artifacts
 *.Rcheck/
 ui-frameworks/shadcn/shinyshadcn_*.tar.gz
+
+# shinymui: www assets copied in at build time
+ui-frameworks/mui/pkg-py/src/shinymui/www/
+
+# R package tarballs under any ui-framework
+ui-frameworks/*/shiny*_*.tar.gz

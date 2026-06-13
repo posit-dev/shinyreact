@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "shinymui"
+version = "0.0.1"
+description = "Material UI components for Shiny, wired through shinyreact"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Samuel Bharti", email = "samuelbharti@gmail.com" }]
+dependencies = [
+    "shinyreact",
+    "htmltools>=0.7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/posit-dev/shinyreact"
+Repository = "https://github.com/posit-dev/shinyreact"
+
+# A custom build hook copies the shared ../www asset into src/shinymui/www at
+# build time (see hatch_build.py), so both the wheel and sdist ship it.
+[tool.hatch.build.hooks.custom]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shinymui"]
+artifacts = ["src/shinymui/www"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "README.md", "hatch_build.py"]
+artifacts = ["src/shinymui/www"]
