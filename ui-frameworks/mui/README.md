@@ -1,24 +1,26 @@
 # Material UI for shinyreact
 
-[Material UI](https://mui.com/material-ui/) components wired to Shiny's reactive system through shinyreact. Ships 9 components as a Python package (`shinymui`) and an R package (`shinymui`). Install them, or run straight from a source checkout (`sys.path` for Python, `pkgload::load_all()` for R) with no install.
+[Material UI](https://mui.com/material-ui/) components wired to Shiny's reactive system through shinyreact. Ships 45 components from `@mui/material` as a Python package (`shinymui`) and an R package (`shinymui`). Install them, or run straight from a source checkout (`sys.path` for Python, `pkgload::load_all()` for R) with no install.
 
-This is the **npm-library** framework model: MUI is a real npm package, so the bridges in `js/src/components/` import from `@mui/material` (no source copied in). It was built with the `/scaffold-framework` and `/scaffold-component` skills, and is the second framework under `ui-frameworks/` (after `shadcn`).
+This is the **npm-library** framework model: MUI is a real npm package, so the bridges in `js/src/components/` import from `@mui/material` (no source copied in). It was built with the `/scaffold-framework` and `/scaffold-component` skills, and is the second framework under `ui-frameworks/` (after `shadcn`). `@mui/x` components (DataGrid, DatePicker, …) are separate packages and are out of scope.
 
 ## Components
 
-| Component | Type | Shiny input value |
-|-----------|------|-------------------|
-| `button` | Action | click count (integer) |
-| `text_field` | Input | current string |
-| `slider` | Input | number |
-| `switch` | Input | boolean |
-| `checkbox` | Input | boolean |
-| `select` | Input | selected value (string) |
-| `card` | Container | — |
-| `alert` | Display | — |
-| `dialog` | Overlay | boolean (open state) |
+All 45, grouped by role. Names are the Python helper; the R helper is the same name prefixed `mui_` (e.g. `button` / `mui_button`).
 
-R helpers are the same names prefixed `mui_` (e.g. `mui_button`).
+**Inputs** (report a value to the server): `button`, `text_field`, `slider`, `switch`, `checkbox`, `select`, `autocomplete`, `radio_group`, `rating`, `toggle_button_group`, `fab`, `pagination`, `bottom_navigation`, `tabs`
+
+**Display** (render-only): `alert`, `avatar`, `badge`, `chip`, `divider`, `typography`, `tooltip`, `list`, `table`, `stepper`, `breadcrumbs`, `link`, `image_list`
+
+**Feedback**: `backdrop`, `circular_progress`, `linear_progress`, `skeleton`, `snackbar`
+
+**Surfaces**: `card`, `paper`, `app_bar`, `accordion` (+ `accordion_item` builder)
+
+**Overlays / menus** (open state or selection via `input_id`): `dialog`, `drawer`, `menu`, `speed_dial`
+
+**Layout** (containers): `box`, `container`, `grid`, `stack`, `button_group`
+
+Reactive inputs report: click counters (`button`, `fab`); current string (`text_field`); number (`slider`, `rating`); boolean (`switch`, `checkbox`, and the open state of `dialog`/`drawer`/`backdrop`/`snackbar`); selected value (`select`, `radio_group`, `toggle_button_group`, `autocomplete`, `bottom_navigation`, `tabs`); 1-based page (`pagination`); and `{value, nonce}` selections (`menu`, `speed_dial`).
 
 ## Build
 

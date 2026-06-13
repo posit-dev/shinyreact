@@ -21,5 +21,5 @@ mui_alert(text, ..., severity = "info", variant = "standard", class = NULL)
 A \code{shinyreact} node.
 }
 \description{
-A status message.
+A status message. Display-only.
 }

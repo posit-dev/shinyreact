@@ -11,7 +11,7 @@ This directory is not a published package. It exists to prototype what downstrea
 ```
 ui-frameworks/
   shadcn/        ← shadcn/ui components (Radix + Tailwind v4). 47 components, Python + R.
-  mui/           ← Material UI components (npm-library model). 9 components, Python + R.
+  mui/           ← Material UI components (npm-library model). 45 components, Python + R.
   updates.md     ← Changelog of structural decisions made during shadcn development.
   .claude/
     skills/

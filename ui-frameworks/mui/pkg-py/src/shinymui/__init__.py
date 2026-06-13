@@ -1,20 +1,88 @@
 """Material UI components for shinyreact (Python helpers)."""
 
 from ._dep import _dep
-from ._display import alert
-from ._inputs import button, checkbox, select, slider, switch, text_field
-from ._layout import card
-from ._overlays import dialog
+from ._display import (
+    alert,
+    avatar,
+    badge,
+    breadcrumbs,
+    chip,
+    divider,
+    image_list,
+    link,
+    list,
+    stepper,
+    table,
+    tooltip,
+    typography,
+)
+from ._feedback import backdrop, circular_progress, linear_progress, skeleton, snackbar
+from ._inputs import (
+    autocomplete,
+    bottom_navigation,
+    button,
+    checkbox,
+    fab,
+    pagination,
+    radio_group,
+    rating,
+    select,
+    slider,
+    switch,
+    tabs,
+    text_field,
+    toggle_button_group,
+)
+from ._layout import box, button_group, container, grid, stack
+from ._overlays import dialog, drawer, menu, speed_dial
+from ._surfaces import accordion, accordion_item, app_bar, card, paper
 
 __all__ = [
     "_dep",
+    "accordion",
+    "accordion_item",
     "alert",
+    "app_bar",
+    "autocomplete",
+    "avatar",
+    "backdrop",
+    "badge",
+    "bottom_navigation",
+    "box",
+    "breadcrumbs",
     "button",
+    "button_group",
     "card",
     "checkbox",
+    "chip",
+    "circular_progress",
+    "container",
     "dialog",
+    "divider",
+    "drawer",
+    "fab",
+    "grid",
+    "image_list",
+    "linear_progress",
+    "link",
+    "list",
+    "menu",
+    "pagination",
+    "paper",
+    "radio_group",
+    "rating",
     "select",
+    "skeleton",
     "slider",
+    "snackbar",
+    "speed_dial",
+    "stack",
+    "stepper",
     "switch",
+    "table",
+    "tabs",
     "text_field",
+    "toggle_button_group",
+    "tooltip",
+    "typography",
 ]
