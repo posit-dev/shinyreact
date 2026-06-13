@@ -320,7 +320,7 @@ Because `R CMD INSTALL` has no build hook, the built bundle is committed under `
 
 ## Step 11 — Add first components
 
-Run `/scaffold-component` for each component in the initial list. See that skill for the full per-component workflow.
+Use `/scaffold-component` for each component in the initial list; see that skill for the full per-component workflow. Note your model: the **copy-paste (shadcn)** model uses the prep → fill → finalize scripts; the **npm-library (MUI)** model has no source to strip and the scripts are shadcn-specific, so you write each bridge and its Python/R helpers by hand (`/scaffold-component`'s "Manual workflow" section). Either way the taxonomy, bridge patterns, and API conventions are identical.
 
 ---
 
