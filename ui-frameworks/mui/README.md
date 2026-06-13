@@ -32,11 +32,15 @@ npm run build       # -> www/mui.js   (MUI styles at runtime via emotion; no CSS
 
 ## Run examples
 
+`gallery` showcases all 45 components and their variants in one page (grouped by role, spaced with MUI's own Container/Stack/Card); `app` is a small demo.
+
 ```bash
 # Python (from repo root)
+uv run shiny run ui-frameworks/mui/examples/gallery-py/app.py
 uv run shiny run ui-frameworks/mui/examples/app-py/app.py
 
 # R (from an R console)
+shiny::runApp("ui-frameworks/mui/examples/gallery-r")
 shiny::runApp("ui-frameworks/mui/examples/app-r/app.R")
 ```
 
