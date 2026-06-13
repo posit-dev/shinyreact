@@ -1,0 +1,24 @@
+Package: shinyshadcn
+Title: shadcn/ui Components for Shiny via shinyreact
+Version: 0.0.1
+Authors@R: c(
+    person("Samuel", "Bharti", , "samuelbharti@gmail.com", role = c("cre", "aut")),
+    person(, "Posit Software, PBC", role = c("cph", "fnd"),
+           comment = c(ROR = "03wc8by49"))
+  )
+Description: shadcn/ui components wired to Shiny's reactive system through
+    shinyreact. Each helper returns a shinyreact node that renders a
+    registered shadcn React component, usable from 'app.R'.
+License: MIT + file LICENSE
+URL: https://github.com/posit-dev/shinyreact
+BugReports: https://github.com/posit-dev/shinyreact/issues
+Imports:
+    htmltools,
+    rlang,
+    shinyreact
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0

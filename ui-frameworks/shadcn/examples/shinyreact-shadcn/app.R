@@ -7,8 +7,8 @@ library(shiny)
 library(shinyreact)
 
 app_dir <- normalizePath(".")
-source(file.path(app_dir, "../../pkg-r/shadcn.R"))
-dep <- shadcn_dep(file.path(app_dir, "../../www"))
+pkgload::load_all(file.path(app_dir, "../../pkg-r"), quiet = TRUE)
+dep <- shadcn_dep()
 
 # The page-chrome wrapper (outside the React tree) is the ONLY place a string
 # `style=` is safe — inside a render_react tree it throws React error #62.

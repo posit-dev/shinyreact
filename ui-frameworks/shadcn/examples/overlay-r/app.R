@@ -2,8 +2,8 @@ library(shiny)
 library(shinyreact)
 
 app_dir <- normalizePath(".")
-source(file.path(app_dir, "../../pkg-r/shadcn.R"))
-dep <- shadcn_dep(file.path(app_dir, "../../www"))
+pkgload::load_all(file.path(app_dir, "../../pkg-r"), quiet = TRUE)
+dep <- shadcn_dep()
 
 ui <- page_react(
   tags$div(

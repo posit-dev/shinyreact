@@ -250,3 +250,7 @@ ui-frameworks/comparison-deck/
 
 # shinyshadcn: www assets are copied in at build time (hatch_build.py)
 ui-frameworks/shadcn/pkg-py/src/shinyshadcn/www/
+
+# R package build/check artifacts
+*.Rcheck/
+ui-frameworks/shadcn/shinyshadcn_*.tar.gz
