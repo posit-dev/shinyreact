@@ -1,3 +1,12 @@
+---
+name: scaffold-component
+description: >-
+  Wrap one React component as a shinyreact bridge plus matching Python and R
+  helpers, for a ui-frameworks component library (shadcn, MUI, or any React
+  component library). Use when adding a component to shinyshadcn or shinymui, or
+  wrapping a new component from a UI library into shinyreact.
+---
+
 # scaffold-component
 
 Add one new component to an existing ui-frameworks framework (shadcn, mui, etc.).

@@ -13,10 +13,14 @@ ui-frameworks/
   shadcn/        ← shadcn/ui components (Radix + Tailwind v4). 47 components, Python + R.
   mui/           ← Material UI components (npm-library model). 45 components, Python + R.
   updates.md     ← Changelog of structural decisions made during shadcn development.
-  .claude/
-    skills/
-      scaffold-component.md   ← /scaffold-component skill: add one component to any framework
-      scaffold-framework.md   ← /scaffold-framework skill: bootstrap a new framework from scratch
+```
+
+The two scaffolding skills live at the repo root (`<repo>/.claude/skills/`), where Claude Code discovers them:
+
+```
+.claude/skills/
+  scaffold-component/SKILL.md   ← /scaffold-component: add one component to any framework
+  scaffold-framework/SKILL.md   ← /scaffold-framework: bootstrap a new framework from scratch
 ```
 
 ---

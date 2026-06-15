@@ -1,3 +1,12 @@
+---
+name: scaffold-framework
+description: >-
+  Bootstrap a new UI-framework integration under ui-frameworks/ from scratch —
+  the JS IIFE bundle, an installable Python package, and an R package — for a
+  React component library (shadcn copy-paste model or MUI-style npm model). Use
+  when adding a whole new framework like MUI or Mantine to shinyreact.
+---
+
 # scaffold-framework
 
 Bootstrap a new UI framework integration under `ui-frameworks/` from scratch.
