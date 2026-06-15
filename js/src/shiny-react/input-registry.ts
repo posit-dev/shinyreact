@@ -77,15 +77,25 @@ export class InputRegistryEntry<T> {
     this.useStateSetValueFns.delete(fn);
   }
 
-  setValue(value: T) {
-    this.value = value;
-    this.useStateSetValueFns.forEach((fn) => fn(value));
-    if ((value as unknown) === MISSING) {
+  setValue(value: T | ((prev: T) => T)) {
+    // Support React-style functional updaters: setValue(prev => next). The
+    // setter forwards its argument verbatim to Shiny.setInputValue, so a raw
+    // function would be dropped during JSON serialization; resolve it against
+    // the current value here instead. (Shiny input values are JSON data, never
+    // functions, so a function argument unambiguously means "updater" — same
+    // caveat as React's useState.)
+    const next =
+      typeof value === "function"
+        ? (value as (prev: T) => T)(this.value)
+        : value;
+    this.value = next;
+    this.useStateSetValueFns.forEach((fn) => fn(next));
+    if ((next as unknown) === MISSING) {
       // MISSING means "not yet set" — update React state only, don't send to Shiny.
       // This keeps the server-side input in its MISSING state (raises SilentException).
       return;
     }
-    this.shinySetInputValueDebounced(value);
+    this.shinySetInputValueDebounced(next);
   }
 
   getValue(): T {
