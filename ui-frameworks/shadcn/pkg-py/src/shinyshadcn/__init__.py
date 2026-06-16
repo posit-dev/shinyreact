@@ -21,7 +21,7 @@ from ._display import (
     table,
     tooltip,
 )
-from ._feedback import toaster
+from ._feedback import toast, toaster
 from ._inputs import (
     button,
     calendar,
@@ -124,6 +124,7 @@ __all__ = [
     "tabs",
     "text_input",
     "textarea",
+    "toast",
     "toaster",
     "toggle",
     "toggle_group",

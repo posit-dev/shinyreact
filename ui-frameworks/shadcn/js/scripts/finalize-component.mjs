@@ -364,7 +364,7 @@ function appendPython() {
   const modPath = join(pySrc, `_${category}.py`);
   let content = readFileSync(modPath, "utf8");
 
-  if (content.match(new RegExp(`^def ${snake}\\(`, "m"))) {
+  if (content.match(new RegExp(`^(?:async )?def ${snake}\\(`, "m"))) {
     console.log(`  _${category}.py   : def ${snake}() already exists — skipped`);
   } else {
     writeFileSync(modPath, content.trimEnd() + "\n\n\n" + generatePython() + "\n");
@@ -384,7 +384,11 @@ function regenerateInit() {
   ];
   for (const cat of CATEGORIES) {
     const text = readFileSync(join(pySrc, `_${cat}.py`), "utf8");
-    const names = [...text.matchAll(/^def (\w+)\(/gm)].map((m) => m[1]).sort();
+    // Match `def` and `async def` — Push helpers like `toast` are async;
+    // missing them silently drops them from the re-exports.
+    const names = [...text.matchAll(/^(?:async )?def (\w+)\(/gm)]
+      .map((m) => m[1])
+      .sort();
     if (names.length) entries.push({ mod: `_${cat}`, names });
   }
   entries.sort((a, b) => a.mod.localeCompare(b.mod));
