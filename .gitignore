@@ -260,3 +260,6 @@ ui-frameworks/mui/pkg-py/src/shinymui/www/
 
 # R package tarballs under any ui-framework
 ui-frameworks/*/shiny*_*.tar.gz
+
+# transient gallery e2e server logs
+.gallery-e2e-*.log
