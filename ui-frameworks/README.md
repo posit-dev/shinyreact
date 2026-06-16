@@ -21,6 +21,7 @@ The two scaffolding skills live at the repo root (`<repo>/.claude/skills/`), whe
 .claude/skills/
   scaffold-component/SKILL.md   ← /scaffold-component: add one component to any framework
   scaffold-framework/SKILL.md   ← /scaffold-framework: bootstrap a new framework from scratch
+  verify-ui-components/SKILL.md ← /verify-ui-components: browser-test & debug a gallery app
 ```
 
 ---
@@ -39,6 +40,7 @@ Use the Claude skills in `.claude/skills/`:
 
 - `/scaffold-component` — add one component to an existing framework (shadcn, mui, etc.)
 - `/scaffold-framework` — bootstrap a new framework directory from scratch
+- `/verify-ui-components` — browser-test a gallery/example app (Python + R) and debug runtime crashes that static checks miss
 
 ---
 
