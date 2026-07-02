@@ -1,4 +1,3 @@
-import pytest
 from playwright.sync_api import Page, expect
 from shiny.pytest import create_app_fixture
 from shiny.run import ShinyAppProc
@@ -6,23 +5,50 @@ from shiny.run import ShinyAppProc
 module_plotly_app = create_app_fixture("apps/module_plotly/app.py")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "set_react_page() does not discover HTMLDependencies from renderers "
-        "defined inside @module.server. See "
-        "https://github.com/posit-dev/shinyreact/issues/87."
-    ),
-)
 def test_module_renderer_dep_injected(
     page: Page, module_plotly_app: ShinyAppProc
 ) -> None:
     page.goto(module_plotly_app.url)
 
     # shinywidgets ships an `ipywidget-output-binding` HTMLDependency that
-    # render_plotly attaches. When the renderer lives inside @module.server,
-    # set_react_page() never sees it at app-startup time, so the dep is not
-    # injected and the plotly chart cannot render.
+    # render_plotly attaches. With the session-output harvest, set_react_page()
+    # now finds it even though the renderer lives inside @module.server.
+    # (The dependency adds multiple <script> tags, so use .first to avoid
+    # Playwright's strict-mode violation when >1 match is found.)
     expect(
-        page.locator("script[src*='ipywidget-output-binding']")
+        page.locator("script[src*='ipywidget-output-binding']").first
     ).to_be_attached()
+
+
+dynamic_plotly_app = create_app_fixture("apps/dynamic_plotly/app.py")
+
+
+def test_dynamic_ui_plotly_dep(page: Page, dynamic_plotly_app: ShinyAppProc) -> None:
+    """Checkbox-gated Plotly chart via @render.ui → output_widget mounts natively.
+
+    Shiny's own dynamic-UI path (renderContent → renderDependencies) delivers the
+    ipywidget-output-binding dependency to the client when the holder renders, so
+    Layer B (flush-diff dep push) is not needed for this case.
+
+    The fixture registers `scatter` inside a `@reactive.effect` so the renderer
+    is not on the session at page-generation time — the Layer-A harvest cannot
+    pre-inject its dependency into <head>. The absence assertion below pins
+    that down; without it, a head-injected dep would satisfy the test even if
+    the dynamic-UI path delivered nothing.
+    """
+    page.goto(dynamic_plotly_app.url)
+
+    # The React app must be mounted (checkbox present) with the dependency NOT
+    # yet on the page — proving what follows is dynamic delivery, not initial
+    # <head> injection.
+    expect(page.locator("#show")).to_be_attached()
+    expect(page.locator("script[src*='ipywidget-output-binding']")).to_have_count(0)
+
+    page.locator("#show").check()
+
+    # The ipywidgets binding dependency must be loaded...
+    expect(
+        page.locator("script[src*='ipywidget-output-binding']").first
+    ).to_be_attached()
+    # ...and the Plotly chart must actually render inside the dynamic holder.
+    expect(page.locator("#holder .plotly").first).to_be_attached()
