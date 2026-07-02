@@ -34,7 +34,6 @@ def test_react_page_harvests_session_output_deps(tmp_path) -> None:
     with session_context(stub):
         # Register a renderer the way @module.server would — it lands in
         # stub.output._outputs but is NOT passed to page_fn as an arg.
-        @stub.output
         @render_widget
         def thing():  # pragma: no cover - never rendered
             return "x"
