@@ -36,8 +36,7 @@ page_react_html <- function(path = "www/index.html") {
 #' Convenience mirroring Python's `page_react_dep()`. Versioned by the JS
 #' file's mtime so browsers re-fetch after a rebuild.
 #'
-#' The script tag is emitted as `type="module"`, matching Python, because the
-#' default output of a Vite `build.lib` config is an ES module — a classic
+#' The script tag is emitted as `type="module"`. A classic
 #' `<script defer>` tag throws on the bundle's first `import`. `type="module"`
 #' is implicitly deferred, so no `defer` attribute is needed. If your bundle is
 #' a classic (non-module) script, build an [htmltools::htmlDependency] directly
