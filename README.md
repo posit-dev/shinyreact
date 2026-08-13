@@ -1,8 +1,8 @@
 # shinyreact <img src="logo/shiny-react.png" align="right" height="138" alt="shinyreact logo" />
 
-JSON-driven React rendering infrastructure for [Shiny](https://shiny.posit.co/). `shinyreact` provides the plumbing that lets downstream packages (like `shinyshadcn`) deliver React component trees from **Python or R** — it ships zero UI components itself.
+React UI infrastructure for [Shiny](https://shiny.posit.co/). With `shinyreact`, the Shiny server (**Python or R**) contains only reactive computation, and the UI is a React client you own — `shinyreact` provides the bridge between the two and ships zero UI components itself.
 
-One JSON wire format and one JavaScript bundle back both languages, so a React component registered once renders identically from `app.py` and `app.R`.
+One JavaScript bundle backs both languages, so the same React client works identically against an `app.py` or `app.R` server.
 
 This repo ships per-language packages:
 
@@ -11,82 +11,38 @@ This repo ships per-language packages:
 | Python | [`pkg-py/`](pkg-py/) | [`pkg-py/README.md`](pkg-py/README.md) |
 | R | [`pkg-r/`](pkg-r/) | [`pkg-r/README.md`](pkg-r/README.md) · [pkgdown](https://posit-dev.github.io/shinyreact/r) |
 
-Not sure whether to use the `app.py`/`app.R` pattern or the `ui.tsx` pattern? See [`docs/app-py-vs-ui-tsx.md`](docs/app-py-vs-ui-tsx.md).
-
 ## How it works
 
-`shinyreact` ships two first-class patterns, both available in Python and R:
+`shinyreact` implements the **`ui.tsx` pattern**: UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `App.jsx`, or `app.js` for no-build):
 
-**`app.py` / `app.R` pattern** — UI defined as Python or R objects in the Shiny app file:
-1. Server code builds a component tree — a `Node` tree in Python, a `node()` tree in R (either may interleave htmltools tags)
-2. `shinyreact` serializes the tree as JSON and sends it to the browser via a Shiny output binding
-3. The JS bundle renders the JSON into a live React component tree
-4. Downstream packages register their own React components so the renderer can resolve `type` strings like `"Card"` or `"Button"`
-
-**`ui.tsx` pattern** — UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `App.jsx`, or `app.js` for no-build):
-1. The Shiny server contains only reactive computation; it bootstraps a static page — `set_react_page()` in Python, `page_react_html()` in R
+1. The Shiny server contains only reactive computation; it bootstraps a static page — `set_react_page()` (Express) or `page_react_html()` (Core) in Python, `page_react_html()` in R
 2. A static `www/index.html` plus your React client serve the UI
-3. Client and server communicate via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler` hooks
+3. Client and server communicate via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler` hooks; the server publishes data with `reactive_output` and pushes messages with `send_message()`
 
-See each package's README for runnable code, and [`examples/`](examples/) for working apps in both languages and both patterns.
+See each package's README for runnable code, and [`examples/`](examples/) for working apps.
 
-## Extending shinyreact (package authors)
+## JS hooks available via `window.shinyreact`
 
-Downstream packages supply their own React components. The pattern has two halves:
-
-### 1. JS bundle — register components
-
-Build your own IIFE that calls `registerComponents` at load time:
-
-```js
-const { registerComponents } = window.shinyreact;
-
-const catalog = { Button, Card, Dialog /* ... */ };
-const registry = (type) => catalog[type] ?? null;
-
-registerComponents(catalog, registry);
-```
-
-### 2. Server — render your components + inject your dependency
-
-**Python** — subclass `render_react` and inject your `HTMLDependency` on the UI side:
-
-```python
-class render(shinyreact.render_react):
-    async def transform(self, value: MyComponent) -> Any:
-        return value.to_node().to_dict()
-
-shinyreact.output_react("my_output", extra_deps=[my_html_dependency()])
-```
-
-**R** — build `node("YourComponent", ...)` trees and inject your `htmlDependency` via `output_react()`:
-
-```r
-output_react("my_output", extra_deps = list(my_html_dependency()))
-```
-
-### JS hooks available via `window.shinyreact`
-
-Downstream component authors can use these re-exported hooks from `@posit/shiny-react`:
+The bundle re-exports these hooks from `@posit/shiny-react`:
 
 | Hook | Purpose |
 |------|---------|
 | `useShinyInput(id, default, opts)` | Read/write a Shiny input — full `[value, setValue]` |
 | `useShinyInputValue(id)` | Read-only consumer for an input that another component produces |
 | `useSetShinyInput(id, default, opts)` | Write-only producer — registers an input and returns just the setter |
-| `useShinyOutputValue(id, default?)` | Consume arbitrary data sent by the server renderer |
+| `useShinyOutputValue(id, default?)` | Consume arbitrary data sent by `reactive_output` |
 | `useShinyOutputStatus(id)` | Output lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` |
 | `useShinyMessageHandler(type, fn)` | Handle server-to-client custom messages |
 | `useShinyInitialized()` | Check whether Shiny is connected |
 | `useShinyBusy()` | Whether the Shiny server is currently processing a request |
 
-Shared `React` and `ReactDOM` instances are also available at `window.shinyreact.React` / `window.shinyreact.ReactDOM` — externalize to these in your build to avoid duplicate React.
+`ImageOutput`, `ShinyModuleProvider`, and `ShinyOutput` components are exposed the same way. Shared `React` and `ReactDOM` instances are available at `window.shinyreact.React` / `window.shinyreact.ReactDOM` — externalize to these in your build to avoid duplicate React.
 
 ## Architecture
 
-- **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`. Registers a Shiny `OutputBinding` for `.shinyreact-output` elements. Shared by both language packages.
-- **Python package** (`pkg-py/`): `Node` tree data model, `render_react` (app.py) + `reactive_output` (ui.tsx) renderers, `output_react()` + `page_react()` helpers, `set_react_page()` for the `ui.tsx` pattern, and `send_message()` for server-to-client communication.
-- **R package** (`pkg-r/`): `node()` tree data model, `render_react()` (app.R) + `reactive_output()` (ui.tsx) renderers, `output_react()` + `page_react()` helpers, `page_react_html()` for the `ui.tsx` pattern, and `send_message()`. Same wire format and JS bundle as Python.
+- **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`, exposing the hook API at `window.shinyreact`. Shared by both language packages.
+- **Python package** (`pkg-py/`): `set_react_page()` / `page_react_html()` page entry points, the `reactive_output` renderer, `send_message()`, built-in input handlers, and bookmark restore support.
+- **R package** (`pkg-r/`): `page_react_html()`, `reactive_output()`, `send_message()`, the same input handlers and bookmark support. Same JS bundle as Python.
 
 ## Development
 

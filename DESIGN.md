@@ -6,12 +6,9 @@ Shiny's original design achieved something remarkable: it let data scientists bu
 
 AI changes the equation. When Claude can generate a complete React app — with layout, styling, interactivity, and accessibility — the server-side UI abstraction layer becomes indirection rather than simplification. The UI should simply live on the client from the start.
 
-This document was originally written to propose a ui.tsx-first architecture as a new direction. **As of May 2026, `shinyreact` ships both patterns as first-class peers:**
+This document was originally written to propose a ui.tsx-first architecture as a new direction. As of August 2026 the repo ships the **ui.tsx pattern only** (`set_react_page()` / `page_react_html()`) — the server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler`. UI logic lives on the client.
 
-- **app.py pattern** (`page_react` + `render_react`) — server describes UI as a JSON wire tree (a `Node` tree), the JS bundle renders it into a React tree. Authors work entirely in Python/R; no JS required.
-- **ui.tsx pattern** (`set_react_page()`) — server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler`. UI logic lives on the client.
-
-The tenets and analysis below describe the ui.tsx-first reasoning that motivated the architecture. Both patterns coexist and neither is deprecated. See [`docs/app-py-vs-ui-tsx.md`](docs/app-py-vs-ui-tsx.md) for guidance on choosing between them.
+An **app.py pattern** (`page_react` + `render_react` — server describes UI as a JSON wire tree rendered by the JS bundle) previously shipped alongside it; it was removed in #168 (history pointers in a comment on #167). References to it in the analysis below are retained as historical context.
 
 The document begins with the design tenets that guided the ui.tsx-first direction, then builds the supporting case.
 
