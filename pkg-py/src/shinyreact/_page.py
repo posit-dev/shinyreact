@@ -65,7 +65,7 @@ def page_react_dep(
        is the expected usage::
 
            # /path/to/my-app/app.py
-           from shinyreact import page_react, page_react_dep
+           from shinyreact import page_react_dep
 
            dep = page_react_dep(js_file="bundle.js")
            # dep.source["subdir"] == "/path/to/my-app"

@@ -172,7 +172,7 @@ The core communication layer is intentionally minimal:
 |-----------|-----------|---------|
 | Client → Server | `useShinyInput(id, defaultValue)` | User selects a filter option |
 | Server → Client | `useShinyOutputValue(id)` | Server sends computed plot data |
-| Server → Client (push) | `useShinyMessageHandler(id, messageType, handler)` | Server pushes a notification |
+| Server → Client (push) | `useShinyMessageHandler(messageType, handler)` | Server pushes a notification |
 
 ### Server-side primitives
 

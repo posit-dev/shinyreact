@@ -35,16 +35,11 @@ By posit::conf, the story is: *Tell Claude what you want your Shiny app to do. C
 
 The plumbing just works. Downstream packages can build on it confidently.
 
-- Stable API surface for JS hooks and Python public API
+- Stable API surface for JS hooks and the Python/R public API
 - Clear documentation and examples
-- Known issues resolved:
-  - **Python-side input handlers** — useShinyInput values arrive raw with no server-side interception. Need to support registering Python input handlers for validation/transformation (like Shiny's built-in action button handler).
-  - **XSS in chat example** — renderMarkdown passes non-code-block text as raw HTML via dangerouslySetInnerHTML. Needs sanitization (DOMPurify or React element tree).
-  - **Component contract definition** — define what a well-formed `shinyreact` component looks like from a downstream author's perspective (props, composition, catalog conventions).
-  - **Render method surface area** — evaluate which render patterns are most valuable (single element without full Spec, streaming partial updates, HTML fragments, component lists).
-  - **Dynamic UI support** — can render output include arbitrary Shiny UI (ui.tags, ui.input_slider) mixed with `shinyreact` components, or must it always be component trees?
-  - **Full React page support** — remaining work for `page_react()` layout, graceful late-Shiny-arrival for all hooks, example app.
-  - **Feature/benefit catalog** — comprehensive nested bullet list of every feature and benefit for documentation source-of-truth.
+- **Feature/benefit catalog** — comprehensive nested bullet list of every feature and benefit for documentation source-of-truth.
+
+Remaining known issues are tracked in the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues).
 
 ### 2. Migrate Shiny JavaScript to its own repo
 
@@ -59,7 +54,7 @@ The vendored `shiny-react` code at `js/src/shiny-react/` and the broader Shiny J
 `shinyshadcn` is a *reference implementation* — it shows the pattern works with a real design system. It is not the only option. Companies/groups could implement their own component library on top of `shinyreact` using their own design system for high-quality, consistent apps.
 
 - Demonstrates the downstream package pattern end-to-end
-- Shows that the extension mechanism (registerComponents, render subclass, extra_deps) works in practice
+- Shows that a standalone JS component library consuming `window.shinyreact` works in practice (Tenet 8 in `DESIGN.md`)
 - Provides a meaningful set of components for demo purposes
 
 ### 4. Claude can reliably generate shinyreact apps
@@ -78,52 +73,15 @@ A written piece that articulates where Shiny fits in the modern app landscape �
 
 ### 6. R package has feature parity with Python
 
-Full feature parity — not just a demo, the real thing:
+Full feature parity — not just a demo, the real thing.
 
-- `shinyreact::output_react()` — equivalent to Python's `shinyreact.output_react()`
-- `shinyreact::reactive_output` — equivalent to `@shinyreact.reactive_output`
-- `Spec` / `Element` data model
-- `send_message()` support
-- Same extension pattern works for R downstream packages
+The R package ships `page_react_html()`, `reactive_output()`, `send_message()`, `page_bare()`, `page_react_dep()`, the `shinyreact.default` / `shinyreact.asis` input handlers, and bookmark restore — over the same JS bundle as Python (byte-identical). Remaining gaps are tracked in [#182](https://github.com/posit-dev/shinyreact/issues/182) (script attributes), [#183](https://github.com/posit-dev/shinyreact/issues/183) (bookmark JSON escaping), [#184](https://github.com/posit-dev/shinyreact/issues/184) (smaller API divergences), and [#185](https://github.com/posit-dev/shinyreact/issues/185) (test coverage).
 
 ## Nice-to-haves (can wait)
 
 ### No-build-step component authoring
 
-Claude can define + register components without requiring npm/vite/bundling. Also: the ability to point at any npm package / CDN resource and have `shinyreact` consume it at runtime without a build step. Compelling, but not required for the September narrative.
-
-### JSON Patch for partial updates
-
-RFC 6902 JSON Patch operations to send incremental spec updates from Python instead of full spec replacement. Valuable for large specs and streaming/AI-generated UIs, but not needed for the core story.
-
-### Build step for example JS
-
-Examples currently use `React.createElement` directly (no JSX). A lightweight build step (esbuild with JSX) would improve readability. Low priority — examples work as-is.
-
-### Chat example mock mode
-
-07-chat requires OPENAI_API_KEY. An echo/mock mode would enable smoke-testing without credentials.
-
-## Current state (May 2026)
-
-- **JS core:** Working — hooks (useShinyInput, useShinyOutputValue, useShinyMessageHandler, useShinyInitialized), registerComponents, output binding all functional
-- **Python package:** Working — output_react(), render_react, reactive_output, Spec/Element, send_message all functional; both the `app.py` and `ui.tsx` patterns ship
-- **R package:** Placeholder — not yet implemented
-- **Examples:** `app.py` (examples/app-py/) and `ui.tsx` (examples/ui-tsx/) examples — target is 100 by conf
-- **Known issues:** Duplicate output IDs on tab nav, chat example needs API key, no input handlers, XSS in chat markdown, component contract undefined, render method surface area unexplored
-
-## Gap analysis
-
-| Area | Current | Target | Gap |
-|------|---------|--------|-----|
-| shinyreact JS core | Working, some known bugs | Stable, bugs fixed | Medium — duplicate output IDs, component contract, dynamic UI, full React page |
-| shinyreact Python | Working | Stable, documented | Medium — input handlers, render surface area, docs |
-| shinyreact R | Placeholder | Feature parity with Python | **Large** — full implementation needed |
-| shiny-react repo | Vendored in js/src/shiny-react/ | Own repo, independently versioned | **Medium** — extract, set up repo/CI, update consumers |
-| shinyshadcn | Exists as example (05-shadcn) | Real downstream package | Medium — extract into standalone package |
-| AI integration | CLAUDE.md exists | Docs + tooling + simplified API | Medium — skill/MCP server, API refinement |
-| Documentation | README + CLAUDE.md | Comprehensive user-facing docs | Medium — feature catalog, user guides |
-| Security | XSS in chat markdown | Sanitized rendering | Small — add DOMPurify or React element tree |
+Claude can define components without requiring npm/vite/bundling (as `examples/01-hello` and `examples/02-columns` already do). Also: the ability to point at any npm package / CDN resource and have `shinyreact` consume it at runtime without a build step. Compelling, but not required for the September narrative.
 
 ## Team allocation
 
