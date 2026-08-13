@@ -3,10 +3,8 @@ template:
   bootstrap: 5
 reference:
   - title: Pages
-    contents: [page_react, page_bare, page_react_html, page_react_dep]
+    contents: [page_bare, page_react_html, page_react_dep]
   - title: Outputs
-    contents: [output_react, render_react, reactive_output]
-  - title: Data model
-    contents: [node]
+    contents: [reactive_output]
   - title: Messaging
     contents: [send_message]
