@@ -33,8 +33,6 @@ def page_bare(
     """
     from shiny.ui import page_bootstrap
 
-    # `page_bootstrap()` owns the <title> element; do not also inject one here
-    # or the page ends up with two (issue #186).
     return page_bootstrap(
         *args,
         title=title,
