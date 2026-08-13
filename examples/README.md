@@ -18,6 +18,7 @@ for no-build or `src/App.jsx` for Vite + JSX fill the same role).
 | [07-plotly](ui-tsx/07-plotly/) | Embeds `@render_plotly` via `ShinyOutput` and `set_react_page()` |
 | [08-input-handler](ui-tsx/08-input-handler/) | `useShinyInput` with `type="shiny.datetime"` — client sends unix seconds; server `input.when()` is a `datetime.datetime` via Shiny's built-in handler |
 | [09-hmr](ui-tsx/09-hmr/) | React Fast Refresh in dev (Vite dev server alongside Shiny); the `app.py` and no-build `www/app.js` paths reload too |
+| [10-bookmarking](ui-tsx/10-bookmarking/) | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via a head `<script>` emitted by `page_react_html()` |
 
 ## R ([`ui-tsx-r/`](ui-tsx-r/))
 
