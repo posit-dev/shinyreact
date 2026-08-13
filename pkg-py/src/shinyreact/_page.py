@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, cast
 
-from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList, tags
+from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList
 from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 from shiny.session import get_current_session
@@ -33,12 +33,7 @@ def page_bare(
     """
     from shiny.ui import page_bootstrap
 
-    head_content = TagList()
-    if title:
-        head_content = TagList(tags.title(title))
-
     return page_bootstrap(
-        head_content,
         *args,
         title=title,
         lang=lang,

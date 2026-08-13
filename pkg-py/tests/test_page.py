@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from htmltools import HTMLDependency, Tag
 from shinyreact._page import page_bare
@@ -12,6 +14,12 @@ def test_page_bare_with_title():
     result = page_bare(title="Test Page")
     rendered = str(result.tagify())
     assert "Test Page" in rendered
+
+
+def test_page_bare_title_emitted_once():
+    """Only `page_bootstrap()` emits <title> — no duplicate element (issue #186)."""
+    rendered = str(page_bare(title="My Title").tagify())
+    assert re.findall(r"<title>.*?</title>", rendered) == ["<title>My Title</title>"]
 
 
 def test_page_bare_no_shinyreact_dep():
