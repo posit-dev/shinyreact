@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from htmltools import HTMLDependency
 from shinyreact._dep import _SHINYREACT_JS_PATH, _dep
 from shinyreact._page import page_react_dep
@@ -70,8 +71,26 @@ def test_page_react_dep_uses_mtime_version(tmp_path):
 
 def test_page_react_dep_missing_js_falls_back_to_zero_version(tmp_path):
     """When the JS entry point doesn't exist yet, version is "0"."""
-    dep = _run_page_react_dep(tmp_path)
+    with pytest.warns(UserWarning, match="JS entry point not found"):
+        dep = _run_page_react_dep(tmp_path)
     assert str(dep.version) == "0"
+
+
+def test_page_react_dep_omits_script_when_js_absent(tmp_path):
+    """No tag pointing at a 404 — but warn, since an empty dep is silent."""
+    with pytest.warns(UserWarning, match="JS entry point not found"):
+        dep = page_react_dep(src_dir=tmp_path)
+    # htmltools normalizes an absent script to an empty list.
+    assert dep.script == []
+
+
+def test_page_react_dep_attaches_script_when_js_present(tmp_path):
+    (tmp_path / "main.js").write_text("// app")
+
+    dep = page_react_dep(src_dir=tmp_path)
+    script = dep.script if isinstance(dep.script, dict) else dep.script[0]
+    assert script["src"] == "main.js"
+    assert script.get("type") == "module"
 
 
 def test_page_react_dep_custom_filenames(tmp_path):

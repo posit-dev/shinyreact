@@ -56,15 +56,17 @@ page_react_html <- function(path = "www/index.html") {
 #' a classic (non-module) script, build an [htmltools::htmlDependency] directly
 #' instead of using this helper.
 #'
-#' The stylesheet is attached only when `css_file` exists inside `src_dir`, so a
-#' bundle that ships no CSS does not produce a 404. Pass `css_file = NULL` to
-#' never attach one.
+#' Both the script and the stylesheet are attached only when the file exists
+#' inside `src_dir`, so a bundle that ships no CSS — or that has not been built
+#' yet — does not emit a tag pointing at a 404. Pass `css_file = NULL` to never
+#' attach a stylesheet. A missing `js_file` warns, since it is the entry point
+#' and an empty dependency would otherwise fail silently.
 #'
 #' @param src_dir Directory containing the JS/CSS. Required; Python infers this
 #'   from the calling module's `__file__` when omitted, which R has no
 #'   equivalent of.
 #' @param js_file JS filename within `src_dir`. Defaults to `"main.js"`,
-#'   matching Python.
+#'   matching Python; attached only if the file exists.
 #' @param css_file CSS filename within `src_dir`. Defaults to `"main.css"`,
 #'   matching Python; attached only if the file exists. `NULL` to skip.
 #' @param name Dependency name; defaults to `basename(src_dir)`.
@@ -77,6 +79,7 @@ page_react_dep <- function(
   name = basename(src_dir)
 ) {
   js_path <- file.path(src_dir, js_file)
+  js_exists <- file.exists(js_path)
   mtime <- suppressWarnings(file.mtime(js_path))
   version <-
     if (length(mtime) == 1L && !is.na(mtime)) {
@@ -84,6 +87,15 @@ page_react_dep <- function(
     } else {
       "0"
     }
+  if (!js_exists) {
+    # An empty dependency loads nothing and reports nothing, so say so here --
+    # without the tag there is not even a 404 in the console to go on.
+    cli::cli_warn(c(
+      "JS entry point not found: {.path {js_path}}",
+      "i" = "No script tag will be emitted. Build the bundle first?"
+    ))
+  }
+  script <- if (js_exists) list(src = js_file, type = "module") else NULL
   stylesheet <-
     if (!is.null(css_file) && file.exists(file.path(src_dir, css_file))) {
       css_file
@@ -94,7 +106,7 @@ page_react_dep <- function(
     name = name,
     version = version,
     src = c(file = src_dir),
-    script = list(src = js_file, type = "module"),
+    script = script,
     stylesheet = stylesheet
   )
 }

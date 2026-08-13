@@ -43,10 +43,18 @@ caller's `__file__`, and always attached `main.css`.
   against the wrapper's directory. Inference stays as the default because it is
   what makes the one-line app case pleasant, but it is now opt-out.
 - Both default to `js_file = "main.js"` and `css_file = "main.css"`.
-- **The stylesheet is attached only if the file exists.** Python previously
-  emitted a link to `main.css` unconditionally, 404-ing for bundles that ship no
-  CSS; R defaulted to no CSS at all. Existence-gating gives both the same
-  behavior and is what either default was reaching for.
+- **Neither the script nor the stylesheet is attached unless the file exists.**
+  Python previously emitted a link to `main.css` unconditionally, 404-ing for
+  bundles that ship no CSS; R defaulted to no CSS at all. Existence-gating gives
+  both the same behavior and is what either default was reaching for. The same
+  rule applies to `js_file`: a tag pointing at a file that is not there is never
+  useful.
+
+  A missing `js_file` additionally **warns**. It is the entry point, so an
+  existence-gated dependency with no script is empty — it loads nothing and,
+  unlike the 404 it replaces, leaves nothing in the console to diagnose. The
+  warning keeps the "build the dep before the bundle exists" dev flow working
+  (the `"0"` version fallback is unchanged) while making the silence audible.
 
 `src_dir` stays required in R — there is no per-caller `__file__` to infer from.
 

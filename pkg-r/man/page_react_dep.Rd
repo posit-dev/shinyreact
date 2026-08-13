@@ -17,7 +17,7 @@ from the calling module's \verb{__file__} when omitted, which R has no
 equivalent of.}
 
 \item{js_file}{JS filename within \code{src_dir}. Defaults to \code{"main.js"},
-matching Python.}
+matching Python; attached only if the file exists.}
 
 \item{css_file}{CSS filename within \code{src_dir}. Defaults to \code{"main.css"},
 matching Python; attached only if the file exists. \code{NULL} to skip.}
@@ -38,7 +38,9 @@ is implicitly deferred, so no \code{defer} attribute is needed. If your bundle i
 a classic (non-module) script, build an \link[htmltools:htmlDependency]{htmltools::htmlDependency} directly
 instead of using this helper.
 
-The stylesheet is attached only when \code{css_file} exists inside \code{src_dir}, so a
-bundle that ships no CSS does not produce a 404. Pass \code{css_file = NULL} to
-never attach one.
+Both the script and the stylesheet are attached only when the file exists
+inside \code{src_dir}, so a bundle that ships no CSS — or that has not been built
+yet — does not emit a tag pointing at a 404. Pass \code{css_file = NULL} to never
+attach a stylesheet. A missing \code{js_file} warns, since it is the entry point
+and an empty dependency would otherwise fail silently.
 }

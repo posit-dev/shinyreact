@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, cast
 
@@ -13,7 +14,7 @@ from ._dep import _dep_page, _file_mtime_int
 
 if TYPE_CHECKING:
     # Private, but it is the only name for HTMLDependency's stylesheet entry.
-    from htmltools._core import StylesheetItem
+    from htmltools._core import ScriptItem, StylesheetItem
 
 
 def page_bare(
@@ -56,9 +57,12 @@ def page_react_dep(
     The JS file's mtime is used as the dependency version for automatic
     cache-busting during development.
 
-    The stylesheet is attached only when ``css_file`` exists inside the
-    resolved ``src_dir``, so a bundle that ships no CSS does not produce a 404.
-    Pass ``css_file=None`` to never attach one.
+    Both the script and the stylesheet are attached only when the file exists
+    inside the resolved ``src_dir``, so a bundle that ships no CSS — or that has
+    not been built yet — does not emit a tag pointing at a 404. Pass
+    ``css_file=None`` to never attach a stylesheet. A missing ``js_file`` warns,
+    since it is the entry point and an empty dependency would otherwise fail
+    silently.
 
     Path resolution
     ---------------
@@ -100,7 +104,7 @@ def page_react_dep(
         src_dir: Directory containing the JS/CSS. Inferred from the calling
             frame when omitted (see above).
         js_file: Filename of the JS entry point, relative to ``src_dir``
-            (default ``"main.js"``).
+            (default ``"main.js"``). Attached only if the file exists.
         css_file: Filename of the CSS file, relative to ``src_dir`` (default
             ``"main.css"``). Attached only if the file exists; ``None`` to skip.
         name: Dependency name. Defaults to ``src_dir``'s basename.
@@ -119,6 +123,18 @@ def page_react_dep(
     mtime = _file_mtime_int(js_path)
     version = str(mtime) if mtime is not None else "0"
 
+    script: ScriptItem | None = None
+    if js_path.exists():
+        script = {"src": js_file, "type": "module"}
+    else:
+        # An empty dependency loads nothing and reports nothing, so say so here
+        # — without the tag there is not even a 404 in the console to go on.
+        warnings.warn(
+            f"JS entry point not found: {js_path}. No script tag will be "
+            "emitted. Build the bundle first?",
+            stacklevel=2,
+        )
+
     stylesheet: StylesheetItem | None = None
     if css_file is not None and (base_dir / css_file).exists():
         stylesheet = {"href": css_file}
@@ -127,7 +143,7 @@ def page_react_dep(
         name=dep_name,
         version=version,
         source={"subdir": str(base_dir)},
-        script={"src": js_file, "type": "module"},
+        script=script,
         stylesheet=stylesheet,
     )
 

@@ -19,7 +19,16 @@ test_that("page_react_dep() versions by the JS file's mtime", {
 
 test_that("page_react_dep() falls back to version \"0\" when the JS is missing", {
   dir <- withr::local_tempdir()
-  expect_identical(page_react_dep(dir, "main.js")$version, "0")
+  expect_warning(dep <- page_react_dep(dir, "main.js"), "JS entry point")
+  expect_identical(dep$version, "0")
+})
+
+test_that("page_react_dep() omits the script when the JS is absent", {
+  # No tag pointing at a 404 -- but warn, since an empty dependency loads
+  # nothing and would otherwise fail completely silently (#184).
+  dir <- withr::local_tempdir()
+  expect_warning(dep <- page_react_dep(dir), "JS entry point not found")
+  expect_null(dep$script)
 })
 
 test_that("page_react_dep() honours custom filenames and the name override", {
