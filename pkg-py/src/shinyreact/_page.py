@@ -7,6 +7,7 @@ from typing import Any, Callable, cast
 from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList, tags
 from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
+from shiny.session import get_current_session
 
 from ._output import _dep_page, _file_mtime_int
 
@@ -147,6 +148,14 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
     ``@render.data_frame``) are discovered automatically and injected into
     the page head.
 
+    Renderers defined inside ``@module.server`` are discovered too: every
+    renderer mounted while the app body runs is found via the session's
+    registered outputs, so module components load their JS/CSS with no extra
+    configuration. Renderers mounted *dynamically after page load* (e.g. a
+    module server called inside a ``@reactive.effect``) are not in the initial
+    page; when their UI is delivered through Shiny's dynamic-UI path
+    (``@render.ui``), Shiny injects their dependencies on render.
+
     .. note::
 
        Edits to ``index.html`` require restarting the Shiny server — see the
@@ -240,6 +249,21 @@ def page_react_html(path: str | Path = "www/index.html") -> TagList:
     return TagList(_dep_page(), HTML(index_html))
 
 
+def _collect_renderer_deps(renderer: Renderer, deps: list[HTMLDependency]) -> None:
+    """Append a renderer's output-UI dependencies to ``deps``.
+
+    Calls ``.tagify()`` first so dependencies that only materialize during
+    tagification are resolved (a bare ``get_dependencies()`` on the untagified
+    UI can miss them). The page function runs under the Express stub session,
+    whose ``_process_ui`` is a no-op, so tagify — not ``session._process_ui`` —
+    is the correct resolver here; the resolved deps are emitted into the page
+    TagList, and Shiny registers their file routes when it renders the page.
+    """
+    ui = renderer.auto_output_ui()
+    if isinstance(ui, (Tag, TagList)):
+        deps.extend(ui.tagify().get_dependencies())
+
+
 def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
@@ -265,12 +289,25 @@ def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
 
     def _react_page_fn(*args: Any) -> Tag:
         deps: list[HTMLDependency] = []
+
+        # Top-level renderers Shiny Express hands to the page function.
         for arg in args:
             if isinstance(arg, Renderer):
-                ui = arg.auto_output_ui()
-                if isinstance(ui, (Tag, TagList)):
-                    deps.extend(ui.get_dependencies())
+                _collect_renderer_deps(arg, deps)
 
+        # Renderers registered on the active session — including those defined
+        # inside @module.server, which `*args` never sees (issue #87). At the
+        # tagify pass the stub session already holds every synchronously
+        # mounted renderer in `output._outputs`.
+        session = get_current_session()
+        if session is not None:
+            # `_outputs` is private; Shiny exposes no public API to iterate
+            # registered outputs.
+            for info in session.output._outputs.values():
+                _collect_renderer_deps(info.renderer, deps)
+
+        # Shiny de-duplicates dependencies by name+version when hoisting to
+        # <head>, so any overlap between the two passes is harmless.
         # page_opts types page_fn as -> Tag, but TagList works at runtime
         return cast(Tag, TagList(_dep_page(), *deps, HTML(index_html)))
 
