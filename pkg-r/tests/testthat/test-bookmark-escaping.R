@@ -44,7 +44,7 @@ test_that("restore_script_tag escapes U+2028 / U+2029 (#183)", {
 
 test_that("restore_script_tag preserves full numeric precision", {
   # jsonlite::toJSON() defaults to digits = 4, which would silently round
-  # bookmarked numeric values. shiny:::toJSON() uses 16 significant digits;
+  # bookmarked numeric values. shiny's toJSON() uses 16 significant digits;
   # Python's json.dumps() is exact.
   values <- list(pi_ish = 3.14159265358979, tiny = 1e-12)
   payload <- extract_restore_payload(restore_html(values))
@@ -53,7 +53,7 @@ test_that("restore_script_tag preserves full numeric precision", {
 })
 
 test_that("restore_script_tag serializes NULL as null, matching Python", {
-  # jsonlite emits a bare NULL element as `{}`; shiny:::toJSON() passes
+  # jsonlite emits a bare NULL element as `{}`; shiny's toJSON() passes
   # null = "null", so it round-trips as NULL like Python's json.dumps(None).
   payload <- extract_restore_payload(restore_html(list(a = NULL, b = 1L)))
   expect_true("a" %in% names(payload))
