@@ -3,7 +3,7 @@
 # to a named wrapper, so if Shiny exposes a public API only the wrapper changes:
 #
 #   .restore_input_values()  -- restore-context access (see SPIKE RESULT below)
-#   .to_json()               -- `shiny:::toJSON()`, the serializer Shiny uses
+#   shiny___to_json()        -- shiny's `toJSON()`, the serializer Shiny uses
 #                               for every value it sends the client
 #
 # SPIKE RESULT (shiny 1.13.0): The active restore context is reached via
@@ -23,15 +23,14 @@
 # DESCRIPTION pins shiny >= 1.13.0 for these internals.
 
 #' @keywords internal
-.to_json <- function(x) {
+shiny___to_json <- function(x) {
   # Serialize with Shiny's own wrapper so bookmark restore values go over the
-  # wire exactly like every other value Shiny sends the client. It is
-  # `jsonlite::toJSON()` plus better defaults -- see the call site in
-  # `restore_script_tag()` for which ones matter and why.
+  # wire exactly like every other value Shiny sends the client.
   #
   # NOTE: this does NOT escape non-ASCII. jsonlite has no `ensure_ascii`
   # equivalent, so U+2028/U+2029 still have to be escaped by the caller.
-  shiny:::toJSON(x)
+  shiny_to_json <- utils::getFromNamespace("toJSON", "shiny")
+  shiny_to_json(x)
 }
 
 #' @keywords internal
@@ -68,7 +67,7 @@ restore_script_tag <- function() {
   # `digits = I(16)` (jsonlite defaults to 4, silently rounding doubles --
   # 3.14159265 became 3.1416), `null = "null"` / `na = "null"` (jsonlite emits
   # NULL as `{}`; Python's json.dumps emits `null`), and `auto_unbox = TRUE`.
-  json_payload <- as.character(.to_json(values))
+  json_payload <- as.character(shiny___to_json(values))
   # Neutralize "</" so the payload can't close the surrounding <script> tag.
   json_payload <- gsub("</", "<\\/", json_payload, fixed = TRUE)
   # Escape U+2028 / U+2029: legal in a JSON string, but JS line terminators and
