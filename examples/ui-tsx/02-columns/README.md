@@ -1,7 +1,7 @@
 # Example 14 — drag-between-columns (ui.tsx-first, no build step)
 
 Three columns of items with ←/→ buttons that move items between columns. The same demo as
-[10-columns](../../app-py/10-columns/) (traditional Shiny with `render.ui` + dynamic observers), but rebuilt on the new `shinyreact` package and stripped down to no build step.
+a traditional Shiny `render.ui` + dynamic-observer implementation, but rebuilt on the new `shinyreact` package and stripped down to no build step.
 
 ## Why it exists
 
@@ -13,7 +13,7 @@ This pattern is the canonical motivating case for the `ui.tsx`-first architectur
 
 In the `ui.tsx`-first model the server only owns the **data**. The client (a plain React app) owns the **UI**. The server gets one event input — `move_item` carrying `{item, from, to}` — applies it to a `reactive.value`, and ships the new column dict back through `@reactive_output`. React reconciles. No dynamic observers, no generated IDs, no UI lifecycle code on the server.
 
-Compare `examples/ui-tsx/02-columns/app.py` (~20 lines of server logic) to `examples/app-py/10-columns/app.py` (~80 lines wrestling with observers).
+The result: ~20 lines of server logic, versus ~80 lines wrestling with observers in the `render.ui` version.
 
 ## Layout
 
