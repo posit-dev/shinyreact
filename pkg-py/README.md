@@ -139,7 +139,3 @@ Inject your package's `HTMLDependency` on the UI side via `shinyreact.output_rea
 | `useShinyBusy()` | Whether the Shiny server is currently processing a request |
 
 Shared `React` and `ReactDOM` instances are available at `window.shinyreact.React` / `window.shinyreact.ReactDOM` — externalize to these in your build to avoid duplicate React.
-
-## Also in this wheel
-
-The `shinyreact` wheel also ships an experimental prototype — `shinyui` — that explores a class-per-component UI hierarchy. It is not part of the supported API; see the [repo](https://github.com/posit-dev/shinyreact) for details.

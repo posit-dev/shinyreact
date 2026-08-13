@@ -26,11 +26,10 @@ js/                         # TypeScript/React Vite IIFE bundle
   src/                      # index.ts, registry.ts, renderer.tsx, shiny.d.ts, shinyreact.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source
-pkg-py/                     # Python packages (two shipped from one wheel)
+pkg-py/                     # Python package
   src/shinyreact/           # Core JSON-spec / React-bridge package
     www/                    # Bundled JS
-  src/shinyui/              # Class-per-component UI hierarchy prototype (session-aware)
-  tests/                    # pytest tests for both packages
+  tests/                    # pytest tests
 pkg-r/                      # R package — mirrors the Python API in R
   R/                         # node.R, output.R, render.R, page.R, wire.R, message.R, bookmark.R, dep.R
   inst/lib/shiny/            # Bundled JS (R counterpart of pkg-py www/)
@@ -43,12 +42,6 @@ decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
 Makefile                    # All build/check/format commands
 ```
-
-## Sibling package: shinyui
-
-`shinyui` is a prototype package exploring a class-per-component UI hierarchy as a possible direction for `py-shiny`'s `ui.*` surface, with the component vocabulary (`card`, `accordion`, `input_slider`, …) built as classes.
-
-- **`shinyui`** — the full prototype. Every component is a `Tagifiable` class that *also* captures the active session at construction, registers itself with a per-session id→instance map, exposes typed reactive accessors (`slider.value()`, `card.value_full_screen()`, `acc.open_panels()`), supports server-driven `update(...)`, owns its input handler and bookmark serializer, and ships a `render_plot` with derived-input accessors (`value_click`, `value_brush`, …). This is what the umbrella design (`docs/superpowers/specs/2026-05-06-unified-ui-component-class-design.md`) proposes for upstream `py-shiny`. Examples 14 and 15 demonstrate it in Core (positional) and Express (`with`-block) form respectively.
 
 ## Commands
 
