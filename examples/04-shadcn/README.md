@@ -23,7 +23,7 @@ The two plots draw the same data so you can see the trade-off directly:
 ## Layout
 
 ```
-examples/ui-tsx/04-shadcn/
+examples/04-shadcn/
 ├── app.py                          # set_react_page() + outputs (4 reactive_output + 1 render.plot)
 ├── package.json
 ├── vite.config.js                  # lib-mode IIFE; React externalized to window.shinyreact
@@ -65,12 +65,12 @@ The non-obvious bit is how the bundle stays compatible with the page-level `wind
 
 ```bash
 # from the repo root
-cd examples/ui-tsx/04-shadcn
+cd examples/04-shadcn
 npm install
 npm run build       # or `npm run dev` for watch mode
 
 cd ../../..
-uv run shiny run examples/ui-tsx/04-shadcn/app.py
+uv run shiny run examples/04-shadcn/app.py
 ```
 
 Open the URL printed by Shiny. Type in the text box, click "Send Event", and compare the two plots. On the Plotly chart, try:

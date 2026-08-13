@@ -12,7 +12,7 @@ Demonstrates bookmark restoration in shinyreact:
 ## Try it
 
 ```
-shiny run examples/ui-tsx/10-bookmarking/app.py
+shiny run examples/10-bookmarking/app.py
 ```
 
 1. Change the text, number, and checkbox.

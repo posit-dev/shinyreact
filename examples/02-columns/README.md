@@ -18,7 +18,7 @@ The result: ~20 lines of server logic, versus ~80 lines wrestling with observers
 ## Layout
 
 ```
-examples/ui-tsx/02-columns/
+examples/02-columns/
 ├── app.py            # set_react_page() + 1 reactive_output (column_data) + 1 reactive.effect on input.move_item
 └── www/
     ├── index.html
@@ -37,7 +37,7 @@ Same 4-file shape as [01-hello](../01-hello/). No `package.json`, no bundler.
 ## Run it
 
 ```bash
-uv run shiny run examples/ui-tsx/02-columns/app.py
+uv run shiny run examples/02-columns/app.py
 ```
 
 ## When to use this pattern

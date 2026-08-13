@@ -13,7 +13,7 @@ The point: once you want a component library, you have to bring a build step. Th
 ## Layout
 
 ```
-examples/ui-tsx/03-columns-shadcn/
+examples/03-columns-shadcn/
 ├── app.py                          # identical server to 02-columns
 ├── package.json
 ├── vite.config.js                  # lib-mode IIFE; React → window.shinyreact
@@ -44,12 +44,12 @@ Worth understanding because every shadcn-style example in this repo uses the sam
 ## Run it
 
 ```bash
-cd examples/ui-tsx/03-columns-shadcn
+cd examples/03-columns-shadcn
 npm install
 npm run build       # or `npm run dev` for watch mode
 
 cd ../../..
-uv run shiny run examples/ui-tsx/03-columns-shadcn/app.py
+uv run shiny run examples/03-columns-shadcn/app.py
 ```
 
 ## When to use this pattern

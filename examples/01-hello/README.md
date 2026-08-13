@@ -16,7 +16,7 @@ The point is that the same data shows up on both cards but the latency is visibl
 ## Layout
 
 ```
-examples/ui-tsx/01-hello/
+examples/01-hello/
 ├── app.py            # Express: set_react_page() + 2 reactive_output outputs
 ├── app-core.py       # Core: page_react_html() + App(app_ui, server), same outputs
 └── www/
@@ -40,10 +40,13 @@ Five files. No `node_modules`, no Vite, no build script.
 
 ```bash
 # Express API
-uv run shiny run examples/ui-tsx/01-hello/app.py
+uv run shiny run examples/01-hello/app.py
 
 # Core API (same client, same outputs)
-uv run shiny run examples/ui-tsx/01-hello/app-core.py
+uv run shiny run examples/01-hello/app-core.py
+
+# R (same client, same outputs — the R package's page_react_html + reactive_output)
+Rscript -e 'shiny::runApp("examples/01-hello/app.R")'
 ```
 
 Open the URL printed by Shiny.
