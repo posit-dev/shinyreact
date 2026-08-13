@@ -15,16 +15,14 @@ simplifies (see \verb{pkg-py/src/shinyreact/_input_handler.py}).
 \details{
 The contract, stated in terms of the JSON the React hook sent:
 \itemize{
-\item \strong{Array of objects} (\verb{[\{a: 1\}, \{b: 2\}]}) — kept as a list of records,
-matching Python's list-of-dicts. This is the case shiny's default handler
-gets wrong.
+\item \strong{Array of objects} (\verb{[\{a: 1\}, \{b: 2\}]}) — kept as a list of records
+This is the case shiny's default handler gets wrong.
 \item \strong{Array of scalars} (\verb{[0, 100]}, \verb{["a", "b"]}) — flattened to an atomic
-vector, exactly as shiny does by default. The one deliberate divergence
-from Python, which yields a list; an atomic vector is what R code wants.
+vector, exactly as shiny does by default.
 \item \strong{Empty array} (\verb{[]}) — \code{list()}, matching Python's \verb{[]}. Shiny's default
 yields \code{NULL}, conflating "empty" with "absent".
-\item \strong{Array of arrays} (\verb{[[1, 2], [3, 4]]}) — nesting preserved, matching
-Python. Shiny's default flattens it to \code{c(1, 2, 3, 4)}, which destroys the
+\item \strong{Array of arrays} (\verb{[[1, 2], [3, 4]]}) — nesting preserved.
+Shiny's default flattens it to \code{c(1, 2, 3, 4)}, which destroys the
 shape the component sent.
 \item Anything else — returned as-is.
 }

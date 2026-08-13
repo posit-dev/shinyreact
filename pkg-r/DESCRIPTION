@@ -14,6 +14,7 @@ License: MIT + file LICENSE
 URL: https://github.com/posit-dev/shinyreact
 BugReports: https://github.com/posit-dev/shinyreact/issues
 Imports:
+    brio,
     cli,
     htmltools,
     jsonlite,

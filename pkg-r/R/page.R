@@ -37,11 +37,11 @@ page_react_html <- function(path = "www/index.html") {
              {.path {getwd()}}."
     ))
   }
-  # Read the bytes verbatim rather than readLines() + paste(collapse = "\n"),
+  # Read the file verbatim rather than readLines() + paste(collapse = "\n"),
   # which drops a trailing newline and rewrites CRLF -- Python's read_text() is
   # byte-exact, so the same index.html must render identically (#184).
-  html <- readChar(path, file.size(path), useBytes = TRUE)
-  Encoding(html) <- "UTF-8"
+  # brio::read_file() always reads UTF-8 and never touches line endings.
+  html <- brio::read_file(path)
   htmltools::tagList(shinyreact_dep_page(), htmltools::HTML(html))
 }
 

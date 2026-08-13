@@ -10,16 +10,14 @@
 #'
 #' The contract, stated in terms of the JSON the React hook sent:
 #'
-#' * **Array of objects** (`[{a: 1}, {b: 2}]`) — kept as a list of records,
-#'   matching Python's list-of-dicts. This is the case shiny's default handler
-#'   gets wrong.
+#' * **Array of objects** (`[{a: 1}, {b: 2}]`) — kept as a list of records
+#'   This is the case shiny's default handler gets wrong.
 #' * **Array of scalars** (`[0, 100]`, `["a", "b"]`) — flattened to an atomic
-#'   vector, exactly as shiny does by default. The one deliberate divergence
-#'   from Python, which yields a list; an atomic vector is what R code wants.
+#'   vector, exactly as shiny does by default.
 #' * **Empty array** (`[]`) — `list()`, matching Python's `[]`. Shiny's default
 #'   yields `NULL`, conflating "empty" with "absent".
-#' * **Array of arrays** (`[[1, 2], [3, 4]]`) — nesting preserved, matching
-#'   Python. Shiny's default flattens it to `c(1, 2, 3, 4)`, which destroys the
+#' * **Array of arrays** (`[[1, 2], [3, 4]]`) — nesting preserved.
+#'   Shiny's default flattens it to `c(1, 2, 3, 4)`, which destroys the
 #'   shape the component sent.
 #' * Anything else — returned as-is.
 #' @keywords internal
