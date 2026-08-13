@@ -3,8 +3,6 @@ from __future__ import annotations
 from shiny.render.renderer import Renderer
 from shiny.types import Jsonifiable
 
-from ._render import walk_or_passthrough
-
 
 class reactive_output(Renderer["Jsonifiable"]):
     """Publish a reactive JSON value to the client (the ``ui.tsx`` pattern).
@@ -17,5 +15,5 @@ class reactive_output(Renderer["Jsonifiable"]):
     ``float``, ``bool``, ``None``), passed through unchanged.
     """
 
-    async def transform(self, value: object) -> Jsonifiable:
-        return walk_or_passthrough(value, self.output_id)
+    async def transform(self, value: Jsonifiable) -> Jsonifiable:
+        return value

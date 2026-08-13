@@ -1,13 +1,10 @@
 (function () {
   var React = window.shinyreact.React;
+  var ReactDOM = window.shinyreact.ReactDOM;
   var h = React.createElement;
   var useShinyInput = window.shinyreact.useShinyInput;
   var useShinyOutputValue = window.shinyreact.useShinyOutputValue;
   var ShinyModuleProvider = window.shinyreact.ShinyModuleProvider;
-
-  function Container(args) {
-    return h("div", null, args.children);
-  }
 
   function CounterBody(props) {
     var inputResult = useShinyInput("count", 0);
@@ -32,17 +29,22 @@
     );
   }
 
-  function Counter(args) {
-    var ns = args.element.props.namespace;
+  function Counter(props) {
     return h(
       ShinyModuleProvider,
-      { namespace: ns },
-      h(CounterBody, { namespace: ns }),
+      { namespace: props.namespace },
+      h(CounterBody, { namespace: props.namespace }),
     );
   }
 
-  window.shinyreact.registerComponents(null, {
-    Container: Container,
-    Counter: Counter,
-  });
+  function App() {
+    return h(
+      "div",
+      null,
+      h(Counter, { namespace: "a" }),
+      h(Counter, { namespace: "b" }),
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(h(App));
 })();

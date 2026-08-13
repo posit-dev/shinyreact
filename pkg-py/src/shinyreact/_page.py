@@ -9,7 +9,7 @@ from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 from shiny.session import get_current_session
 
-from ._output import _dep_page, _file_mtime_int
+from ._dep import _dep_page, _file_mtime_int
 
 
 def page_bare(
@@ -39,33 +39,6 @@ def page_bare(
 
     return page_bootstrap(
         head_content,
-        *args,
-        title=title,
-        lang=lang,
-    )
-
-
-def page_react(
-    *args: TagChild,
-    title: str | None = None,
-    lang: str = "en",
-) -> Tag:
-    """Create a full-page React app served by Shiny.
-
-    Creates an HTML page with the shinyreact dependency. Shiny runs in the
-    background for reactivity.
-
-    Pass :class:`~htmltools.HTMLDependency` objects (e.g. from
-    :func:`page_react_dep`) as positional arguments to include app JS/CSS.
-    Shiny automatically hoists them to ``<head>``.
-
-    Args:
-        *args: HTMLDependency objects and/or child tags for the page.
-        title: Page title.
-        lang: HTML ``lang`` attribute.
-    """
-    return page_bare(
-        _dep_page(),
         *args,
         title=title,
         lang=lang,

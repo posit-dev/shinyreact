@@ -5,9 +5,9 @@ from pathlib import Path
 from htmltools import HTMLDependency, TagList
 from shiny.bookmark._restore_state import RestoreContext, RestoreInputSet
 from shiny.bookmark._restore_state import restore_context as restore_context_cm
-from shinyreact import output_react, page_react
+from shinyreact import page_react_html
 from shinyreact._bookmark import _read_restore_input_values, _restore_script_tag
-from shinyreact._output import _dep, _dep_page
+from shinyreact._dep import _dep, _dep_page
 from shinyreact._page import _build_react_page_fn
 
 
@@ -215,17 +215,24 @@ def _rendered_html(tag) -> str:
     return head_html + rendered["html"]
 
 
-def test_page_react_emits_restore_script_when_bookmark_active() -> None:
+def test_page_react_html_emits_restore_script_when_bookmark_active(
+    tmp_path: Path,
+) -> None:
+    index = tmp_path / "index.html"
+    index.write_text("<div id='root'></div>")
+
     ctx = RestoreContext()
     ctx.input = RestoreInputSet({"txt": "hello"})
     with restore_context_cm(ctx):
-        html = _rendered_html(page_react(title="t"))
+        html = _rendered_html(page_react_html(index))
     assert "window.shinyreact._restore" in html
     assert _extract_restore_payload(html) == {"txt": "hello"}
 
 
-def test_page_react_no_restore_script_without_bookmark() -> None:
-    html = _rendered_html(page_react(title="t"))
+def test_page_react_html_no_restore_script_without_bookmark(tmp_path: Path) -> None:
+    index = tmp_path / "index.html"
+    index.write_text("<div id='root'></div>")
+    html = _rendered_html(page_react_html(index))
     assert "window.shinyreact._restore" not in html
 
 
@@ -249,13 +256,4 @@ def test_set_react_page_no_restore_script_without_bookmark(tmp_path: Path) -> No
     index.write_text("<div id='root'></div>")
     page_fn = _build_react_page_fn(index)
     html = _rendered_html(page_fn())
-    assert "window.shinyreact._restore" not in html
-
-
-def test_output_react_does_not_emit_restore_script_when_bookmark_active() -> None:
-    """output_react uses _dep(), not _dep_page() — no restore script."""
-    ctx = RestoreContext()
-    ctx.input = RestoreInputSet({"foo": "hello"})
-    with restore_context_cm(ctx):
-        html = _rendered_html(output_react("main"))
     assert "window.shinyreact._restore" not in html

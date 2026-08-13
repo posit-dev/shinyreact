@@ -1,36 +1,7 @@
 from pathlib import Path
 
-from htmltools import HTMLDependency, Tag
-from shinyreact._output import _SHINYREACT_JS_PATH, _dep, output_react
-
-
-def test_output_react_returns_tag():
-    result = output_react("my-output")
-    assert isinstance(result, Tag)
-
-
-def test_output_react_has_correct_id():
-    result = output_react("my-output")
-    assert result.attrs.get("id") == "my-output"
-
-
-def test_output_react_has_shinyreact_class():
-    result = output_react("my-output")
-    classes = result.attrs.get("class", "")
-    assert "shinyreact-output" in classes
-
-
-def test_output_react_accepts_extra_deps():
-    dep = HTMLDependency(
-        "test", "1.0.0", source={"subdir": "/tmp"}, script={"src": "t.js"}
-    )
-    result = output_react("my-output", extra_deps=[dep])
-    assert isinstance(result, Tag)
-
-
-def test_output_react_no_extra_deps_by_default():
-    result = output_react("my-output")
-    assert isinstance(result, Tag)
+from htmltools import HTMLDependency
+from shinyreact._dep import _SHINYREACT_JS_PATH, _dep
 
 
 def test_dep_version_tracks_bundle_mtime():
@@ -45,13 +16,9 @@ def test_dep_version_tracks_bundle_mtime():
     assert str(_dep().version) == expected
 
 
-def test_output_react_script_has_defer():
-    result = output_react("my-output")
-    deps = result.get_dependencies()
-    shinyreact_dep = next(d for d in deps if d.name == "shinyreact")
-    # The script dict should include defer=""
-    assert shinyreact_dep.script is not None
-    script = shinyreact_dep.script
+def test_dep_script_has_defer():
+    script = _dep().script
+    assert script is not None
     if isinstance(script, list):
         script = script[0]
     assert script.get("defer") == ""
@@ -101,7 +68,7 @@ def test_page_react_dep_uses_mtime_version(tmp_path):
 
 
 def test_page_react_dep_missing_js_falls_back_to_zero_version(tmp_path):
-    """When the JS entry point doesn\'t exist yet, version is "0"."""
+    """When the JS entry point doesn't exist yet, version is "0"."""
     dep = _run_page_react_dep(tmp_path)
     assert str(dep.version) == "0"
 
