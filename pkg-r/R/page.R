@@ -36,6 +36,12 @@ page_react_html <- function(path = "www/index.html") {
 #' Convenience mirroring Python's `page_react_dep()`. Versioned by the JS
 #' file's mtime so browsers re-fetch after a rebuild.
 #'
+#' The script tag is emitted as `type="module"`. A classic
+#' `<script defer>` tag throws on the bundle's first `import`. `type="module"`
+#' is implicitly deferred, so no `defer` attribute is needed. If your bundle is
+#' a classic (non-module) script, build an [htmltools::htmlDependency] directly
+#' instead of using this helper.
+#'
 #' @param src_dir Directory containing the JS/CSS.
 #' @param js_file JS filename within `src_dir`.
 #' @param css_file Optional CSS filename within `src_dir`.
@@ -60,7 +66,7 @@ page_react_dep <- function(
     name = name,
     version = version,
     src = c(file = src_dir),
-    script = list(src = js_file, defer = ""),
+    script = list(src = js_file, type = "module"),
     stylesheet = css_file
   )
 }

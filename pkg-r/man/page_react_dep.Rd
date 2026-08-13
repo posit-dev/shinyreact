@@ -22,3 +22,10 @@ An \link[htmltools:htmlDependency]{htmltools::htmlDependency}.
 Convenience mirroring Python's \code{page_react_dep()}. Versioned by the JS
 file's mtime so browsers re-fetch after a rebuild.
 }
+\details{
+The script tag is emitted as \code{type="module"}. A classic
+\verb{<script defer>} tag throws on the bundle's first \code{import}. \code{type="module"}
+is implicitly deferred, so no \code{defer} attribute is needed. If your bundle is
+a classic (non-module) script, build an \link[htmltools:htmlDependency]{htmltools::htmlDependency} directly
+instead of using this helper.
+}
