@@ -118,6 +118,25 @@ def test_restore_script_tag_values_with_control_chars_are_safe() -> None:
     }
 
 
+def test_restore_script_tag_escapes_js_line_separators() -> None:
+    # U+2028 / U+2029 are legal in a JSON string but are JS line terminators,
+    # and therefore illegal inside a JS string literal. `json.dumps` defaults to
+    # ensure_ascii=True, which escapes them; this pins that reliance. The R port
+    # had to escape them explicitly — see issue #183.
+    ctx = RestoreContext()
+    values = {"ls": "A\u2028B", "ps": "C\u2029D"}
+    ctx.input = RestoreInputSet(dict(values))
+    with restore_context_cm(ctx):
+        dep = _restore_script_tag()
+    assert dep is not None
+    head_html = _render_dep_to_head(dep)
+    assert "\u2028" not in head_html
+    assert "\u2029" not in head_html
+    assert "\\u2028" in head_html
+    assert "\\u2029" in head_html
+    assert _extract_restore_payload(head_html) == values
+
+
 def test_restore_script_tag_handles_proto_keys_safely() -> None:
     # Regression: a bare JS object literal ``{"__proto__": value}`` would
     # interpret "__proto__" as the prototype setter rather than a data

@@ -47,16 +47,26 @@ restore_script_tag <- function() {
   if (length(values) == 0L) {
     return(NULL)
   }
-  # Layer 1: JSON of the values; neutralize </ so it can't close <script>.
-  json_payload <- gsub(
-    "</",
-    "<\\/",
-    as.character(jsonlite::toJSON(values, auto_unbox = TRUE)),
-    fixed = TRUE
-  )
+  # Layer 1: JSON of the values. `digits = NA` keeps full numeric precision --
+  # jsonlite's default rounds doubles to 4 decimal places, which would silently
+  # corrupt restored numeric values.
+  json_payload <- as.character(jsonlite::toJSON(
+    values,
+    auto_unbox = TRUE,
+    digits = NA
+  ))
+  # Neutralize "</" so the payload can't close the surrounding <script> tag.
+  json_payload <- gsub("</", "<\\/", json_payload, fixed = TRUE)
+  # Escape U+2028 / U+2029: legal in a JSON string, but JS line terminators and
+  # therefore illegal inside a JS string literal. Python gets this for free from
+  # `json.dumps(ensure_ascii = TRUE)`; `jsonlite::toJSON()` emits them as raw
+  # UTF-8, which would produce an unparseable <script> block (issue #183).
+  json_payload <- gsub("\u2028", "\\u2028", json_payload, fixed = TRUE)
+  json_payload <- gsub("\u2029", "\\u2029", json_payload, fixed = TRUE)
   # Layer 2: wrap as a JS string literal (double-encode) so quotes/newlines
-  # survive the JS parser before JSON.parse runs.
-  js_string_literal <- jsonlite::toJSON(json_payload, auto_unbox = TRUE)
+  # survive the JS parser before JSON.parse runs. `unbox()` states the scalar
+  # contract explicitly instead of leaning on the `auto_unbox` heuristic.
+  js_string_literal <- jsonlite::toJSON(jsonlite::unbox(json_payload))
   js <- paste0(
     "window.shinyreact = window.shinyreact || {};",
     "window.shinyreact._restore = JSON.parse(",
