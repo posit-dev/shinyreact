@@ -4,14 +4,23 @@
 \alias{page_react_dep}
 \title{HTML dependency for a downstream package's own JS/CSS bundle}
 \usage{
-page_react_dep(src_dir, js_file, css_file = NULL, name = basename(src_dir))
+page_react_dep(
+  src_dir,
+  js_file = "main.js",
+  css_file = "main.css",
+  name = basename(src_dir)
+)
 }
 \arguments{
-\item{src_dir}{Directory containing the JS/CSS.}
+\item{src_dir}{Directory containing the JS/CSS. Required; Python infers this
+from the calling module's \verb{__file__} when omitted, which R has no
+equivalent of.}
 
-\item{js_file}{JS filename within \code{src_dir}.}
+\item{js_file}{JS filename within \code{src_dir}. Defaults to \code{"main.js"},
+matching Python.}
 
-\item{css_file}{Optional CSS filename within \code{src_dir}.}
+\item{css_file}{CSS filename within \code{src_dir}. Defaults to \code{"main.css"},
+matching Python; attached only if the file exists. \code{NULL} to skip.}
 
 \item{name}{Dependency name; defaults to \code{basename(src_dir)}.}
 }
@@ -28,4 +37,8 @@ The script tag is emitted as \code{type="module"}. A classic
 is implicitly deferred, so no \code{defer} attribute is needed. If your bundle is
 a classic (non-module) script, build an \link[htmltools:htmlDependency]{htmltools::htmlDependency} directly
 instead of using this helper.
+
+The stylesheet is attached only when \code{css_file} exists inside \code{src_dir}, so a
+bundle that ships no CSS does not produce a 404. Pass \code{css_file = NULL} to
+never attach one.
 }

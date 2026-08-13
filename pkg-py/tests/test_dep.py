@@ -2,6 +2,7 @@ from pathlib import Path
 
 from htmltools import HTMLDependency
 from shinyreact._dep import _SHINYREACT_JS_PATH, _dep
+from shinyreact._page import page_react_dep
 
 
 def test_dep_version_tracks_bundle_mtime():
@@ -93,3 +94,37 @@ def test_page_react_dep_script_type_module(tmp_path):
     dep = _run_page_react_dep(tmp_path)
     script = dep.script if isinstance(dep.script, dict) else dep.script[0]
     assert script.get("type") == "module"
+
+
+def test_page_react_dep_explicit_src_dir_and_name(tmp_path):
+    """`src_dir` skips frame inspection — the reliable path for library authors.
+
+    Frame inspection reads the *immediate* caller, so wrapping page_react_dep()
+    in a helper would otherwise resolve against the wrapper's directory (#184).
+    """
+    (tmp_path / "main.js").write_text("// app")
+
+    dep = page_react_dep(src_dir=tmp_path, name="my-app")
+    assert dep.source is not None
+    assert dep.source["subdir"] == str(tmp_path)
+    assert dep.name == "my-app"
+    assert str(dep.version) == str(int((tmp_path / "main.js").stat().st_mtime))
+
+
+def test_page_react_dep_omits_stylesheet_when_css_absent(tmp_path):
+    """A bundle with no CSS must not emit a 404-ing stylesheet link (#184)."""
+    (tmp_path / "main.js").write_text("// app")
+
+    # htmltools normalizes an absent stylesheet to an empty list.
+    assert page_react_dep(src_dir=tmp_path).stylesheet == []
+    assert page_react_dep(src_dir=tmp_path, css_file=None).stylesheet == []
+
+
+def test_page_react_dep_attaches_stylesheet_when_css_present(tmp_path):
+    (tmp_path / "main.js").write_text("// app")
+    (tmp_path / "main.css").write_text("/* styles */")
+
+    stylesheet = page_react_dep(src_dir=tmp_path).stylesheet
+    assert stylesheet is not None
+    entry = stylesheet if isinstance(stylesheet, dict) else stylesheet[0]
+    assert entry["href"] == "main.css"

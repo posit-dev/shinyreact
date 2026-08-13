@@ -4,10 +4,11 @@ test_that("default_input_handler preserves arrays of objects as a list of record
     list(name = "b", size = 2L)
   )
   expect_identical(default_input_handler(records), records)
-  # A partially-named child is not a proper record array -> falls through to unlist.
-  expect_equal(
-    default_input_handler(list(list(a = 1L, 2L))),
-    c(a = 1L, 2L)
+  # A mixed array keeps its structure too -- Python would hand back
+  # [{"a": 1}, 5], so flattening here would diverge.
+  expect_identical(
+    default_input_handler(list(list(a = 1L), 5L)),
+    list(list(a = 1L), 5L)
   )
 })
 
@@ -21,11 +22,18 @@ test_that("default_input_handler leaves scalars and single objects unchanged", {
   expect_identical(default_input_handler(list(a = 1L)), list(a = 1L))
 })
 
-test_that("default_input_handler returns NULL for an empty array and flattens nested arrays", {
-  expect_null(default_input_handler(list()))
-  expect_equal(
+test_that("default_input_handler keeps an empty array empty (not NULL)", {
+  # Python's handler hands back []; shiny's default no-type coercion would
+  # unlist() this to NULL, conflating "empty array" with "absent input" (#184).
+  expect_identical(default_input_handler(list()), list())
+})
+
+test_that("default_input_handler preserves nested arrays", {
+  # Shiny's default flattens [[1, 2], [3, 4]] to c(1, 2, 3, 4), destroying the
+  # shape the React component sent; Python keeps the nesting (#184).
+  expect_identical(
     default_input_handler(list(list(1, 2), list(3, 4))),
-    c(1, 2, 3, 4)
+    list(list(1, 2), list(3, 4))
   )
 })
 

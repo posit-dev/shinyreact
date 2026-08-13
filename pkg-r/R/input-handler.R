@@ -3,30 +3,44 @@
 
 #' Default shinyreact input handler (internal)
 #'
-#' Applied to every untyped `useShinyInput` value. Preserves an array of objects
-#' (an unnamed list whose every element is a named list) as a list of records,
-#' matching Python's list-of-dicts. For all other shapes it reproduces shiny's
-#' default no-type coercion: unnamed lists of scalars are flattened with
-#' `unlist()`, everything else is returned as-is.
+#' Applied to every untyped `useShinyInput` value. Undoes the parts of
+#' jsonlite/shiny simplification that make R disagree with Python about the same
+#' JSON payload. Python needs no such handler — its deserializer never
+#' simplifies (see `pkg-py/src/shinyreact/_input_handler.py`).
+#'
+#' The contract, stated in terms of the JSON the React hook sent:
+#'
+#' * **Array of objects** (`[{a: 1}, {b: 2}]`) — kept as a list of records,
+#'   matching Python's list-of-dicts. This is the case shiny's default handler
+#'   gets wrong.
+#' * **Array of scalars** (`[0, 100]`, `["a", "b"]`) — flattened to an atomic
+#'   vector, exactly as shiny does by default. The one deliberate divergence
+#'   from Python, which yields a list; an atomic vector is what R code wants.
+#' * **Empty array** (`[]`) — `list()`, matching Python's `[]`. Shiny's default
+#'   yields `NULL`, conflating "empty" with "absent".
+#' * **Array of arrays** (`[[1, 2], [3, 4]]`) — nesting preserved, matching
+#'   Python. Shiny's default flattens it to `c(1, 2, 3, 4)`, which destroys the
+#'   shape the component sent.
+#' * Anything else — returned as-is.
 #' @keywords internal
 default_input_handler <- function(value, session = NULL, name = NULL) {
-  is_unnamed_list <- is.list(value) && is.null(names(value))
-  is_records <- is_unnamed_list &&
-    length(value) > 0 &&
-    all(vapply(
-      value,
-      function(el) {
-        is.list(el) && !is.null(names(el)) && all(nzchar(names(el)))
-      },
-      logical(1)
-    ))
-  if (is_records) {
+  if (!is.list(value) || !is.null(names(value))) {
     return(value)
   }
-  if (is_unnamed_list) {
-    # unlist(list()) returns NULL; this reproduces Shiny's default no-type
-    # handler, which flattens unnamed lists (scalar arrays) the same way.
-    return(unlist(value, recursive = TRUE))
+  # An empty JSON array is an empty array, not a missing value (Python: []).
+  if (length(value) == 0L) {
+    return(list())
+  }
+  # Flatten only a genuine array of scalars. Anything with a non-scalar element
+  # -- a record, a nested array -- keeps its structure so R and Python hand the
+  # component's payload back in the same shape.
+  all_scalars <- all(vapply(
+    value,
+    function(el) is.atomic(el) && length(el) == 1L && is.null(names(el)),
+    logical(1)
+  ))
+  if (all_scalars) {
+    return(unlist(value, recursive = FALSE))
   }
   value
 }

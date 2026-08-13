@@ -11,7 +11,16 @@
 #' @return Invisibly `NULL`.
 #' @export
 send_message <- function(session, type, data) {
-  namespaced_type <- if (is.function(session$ns)) session$ns(type) else type
+  # Every Shiny session namespaces: `ShinySession$ns()` is `NS(NULL, id)` at
+  # top level and the module prefix inside `moduleServer()`. Erroring beats the
+  # old silent fallback to an un-namespaced type, which would deliver a message
+  # no module-scoped handler matches (#184).
+  if (!is.function(session$ns)) {
+    cli::cli_abort(
+      "{.arg session} must be a Shiny session object (no {.fun session$ns} found)."
+    )
+  }
+  namespaced_type <- session$ns(type)
   session$sendCustomMessage(
     "shinyReactMessage",
     list(type = namespaced_type, data = data)

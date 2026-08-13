@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList
 from shiny.express.ui import page_opts
@@ -10,6 +10,10 @@ from shiny.render.renderer import Renderer
 from shiny.session import get_current_session
 
 from ._dep import _dep_page, _file_mtime_int
+
+if TYPE_CHECKING:
+    # Private, but it is the only name for HTMLDependency's stylesheet entry.
+    from htmltools._core import StylesheetItem
 
 
 def page_bare(
@@ -42,18 +46,28 @@ def page_bare(
 
 def page_react_dep(
     *,
+    src_dir: str | Path | None = None,
     js_file: str = "main.js",
-    css_file: str = "main.css",
+    css_file: str | None = "main.css",
+    name: str | None = None,
 ) -> HTMLDependency:
     """Build an HTMLDependency for a React app's JS and CSS entry points.
 
-    Resolves file paths relative to the caller's module directory (read from
-    the calling frame's ``__file__``). The JS file's mtime is used as the
-    dependency version for automatic cache-busting during development.
+    The JS file's mtime is used as the dependency version for automatic
+    cache-busting during development.
+
+    The stylesheet is attached only when ``css_file`` exists inside the
+    resolved ``src_dir``, so a bundle that ships no CSS does not produce a 404.
+    Pass ``css_file=None`` to never attach one.
 
     Path resolution
     ---------------
-    The base directory is determined as follows:
+    The base directory is ``src_dir`` when given. Passing it explicitly is
+    recommended for library authors — the inference below reads the *immediate*
+    calling frame, so wrapping this function in a helper resolves against the
+    wrapper's directory rather than the app's.
+
+    When ``src_dir`` is omitted it is inferred:
 
     1. **Module call (typical):** when the caller is a regular Python module
        (``__file__`` set), paths resolve against the module's directory. This
@@ -80,31 +94,41 @@ def page_react_dep(
 
        The fallback is deliberate — call from any working directory and you
        get a predictable result. If you need a specific directory regardless
-       of CWD, ``chdir`` first or call from a real module file.
+       of CWD, pass ``src_dir``.
 
     Args:
-        js_file: Filename of the JS entry point, relative to the resolved
-            base directory (default ``"main.js"``).
-        css_file: Filename of the CSS file, relative to the resolved base
-            directory (default ``"main.css"``).
+        src_dir: Directory containing the JS/CSS. Inferred from the calling
+            frame when omitted (see above).
+        js_file: Filename of the JS entry point, relative to ``src_dir``
+            (default ``"main.js"``).
+        css_file: Filename of the CSS file, relative to ``src_dir`` (default
+            ``"main.css"``). Attached only if the file exists; ``None`` to skip.
+        name: Dependency name. Defaults to ``src_dir``'s basename.
     """
-    caller_file = sys._getframe(1).f_globals.get("__file__")
-    # If the caller has no __file__ (REPL or dynamically exec'd code),
-    # fall back to the current working directory — same convention as
-    # most CLI tools resolving relative paths.
-    src_dir = Path(caller_file).parent if caller_file else Path.cwd()
-    dep_name = src_dir.name
+    if src_dir is not None:
+        base_dir = Path(src_dir)
+    else:
+        caller_file = sys._getframe(1).f_globals.get("__file__")
+        # If the caller has no __file__ (REPL or dynamically exec'd code),
+        # fall back to the current working directory — same convention as
+        # most CLI tools resolving relative paths.
+        base_dir = Path(caller_file).parent if caller_file else Path.cwd()
+    dep_name = name if name is not None else base_dir.name
 
-    js_path = src_dir / js_file
+    js_path = base_dir / js_file
     mtime = _file_mtime_int(js_path)
     version = str(mtime) if mtime is not None else "0"
+
+    stylesheet: StylesheetItem | None = None
+    if css_file is not None and (base_dir / css_file).exists():
+        stylesheet = {"href": css_file}
 
     return HTMLDependency(
         name=dep_name,
         version=version,
-        source={"subdir": str(src_dir)},
+        source={"subdir": str(base_dir)},
         script={"src": js_file, "type": "module"},
-        stylesheet={"href": css_file},
+        stylesheet=stylesheet,
     )
 
 

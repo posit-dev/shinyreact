@@ -39,20 +39,22 @@ shiny___to_json <- function(x) {
   # list, WITHOUT marking them used (mirrors Python ctx.input.as_dict()).
   # Returns list() when there is no active restore context (e.g. outside an
   # HTTP request, or no bookmark query string was parsed).
-  tryCatch(
-    {
-      if (!shiny:::hasCurrentRestoreContext()) {
-        return(list())
-      }
-      ctx <- shiny:::getCurrentRestoreContext()
-      if (is.null(ctx) || is.null(ctx$input)) {
-        return(list())
-      }
-      values <- ctx$input$asList()
-      if (is.null(values)) list() else values
-    },
-    error = function(e) list()
-  )
+  # `hasCurrentRestoreContext()` already returns FALSE (it does not error)
+  # outside an HTTP request and when no bookmark query string was parsed, so no
+  # blanket tryCatch is needed here. Errors from the shiny internals below are
+  # deliberately allowed to propagate: swallowing them would silently disable
+  # bookmark restore across a shiny release that changed those internals, with
+  # no signal to the app author. Python narrows the same way, catching only the
+  # RuntimeError raised when there is no session (#184).
+  if (!shiny:::hasCurrentRestoreContext()) {
+    return(list())
+  }
+  ctx <- shiny:::getCurrentRestoreContext()
+  if (is.null(ctx) || is.null(ctx$input)) {
+    return(list())
+  }
+  values <- ctx$input$asList()
+  if (is.null(values)) list() else values
 }
 
 #' @keywords internal

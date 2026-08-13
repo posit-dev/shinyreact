@@ -7,7 +7,8 @@
 page_react_html(path = "www/index.html")
 }
 \arguments{
-\item{path}{Path to the HTML file. Defaults to \code{"www/index.html"}.}
+\item{path}{Path to the HTML file. Defaults to \code{"www/index.html"}, relative
+to the working directory.}
 }
 \value{
 UI suitable for \code{shinyApp(ui = ...)}.
@@ -17,3 +18,13 @@ Reads an HTML file and attaches the shinyreact page-level dependency. Use as
 the \code{ui} argument: \code{shinyApp(ui = page_react_html(), server = ...)}. Works
 with plain HTML (no \code{{{ headContent() }}} template syntax required).
 }
+\section{Path resolution}{
+
+A relative \code{path} resolves against the process working directory. Under
+\code{shiny::runApp()} / \code{shiny::shinyApp()} that is the app directory, so the
+default \code{"www/index.html"} just works. R has no per-caller \verb{__file__}, so
+unlike Python — which resolves a relative path against the calling module's
+directory — there is nothing to resolve against outside the working
+directory. Pass an absolute path if you need to be independent of it.
+}
+

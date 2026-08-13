@@ -33,6 +33,25 @@ test_that("page_react_dep() honours custom filenames and the name override", {
   expect_identical(dep$stylesheet, "app.css")
 })
 
+test_that("page_react_dep() defaults to main.js / main.css like Python", {
+  dir <- withr::local_tempdir()
+  writeLines("// app", file.path(dir, "main.js"))
+  writeLines("/* styles */", file.path(dir, "main.css"))
+
+  dep <- page_react_dep(dir)
+  expect_identical(dep$script[["src"]], "main.js")
+  expect_identical(dep$stylesheet, "main.css")
+})
+
+test_that("page_react_dep() omits the stylesheet when the CSS is absent", {
+  # A bundle that ships no CSS should not 404 on main.css (#184).
+  dir <- withr::local_tempdir()
+  writeLines("// app", file.path(dir, "main.js"))
+
+  expect_null(page_react_dep(dir)$stylesheet)
+  expect_null(page_react_dep(dir, css_file = NULL)$stylesheet)
+})
+
 test_that("page_react_dep() emits script type=\"module\" and no defer", {
   # Matches Python (`page_react_dep()` in _page.py); an ESM bundle throws on
   # its first `import` when served from a classic <script> tag. See #182.

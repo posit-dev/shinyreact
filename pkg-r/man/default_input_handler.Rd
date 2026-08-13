@@ -7,10 +7,26 @@
 default_input_handler(value, session = NULL, name = NULL)
 }
 \description{
-Applied to every untyped \code{useShinyInput} value. Preserves an array of objects
-(an unnamed list whose every element is a named list) as a list of records,
-matching Python's list-of-dicts. For all other shapes it reproduces shiny's
-default no-type coercion: unnamed lists of scalars are flattened with
-\code{unlist()}, everything else is returned as-is.
+Applied to every untyped \code{useShinyInput} value. Undoes the parts of
+jsonlite/shiny simplification that make R disagree with Python about the same
+JSON payload. Python needs no such handler — its deserializer never
+simplifies (see \verb{pkg-py/src/shinyreact/_input_handler.py}).
+}
+\details{
+The contract, stated in terms of the JSON the React hook sent:
+\itemize{
+\item \strong{Array of objects} (\verb{[\{a: 1\}, \{b: 2\}]}) — kept as a list of records,
+matching Python's list-of-dicts. This is the case shiny's default handler
+gets wrong.
+\item \strong{Array of scalars} (\verb{[0, 100]}, \verb{["a", "b"]}) — flattened to an atomic
+vector, exactly as shiny does by default. The one deliberate divergence
+from Python, which yields a list; an atomic vector is what R code wants.
+\item \strong{Empty array} (\verb{[]}) — \code{list()}, matching Python's \verb{[]}. Shiny's default
+yields \code{NULL}, conflating "empty" with "absent".
+\item \strong{Array of arrays} (\verb{[[1, 2], [3, 4]]}) — nesting preserved, matching
+Python. Shiny's default flattens it to \code{c(1, 2, 3, 4)}, which destroys the
+shape the component sent.
+\item Anything else — returned as-is.
+}
 }
 \keyword{internal}
