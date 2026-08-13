@@ -7,9 +7,9 @@ Authors@R: c(
     person(, "Posit Software, PBC", role = c("cph", "fnd"),
            comment = c(ROR = "03wc8by49"))
   )
-Description: Server-side plumbing for the 'ui.tsx' pattern in Shiny: the UI
-    is defined in a client React bundle, and the Shiny server contains only
-    reactive computation. Ships no UI components.
+Description: Server-side plumbing for the 'ui.tsx' pattern in Shiny: the
+    UI is defined in a client React bundle, and the Shiny server contains
+    only reactive computation. Ships no UI components.
 License: MIT + file LICENSE
 URL: https://github.com/posit-dev/shinyreact
 BugReports: https://github.com/posit-dev/shinyreact/issues
