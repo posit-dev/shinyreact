@@ -103,6 +103,9 @@ The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reacti
 - `reactive_output(expr, ...)` is a **function** assigned to `output$id`, not a decorator/`Renderer` class.
 - `page_react_html(path = "www/index.html")` matches Python's `page_react_html()`; Python additionally has the Express-only `set_react_page()`.
 - `send_message(session, type, data)` matches Python.
+- `page_react_dep()` takes `src_dir` as a required first argument; Python's is keyword-only and infers `src_dir`/`name` from the caller's `__file__` when omitted (R has no equivalent). Pass `src_dir=` explicitly in Python too if you wrap the call in a helper — the inference reads the *immediate* calling frame.
+
+The deliberate remaining divergences (decided in #184) are recorded in `decisions/2026-08-13-r-python-parity.md`: relative-path resolution, `set_react_page()`'s renderer-dependency discovery, and scalar-array flattening in the default input handler.
 
 ### Built assets
 
@@ -190,18 +193,36 @@ def _():
 
 The handler name is a server-side contract: once an input id has been registered with a `type` (or with no `type`), a later mount disagreeing with that policy throws. Validation rejects empty strings, whitespace, and `:` characters at hook mount.
 
-### Arrays of records arrive clean on R (zero config)
+### The `shinyreact.default` input handler (zero config, R/Python parity)
 
 shinyreact routes every untyped `useShinyInput` value through a built-in
 `shinyreact.default` input handler (the JS hook appends `:shinyreact.default`
-to the wire id automatically). On R this means a JS component sending an array
-of objects — e.g. `[{name, size, type}, ...]` — arrives as a clean list of
-records, so `for (f in input$x) f$size` works just like Python's
-`for f in input.x(): f["size"]`. Scalar arrays (`[0, 100]`, `["a", "b"]`) are
-still flattened to atomic vectors, exactly as Shiny does by default.
+to the wire id automatically). Its job is to undo the parts of
+jsonlite/shiny simplification that would make R disagree with Python about the
+same JSON payload — Python's deserializer never simplifies, so both Python
+handlers are no-ops.
 
-If you need the parsed value returned completely untouched (e.g. a nested array
-the default would flatten), opt into the pass-through handler:
+The contract, in terms of the JSON the React hook sent:
+
+| JSON sent | R | Python |
+|---|---|---|
+| `[{name, size}, ...]` | list of records | list of dicts |
+| `[0, 100]`, `["a", "b"]` | `c(0, 100)` — atomic vector | `[0, 100]` |
+| `[]` | `list()` | `[]` |
+| `[[1, 2], [3, 4]]` | nesting preserved | nesting preserved |
+| anything else | as-is | as-is |
+
+So `for (f in input$x) f$size` works just like Python's
+`for f in input.x(): f["size"]`. Flattening a scalar array to an atomic vector
+is the one deliberate divergence — it is what R code wants, and it matches
+shiny's own default no-type coercion.
+
+The `[]` and nested-array rows are #184 fixes: shiny's default handler turns
+`[]` into `NULL` (conflating "empty" with "absent") and flattens
+`[[1, 2], [3, 4]]` to `c(1, 2, 3, 4)`, destroying the shape the component sent.
+
+If you need the parsed value returned completely untouched, opt into the
+pass-through handler:
 
 ```js
 useShinyInput("coords", [], { type: "shinyreact.asis" });

@@ -2,15 +2,21 @@
 # docs/superpowers/specs/2026-05-26-r-package-design.md). Every use is confined
 # to a named wrapper, so if Shiny exposes a public API only the wrapper changes:
 #
-#   .restore_input_values()  -- restore-context access (see SPIKE RESULT below)
-#   shiny___to_json()        -- shiny's `toJSON()`, the serializer Shiny uses
-#                               for every value it sends the client
+#   shiny___has_current_restore_context()  -- restore-context guard
+#   shiny___get_current_restore_context()  -- restore-context accessor
+#   shiny___to_json()                      -- shiny's `toJSON()`, the serializer
+#                                             Shiny uses for every value it
+#                                             sends the client
+#
+# The `shiny___` prefix marks a function as reaching into shiny's namespace, and
+# each reaches it with `utils::getFromNamespace()`. `.restore_input_values()`
+# composes the first two into the accessor the rest of the file uses.
 #
 # SPIKE RESULT (shiny 1.13.0): The active restore context is reached via
-# `shiny:::hasCurrentRestoreContext()` (guard) and
-# `shiny:::getCurrentRestoreContext()`, which peeks `restoreCtxStack` and falls
+# shiny's `hasCurrentRestoreContext()` (guard) and
+# `getCurrentRestoreContext()`, which peeks `restoreCtxStack` and falls
 # back to `getDefaultReactiveDomain()$restoreContext`. The context's `$input`
-# field is a `shiny:::RestoreInputSet` R6 object. Its parsed input map lives in
+# field is a shiny `RestoreInputSet` R6 object. Its parsed input map lives in
 # the private `values` environment.
 #
 # The non-destructive accessor is `ctx$input$asList()`, which is
@@ -34,25 +40,44 @@ shiny___to_json <- function(x) {
 }
 
 #' @keywords internal
+shiny___has_current_restore_context <- function() {
+  # TRUE when a restore context is active for the current request. Returns FALSE
+  # (it does not error) outside an HTTP request and when no bookmark query
+  # string was parsed.
+  f <- utils::getFromNamespace("hasCurrentRestoreContext", "shiny")
+  f()
+}
+
+#' @keywords internal
+shiny___get_current_restore_context <- function() {
+  # The active restore context. Only valid when
+  # shiny___has_current_restore_context() is TRUE.
+  f <- utils::getFromNamespace("getCurrentRestoreContext", "shiny")
+  f()
+}
+
+#' @keywords internal
 .restore_input_values <- function() {
   # Return the parsed restore input values for the current request as a named
   # list, WITHOUT marking them used (mirrors Python ctx.input.as_dict()).
   # Returns list() when there is no active restore context (e.g. outside an
   # HTTP request, or no bookmark query string was parsed).
-  tryCatch(
-    {
-      if (!shiny:::hasCurrentRestoreContext()) {
-        return(list())
-      }
-      ctx <- shiny:::getCurrentRestoreContext()
-      if (is.null(ctx) || is.null(ctx$input)) {
-        return(list())
-      }
-      values <- ctx$input$asList()
-      if (is.null(values)) list() else values
-    },
-    error = function(e) list()
-  )
+  # `hasCurrentRestoreContext()` already returns FALSE (it does not error)
+  # outside an HTTP request and when no bookmark query string was parsed, so no
+  # blanket tryCatch is needed here. Errors from the shiny internals below are
+  # deliberately allowed to propagate: swallowing them would silently disable
+  # bookmark restore across a shiny release that changed those internals, with
+  # no signal to the app author. Python narrows the same way, catching only the
+  # RuntimeError raised when there is no session (#184).
+  if (!shiny___has_current_restore_context()) {
+    return(list())
+  }
+  ctx <- shiny___get_current_restore_context()
+  if (is.null(ctx) || is.null(ctx$input)) {
+    return(list())
+  }
+  values <- ctx$input$asList()
+  if (is.null(values)) list() else values
 }
 
 #' @keywords internal

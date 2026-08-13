@@ -30,6 +30,20 @@ def test_asis_handler_returns_value_unchanged():
     assert handler(None, None, None) is None
 
 
+def test_default_handler_preserves_nested_structures():
+    """Nesting survives, pinning the cross-language contract (#184).
+
+    R's `default_input_handler()` has to actively avoid flattening these — the
+    JSON the React component sent must come back the same shape from both
+    servers. This test is the Python half of that contract.
+    """
+    handler = input_handlers["shinyreact.default"]
+    assert handler([[1, 2], [3, 4]], None, None) == [[1, 2], [3, 4]]
+    assert handler([{"a": 1}, 5], None, None) == [{"a": 1}, 5]
+    # An empty array stays an empty array, not None.
+    assert handler([], None, None) == []
+
+
 def test_reregistration_is_idempotent():
     # Re-running the module re-registers both handlers; force=True must not raise.
     importlib.reload(shinyreact._input_handler)
