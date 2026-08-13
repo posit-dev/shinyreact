@@ -6,7 +6,7 @@
 \alias{shinyreact-package}
 \title{shinyreact: Shiny UI Infrastructure for JSON-Driven React Rendering}
 \description{
-Server-side plumbing for rendering React component trees from Shiny. Provides the 'app.R' pattern (UI described as R objects) and the 'ui.tsx' pattern (UI defined in a client React bundle). Ships no UI components; downstream packages register their own.
+Server-side plumbing for the 'ui.tsx' pattern in Shiny: the UI is defined in a client React bundle, and the Shiny server contains only reactive computation. Ships no UI components.
 }
 \seealso{
 Useful links:
