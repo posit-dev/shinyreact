@@ -270,8 +270,28 @@ This is what Shiny's reactive graph is good at: each input change recomputes `fi
 When fixing a bug, add or update unit tests to cover the fix whenever possible. The test should fail without the fix and pass with it. If the fix is purely a type annotation or comment change with no runtime behavior difference, tests are not required.
 
 - **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
+- **R tests:** `pkg-r/tests/testthat/` — run with `make r-check-tests`
 - **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
 - **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
+
+### Cover both R and Python
+
+`pkg-py/` and `pkg-r/` are two implementations of one API. **When you add a test to one, add the equivalent to the other** — otherwise coverage drifts, and with it the behavior. Every parity bug found in #182–#186 was in code one language tested and the other did not:
+
+- `page_react_dep()` emitted the wrong script attributes in R for as long as it did because R had **zero** tests for it while Python pinned the attributes (#182).
+- The R bookmark script failed to escape U+2028/U+2029 because Python's reliance on `ensure_ascii` was documented in a comment but never asserted, so nothing described the requirement the R port had to meet (#183).
+- Python's `page_bare()` emitted two `<title>` elements because the test only checked the title appeared *somewhere*, not once (#186).
+
+Practically, when writing a test ask: **does the other language have this behavior, and is it asserted there?**
+
+- **Yes, and asserted** — nothing to do.
+- **Yes, not asserted** — write both. Name them so they're findable from each other, and cross-reference in a comment (e.g. `# Mirrors Python's test_restore_script_tag_escapes_js_line_separators`).
+- **Behavior differs deliberately** — assert the *actual* behavior in each language and say why it differs, pointing at the decision record. `decisions/2026-08-13-r-python-parity.md` is the current one; scalar-array flattening in `default_input_handler()` is the worked example.
+- **Genuinely one-sided** — Express-only features (`set_react_page()`) have no R counterpart at all. Note that in the test or the decision record rather than leaving a silent hole.
+
+This applies to helpers too: a payload round-trip helper or fixture written for one language is usually worth porting, since divergent test *scaffolding* hides divergent behavior. `extract_restore_payload()` in `pkg-r/tests/testthat/test-bookmark-escaping.R` is a port of `_extract_restore_payload()` in `pkg-py/tests/test_bookmark_restore.py`.
+
+R currently has no e2e suite; that gap is tracked in #194, so Playwright tests are Python-only for now.
 
 ## Open work, examples catalog
 
