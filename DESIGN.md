@@ -6,11 +6,11 @@ Shiny's original design achieved something remarkable: it let data scientists bu
 
 AI changes the equation. When Claude can generate a complete React app — with layout, styling, interactivity, and accessibility — the server-side UI abstraction layer becomes indirection rather than simplification. The UI should simply live on the client from the start.
 
-This document was originally written to propose a ui.tsx-first architecture as a new direction. As of August 2026 the repo ships the **ui.tsx pattern only** (`set_react_page()` / `page_react_html()`) — the server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler`. UI logic lives on the client.
+This is what `shinyreact` ships: the **`ui.tsx` pattern** (`set_react_page()` / `page_react_html()`) — the server contains only reactive computation; the client is a static React app that communicates via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler`. UI logic lives on the client.
 
-An **app.py pattern** (`page_react` + `render_react` — server describes UI as a JSON wire tree rendered by the JS bundle) previously shipped alongside it; it was removed in #168 (history pointers in a comment on #167). References to it in the analysis below are retained as historical context.
+This document was originally written to propose that architecture as a new direction, alongside an **app.py pattern** (`page_react` + `render_react` — server describes UI as a JSON wire tree rendered by the JS bundle). The app.py pattern was removed in #168; the original two-pattern version of this document is preserved at the [`archive/v0`](https://github.com/posit-dev/shinyreact/tree/archive/v0) tag, and history pointers for the removed APIs live in a comment on #167.
 
-The document begins with the design tenets that guided the ui.tsx-first direction, then builds the supporting case.
+The document begins with the design tenets that guide the ui.tsx-first direction, then builds the supporting case.
 
 ## 2. Design Tenets
 
@@ -180,12 +180,12 @@ The server file uses a constrained set of primitives for communicating with the 
 
 The supported primitives:
 
-**`@render.json`** — Sends a value to the client as JSON. The client subscribes via `useShinyOutputValue(id)` and receives the data. This is the primary mechanism for server → client data flow. The server computes the data; the client decides how to render it.
+**`@shinyreact.reactive_output`** (proposed in this document as `@render.json`) — Sends a value to the client as JSON. The client subscribes via `useShinyOutputValue(id)` and receives the data. This is the primary mechanism for server → client data flow. The server computes the data; the client decides how to render it.
 
 ```python
 columns = reactive.value(initial_data)
 
-@render.json
+@shinyreact.reactive_output
 def column_data():
     return columns()
 ```
@@ -195,7 +195,7 @@ def column_data():
 ### What is explicitly disallowed
 
 - **`render.ui`** — The server must not generate or manipulate DOM.
-- **Other standard Shiny renders** (`render.text`, `render.table`, `render.plot`, `render.image`) — These assume server-controlled output slots in the DOM. In ui.tsx-first apps, use `render.json` to send data and let the client render it however it chooses.
+- **Other standard Shiny renders** (`render.text`, `render.table`, `render.plot`, `render.image`) — These assume server-controlled output slots in the DOM. In ui.tsx-first apps, use `reactive_output` to send data and let the client render it however it chooses. (In practice a narrow escape hatch shipped for embedding traditional output bindings inside a React tree: the `<ShinyOutput>` component plus `ImageOutput` for plots.)
 - **Unbroken reactive loops** — A pattern where the server sends data to the client, the client immediately sends it back as input, which triggers the server again, creates an infinite loop. The communication model is designed to be unidirectional per interaction: input flows up (client → server), computed data flows down (server → client). The client should never echo server data back as input without user action in between.
 
 ### How `shiny run` works
@@ -244,7 +244,7 @@ We don't have answers yet, but these are directions worth exploring:
 
 ### `reactive.sync()` — sugar for reactive value + render
 
-Evaluate whether a `reactive.sync(client_name=...)` primitive is worth adding as syntactic sugar for the common pattern of a `reactive.value` paired with a `render.data` that just returns it. The longer form (`reactive.value` + `@render.data`) is explicit and clear, but the pattern is common enough that a single-line equivalent may improve ergonomics. Key constraints: must be server-authoritative (not bidirectional — race conditions), full replacement (not patches), and should not obscure the data flow for readers of the server file.
+Evaluate whether a `reactive.sync(client_name=...)` primitive is worth adding as syntactic sugar for the common pattern of a `reactive.value` paired with a `reactive_output` that just returns it. The longer form (`reactive.value` + `@render.data`) is explicit and clear, but the pattern is common enough that a single-line equivalent may improve ergonomics. Key constraints: must be server-authoritative (not bidirectional — race conditions), full replacement (not patches), and should not obscure the data flow for readers of the server file.
 
 ### Message passing model
 
@@ -273,9 +273,9 @@ At minimum, that pipeline should include:
 - **Browser-level end-to-end tests.** Playwright or an equivalent browser automation layer should validate the behaviors that matter most: websocket connection, input-to-output flow, message type delivery, bookmarking/init hydration, and failure handling when the server or bridge is not ready.
 - **Security and accessibility review hooks.** The supported pipeline should include explicit checks for dependency provenance, XSS-sensitive rendering paths, and baseline accessibility expectations. AI can accelerate implementation, but it should not bypass the normal guardrails for client code shipped to users.
 
-### Bookmarking and initial state
+### Bookmarking and initial state — shipped
 
-A static `index.html` bypasses Shiny's HTML-injection bookmarking, so restored values must instead flow back over the websocket: the server parses the URL query string from the existing `init` message and sends restored inputs back for the client to apply to React state. Tracked in [#27](https://github.com/posit-dev/shinyreact/issues/27).
+A static `index.html` bypasses Shiny's HTML-injection bookmarking. This shipped ([#27](https://github.com/posit-dev/shinyreact/issues/27)) with a different mechanism than originally sketched: the page entry points (`set_react_page()` / `page_react_html()`) read the active RestoreContext and emit a head `<script>` carrying the restored input values; the bundle seeds `useShinyInput` initial values from it before first render. See `examples/10-bookmarking/`.
 
 ### Migration path for existing Shiny apps
 
@@ -309,17 +309,17 @@ The default workflow should preserve a tight, single-command development loop. `
 
 Serving the client assets and the Shiny websocket server from different origins introduces CORS, cookies/authentication, websocket origin checks, and routing questions. The architecture needs an explicit same-origin default and a clear story for supported cross-origin deployments.
 
-### What happens to the R package?
+### R client-generation tooling
 
-The R package (`pkg-r/`) was planned for feature parity with the Python package. Under ui.tsx-first, the R server story is the same (reactive computation only), but the client generation tooling may differ. Should R and Python share the same client-side bridge library? Does R need its own Claude Skill?
+The R package (`pkg-r/`) ships with parity for the server surface (`page_react_html()`, `reactive_output()`, `send_message()`, input handlers, bookmarking) and shares the same JS bundle, so the same React client works against either server — `examples/01-hello/` runs one `www/` client from both `app.py` and `app.R`. The open question is the AI tooling: does R need its own Claude Skill for client generation, or does a shared skill cover both?
 
 ## 8. Current State and Next Steps
 
-The ui.tsx-first prototype proposed in this document has been built and validated. Both the ui.tsx pattern and the app.py JSON spec pattern now ship in `shinyreact` as first-class peers. The open questions in Section 7 remain relevant — the items below reflect the current status:
+The ui.tsx-first architecture proposed in this document has been built, validated, and is now the repo's only pattern. The open questions in Section 7 remain relevant — the items below reflect the current status:
 
-1. **Design tenets (Section 2) are the guiding principles.** Both patterns respect them: the app file contains server logic; the framework handles reactivity; the app is a polished product.
-2. **Both patterns are implemented and working.** The ui.tsx pattern (`set_react_page()`, `reactive_output`) and the app.py pattern (`page_react`, `render_react`, the `Node` tree) ship from the same package.
-3. **The JSON wire-tree transfer layer is retained for the app.py pattern.** The `Node` data model and the in-house renderer walker serve the app.py use case well. For ui.tsx apps, the layer is bypassed — `reactive_output` sends raw JSON that the client renders directly.
+1. **Design tenets (Section 2) are the guiding principles.** The app file contains server logic; the framework handles reactivity; the app is a polished product.
+2. **The pattern is implemented and working.** `set_react_page()` (Express) / `page_react_html()` (Core, and the R package) plus `reactive_output` ship in both Python and R.
+3. **The JSON wire-tree transfer layer was removed with the app.py pattern (#168).** `reactive_output` sends raw JSON that the client renders directly. The original design of the wire tree lives at the [`archive/v0`](https://github.com/posit-dev/shinyreact/tree/archive/v0) tag.
 4. **The bridge library is stable.** `useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`, `ShinyModuleProvider`, and `ImageOutput` are vendored from `@posit/shiny-react` and re-exported on `window.shinyreact`.
 5. **Remaining open work** is tracked in the [GitHub issue tracker](https://github.com/posit-dev/shinyreact/issues).
 
