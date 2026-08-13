@@ -80,10 +80,15 @@ r-format:  ## [r] Format R code
 	air format $(PATH_PKG_R)/
 
 .PHONY: r-check-package
-r-check-package:  ## [r] Check package
+r-check-package:  ## [r] Check package (fails on NOTEs)
 	@echo ""
 	@echo "🔄 Running R CMD Check"
-	cd $(PATH_PKG_R) && Rscript -e "devtools::check(document = FALSE)"
+# `error_on = "note"` — the package is NOTE-free, so keep it that way. A NOTE is
+# how R CMD check reports the things that bite later (undeclared imports, `:::`
+# on another package's internals, stale docs); letting them accumulate is what
+# made #182-#186 possible. If a NOTE is genuinely acceptable, fix the cause or
+# record why in the PR rather than lowering this to "warning".
+	cd $(PATH_PKG_R) && Rscript -e "devtools::check(document = FALSE, error_on = \"note\")"
 
 .PHONY: r-check-tests
 r-check-tests:  ## [r] Check tests
