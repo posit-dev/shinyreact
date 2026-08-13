@@ -18,7 +18,7 @@ A Shiny render function.
 }
 \description{
 Server-side counterpart to \code{useShinyOutputValue()}. Assign to \code{output[[id]]};
-a React client reads the value by id. Unlike \code{\link[=render_react]{render_react()}} there is no UI
-placeholder — the client owns all UI. Accepts any JSON-serializable value
-(passed through unchanged).
+a React client reads the value by id. There is no UI placeholder — the
+client owns all UI. Accepts any JSON-serializable value (passed through
+unchanged).
 }

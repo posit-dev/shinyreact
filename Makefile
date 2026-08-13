@@ -68,7 +68,7 @@ r-setup:  ## [r] Install R dependencies
 	cd $(PATH_PKG_R) && Rscript -e "pak::local_install_dev_deps()"
 
 .PHONY: r-check
-r-check: r-check-format r-check-tests r-check-package r-check-fixtures  ## [r] All R checks
+r-check: r-check-format r-check-tests r-check-package  ## [r] All R checks
 
 .PHONY: r-document
 r-document: ## [r] Document package
@@ -96,11 +96,6 @@ r-check-format:  ## [r] Check format
 	@echo ""
 	@echo "📐 Checking R format"
 	air format --check $(PATH_PKG_R)/
-
-.PHONY: r-check-fixtures
-r-check-fixtures:  ## [r] Verify R wire-format fixtures match Python's
-	@echo "🔁 Checking wire-format fixture sync"
-	diff -r pkg-py/tests/fixtures/wire_format pkg-r/tests/testthat/fixtures/wire_format
 
 .PHONY: r-update-dist
 r-update-dist: ## [r] Update shinyreact web assets

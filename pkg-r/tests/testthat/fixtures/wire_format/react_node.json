@@ -1,8 +1,0 @@
-{
-  "type": "react",
-  "name": "Card",
-  "props": {
-    "title": "Hi"
-  },
-  "children": []
-}

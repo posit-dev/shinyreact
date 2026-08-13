@@ -11,24 +11,6 @@ page_bare <- function(..., title = NULL, lang = "en") {
   shiny::bootstrapPage(..., title = title, lang = lang)
 }
 
-#' Full-page React app served by Shiny
-#'
-#' Creates a page with the shinyreact page-level dependency
-#' (bundle + bookmark restore script). Pass app JS/CSS dependencies (e.g. from
-#' [page_react_dep()]) via `...`.
-#'
-#' @inheritParams page_bare
-#' @return A `shiny.tag` page.
-#' @export
-page_react <- function(..., title = NULL, lang = "en") {
-  page_bare(
-    shinyreact_dep_page(),
-    ...,
-    title = title,
-    lang = lang
-  )
-}
-
 #' Serve a static React `index.html` (the `ui.tsx` pattern)
 #'
 #' Reads an HTML file and attaches the shinyreact page-level dependency. Use as

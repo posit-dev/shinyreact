@@ -1,11 +1,3 @@
-test_that("page_react emits no #root div but includes the shinyreact dep", {
-  ui <- page_react()
-  html <- as.character(ui)
-  expect_no_match(html, 'id="root"')
-  deps <- htmltools::findDependencies(ui)
-  expect_true(any(vapply(deps, function(d) d$name == "shinyreact", logical(1))))
-})
-
 test_that("page_bare wraps children without #root", {
   ui <- page_bare(htmltools::div("hi"))
   html <- as.character(ui)
