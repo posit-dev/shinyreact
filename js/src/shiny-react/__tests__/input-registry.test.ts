@@ -79,6 +79,42 @@ describe("InputRegistryEntry", () => {
     );
   });
 
+  it("setValue accepts a functional updater, resolved against the current value", () => {
+    const entry = new InputRegistryEntry("test", 1);
+    const setStateFn = vi.fn();
+    entry.addUseStateSetValueFn(setStateFn);
+
+    entry.setValue((n) => n + 1);
+
+    expect(entry.getValue()).toBe(2);
+    // React state is notified with the resolved value, never the function itself.
+    expect(setStateFn).toHaveBeenCalledWith(2);
+  });
+
+  it("functional updaters chain across successive calls", () => {
+    const entry = new InputRegistryEntry("test", 0);
+    entry.setValue((n) => n + 1);
+    entry.setValue((n) => n + 1);
+    entry.setValue((n) => n * 10);
+    expect(entry.getValue()).toBe(20);
+  });
+
+  it("sends the resolved value (not the function) to Shiny.setInputValue", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry("test", 5);
+
+    entry.setValue((n) => n + 10);
+    vi.advanceTimersByTime(200);
+
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "test:shinyreact.default",
+      15,
+      expect.objectContaining({ debounceMs: 100 }),
+    );
+  });
+
   it("MISSING value updates React state but does not call setInputValue", () => {
     vi.mocked(getShiny).mockReturnValue({
       setInputValue: mockSetInputValue,

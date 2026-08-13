@@ -2,6 +2,8 @@
 
 import { type EventPriority } from "@posit/shiny/srcts/types/src/inputPolicies";
 import {
+  type Dispatch,
+  type SetStateAction,
   useCallback,
   useEffect,
   useRef,
@@ -80,7 +82,7 @@ export function useShinyInput<T>(
     namespace?: string | null;
     type?: string;
   } = {},
-): [T, (value: T) => void] {
+): [T, Dispatch<SetStateAction<T>>] {
   ensureShinyReactInitialized();
 
   if (type !== undefined && !/^[^\s:]+$/.test(type)) {
@@ -164,7 +166,7 @@ export function useShinyInput<T>(
   }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault, type]);
 
   const setValueWrapped = useCallback(
-    (value: T) => {
+    (value: SetStateAction<T>) => {
       if (!shinyInitialized) {
         return;
       }
@@ -388,7 +390,7 @@ export function useSetShinyInput<T>(
     namespace?: string | null;
     type?: string;
   } = {},
-): (value: T) => void {
+): Dispatch<SetStateAction<T>> {
   ensureShinyReactInitialized();
 
   if (type !== undefined && !/^[^\s:]+$/.test(type)) {
@@ -432,7 +434,7 @@ export function useSetShinyInput<T>(
   }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault, type]);
 
   return useCallback(
-    (value: T) => {
+    (value: SetStateAction<T>) => {
       if (!shinyInitialized) {
         return;
       }
