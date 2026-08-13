@@ -1,9 +1,6 @@
 import React from "react";
 import * as ReactDOM from "react-dom/client";
-import type { ComponentRegistry } from "./types";
-import { registerComponents } from "./registry";
 import { ShinyOutput } from "./shiny-output";
-import { seedInlineSpecs } from "./inline-spec";
 
 // Re-export @posit/shiny-react hooks and components.
 //
@@ -30,10 +27,6 @@ import {
 declare global {
   interface Window {
     shinyreact: {
-      registerComponents: (
-        catalog: unknown,
-        registry: ComponentRegistry,
-      ) => void;
       useSetShinyInput: typeof useSetShinyInput;
       useShinyBusy: typeof useShinyBusy;
       useShinyInput: typeof useShinyInput;
@@ -47,7 +40,6 @@ declare global {
       ShinyModuleProvider: typeof ShinyModuleProvider;
       ShinyReactComponentElement: typeof ShinyReactComponentElement;
       ShinyOutput: typeof ShinyOutput;
-      seedInlineSpecs: typeof seedInlineSpecs;
       React: typeof React;
       ReactDOM: typeof ReactDOM;
     };
@@ -61,7 +53,6 @@ declare global {
  */
 export function installGlobal(): void {
   window.shinyreact = Object.assign(window.shinyreact || {}, {
-    registerComponents,
     useSetShinyInput,
     useShinyBusy,
     useShinyInput,
@@ -75,7 +66,6 @@ export function installGlobal(): void {
     ShinyModuleProvider,
     ShinyReactComponentElement,
     ShinyOutput,
-    seedInlineSpecs,
     React,
     ReactDOM,
   });
