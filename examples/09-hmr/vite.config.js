@@ -7,8 +7,8 @@ import { defineConfig } from "vite";
 import { shinyreactDevStub } from "./vite-dev-stub.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// examples/ui-tsx/09-hmr -> repo root (three levels up).
-const repoRoot = path.resolve(__dirname, "../../..");
+// examples/09-hmr -> repo root (two levels up).
+const repoRoot = path.resolve(__dirname, "../..");
 const ENTRY = "src/ui.tsx";
 
 export default defineConfig(({ command }) => ({

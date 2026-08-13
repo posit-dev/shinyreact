@@ -91,7 +91,7 @@ On the JS side, consume with `useShinyMessageHandler("notification", handler)`.
 Runnable apps for both patterns live in [`examples/`](../examples/) — see the
 [examples catalog](../examples/README.md) for the full list. Python examples are
 in [`examples/app-py/`](../examples/app-py/) (the `app.py` pattern) and
-[`examples/ui-tsx/`](../examples/ui-tsx/) (the `ui.tsx` pattern).
+[`examples/`](../examples/) (the `ui.tsx` pattern).
 
 ## Extending shinyreact (package authors)
 
