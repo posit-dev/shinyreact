@@ -8,7 +8,7 @@
 
 Today the entire JS runtime ships as a self-contained IIFE inside the Python
 and R packages, injected as an HTMLDependency, with its whole public surface on
-`window.shinyreact` (`js/src/global.ts`, `pkg-py/src/shinyreact/_dep.py`,
+`window.shinyreact` (`pkg-js/src/global.ts`, `pkg-py/src/shinyreact/_dep.py`,
 `pkg-r/R/dep.R`). Issue #172 asked whether we can distribute via npm instead
 and drop the global, without letting the JS and the Python/R servers drift out
 of sync.
@@ -114,7 +114,7 @@ payoff); would ship React ESM builds inside pip/CRAN packages.
 
 Adopt **option E**, with the npm package named **`@posit/shinyreact`** (not
 `@posit/shiny-react` — name consistency with the Python/R packages; the
-upstream `@posit/shiny-react`@0.0.16 that `js/src/shiny-react/` was vendored
+upstream `@posit/shiny-react`@0.0.16 that `pkg-js/src/shiny-react/` was vendored
 from is a separate, frozen artifact).
 
 1. **Publish `@posit/shinyreact` to npm as the real runtime** — the hooks and
@@ -169,7 +169,7 @@ from is a separate, frozen artifact).
    this repo now; both `_bookmark.py` and `bookmark.R` change, plus
    `global.ts` reading the tag instead of `_restore`.
 2. Protocol schema document + cross-language fixture tests.
-3. Package `js/src/` for dual output (ESM + IIFE); add publish workflow for
+3. Package `pkg-js/src/` for dual output (ESM + IIFE); add publish workflow for
    `@posit/shinyreact`.
 4. Convert one Vite example (`09-hmr` is the natural candidate) to import
    `@posit/shinyreact`; retire its dev/prod bridge alias.
