@@ -40,7 +40,7 @@ The bundle re-exports these hooks from `@posit/shiny-react`:
 
 ## Architecture
 
-- **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`, exposing the hook API at `window.shinyreact`. Shared by both language packages.
+- **JS bundle** (`pkg-js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`, exposing the hook API at `window.shinyreact`. Shared by both language packages.
 - **Python package** (`pkg-py/`): `set_react_page()` / `page_react_html()` page entry points, the `reactive_output` renderer, `send_message()`, built-in input handlers, and bookmark restore support.
 - **R package** (`pkg-r/`): `page_react_html()`, `reactive_output()`, `send_message()`, the same input handlers and bookmark support. Same JS bundle as Python.
 

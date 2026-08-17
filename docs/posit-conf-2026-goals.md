@@ -43,7 +43,7 @@ Remaining known issues are tracked in the [GitHub issue tracker](https://github.
 
 ### 2. Migrate Shiny JavaScript to its own repo
 
-The vendored `shiny-react` code at `js/src/shiny-react/` and the broader Shiny JS infrastructure should live in its own repository, independent of `shinyreact`. This enables:
+The vendored `shiny-react` code at `pkg-js/src/shiny-react/` and the broader Shiny JS infrastructure should live in its own repository, independent of `shinyreact`. This enables:
 
 - Other packages (not just `shinyreact`) to depend on shiny-react
 - Independent versioning and release cycle
