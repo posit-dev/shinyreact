@@ -33,8 +33,10 @@ shiny___to_json <- function(x) {
   # Serialize with Shiny's own wrapper so bookmark restore values go over the
   # wire exactly like every other value Shiny sends the client.
   #
-  # NOTE: this does NOT escape non-ASCII. jsonlite has no `ensure_ascii`
-  # equivalent, so U+2028/U+2029 still have to be escaped by the caller.
+  # NOTE: this does NOT escape non-ASCII (jsonlite has no `ensure_ascii`
+  # equivalent). That is fine for the `#shinyreact-config` JSON tag, which is
+  # never parsed as JavaScript; only "<" needs escaping there (see
+  # config_script_tag()).
   shiny_to_json <- utils::getFromNamespace("toJSON", "shiny")
   shiny_to_json(x)
 }
@@ -81,36 +83,35 @@ shiny___get_current_restore_context <- function() {
 }
 
 #' @keywords internal
-restore_script_tag <- function() {
-  values <- .restore_input_values()
-  if (length(values) == 0L) {
-    return(NULL)
-  }
-  # Layer 1: JSON of the values, via the same serializer Shiny uses for every
-  # other value it sends the client, so restored inputs serialize identically to
-  # normal output values. Its defaults are what we want and jsonlite's are not:
+config_script_tag <- function() {
+  # Head-injected `#shinyreact-config` JSON script tag. Always emitted by page
+  # entry points: carries the wire-protocol version (asserted by the JS client
+  # at boot -- see decisions/2026-08-17-js-distribution.md) and, when a
+  # bookmark is being restored, the restored input values under `restore`.
+  #
+  # The payload is plain JSON in a `type="application/json"` script tag -- the
+  # browser never executes it as JavaScript, so no JS-string-literal escaping
+  # (nor the U+2028/U+2029 handling of #183) is needed. The values are
+  # serialized via the same serializer Shiny uses for every other value it
+  # sends the client, so restored inputs serialize identically to normal
+  # output values. Its defaults are what we want and jsonlite's are not:
   # `digits = I(16)` (jsonlite defaults to 4, silently rounding doubles --
   # 3.14159265 became 3.1416), `null = "null"` / `na = "null"` (jsonlite emits
   # NULL as `{}`; Python's json.dumps emits `null`), and `auto_unbox = TRUE`.
-  json_payload <- as.character(shiny___to_json(values))
-  # Neutralize "</" so the payload can't close the surrounding <script> tag.
-  json_payload <- gsub("</", "<\\/", json_payload, fixed = TRUE)
-  # Escape U+2028 / U+2029: legal in a JSON string, but JS line terminators and
-  # therefore illegal inside a JS string literal. Python gets this for free from
-  # `json.dumps(ensure_ascii = TRUE)`; jsonlite has no ASCII-escaping mode at
-  # all (and neither does shiny's wrapper), so it must be done here (issue #183).
-  json_payload <- gsub("\u2028", "\\u2028", json_payload, fixed = TRUE)
-  json_payload <- gsub("\u2029", "\\u2029", json_payload, fixed = TRUE)
-  # Layer 2: wrap as a JS string literal (double-encode) so quotes/newlines
-  # survive the JS parser before JSON.parse runs. `unbox()` states the scalar
-  # contract explicitly instead of leaning on the `auto_unbox` heuristic. This
-  # layer is a plain string encode, not a Shiny value, so jsonlite directly.
-  js_string_literal <- jsonlite::toJSON(jsonlite::unbox(json_payload))
-  js <- paste0(
-    "window.shinyreact = window.shinyreact || {};",
-    "window.shinyreact._restore = JSON.parse(",
-    js_string_literal,
-    ");"
+  values <- .restore_input_values()
+  config <- list(protocolVersion = jsonlite::unbox(.protocol_version))
+  if (length(values) > 0L) {
+    config$restore <- values
+  }
+  json_payload <- as.character(shiny___to_json(config))
+  # Emit every "<" as the JSON escape sequence backslash-u003c so the payload
+  # can never contain "</script"
+  # (which would terminate the surrounding tag) or "<!--". Python does the
+  # same with str.replace after json.dumps.
+  json_payload <- gsub("<", "\\u003c", json_payload, fixed = TRUE)
+  htmltools::tags$script(
+    htmltools::HTML(json_payload),
+    type = "application/json",
+    id = "shinyreact-config"
   )
-  htmltools::tags$script(htmltools::HTML(js))
 }

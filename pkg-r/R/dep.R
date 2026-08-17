@@ -22,11 +22,9 @@ shinyreact_dep <- function() {
   )
 }
 
-# Internal: page-level dependency = bundle + bookmark restore <script> (if any).
+# Internal: page-level dependency = bundle + `#shinyreact-config` tag. The
+# config tag carries the protocol version on every page and the bookmark
+# restore payload when one is active.
 shinyreact_dep_page <- function() {
-  restore <- restore_script_tag()
-  if (is.null(restore)) {
-    return(shinyreact_dep())
-  }
-  htmltools::tagList(shinyreact_dep(), restore)
+  htmltools::tagList(shinyreact_dep(), config_script_tag())
 }

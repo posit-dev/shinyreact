@@ -48,8 +48,9 @@ declare global {
 
 /**
  * Expose the public global API at `window.shinyreact`. Called once at bundle
- * boot. Preserves any pre-bundle assignment (e.g. `window.shinyreact._restore`
- * set by the head <script> emitted from Python's `_restore_script_tag`).
+ * boot. Preserves any pre-bundle assignment (e.g. the legacy
+ * `window.shinyreact._restore` global emitted by servers that predate the
+ * `#shinyreact-config` script tag).
  */
 export function installGlobal(): void {
   window.shinyreact = Object.assign(window.shinyreact || {}, {

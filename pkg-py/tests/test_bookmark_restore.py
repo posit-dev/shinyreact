@@ -2,13 +2,15 @@ import json
 import re
 from pathlib import Path
 
+import pytest
 from htmltools import HTMLDependency, TagList
 from shiny.bookmark._restore_state import RestoreContext, RestoreInputSet
 from shiny.bookmark._restore_state import restore_context as restore_context_cm
 from shinyreact import page_react_html
-from shinyreact._bookmark import _read_restore_input_values, _restore_script_tag
+from shinyreact._bookmark import _config_script_tag, _read_restore_input_values
 from shinyreact._dep import _dep, _dep_page
 from shinyreact._page import _build_react_page_fn
+from shinyreact._protocol import PROTOCOL_VERSION
 
 
 def _render_dep_to_head(dep: HTMLDependency) -> str:
@@ -40,152 +42,129 @@ def test_read_restore_input_values_empty() -> None:
     assert _read_restore_input_values(ctx) == {}
 
 
-def test_restore_script_tag_no_context_returns_none() -> None:
-    # No active RestoreContext at all.
-    assert _restore_script_tag() is None
+def _extract_config(head_html: str) -> dict[str, object]:
+    """Parse the JSON payload of the ``#shinyreact-config`` script tag.
 
-
-def test_restore_script_tag_empty_input_returns_none() -> None:
-    ctx = RestoreContext()  # default: empty RestoreInputSet
-    with restore_context_cm(ctx):
-        assert _restore_script_tag() is None
+    Mirrors what the JS client does: locate the tag by id and ``JSON.parse``
+    its text content. R port: ``extract_config()`` in
+    ``pkg-r/tests/testthat/test-bookmark-escaping.R``.
+    """
+    match = re.search(
+        r'<script[^>]*\bid="shinyreact-config"[^>]*>(.*?)</script>',
+        head_html,
+        re.DOTALL,
+    )
+    assert match is not None, head_html
+    return json.loads(match.group(1))
 
 
 def _extract_restore_payload(head_html: str) -> object:
-    """Round-trip the JSON object literal embedded by ``_restore_script_tag``.
-
-    The script body is shaped:
-
-        window.shinyreact._restore = JSON.parse(<js-string-literal>);
-
-    Two unescape layers:
-
-    1. ``json.loads`` on the JS string literal — JS string-literal escapes
-       (``\\\\``, ``\\"``, ``\\/``, ``\\u…``) are a subset of JSON's, so
-       ``json.loads`` reads it correctly.
-    2. ``json.loads`` again on the inner JSON text to recover the value.
-    """
-    match = re.search(
-        r'window\.shinyreact\._restore = JSON\.parse\((".+?")\);',
-        head_html,
-    )
-    assert match is not None, head_html
-    inner_json_text = json.loads(match.group(1))
-    return json.loads(inner_json_text)
+    """The ``restore`` member of the ``#shinyreact-config`` payload."""
+    config = _extract_config(head_html)
+    assert "restore" in config, config
+    return config["restore"]
 
 
-def test_restore_script_tag_emits_head_content_with_json() -> None:
+def _config_html(values: dict[str, object]) -> str:
     ctx = RestoreContext()
-    ctx.input = RestoreInputSet({"foo": "hello", "num": 42})
-    with restore_context_cm(ctx):
-        dep = _restore_script_tag()
-
-    assert dep is not None
-    assert isinstance(dep, HTMLDependency)
-    head_html = _render_dep_to_head(dep)
-    assert "window.shinyreact" in head_html
-    assert "_restore" in head_html
-    assert _extract_restore_payload(head_html) == {"foo": "hello", "num": 42}
-
-
-def test_restore_script_tag_values_with_single_quotes_are_safe() -> None:
-    # Regression: previously embedded inside JSON.parse('...') which would be
-    # terminated early by a literal single quote in a value.
-    ctx = RestoreContext()
-    ctx.input = RestoreInputSet({"foo": "it's me", "bar": "she said 'hi'"})
-    with restore_context_cm(ctx):
-        dep = _restore_script_tag()
-    assert dep is not None
-    head_html = _render_dep_to_head(dep)
-    assert _extract_restore_payload(head_html) == {
-        "foo": "it's me",
-        "bar": "she said 'hi'",
-    }
-
-
-def test_restore_script_tag_values_with_control_chars_are_safe() -> None:
-    # Regression: previously JSON.parse('"\n"') would have the JS parser
-    # interpret \n as a literal newline before reaching JSON.parse, and JSON
-    # forbids literal newlines inside string values.
-    ctx = RestoreContext()
-    ctx.input = RestoreInputSet({"text": "line1\nline2\twith\ttabs"})
-    with restore_context_cm(ctx):
-        dep = _restore_script_tag()
-    assert dep is not None
-    head_html = _render_dep_to_head(dep)
-    assert _extract_restore_payload(head_html) == {
-        "text": "line1\nline2\twith\ttabs"
-    }
-
-
-def test_restore_script_tag_escapes_js_line_separators() -> None:
-    # U+2028 / U+2029 are legal in a JSON string but are JS line terminators,
-    # and therefore illegal inside a JS string literal. `json.dumps` defaults to
-    # ensure_ascii=True, which escapes them; this pins that reliance. The R port
-    # had to escape them explicitly — see issue #183.
-    ctx = RestoreContext()
-    values = {"ls": "A\u2028B", "ps": "C\u2029D"}
     ctx.input = RestoreInputSet(dict(values))
     with restore_context_cm(ctx):
-        dep = _restore_script_tag()
-    assert dep is not None
-    head_html = _render_dep_to_head(dep)
-    assert "\u2028" not in head_html
-    assert "\u2029" not in head_html
-    assert "\\u2028" in head_html
-    assert "\\u2029" in head_html
+        dep = _config_script_tag()
+    return _render_dep_to_head(dep)
+
+
+def test_config_script_tag_no_context_omits_restore() -> None:
+    # No active RestoreContext at all: the tag is still emitted (it carries
+    # the protocol version), but has no "restore" member.
+    head_html = _render_dep_to_head(_config_script_tag())
+    config = _extract_config(head_html)
+    assert config == {"protocolVersion": PROTOCOL_VERSION}
+
+
+def test_config_script_tag_empty_input_omits_restore() -> None:
+    ctx = RestoreContext()  # default: empty RestoreInputSet
+    with restore_context_cm(ctx):
+        head_html = _render_dep_to_head(_config_script_tag())
+    config = _extract_config(head_html)
+    assert config == {"protocolVersion": PROTOCOL_VERSION}
+
+
+def test_config_script_tag_emits_json_tag_with_restore() -> None:
+    head_html = _config_html({"foo": "hello", "num": 42})
+    assert 'type="application/json"' in head_html
+    assert 'id="shinyreact-config"' in head_html
+    config = _extract_config(head_html)
+    assert config["protocolVersion"] == PROTOCOL_VERSION
+    assert config["restore"] == {"foo": "hello", "num": 42}
+
+
+def test_config_script_tag_values_with_quotes_are_safe() -> None:
+    values = {"foo": "it's me", "bar": 'she said "hi"'}
+    assert _extract_restore_payload(_config_html(values)) == values
+
+
+def test_config_script_tag_values_with_control_chars_are_safe() -> None:
+    values = {"text": "line1\nline2\twith\ttabs"}
+    assert _extract_restore_payload(_config_html(values)) == values
+
+
+def test_config_script_tag_line_separators_round_trip() -> None:
+    # U+2028 / U+2029 were a hazard when the payload was a JS string literal
+    # (issue #183). In the JSON script tag they are inert; this pins the
+    # round-trip. Mirrors R's "config_script_tag round-trips U+2028 / U+2029".
+    values = {"ls": "A\u2028B", "ps": "C\u2029D"}
+    assert _extract_restore_payload(_config_html(values)) == values
+
+
+def test_config_script_tag_handles_proto_keys_safely() -> None:
+    # The client reads the tag with JSON.parse, which treats "__proto__" and
+    # "constructor" as ordinary own properties (unlike a bare JS object
+    # literal, where "__proto__" is the prototype setter).
+    values = {"__proto__": "evil", "constructor": "x", "ok": 1}
+    head_html = _config_html(values)
+    assert _extract_restore_payload(head_html) == values
+    # The wire format is a JSON script tag, not executable JS.
+    assert "window.shinyreact._restore" not in head_html
+
+
+def test_config_script_tag_escapes_closing_script_tag() -> None:
+    values = {"foo": "</script><script>alert(1)</script>"}
+    head_html = _config_html(values)
+    # Every "<" in the payload is emitted as the JSON escape \\u003c, so the only actual
+    # </script> is the one closing our injected tag, and no <script> can be
+    # smuggled in.
+    assert head_html.count("</script>") == 1
+    assert "<script>alert(1)" not in head_html
     assert _extract_restore_payload(head_html) == values
 
 
-def test_restore_script_tag_handles_proto_keys_safely() -> None:
-    # Regression: a bare JS object literal ``{"__proto__": value}`` would
-    # interpret "__proto__" as the prototype setter rather than a data
-    # property. We emit ``JSON.parse(...)`` so JSON's literal interpretation
-    # wins — keys named "__proto__" or "constructor" round-trip as ordinary
-    # own properties.
-    ctx = RestoreContext()
-    ctx.input = RestoreInputSet({"__proto__": "evil", "constructor": "x", "ok": 1})
-    with restore_context_cm(ctx):
-        dep = _restore_script_tag()
-    assert dep is not None
-    head_html = _render_dep_to_head(dep)
-    payload = _extract_restore_payload(head_html)
-    assert payload == {"__proto__": "evil", "constructor": "x", "ok": 1}
-    # Confirm the wire format uses JSON.parse, not a bare object literal.
-    assert "JSON.parse(" in head_html
-    assert "window.shinyreact._restore =" in head_html
-    assert "window.shinyreact._restore = {" not in head_html
-
-
-def test_restore_script_tag_escapes_closing_script_tag() -> None:
-    ctx = RestoreContext()
-    ctx.input = RestoreInputSet({"foo": "</script><script>alert(1)</script>"})
-    with restore_context_cm(ctx):
-        dep = _restore_script_tag()
-    assert dep is not None
-    head_html = _render_dep_to_head(dep)
-    # The literal "</script>" sequence inside the JSON payload must be escaped
-    # so the browser does not see it as ending the script. The escaping replaces
-    # "</" with "<\/", so no unescaped "</script" appears INSIDE the embedded JSON.
-    # Allow only ONE actual </script> (the one closing our injected tag).
-    assert head_html.count("</script>") == 1
-    # And the value still round-trips correctly back through the escape.
-    assert _extract_restore_payload(head_html) == {
-        "foo": "</script><script>alert(1)</script>"
-    }
-
-
-def test_restore_script_tag_does_not_mark_pending() -> None:
+def test_config_script_tag_does_not_mark_pending() -> None:
     ctx = RestoreContext()
     ctx.input = RestoreInputSet({"foo": "hello"})
     with restore_context_cm(ctx):
-        _restore_script_tag()
+        _config_script_tag()
         # restore_input() inside the same context should still see "hello",
-        # because _restore_script_tag did not mark "foo" as pending.
-        from shiny.bookmark._restore_state import RestoreInputSet as _RIS  # noqa: F401
+        # because _config_script_tag did not mark "foo" as pending.
         from shiny.module import ResolvedId
 
         assert ctx.input.get(ResolvedId("foo")) == "hello"
+
+
+def test_protocol_version_matches_js_and_r() -> None:
+    # PROTOCOL_VERSION is one contract declared in three languages; this
+    # parity test pins all three to the same string. Mirrors R's
+    # "protocol version matches the JS and Python declarations".
+    repo_root = Path(__file__).resolve().parents[2]
+    js_src = repo_root / "pkg-js" / "src" / "shiny-react" / "config.ts"
+    r_src = repo_root / "pkg-r" / "R" / "protocol.R"
+    if not js_src.exists() or not r_src.exists():
+        pytest.skip("monorepo sources not available (installed-package run)")
+    js_match = re.search(r'PROTOCOL_VERSION = "([^"]+)"', js_src.read_text())
+    r_match = re.search(r'\.protocol_version <- "([^"]+)"', r_src.read_text())
+    assert js_match is not None
+    assert r_match is not None
+    assert js_match.group(1) == PROTOCOL_VERSION
+    assert r_match.group(1) == PROTOCOL_VERSION
 
 
 def test_dep_returns_htmldependency_only_no_context() -> None:
@@ -203,27 +182,27 @@ def test_dep_returns_htmldependency_only_with_context() -> None:
     assert isinstance(result, HTMLDependency)
 
 
-def test_dep_page_no_context_returns_htmldependency() -> None:
+def test_dep_page_no_context_includes_config_tag() -> None:
     result = _dep_page()
-    assert isinstance(result, HTMLDependency)
-    assert result.name == "shinyreact"
+    assert isinstance(result, TagList)
+    assert any(
+        isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result
+    )
+    config = _extract_config(_rendered_html(result))
+    assert config == {"protocolVersion": PROTOCOL_VERSION}
 
 
-def test_dep_page_empty_context_returns_htmldependency() -> None:
-    ctx = RestoreContext()  # active=False, empty input
-    with restore_context_cm(ctx):
-        result = _dep_page()
-    assert isinstance(result, HTMLDependency)
-
-
-def test_dep_page_with_active_context_returns_taglist() -> None:
+def test_dep_page_with_active_context_includes_restore() -> None:
     ctx = RestoreContext()
     ctx.input = RestoreInputSet({"foo": "hello"})
     with restore_context_cm(ctx):
         result = _dep_page()
     assert isinstance(result, TagList)
-    # First child is the bundle dep; second is the head_content restore script.
-    assert any(isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result)
+    assert any(
+        isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result
+    )
+    config = _extract_config(_rendered_html(result))
+    assert config["restore"] == {"foo": "hello"}
 
 
 def _rendered_html(tag) -> str:
@@ -234,7 +213,7 @@ def _rendered_html(tag) -> str:
     return head_html + rendered["html"]
 
 
-def test_page_react_html_emits_restore_script_when_bookmark_active(
+def test_page_react_html_emits_restore_when_bookmark_active(
     tmp_path: Path,
 ) -> None:
     index = tmp_path / "index.html"
@@ -244,18 +223,20 @@ def test_page_react_html_emits_restore_script_when_bookmark_active(
     ctx.input = RestoreInputSet({"txt": "hello"})
     with restore_context_cm(ctx):
         html = _rendered_html(page_react_html(index))
-    assert "window.shinyreact._restore" in html
     assert _extract_restore_payload(html) == {"txt": "hello"}
 
 
-def test_page_react_html_no_restore_script_without_bookmark(tmp_path: Path) -> None:
+def test_page_react_html_config_without_bookmark_has_no_restore(
+    tmp_path: Path,
+) -> None:
     index = tmp_path / "index.html"
     index.write_text("<div id='root'></div>")
     html = _rendered_html(page_react_html(index))
-    assert "window.shinyreact._restore" not in html
+    config = _extract_config(html)
+    assert config == {"protocolVersion": PROTOCOL_VERSION}
 
 
-def test_set_react_page_emits_restore_script_when_bookmark_active(
+def test_set_react_page_emits_restore_when_bookmark_active(
     tmp_path: Path,
 ) -> None:
     index = tmp_path / "index.html"
@@ -266,13 +247,15 @@ def test_set_react_page_emits_restore_script_when_bookmark_active(
     ctx.input = RestoreInputSet({"a": 1})
     with restore_context_cm(ctx):
         html = _rendered_html(page_fn())
-    assert "window.shinyreact._restore" in html
     assert _extract_restore_payload(html) == {"a": 1}
 
 
-def test_set_react_page_no_restore_script_without_bookmark(tmp_path: Path) -> None:
+def test_set_react_page_config_without_bookmark_has_no_restore(
+    tmp_path: Path,
+) -> None:
     index = tmp_path / "index.html"
     index.write_text("<div id='root'></div>")
     page_fn = _build_react_page_fn(index)
     html = _rendered_html(page_fn())
-    assert "window.shinyreact._restore" not in html
+    config = _extract_config(html)
+    assert config == {"protocolVersion": PROTOCOL_VERSION}

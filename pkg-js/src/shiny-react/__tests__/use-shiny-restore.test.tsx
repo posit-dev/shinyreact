@@ -17,11 +17,65 @@ function freshWindow(): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (globalThis as any).window = (globalThis as any).window || {};
   delete (globalThis as any).window.shinyreact;
+  document.getElementById("shinyreact-config")?.remove();
+}
+
+/** Insert the `#shinyreact-config` tag the way the server emits it. */
+function setConfigTag(payload: object): void {
+  const el = document.createElement("script");
+  el.type = "application/json";
+  el.id = "shinyreact-config";
+  el.textContent = JSON.stringify(payload).replace(/</g, "\\u003c");
+  document.head.appendChild(el);
 }
 
 describe("applyRestoredValues", () => {
   beforeEach(() => {
     freshWindow();
+  });
+
+  it("seeds registry entries from the #shinyreact-config tag", () => {
+    setConfigTag({ protocolVersion: "1.0", restore: { foo: "hello", num: 42 } });
+    const registry = new InputRegistry();
+
+    applyRestoredValues(registry);
+
+    expect(registry.get<string>("foo")?.getValue()).toBe("hello");
+    expect(registry.get<number>("num")?.getValue()).toBe(42);
+    expect((window as any).shinyreact._restore).toEqual({
+      "-applied": true,
+      "-values": { foo: "hello", num: 42 },
+    });
+  });
+
+  it("config tag restore takes precedence over the legacy _restore global", () => {
+    setConfigTag({ protocolVersion: "1.0", restore: { foo: "from-config" } });
+    (window as any).shinyreact = { _restore: { foo: "from-legacy" } };
+    const registry = new InputRegistry();
+
+    applyRestoredValues(registry);
+
+    expect(registry.get<string>("foo")?.getValue()).toBe("from-config");
+  });
+
+  it("config tag without restore writes the empty sentinel", () => {
+    setConfigTag({ protocolVersion: "1.0" });
+    const registry = new InputRegistry();
+
+    applyRestoredValues(registry);
+
+    expect(registry.size()).toBe(0);
+    expect((window as any).shinyreact._restore).toEqual({
+      "-applied": true,
+      "-values": {},
+    });
+  });
+
+  it("throws on a protocol major-version mismatch, naming both versions", () => {
+    setConfigTag({ protocolVersion: "999.0", restore: { foo: "hello" } });
+    const registry = new InputRegistry();
+
+    expect(() => applyRestoredValues(registry)).toThrowError(/999\.0/);
   });
 
   it("seeds registry entries from window.shinyreact._restore and replaces it with sentinel", () => {
