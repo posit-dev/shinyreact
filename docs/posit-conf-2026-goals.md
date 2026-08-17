@@ -45,7 +45,7 @@ Remaining known issues are tracked in the [GitHub issue tracker](https://github.
 
 The vendored `shiny-react` code at `js/src/shiny-react/` and the broader Shiny JS infrastructure should live in its own repository, independent of `shinyreact`. This enables:
 
-- Other packages (not just `shinyreact`) to depend on shiny-react
+- Other packages (not just `shinyreact`) to depend on the published `@posit/shinyreact` npm package (naming decided in `decisions/2026-08-17-js-distribution.md`)
 - Independent versioning and release cycle
 - Cleaner separation of concerns between Shiny's JS plumbing and `shinyreact`'s rendering
 
