@@ -42,7 +42,7 @@ examples/01-hello/
 ├── faithful.py       # Old Faithful waiting times + a stdlib-only binner (Python)
 ├── faithful.csv      # base R's `faithful` dataset, exported for the Python servers
 └── www/
-    ├── index.html    # 3 lines: stylesheet, #root div, script
+    ├── index.html    # 2 lines: stylesheet, script (the app appends its own mount div to <body>)
     ├── app.js        # raw React.createElement (with `h` shorthand) + an SVG histogram
     └── main.css      # sidebar/panel layout
 ```
