@@ -26,7 +26,7 @@ examples/02-columns/
     └── main.css
 ```
 
-Same 4-file shape as [01-hello](../01-hello/). No `package.json`, no bundler.
+Same no-build shape as [01-hello](../01-hello/). No `package.json`, no bundler.
 
 ## Bridge primitives used
 

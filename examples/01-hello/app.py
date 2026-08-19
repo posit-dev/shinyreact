@@ -1,23 +1,16 @@
-from shiny import reactive
+from faithful import histogram, waiting
 from shiny.express import input
 from shinyreact import reactive_output, set_react_page
 
 set_react_page()
 
 
-@reactive.calc
-def greeting():
-    name = input.name()
-    if not name:
-        return "World"
-    return name
+@reactive_output
+def dist_data():
+    return histogram(waiting, input.bins())
 
 
 @reactive_output
-def txtout_title():
-    return f"Hello, {greeting()}!"
-
-
-@reactive_output
-def txtout_count():
-    return input.click_count()
+def dist_caption():
+    n = input.bins()
+    return f"{len(waiting)} eruptions in {n} bin{'' if n == 1 else 's'}"

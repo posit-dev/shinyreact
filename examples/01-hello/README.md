@@ -1,17 +1,36 @@
-# Example 13 — ui.tsx hello world (no build step)
+# Example 01 — Old Faithful, `ui.tsx` style (no build step)
 
-The smallest possible `ui.tsx`-first Shiny app: a Python server that contains only reactive logic, plus a static React client served from `www/`. No JSX, no bundler, no `package.json`. Edit `app.js` and reload.
+Shiny's canonical [`01_hello`](https://github.com/rstudio/shiny/blob/main/inst/examples-shiny/01_hello/app.R)
+app — a bins slider over the Old Faithful waiting times — rebuilt as the
+smallest possible `ui.tsx`-first app. No JSX, no bundler, no `package.json`.
+Edit `app.js` and reload.
 
-`app.py` (Express, via `set_react_page()`) and `app-core.py` (Core, via `page_react_html()`) are two server-side entries for the same `www/` client.
+`app.py` (Express, via `set_react_page()`) and `app-core.py` (Core, via
+`page_react_html()`) are two server-side entries for the same `www/` client;
+`app.R` is the R twin.
 
 ## What it shows
 
-A name-input form and click counter rendered twice for direct comparison:
+The split that makes the pattern worth using. In traditional Shiny, `01_hello`
+renders the histogram *on the server* — `renderPlot({ hist(...) })` ships a PNG
+to the browser and the client is a passive `<img>`. Here the server never
+produces a picture:
 
-- **Client card** — `Hello, {name}!` and `Count: {clickCount}` computed locally in React state. Updates on every keystroke / click with no roundtrip.
-- **Server card** — same two values, but routed through Shiny: `useShinyInput("name")` → `@reactive.calc greeting` → `@reactive_output txtout_title` → `useShinyOutputValue("txtout_title")`. Updates lag by the websocket round-trip.
+- **Server** — one `reactive_output` returning `{breaks, counts}` (plain JSON
+  from R's `hist(..., plot = FALSE)` / a dependency-free Python binner), plus a
+  caption string. That's the entire server. No plotting library, no image
+  encoding, no `plotOutput` placeholder.
+- **Client** — `www/app.js` reads that JSON with `useShinyOutputValue` and draws
+  the bars as SVG `<rect>`s. Because the chart is real DOM the client owns, it
+  can be styled, animated, or made interactive without another round trip.
 
-The point is that the same data shows up on both cards but the latency is visibly different — the client card is instantaneous, the server card has the websocket delay you'd expect.
+The bins slider goes the other way: `useShinyInput("bins", 30)` pushes the value
+to Shiny, which recomputes the counts.
+
+It also demonstrates the output-status idiom from the repo's guidance — the
+chart stays mounted while the server recomputes and only dims via
+`useShinyOutputStatus("dist_data") === "recalculating"`. Dragging the slider
+never tears the SVG down and re-mounts it.
 
 ## Layout
 
@@ -19,19 +38,30 @@ The point is that the same data shows up on both cards but the latency is visibl
 examples/01-hello/
 ├── app.py            # Express: set_react_page() + 2 reactive_output outputs
 ├── app-core.py       # Core: page_react_html() + App(app_ui, server), same outputs
+├── app.R             # R: page_react_html() + reactive_output, same outputs
+├── faithful.py       # Old Faithful waiting times + a stdlib-only binner (Python)
+├── faithful.csv      # base R's `faithful` dataset, exported for the Python servers
 └── www/
     ├── index.html    # 3 lines: stylesheet, #root div, script
-    ├── app.js        # raw React.createElement (with `h` shorthand)
-    └── main.css      # body reset
+    ├── app.js        # raw React.createElement (with `h` shorthand) + an SVG histogram
+    └── main.css      # sidebar/panel layout
 ```
 
-Five files. No `node_modules`, no Vite, no build script.
+No `node_modules`, no Vite, no build script — and on the Python side no
+numpy/matplotlib either.
+
+`app.R` uses base R's built-in `faithful` dataset; `faithful.csv` is that same
+data exported so the Python servers don't need a data dependency. R's outputs
+return `NULL` until the client's first `bins` message arrives (Python raises a
+silent exception instead), and wrap the histogram vectors in `I()` so a
+single-bin result still serializes as a JSON array rather than a scalar.
 
 ## Bridge primitives used
 
-- `from shinyreact import reactive_output, set_react_page` (Express server, `app.py`) / `page_react_html` (Core server, `app-core.py`)
-- `window.shinyreact.useShinyInput(id, default, options?)` for the name field and click counter
-- `window.shinyreact.useShinyOutputValue(id, default)` for the server-computed title and count
+- `from shinyreact import reactive_output, set_react_page` (Express server, `app.py`) / `page_react_html` (Core server, `app-core.py`); `library(shinyreact)` with `page_react_html()` + `reactive_output()` in `app.R`
+- `window.shinyreact.useShinyInput(id, default)` for the bins slider
+- `window.shinyreact.useShinyOutputValue(id, default)` for the histogram data and caption
+- `window.shinyreact.useShinyOutputStatus(id)` to dim the chart while it recalculates
 - `window.shinyreact.useShinyInitialized()` to suppress the placeholder UI during connection setup
 
 `window.shinyreact.React` and `window.shinyreact.ReactDOM` are pulled in directly so the React app shares the React instance that owns the shinyreact hooks.
@@ -54,3 +84,7 @@ Open the URL printed by Shiny.
 ## When to use this pattern
 
 Good fit for `ui.tsx`-first apps that are small enough to not need JSX or component libraries — proof of concept, internal tools, anything where the cost of running a build is more than the cost of writing `React.createElement` calls. As soon as you want shadcn or Tailwind utility classes, see [03-columns-shadcn](../03-columns-shadcn/) and [04-shadcn](../04-shadcn/) for the Vite-based setup.
+
+If you'd rather keep rendering server-side, [04-shadcn](../04-shadcn/) shows
+`@render.plot` + `ImageOutput` (matplotlib PNGs) side by side with the data-only
+approach used here.
