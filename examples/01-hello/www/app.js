@@ -102,5 +102,9 @@ function App() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
+// No mount div in index.html — create the container and append it to <body>.
+// The script is deferred, so document.body is parsed by the time this runs.
+const root = ReactDOM.createRoot(
+  document.body.appendChild(document.createElement("div")),
+);
 root.render(h(App));

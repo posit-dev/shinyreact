@@ -20,7 +20,7 @@ examples/01-hello/
 ├── app.py            # Express: set_react_page() + 2 reactive_output outputs
 ├── app-core.py       # Core: page_react_html() + App(app_ui, server), same outputs
 └── www/
-    ├── index.html    # 3 lines: stylesheet, #root div, script
+    ├── index.html    # 2 lines: stylesheet, script (the app appends its own mount div to <body>)
     ├── app.js        # raw React.createElement (with `h` shorthand)
     └── main.css      # body reset
 ```
