@@ -40,13 +40,20 @@ def greeting():
 
 Pair with a `www/index.html` that loads your React client (no-build `app.js` or a built bundle from `src/ui.tsx`). See the [examples catalog](../examples/README.md) for file layouts and dev workflows, from no-build to Vite + HMR.
 
-In Core mode, use `page_react_html()`:
+In Core mode, use `page_react_html()`. Core apps must also mount `www/`
+themselves — Shiny Express does this automatically, `App()` does not, and
+without it the page loads and then 404s on its own scripts and stylesheets:
 
 ```python
+from pathlib import Path
 from shiny import App
 import shinyreact
 
-app = App(shinyreact.page_react_html("www/index.html"), server)
+app = App(
+    shinyreact.page_react_html("www/index.html"),
+    server,
+    static_assets={"/": Path(__file__).parent / "www"},
+)
 ```
 
 ### Sending messages to React components

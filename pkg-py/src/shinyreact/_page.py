@@ -236,6 +236,27 @@ def page_react_html(path: str | Path = "www/index.html") -> TagList:
     Unlike :func:`set_react_page`, this does not auto-discover dependencies
     from traditional Shiny renderers — it only attaches the shinyreact bundle.
 
+    Serving the client's files
+    --------------------------
+    This function only reads ``index.html``; it does not serve the sibling
+    files that ``index.html`` references. Shiny Express mounts the app
+    directory's ``www/`` at ``/`` automatically, but :class:`shiny.App` does
+    not, so a Core app must do it explicitly — otherwise the page loads and
+    then 404s on its own scripts and stylesheets::
+
+        from pathlib import Path
+        from shiny import App
+        from shinyreact import page_react_html
+
+        app = App(
+            page_react_html(),
+            server,
+            static_assets={"/": Path(__file__).parent / "www"},
+        )
+
+    (R's ``shiny::runApp()`` serves ``www/`` next to ``app.R`` automatically,
+    so the R counterpart needs no equivalent.)
+
     Args:
         path: Path to the HTML file. Absolute paths are used verbatim;
             relative paths resolve against the caller module's directory, or

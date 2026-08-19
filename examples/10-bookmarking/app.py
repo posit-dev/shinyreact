@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import shinyreact
 from shiny import App, Inputs, Outputs, Session, reactive
 
@@ -21,4 +23,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         await session.bookmark()
 
 
-app = App(app_ui, server, bookmark_store="url")
+# Core apps must mount www/ themselves — App() has no equivalent of Shiny
+# Express's automatic www/ static mount.
+app = App(
+    app_ui,
+    server,
+    static_assets={"/": Path(__file__).parent / "www"},
+    bookmark_store="url",
+)

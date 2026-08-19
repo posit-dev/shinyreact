@@ -37,7 +37,7 @@ never tears the SVG down and re-mounts it.
 ```
 examples/01-hello/
 ├── app.py            # Express: set_react_page() + 2 reactive_output outputs
-├── app-core.py       # Core: page_react_html() + App(app_ui, server), same outputs
+├── app-core.py       # Core: page_react_html() + App(..., static_assets=), same outputs
 ├── app.R             # R: page_react_html() + reactive_output, same outputs
 ├── faithful.py       # Old Faithful waiting times + a stdlib-only binner (Python)
 ├── faithful.csv      # base R's `faithful` dataset, exported for the Python servers
@@ -55,6 +55,11 @@ data exported so the Python servers don't need a data dependency. R's outputs
 return `NULL` until the client's first `bins` message arrives (Python raises a
 silent exception instead), and wrap the histogram vectors in `I()` so a
 single-bin result still serializes as a JSON array rather than a scalar.
+
+`app-core.py` passes `static_assets={"/": .../www}` to `App()`. Shiny Express
+(`app.py`) and R's `runApp()` (`app.R`) both mount the app directory's `www/`
+automatically; Core's `App()` does not, so without it `index.html` loads and
+then 404s on `app.js` and `main.css`.
 
 ## Bridge primitives used
 
