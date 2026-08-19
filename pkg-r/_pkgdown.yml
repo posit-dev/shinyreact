@@ -3,7 +3,7 @@ template:
   bootstrap: 5
 reference:
   - title: Pages
-    contents: [page_bare, page_react_html, page_react_dep]
+    contents: [page_bare, page_react, page_react_html, page_react_dep]
   - title: Outputs
     contents: [reactive_output]
   - title: Messaging

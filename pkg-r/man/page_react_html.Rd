@@ -2,21 +2,31 @@
 % Please edit documentation in R/page.R
 \name{page_react_html}
 \alias{page_react_html}
-\title{Serve a static React \code{index.html} (the \code{ui.tsx} pattern)}
+\title{Serve a React \code{index.html} document (the \code{ui.tsx} pattern)}
 \usage{
 page_react_html(path = "www/index.html")
 }
 \arguments{
-\item{path}{Path to the HTML file. Defaults to \code{"www/index.html"}, relative
-to the working directory.}
+\item{path}{Path to the HTML document. Defaults to \code{"www/index.html"},
+relative to the working directory.}
 }
 \value{
 UI suitable for \code{shinyApp(ui = ...)}.
 }
 \description{
-Reads an HTML file and attaches the shinyreact page-level dependency. Use as
-the \code{ui} argument: \code{shinyApp(ui = page_react_html(), server = ...)}. Works
-with plain HTML (no \code{{{ headContent() }}} template syntax required).
+Reads a complete HTML document — the kind a Vite build emits — and injects
+the shinyreact page-level dependencies into it via
+\code{\link[htmltools:htmlTemplate]{htmltools::htmlTemplate()}}. The document must contain a
+\code{{{ headContent() }}} marker inside \verb{<head>}; Shiny's and shinyreact's
+script/link tags render there. Use as the \code{ui} argument:
+\code{shinyApp(ui = page_react_html(), server = ...)}.
+}
+\details{
+Assets the document references (your bundle's JS/CSS) should live in \verb{www/},
+where Shiny serves them statically.
+
+For apps that don't need to own the HTML document, prefer \code{\link[=page_react]{page_react()}} —
+it requires no HTML file at all.
 }
 \section{Path resolution}{
 

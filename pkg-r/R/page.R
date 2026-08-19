@@ -11,11 +11,74 @@ page_bare <- function(..., title = NULL, lang = "en") {
   shiny::bootstrapPage(..., title = title, lang = lang)
 }
 
-#' Serve a static React `index.html` (the `ui.tsx` pattern)
+#' Create a React page from conventional assets — no HTML file required
 #'
-#' Reads an HTML file and attaches the shinyreact page-level dependency. Use as
-#' the `ui` argument: `shinyApp(ui = page_react_html(), server = ...)`. Works
-#' with plain HTML (no `{{ headContent() }}` template syntax required).
+#' The zero-configuration page for the `ui.tsx` pattern: the server emits no
+#' body HTML at all. Attaches the shinyreact bundle plus your app's entry
+#' assets, discovered at `www/ui.js` and `www/ui.css` (relative to the working
+#' directory — the app directory under `shiny::runApp()`). Your JS owns the
+#' DOM: create and append your own mount container, e.g.
+#' `ReactDOM.createRoot(document.body.appendChild(document.createElement("div")))`.
+#'
+#' `ui.js` is required (a missing file warns, pointing at the resolved path);
+#' `ui.css` is attached only when it exists. Both are served as an
+#' [htmltools::htmlDependency] versioned by `ui.js`'s mtime, so the browser
+#' re-fetches after every edit — unlike raw `<script src=...>` tags in a
+#' hand-written HTML file, which the browser caches.
+#'
+#' @param ... Extra children or [htmltools::htmlDependency] objects.
+#' @param src_dir Directory containing the assets. Defaults to `"www"`,
+#'   relative to the working directory.
+#' @param js_file JS entry filename within `src_dir`. Defaults to `"ui.js"`.
+#' @param css_file CSS filename within `src_dir`. Defaults to `"ui.css"`.
+#' @param title Page title. Defaults to the app folder's name (`src_dir`'s
+#'   parent when `src_dir` is a `www` directory).
+#' @param lang HTML `lang` attribute.
+#' @return UI suitable for `shinyApp(ui = ...)`.
+#' @export
+page_react <- function(
+  ...,
+  src_dir = "www",
+  js_file = "ui.js",
+  css_file = "ui.css",
+  title = NULL,
+  lang = "en"
+) {
+  base_dir <-
+    if (basename(src_dir) == "www") {
+      dirname(normalizePath(src_dir, mustWork = FALSE))
+    } else {
+      normalizePath(src_dir, mustWork = FALSE)
+    }
+  app_name <- basename(base_dir)
+  page_bare(
+    shinyreact_dep_page(),
+    page_react_dep(
+      src_dir,
+      js_file = js_file,
+      css_file = css_file,
+      name = app_name
+    ),
+    ...,
+    title = if (is.null(title)) app_name else title,
+    lang = lang
+  )
+}
+
+#' Serve a React `index.html` document (the `ui.tsx` pattern)
+#'
+#' Reads a complete HTML document — the kind a Vite build emits — and injects
+#' the shinyreact page-level dependencies into it via
+#' [htmltools::htmlTemplate()]. The document must contain a
+#' `{{ headContent() }}` marker inside `<head>`; Shiny's and shinyreact's
+#' script/link tags render there. Use as the `ui` argument:
+#' `shinyApp(ui = page_react_html(), server = ...)`.
+#'
+#' Assets the document references (your bundle's JS/CSS) should live in `www/`,
+#' where Shiny serves them statically.
+#'
+#' For apps that don't need to own the HTML document, prefer [page_react()] —
+#' it requires no HTML file at all.
 #'
 #' @section Path resolution:
 #' A relative `path` resolves against the process working directory. Under
@@ -25,8 +88,8 @@ page_bare <- function(..., title = NULL, lang = "en") {
 #' directory — there is nothing to resolve against outside the working
 #' directory. Pass an absolute path if you need to be independent of it.
 #'
-#' @param path Path to the HTML file. Defaults to `"www/index.html"`, relative
-#'   to the working directory.
+#' @param path Path to the HTML document. Defaults to `"www/index.html"`,
+#'   relative to the working directory.
 #' @return UI suitable for `shinyApp(ui = ...)`.
 #' @export
 page_react_html <- function(path = "www/index.html") {
@@ -37,12 +100,22 @@ page_react_html <- function(path = "www/index.html") {
              {.path {getwd()}}."
     ))
   }
-  # Read the file verbatim rather than readLines() + paste(collapse = "\n"),
-  # which drops a trailing newline and rewrites CRLF -- Python's read_text() is
-  # byte-exact, so the same index.html must render identically (#184).
   # brio::read_file() always reads UTF-8 and never touches line endings.
   html <- brio::read_file(path)
-  htmltools::tagList(shinyreact_dep_page(), htmltools::HTML(html))
+  if (!grepl("{{ headContent() }}", html, fixed = TRUE)) {
+    cli::cli_abort(c(
+      "{.path {path}} must be a complete HTML document containing a
+       {.code {{{{ headContent() }}}}} marker inside {.code <head>}.",
+      "i" = "shinyreact's script and stylesheet tags render at the marker.",
+      "i" = "For a page without an HTML file, use {.fn page_react} instead."
+    ))
+  }
+  ui <- htmltools::htmlTemplate(path, document_ = TRUE)
+  htmltools::attachDependencies(
+    ui,
+    list(shinyreact_dep(), config_head_dep()),
+    append = TRUE
+  )
 }
 
 #' HTML dependency for a downstream package's own JS/CSS bundle
