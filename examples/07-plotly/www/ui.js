@@ -38,5 +38,9 @@ function App() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
+// No mount div in the generated page -- create the container and append it
+// to <body>. The script is deferred, so document.body is parsed by now.
+const root = ReactDOM.createRoot(
+  document.body.appendChild(document.createElement("div")),
+);
 root.render(h(App));

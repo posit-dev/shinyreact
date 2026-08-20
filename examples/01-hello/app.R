@@ -5,7 +5,7 @@ library(shinyreact)
 # from the faithful.csv exported next to this file.
 waiting <- faithful$waiting
 
-ui <- page_react_html("www/index.html")
+ui <- page_react() # discovers www/ui.js + www/ui.css
 
 server <- function(input, output, session) {
   # input$bins is NULL until the client's first useShinyInput("bins", 30)

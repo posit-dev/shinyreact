@@ -21,9 +21,8 @@ The result: ~20 lines of server logic, versus ~80 lines wrestling with observers
 examples/02-columns/
 ├── app.py            # set_react_page() + 1 reactive_output (column_data) + 1 reactive.effect on input.move_item
 └── www/
-    ├── index.html
-    ├── app.js        # raw React.createElement (Column + ItemRow components)
-    └── main.css
+    ├── ui.js         # raw React.createElement (Column + ItemRow components)
+    └── ui.css
 ```
 
 Same no-build shape as [01-hello](../01-hello/). No `package.json`, no bundler.

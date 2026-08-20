@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `shinyreact` is a monorepo providing React UI infrastructure for Shiny (Python and R). It provides zero UI components — it is the bridge between a Shiny server that contains only reactive computation and a React client the app author owns.
 
-The repo ships one first-class pattern: the **`ui.tsx` pattern** — `set_react_page()` (Python Express) / `page_react_html()` (Python Core, R) bootstraps a static `www/index.html` hosting a React client whose entry conventionally lives in `ui.tsx`; the client and server communicate through the `useShinyInput` / `useShinyOutputValue` hook family. See `DESIGN.md` for background.
+The repo ships one first-class pattern: the **`ui.tsx` pattern** — `set_react_page()` (Python Express) / `page_react()` (Python Core, R) bootstraps a React client whose entry conventionally lives in `ui.tsx` (compiled to `www/ui.js`, discovered automatically); the client and server communicate through the `useShinyInput` / `useShinyOutputValue` hook family. See `DESIGN.md` for background.
 
 ## Terminology
 
 **`ui.tsx`** is the canonical name of the pattern. **Never write "SPA", "Single Page App", "Single-Page Application", "traditional pattern", `client-ui`, or `ui-object`** in new content (docs, comments, commit messages, PR/issue text).
 
-- **`ui.tsx` pattern** — UI defined in a client-side codebase whose entry is conventionally `ui.tsx` (or `App.jsx`, or `app.js` for no-build); bootstrapped from the app file via `set_react_page()` / `page_react_html()`. `ui.tsx` is the *idiomatic* canonical name — examples may use simpler variants like `www/app.js` (no-build) or `src/App.jsx` (Vite + JSX). Treat `ui.tsx` as a *role label* for the React entry, not a strict filename requirement.
+- **`ui.tsx` pattern** — UI defined in a client-side codebase whose entry is conventionally `ui.tsx` (or `ui.jsx`, or `ui.js` for no-build); bootstrapped from the app file via `set_react_page()` / `page_react()` (or `page_react_html()` for apps that own a full HTML document). `ui.tsx` is the *idiomatic* canonical name — examples use the same role at different tiers: `www/ui.js` (no-build) or `src/ui.jsx` (Vite + JSX, built to `www/ui.js`). Treat `ui.tsx` as a *role label* for the React entry, not a strict filename requirement.
 - The phrase "traditional Shiny" is fine when it refers to vanilla Shiny (no shinyreact involved).
 - The repo formerly also shipped an **`app.py` pattern** (server-side JSON-spec rendering via `Node` / `render_react` / `page_react`). It was removed in #168; see the tracking comment on #167 for git-history pointers if you encounter stale references.
 
@@ -91,17 +91,19 @@ The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundle
 
 - `@shinyreact.reactive_output` — `Renderer[Jsonifiable]` subclass; passes raw JSON data through for `useShinyOutputValue()` hooks, with no placeholder (`auto_output_ui()` returns `None`)
 - `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
-- `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html`; auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
-- `shinyreact.page_react_html(path="www/index.html")` — Core-mode helper that serves a static `www/index.html` as the `ui` argument of `App(ui=..., server=...)`; attaches the shinyreact dep. The Core counterpart to the Express-only `set_react_page()`. Unlike `set_react_page`, it does not auto-discover renderer dependencies
+- `shinyreact.set_react_page(path=None)` — Express helper; with no args serves `www/index.html` when present, else discovers `www/ui.js` / `www/ui.css` and emits no body HTML. Auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
+- `shinyreact.page_react(src_dir=None, js_file="ui.js", css_file="ui.css", title=None)` — Core-mode zero-config page: discovers `www/ui.js` / `www/ui.css` next to the calling module, serves them as an mtime-versioned dependency (cache-busted), title defaults to the app folder name; the client appends its own mount container to `<body>`
+- `shinyreact.page_react_html(path="www/index.html")` — Core-mode helper that serves an HTML file as the `ui` argument of `App(ui=..., server=...)`; attaches the shinyreact dep. In Python the file is a body *fragment* (full-document support is blocked on an upstream py-shiny gap); in R it must be a complete document with a `{{ headContent() }}` marker (htmltools `htmlTemplate()`). Neither auto-discovers renderer dependencies
 - `shinyreact.page_bare(...)` / `shinyreact.page_react_dep(...)` — escape-hatch page builder and app-bundle `HTMLDependency` helper
 - Bookmark restore + protocol handshake: page entry points emit a `<script type="application/json" id="shinyreact-config">` tag carrying the wire-protocol version and any restored input values (`_bookmark.py` / `bookmark.R`); the bundle asserts the protocol major version and seeds `useShinyInput` initial values from it; the config tag is the only delivery channel (`window.shinyreact._restore` is a write-only DevTools sentinel)
 
 ### R package
 
-The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reactive_output`, `page_bare`, `page_react_html`, `page_react_dep`, `send_message`. Key shape differences from Python:
+The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reactive_output`, `page_bare`, `page_react`, `page_react_html`, `page_react_dep`, `send_message`. Key shape differences from Python:
 
 - `reactive_output(expr, ...)` is a **function** assigned to `output$id`, not a decorator/`Renderer` class.
-- `page_react_html(path = "www/index.html")` matches Python's `page_react_html()`; Python additionally has the Express-only `set_react_page()`.
+- `page_react(src_dir = "www", ...)` matches Python's `page_react()` (R resolves against the working directory; Python against the calling module).
+- `page_react_html(path = "www/index.html")` requires a complete HTML document with a `{{ headContent() }}` marker — unlike Python's, which still takes a body fragment (upstream py-shiny gap; see the `page_react_html` docstring). Python additionally has the Express-only `set_react_page()`.
 - `send_message(session, type, data)` matches Python.
 - `page_react_dep()` takes `src_dir` as a required first argument; Python's is keyword-only and infers `src_dir`/`name` from the caller's `__file__` when omitted (R has no equivalent). Pass `src_dir=` explicitly in Python too if you wrap the call in a helper — the inference reads the *immediate* calling frame.
 

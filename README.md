@@ -13,7 +13,7 @@ This repo ships per-language packages:
 
 ## How it works
 
-`shinyreact` implements the **`ui.tsx` pattern**: UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `App.jsx`, or `app.js` for no-build):
+`shinyreact` implements the **`ui.tsx` pattern**: UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `ui.jsx`, or `ui.js` for no-build):
 
 1. The Shiny server contains only reactive computation; it bootstraps a static page — `set_react_page()` (Express) or `page_react_html()` (Core) in Python, `page_react_html()` in R
 2. A static `www/index.html` plus your React client serve the UI
