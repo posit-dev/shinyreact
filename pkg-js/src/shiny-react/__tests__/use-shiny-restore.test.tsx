@@ -48,14 +48,17 @@ describe("applyRestoredValues", () => {
     });
   });
 
-  it("config tag restore takes precedence over the legacy _restore global", () => {
-    setConfigTag({ protocolVersion: "1.0", restore: { foo: "from-config" } });
+  it("ignores a pre-set window.shinyreact._restore global (config tag is the only channel)", () => {
     (window as any).shinyreact = { _restore: { foo: "from-legacy" } };
     const registry = new InputRegistry();
 
     applyRestoredValues(registry);
 
-    expect(registry.get<string>("foo")?.getValue()).toBe("from-config");
+    expect(registry.size()).toBe(0);
+    expect((window as any).shinyreact._restore).toEqual({
+      "-applied": true,
+      "-values": {},
+    });
   });
 
   it("config tag without restore writes the empty sentinel", () => {
@@ -78,21 +81,7 @@ describe("applyRestoredValues", () => {
     expect(() => applyRestoredValues(registry)).toThrowError(/999\.0/);
   });
 
-  it("seeds registry entries from window.shinyreact._restore and replaces it with sentinel", () => {
-    (window as any).shinyreact = { _restore: { foo: "hello", num: 42 } };
-    const registry = new InputRegistry();
-
-    applyRestoredValues(registry);
-
-    expect(registry.get<string>("foo")?.getValue()).toBe("hello");
-    expect(registry.get<number>("num")?.getValue()).toBe(42);
-    expect((window as any).shinyreact._restore).toEqual({
-      "-applied": true,
-      "-values": { foo: "hello", num: 42 },
-    });
-  });
-
-  it("with no _restore set, leaves registry empty and writes empty sentinel", () => {
+  it("with no config tag, leaves registry empty and writes empty sentinel", () => {
     (window as any).shinyreact = {};
     const registry = new InputRegistry();
 
@@ -115,7 +104,7 @@ describe("applyRestoredValues", () => {
   });
 
   it("re-running does not clobber the -values snapshot", () => {
-    (window as any).shinyreact = { _restore: { foo: "hello" } };
+    setConfigTag({ protocolVersion: "1.0", restore: { foo: "hello" } });
     const registry = new InputRegistry();
 
     applyRestoredValues(registry);
@@ -128,7 +117,7 @@ describe("applyRestoredValues", () => {
   });
 
   it("does not call shiny setInputValue (uses add, not setValue)", () => {
-    (window as any).shinyreact = { _restore: { foo: "hello" } };
+    setConfigTag({ protocolVersion: "1.0", restore: { foo: "hello" } });
     const registry = new InputRegistry();
     const entry = vi.spyOn(registry, "add");
 
@@ -141,7 +130,7 @@ describe("applyRestoredValues", () => {
   });
 
   it("drains pendingSubscribers when seeding via add()", () => {
-    (window as any).shinyreact = { _restore: { foo: "hello" } };
+    setConfigTag({ protocolVersion: "1.0", restore: { foo: "hello" } });
     const registry = new InputRegistry();
     const subscriber = vi.fn();
     // Subscribe before the producer adds — should queue in pendingSubscribers.
@@ -154,15 +143,13 @@ describe("applyRestoredValues", () => {
   });
 
   it("uses a null-prototype object for the -values snapshot to prevent prototype pollution", () => {
-    // Mirror the wire shape that Python emits via `JSON.parse(...)` — that
-    // path turns "__proto__" / "constructor" into own data properties, not
-    // prototype setters. We construct the restore object the same way so
-    // the test stresses the assignment side of applyRestoredValues, not
-    // the JS object-literal quirk.
-    const restore: Record<string, unknown> = JSON.parse(
-      '{"__proto__":"evil","constructor":"x","foo":"ok"}',
-    );
-    (window as any).shinyreact = { _restore: restore };
+    // The config tag arrives through JSON.parse, which turns "__proto__" /
+    // "constructor" into own data properties, not prototype setters. The
+    // snapshot assignment side of applyRestoredValues must preserve that.
+    setConfigTag({
+      protocolVersion: "1.0",
+      restore: JSON.parse('{"__proto__":"evil","constructor":"x","foo":"ok"}'),
+    });
     const registry = new InputRegistry();
 
     applyRestoredValues(registry);
@@ -220,7 +207,7 @@ describe("useShinyInput + restore", () => {
   });
 
   it("adopts a restored value as initial render value, ignoring defaultValue", () => {
-    (window as any).shinyreact = { _restore: { foo: "hello" } };
+    setConfigTag({ protocolVersion: "1.0", restore: { foo: "hello" } });
 
     let utils!: ReturnType<typeof render>;
     act(() => {
@@ -241,8 +228,8 @@ describe("useShinyInput + restore", () => {
     expect(utils.getByTestId("v").textContent).toBe("default");
   });
 
-  it("namespaced ids: _restore = {'ns-foo': 'hello'} is adopted by useShinyInput('foo', _, {namespace:'ns'})", () => {
-    (window as any).shinyreact = { _restore: { "ns-foo": "hello" } };
+  it("namespaced ids: restore {'ns-foo': 'hello'} is adopted by useShinyInput('foo', _, {namespace:'ns'})", () => {
+    setConfigTag({ protocolVersion: "1.0", restore: { "ns-foo": "hello" } });
 
     function NsProbe() {
       const [v] = useShinyInput<string>("foo", "default", { namespace: "ns" });

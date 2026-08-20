@@ -94,7 +94,7 @@ The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundle
 - `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html`; auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
 - `shinyreact.page_react_html(path="www/index.html")` — Core-mode helper that serves a static `www/index.html` as the `ui` argument of `App(ui=..., server=...)`; attaches the shinyreact dep. The Core counterpart to the Express-only `set_react_page()`. Unlike `set_react_page`, it does not auto-discover renderer dependencies
 - `shinyreact.page_bare(...)` / `shinyreact.page_react_dep(...)` — escape-hatch page builder and app-bundle `HTMLDependency` helper
-- Bookmark restore + protocol handshake: page entry points emit a `<script type="application/json" id="shinyreact-config">` tag carrying the wire-protocol version and any restored input values (`_bookmark.py` / `bookmark.R`); the bundle asserts the protocol major version and seeds `useShinyInput` initial values from it (legacy `window.shinyreact._restore` is still read as a fallback)
+- Bookmark restore + protocol handshake: page entry points emit a `<script type="application/json" id="shinyreact-config">` tag carrying the wire-protocol version and any restored input values (`_bookmark.py` / `bookmark.R`); the bundle asserts the protocol major version and seeds `useShinyInput` initial values from it; the config tag is the only delivery channel (`window.shinyreact._restore` is a write-only DevTools sentinel)
 
 ### R package
 

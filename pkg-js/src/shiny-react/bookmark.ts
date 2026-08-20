@@ -6,12 +6,12 @@ import { assertProtocolCompatible, readShinyReactConfig } from "./config";
  * Adopt bookmarked input values into the input registry.
  *
  * Reads the `restore` payload from the `#shinyreact-config` JSON script tag
- * emitted by the server's page entry points, falling back to the legacy
- * `window.shinyreact._restore` global (set by the inline <script> older
- * servers emit) when the tag is absent. Seeds each entry into `registry` via
- * `add()` so the value is stored without sending to Shiny, and records a
- * sentinel `{ "-applied": true, "-values": <appliedMap> }` at
- * `window.shinyreact._restore` for DevTools inspection.
+ * emitted by the server's page entry points — the only delivery channel.
+ * Seeds each entry into `registry` via `add()` so the value is stored
+ * without sending to Shiny, and records a sentinel
+ * `{ "-applied": true, "-values": <appliedMap> }` at
+ * `window.shinyreact._restore` for DevTools inspection. The sentinel is an
+ * output only; nothing is ever read from it as restore input.
  *
  * Also performs the protocol handshake: when the config tag carries a
  * `protocolVersion`, the major version must match this client's
@@ -39,10 +39,7 @@ export function applyRestoredValues(registry: InputRegistry): void {
   if (config?.protocolVersion) {
     assertProtocolCompatible(config.protocolVersion);
   }
-
-  // The config tag wins; `window.shinyreact._restore` is the pre-config
-  // delivery channel kept for one release of back-compat.
-  const restore = config?.restore ?? existing;
+  const restore = config?.restore;
 
   // Null-prototype object for the debug snapshot so an assignment with key
   // "__proto__" or "constructor" cannot clobber the prototype chain. Even
