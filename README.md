@@ -84,7 +84,7 @@ shapes. The list below is roughly ordered from "closest to `shinyreact`" to
 
   - **[Appsilon/shiny.react](https://github.com/Appsilon/shiny.react)** & **[Appsilon/shiny.fluent](https://github.com/Appsilon/shiny.fluent)**: (R) A generic toolbox for wrapping React component libraries as R functions; `shiny.fluent` is the flagship consumer, exposing Microsoft's Fluent UI to R.
 
-  - **[posit-dev/shiny-bindings](https://github.com/posit-dev/shiny-bindings)**: (npm, py) `@posit-dev/shiny-bindings-react` and the Shiny for Python [custom components](https://shiny.posit.co/py/docs/custom-components-pkg.html) workflow it backs — ship a custom React input/output as a Python package. See also [nstrayer/py-shiny-custom-react-component](https://github.com/nstrayer/py-shiny-custom-react-component).
+  - **[posit-dev/shiny-bindings](https://github.com/posit-dev/shiny-bindings)**: (npm, py) `@posit-dev/shiny-bindings-react` and the Shiny for Python [custom components](https://shiny.posit.co/py/docs/custom-components-pkg.html) workflow it backs. Ship a custom React input/output as a Python package. See also [nstrayer/py-shiny-custom-react-component](https://github.com/nstrayer/py-shiny-custom-react-component).
 
   - **[pvictor/shinyReactWidgets](https://github.com/pvictor/shinyReactWidgets)**: (R) An early collection of React-based input widgets for Shiny apps.
 
