@@ -10,7 +10,13 @@ from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 from shiny.session import get_current_session
 
-from ._dep import _dep_page, _file_mtime_int
+from ._app import ReactHtmlDocument
+from ._bookmark import _config_script_tag
+from ._dep import _dep, _dep_page, _file_mtime_int
+
+# The head-injection marker a page_react_html() document must contain. The
+# same literal works for R's htmlTemplate(), where it is evaluated as code.
+_HEAD_CONTENT_MARKER = "{{ headContent() }}"
 
 if TYPE_CHECKING:
     # Private, but it is the only name for HTMLDependency's stylesheet entry.
@@ -303,52 +309,33 @@ def set_react_page(path: str | Path | None = None) -> None:
     page_opts(page_fn=_build_react_page_fn(index_path))
 
 
-def page_react_html(path: str | Path = "www/index.html") -> TagList:
-    """Serve a static React ``index.html`` (the ui.tsx pattern, Core API).
+def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
+    """Serve a React ``index.html`` document (the ui.tsx pattern, Core API).
 
-    The Core-mode counterpart to :func:`set_react_page`. Reads an HTML file,
-    attaches the shinyreact page-level dependency, and returns UI suitable for
-    use as the ``ui`` argument of :class:`shiny.App`. Use this when you write a
-    Core-style app (``App(app_ui, server)``); use :func:`set_react_page` for
-    Shiny Express apps.
+    Reads a complete HTML document — the kind a Vite build emits — and injects
+    Shiny's and shinyreact's dependencies into it. The document must contain a
+    ``{{ headContent() }}`` marker inside ``<head>``; the script/link tags
+    render at the marker. Matches R's ``page_react_html()``
+    (``htmltools::htmlTemplate()``).
 
-    Unlike :func:`set_react_page`, this does not auto-discover dependencies
-    from traditional Shiny renderers — it only attaches the shinyreact bundle.
+    Pass the result to :class:`shinyreact.App` (not ``shiny.App`` — see
+    `posit-dev/py-shiny#2462
+    <https://github.com/posit-dev/py-shiny/issues/2462>`_)::
 
-    Serving the client's files
-    --------------------------
-    This function only reads ``index.html``; it does not serve the sibling
-    files that ``index.html`` references. Shiny Express mounts the app
-    directory's ``www/`` at ``/`` automatically, but :class:`shiny.App` does
-    not, so a Core app must do it explicitly — otherwise the page loads and
-    then 404s on its own scripts and stylesheets::
+        from shinyreact import App, page_react_html
 
-        from pathlib import Path
-        from shiny import App
-        from shinyreact import page_react_html
+        app = App(page_react_html(), server)
 
-        app = App(
-            page_react_html(),
-            server,
-            static_assets={"/": Path(__file__).parent / "www"},
-        )
+    ``shinyreact.App`` also mounts the document's directory at ``/``, so the
+    assets the document references (your bundle's JS/CSS) are served when they
+    live next to it (conventionally ``www/``).
 
-    (R's ``shiny::runApp()`` serves ``www/`` next to ``app.R`` automatically,
-    so the R counterpart needs no equivalent.)
-
-    .. note::
-
-       The file is a body *fragment*, not a complete document — Shiny owns
-       ``<html>``/``<head>``. R's ``page_react_html()`` instead accepts a full
-       document with a ``{{ headContent() }}`` marker (htmltools
-       ``htmlTemplate()``); Python cannot match that yet because ``shiny.App``
-       has no way to accept a pre-rendered document with extra dependencies
-       (``HTMLTextDocument`` is only used internally for ``ui=Path``, with no
-       dependency-injection hook). Until that upstream gap closes, prefer
-       :func:`page_react` — it needs no HTML file at all.
+    For apps that don't need to own the HTML document, prefer
+    :func:`page_react` — it requires no HTML file at all and works with plain
+    ``shiny.App``.
 
     Args:
-        path: Path to the HTML file. Absolute paths are used verbatim;
+        path: Path to the HTML document. Absolute paths are used verbatim;
             relative paths resolve against the caller module's directory, or
             against :func:`pathlib.Path.cwd` when there is no caller
             ``__file__``. Defaults to ``"www/index.html"``.
@@ -365,7 +352,33 @@ def page_react_html(path: str | Path = "www/index.html") -> TagList:
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
     index_html = index_path.read_text()
-    return TagList(_dep_page(), HTML(index_html))
+    if _HEAD_CONTENT_MARKER not in index_html:
+        raise ValueError(
+            f"{index_path} must be a complete HTML document containing a "
+            f"'{_HEAD_CONTENT_MARKER}' marker inside <head> — shinyreact's "
+            "script and stylesheet tags render at the marker. For a page "
+            "without an HTML file, use page_react() instead."
+        )
+
+    # Shiny's own web assets must be part of the document's dependency list —
+    # shiny.App's usual _render_page() path would add them, but a pre-rendered
+    # document bypasses it (this mirrors shiny's App(ui=Path) route; the
+    # shiny.html_dependencies module is not re-exported, so this is a confined
+    # internal use, like the shiny___ wrappers in pkg-r/R/bookmark.R).
+    from shiny.html_dependencies import jquery_deps, require_deps, shiny_deps
+
+    return ReactHtmlDocument(
+        index_html,
+        src_dir=index_path.parent,
+        deps=[
+            require_deps(),
+            jquery_deps(),
+            *shiny_deps(include_css=True),
+            _dep(),
+            _config_script_tag(),
+        ],
+        deps_replace_pattern=_HEAD_CONTENT_MARKER,
+    )
 
 
 def _collect_renderer_deps(renderer: Renderer, deps: list[HTMLDependency]) -> None:

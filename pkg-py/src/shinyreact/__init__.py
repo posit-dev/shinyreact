@@ -1,6 +1,7 @@
 from . import (
     _input_handler,  # noqa: F401  (side-effect import: registers input handlers)
 )
+from ._app import App
 from ._page import (
     page_bare,
     page_react,
@@ -12,6 +13,7 @@ from ._reactive_output import reactive_output
 from ._send_message import send_message
 
 __all__ = [
+    "App",
     "page_bare",
     "page_react",
     "page_react_dep",

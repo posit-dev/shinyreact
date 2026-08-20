@@ -47,25 +47,52 @@ def test_page_react_dep_falls_back_to_cwd_without_file(tmp_path, monkeypatch):
     assert dep.name == tmp_path.name
 
 
-def test_page_react_html_attaches_dep(tmp_path):
+def _full_doc(body="<div id='root'></div>", title="T"):
+    # Mirrors R's full_doc() in pkg-r/tests/testthat/test-page.R.
+    return (
+        f"<!DOCTYPE html><html><head><title>{title}</title>"
+        "{{ headContent() }}</head><body>" + body + "</body></html>"
+    )
+
+
+def _render_doc(doc) -> str:
+    return doc.render(lib_prefix="lib/")["html"]
+
+
+def test_page_react_html_renders_deps_into_template_head(tmp_path):
+    # Mirrors R's "page_react_html renders shinyreact deps into the template head".
     from shinyreact import page_react_html
 
     index = tmp_path / "index.html"
-    index.write_text('<div id="root"></div>')
-    ui = page_react_html(index)
-    deps = ui.get_dependencies()
-    dep_names = [d.name for d in deps]
-    assert "shinyreact" in dep_names
+    index.write_text(_full_doc())
+    html = _render_doc(page_react_html(index))
+    assert "shinyreact.js" in html
+    assert 'id="shinyreact-config"' in html
+    # The user's document is the only <html> — no nested document.
+    assert html.count("<html") == 1
+    assert "<title>T</title>" in html
 
 
-def test_page_react_html_includes_file_html(tmp_path):
+def test_page_react_html_preserves_document_body(tmp_path):
+    # Mirrors R's "page_react_html preserves the document body".
     from shinyreact import page_react_html
 
     index = tmp_path / "index.html"
-    index.write_text('<div id="root"></div>')
-    ui = page_react_html(index)
-    rendered = str(ui.tagify())
-    assert 'id="root"' in rendered  # the user's own mount, from their file
+    index.write_text(_full_doc(body="<main class='xyz'>content</main>"))
+    html = _render_doc(page_react_html(index))
+    assert "<main class='xyz'>content</main>" in html
+
+
+def test_page_react_html_errors_without_marker(tmp_path):
+    # Mirrors R's "page_react_html errors on a document without the marker".
+    from shinyreact import page_react_html
+
+    index = tmp_path / "index.html"
+    index.write_text("<!DOCTYPE html><html><head></head><body>hi</body></html>")
+    with pytest.raises(ValueError, match="headContent"):
+        page_react_html(index)
+    with pytest.raises(ValueError, match="page_react"):
+        page_react_html(index)
 
 
 def test_page_react_html_missing_file_raises(tmp_path):
@@ -79,18 +106,18 @@ def test_page_react_html_falls_back_to_cwd_without_file(tmp_path, monkeypatch):
     """page_react_html() falls back to CWD when the caller has no __file__."""
     www = tmp_path / "www"
     www.mkdir()
-    (www / "index.html").write_text('<div id="root"></div>')
+    (www / "index.html").write_text(_full_doc(body="<b>hi</b>"))
     monkeypatch.chdir(tmp_path)
 
     captured: dict[str, object] = {}
     src = (
         "from shinyreact import page_react_html\n"
-        "captured['ui'] = page_react_html()\n"  # relative default resolves to CWD
+        "captured['doc'] = page_react_html()\n"  # relative default resolves to CWD
     )
     exec(compile(src, "<test>", "exec"), {"captured": captured})
 
-    rendered = str(captured["ui"].tagify())
-    assert 'id="root"' in rendered
+    html = _render_doc(captured["doc"])
+    assert "<b>hi</b>" in html
 
 
 def _make_react_app(tmp_path, name="myapp", css=True):
