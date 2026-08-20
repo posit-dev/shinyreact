@@ -48,11 +48,12 @@ declare global {
 
 /**
  * Expose the public global API at `window.shinyreact`. Called once at bundle
- * boot. Preserves any pre-bundle assignment (e.g. `window.shinyreact._restore`
- * set by the head <script> emitted from Python's `_restore_script_tag`).
+ * boot. Nothing writes the namespace before the bundle runs — server state
+ * arrives via the `#shinyreact-config` JSON script tag, not the global — so
+ * this is a plain assignment.
  */
 export function installGlobal(): void {
-  window.shinyreact = Object.assign(window.shinyreact || {}, {
+  window.shinyreact = {
     useSetShinyInput,
     useShinyBusy,
     useShinyInput,
@@ -68,5 +69,5 @@ export function installGlobal(): void {
     ShinyOutput,
     React,
     ReactDOM,
-  });
+  };
 }
