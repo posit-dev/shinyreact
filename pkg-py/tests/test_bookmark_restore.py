@@ -213,12 +213,15 @@ def test_page_react_html_emits_restore_when_bookmark_active(
     tmp_path: Path,
 ) -> None:
     index = tmp_path / "index.html"
-    index.write_text("<div id='root'></div>")
+    index.write_text(
+        "<!DOCTYPE html><html><head>{{ headContent() }}</head>"
+        "<body><div id='root'></div></body></html>"
+    )
 
     ctx = RestoreContext()
     ctx.input = RestoreInputSet({"txt": "hello"})
     with restore_context_cm(ctx):
-        html = _rendered_html(page_react_html(index))
+        html = page_react_html(index).render(lib_prefix="lib/")["html"]
     assert _extract_restore_payload(html) == {"txt": "hello"}
 
 
@@ -226,8 +229,11 @@ def test_page_react_html_config_without_bookmark_has_no_restore(
     tmp_path: Path,
 ) -> None:
     index = tmp_path / "index.html"
-    index.write_text("<div id='root'></div>")
-    html = _rendered_html(page_react_html(index))
+    index.write_text(
+        "<!DOCTYPE html><html><head>{{ headContent() }}</head>"
+        "<body><div id='root'></div></body></html>"
+    )
+    html = page_react_html(index).render(lib_prefix="lib/")["html"]
     config = _extract_config(html)
     assert config == {"protocolVersion": PROTOCOL_VERSION}
 
