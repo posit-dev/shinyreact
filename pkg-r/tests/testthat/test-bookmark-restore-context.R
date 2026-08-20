@@ -76,13 +76,16 @@ test_that("page_react_html() emits the restore payload when a bookmark is active
   dir <- withr::local_tempdir()
   index <- file.path(dir, "index.html")
   writeLines(
-    "<!DOCTYPE html><html><body><div id='root'></div></body></html>",
+    paste0(
+      "<!DOCTYPE html><html><head>{{ headContent() }}</head>",
+      "<body><div id='root'></div></body></html>"
+    ),
     index
   )
 
   html <- with_restore_values(
     list(name = "Alice"),
-    as.character(htmltools::renderTags(page_react_html(index))$html)
+    render_document(page_react_html(index))
   )
   expect_identical(
     extract_restore_payload(html),
@@ -95,11 +98,14 @@ test_that("page_react_html() emits the config tag without restore when not bookm
   dir <- withr::local_tempdir()
   index <- file.path(dir, "index.html")
   writeLines(
-    "<!DOCTYPE html><html><body><div id='root'></div></body></html>",
+    paste0(
+      "<!DOCTYPE html><html><head>{{ headContent() }}</head>",
+      "<body><div id='root'></div></body></html>"
+    ),
     index
   )
 
-  html <- as.character(htmltools::renderTags(page_react_html(index))$html)
+  html <- render_document(page_react_html(index))
   config <- extract_config(html)
   expect_identical(config, list(protocolVersion = .protocol_version))
 })

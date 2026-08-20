@@ -6,11 +6,11 @@ state — no full page reload, no `vite build` wait.
 
 ## How it works
 
-Shiny serves `www/index.html` (which loads `www/app.js` as a module) and the
+Shiny serves a `set_react_page()`-generated page (which loads `www/ui.js` as a module) and the
 reactive WebSocket. A Vite dev server serves your React modules with Fast
-Refresh. The dev server writes `www/app.js` as a tiny stub that pulls the HMR
+Refresh. The dev server writes `www/ui.js` as a tiny stub that pulls the HMR
 client + your entry from the dev server; `npm run build` overwrites it with the
-real bundle. `index.html` never changes between modes.
+real bundle. The served page never changes between modes.
 
 Component code lives in `src/App.tsx` (the Fast Refresh boundary). The entry
 `src/ui.tsx` only mounts it — keep `createRoot()` there, never in a file that
@@ -23,7 +23,7 @@ externalized to the shared `window.shinyreact`.
 ## Develop (two terminals)
 
 ```bash
-# terminal 1 — Vite dev server (writes www/app.js as a dev stub, serves HMR)
+# terminal 1 — Vite dev server (writes www/ui.js as a dev stub, serves HMR)
 npm install
 npm run dev
 
@@ -44,7 +44,7 @@ Open the URL Shiny prints. Editing `app.py` reloads via Shiny; editing
 ## Build for production
 
 ```bash
-npm run build          # writes www/app.js (the real bundle)
+npm run build          # writes www/ui.js (the real bundle)
 uv run shiny run app.py
 ```
 

@@ -81,5 +81,9 @@
     );
   }
 
-  ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+  // No mount div in the generated page -- create the container and append it
+  // to <body>. The script is deferred, so document.body is parsed by now.
+  ReactDOM.createRoot(
+    document.body.appendChild(document.createElement("div")),
+  ).render(h(App));
 })();

@@ -1,4 +1,4 @@
 node_modules/
 package-lock.json
-www/app.js
-www/style.css
+www/ui.js
+www/ui.css

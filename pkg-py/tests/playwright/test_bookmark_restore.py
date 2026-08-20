@@ -35,9 +35,7 @@ def test_url_mode_restores_inputs(page: Page, bookmark_app: ShinyAppProc) -> Non
 
     # React tracks checkbox state in JS rather than the DOM `checked` attribute,
     # so verify via JS evaluation rather than to_be_checked().
-    checked = page.evaluate(
-        "document.querySelector('[data-testid=chk]').checked"
-    )
+    checked = page.evaluate("document.querySelector('[data-testid=chk]').checked")
     assert checked is True
 
     # The server-rendered output should reflect the restored inputs.
@@ -47,9 +45,7 @@ def test_url_mode_restores_inputs(page: Page, bookmark_app: ShinyAppProc) -> Non
     expect(echo).to_contain_text("checked=yes")
 
 
-def test_no_bookmark_renders_defaults(
-    page: Page, bookmark_app: ShinyAppProc
-) -> None:
+def test_no_bookmark_renders_defaults(page: Page, bookmark_app: ShinyAppProc) -> None:
     """Plain URL renders defaults and the _restore sentinel is applied."""
     page.goto(bookmark_app.url)
     _wait_for_shiny_initialized(page)
@@ -58,9 +54,7 @@ def test_no_bookmark_renders_defaults(
     expect(page.get_by_test_id("txt")).to_have_value("")
     expect(page.get_by_test_id("num")).to_have_value("0")
 
-    checked = page.evaluate(
-        "document.querySelector('[data-testid=chk]').checked"
-    )
+    checked = page.evaluate("document.querySelector('[data-testid=chk]').checked")
     assert checked is False
 
     # After shinyreact initialises without restore data the sentinel should show

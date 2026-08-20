@@ -183,7 +183,7 @@ function App() {
   );
 }
 
-// No mount div in index.html — create the container and append it to <body>.
+// No mount div in the generated page — create the container and append it to <body>.
 // The script is deferred, so document.body is parsed by the time this runs.
 const root = ReactDOM.createRoot(
   document.body.appendChild(document.createElement("div")),
