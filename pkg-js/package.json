@@ -1,17 +1,32 @@
 {
-  "name": "@shinyreact/js",
-  "private": true,
-  "version": "0.1.0",
+  "name": "@posit/shinyreact",
+  "version": "0.0.1",
+  "description": "React hooks and components for Shiny (shinyreact) — the ui.tsx pattern's client runtime",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/posit-dev/shinyreact.git",
+    "directory": "pkg-js"
+  },
   "type": "module",
+  "files": ["dist-npm"],
+  "exports": {
+    ".": {
+      "types": "./dist-npm/types/npm.d.ts",
+      "import": "./dist-npm/index.js"
+    }
+  },
   "scripts": {
-    "build": "vite build",
+    "build": "npm run build:iife && npm run build:npm",
+    "build:iife": "vite build",
+    "build:npm": "vite build --config vite.config.npm.ts && tsc -p tsconfig.npm.json",
     "watch": "vite build --watch",
     "lint": "tsc --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@posit/shiny": "^1.11.1",
@@ -21,6 +36,8 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^4.0.0",
     "jsdom": "^26.1.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
     "vitest": "^3.2.1"

@@ -7,6 +7,10 @@ vi.mock("../get-shiny", () => ({
 
 import { InputRegistry } from "../input-registry";
 import { applyRestoredValues } from "../bookmark";
+import {
+  _resetConfigTagRequirementForTesting,
+  requireShinyReactConfigTag,
+} from "../config";
 import * as React from "react";
 import { act, cleanup, render } from "@testing-library/react";
 import { _resetShinyReactInitializedForTesting, useShinyInput } from "../use-shiny";
@@ -72,6 +76,18 @@ describe("applyRestoredValues", () => {
       "-applied": true,
       "-values": {},
     });
+  });
+
+  it("strict mode (npm build): throws when the config tag is missing", () => {
+    requireShinyReactConfigTag();
+    try {
+      const registry = new InputRegistry();
+      expect(() => applyRestoredValues(registry)).toThrowError(
+        /upgrade the shinyreact/i,
+      );
+    } finally {
+      _resetConfigTagRequirementForTesting();
+    }
   });
 
   it("throws on a protocol major-version mismatch, naming both versions", () => {

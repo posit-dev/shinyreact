@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { type InputRegistry } from "./input-registry";
-import { assertProtocolCompatible, readShinyReactConfig } from "./config";
+import {
+  assertProtocolCompatible,
+  isShinyReactConfigTagRequired,
+  readShinyReactConfig,
+} from "./config";
 
 /**
  * Adopt bookmarked input values into the input registry.
@@ -36,6 +40,13 @@ export function applyRestoredValues(registry: InputRegistry): void {
   }
 
   const config = readShinyReactConfig();
+  if (config == null && isShinyReactConfigTagRequired()) {
+    throw new Error(
+      "shinyreact: no #shinyreact-config tag found in this page. The " +
+        "@posit/shinyreact client requires a shinyreact server recent " +
+        "enough to emit it — upgrade the shinyreact Python/R package.",
+    );
+  }
   if (config?.protocolVersion) {
     assertProtocolCompatible(config.protocolVersion);
   }

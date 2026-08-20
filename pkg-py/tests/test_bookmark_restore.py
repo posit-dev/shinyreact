@@ -261,3 +261,18 @@ def test_set_react_page_config_without_bookmark_has_no_restore(
     html = _rendered_html(page_fn())
     config = _extract_config(html)
     assert config == {"protocolVersion": PROTOCOL_VERSION}
+
+
+def test_protocol_fixture_round_trips() -> None:
+    # protocol/fixtures/config-restore.json is the shared wire-contract
+    # fixture (see protocol/README.md); the R and JS suites round-trip the
+    # same file. Emitting its restore payload through the config tag and
+    # parsing the tag back must reproduce the fixture exactly.
+    repo_root = Path(__file__).resolve().parents[2]
+    fixture = repo_root / "protocol" / "fixtures" / "config-restore.json"
+    if not fixture.exists():
+        pytest.skip("monorepo sources not available (installed-package run)")
+    expected = json.loads(fixture.read_text())
+    assert expected["protocolVersion"] == PROTOCOL_VERSION
+    html = _config_html(expected["restore"])
+    assert _extract_config(html) == expected

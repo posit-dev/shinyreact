@@ -86,3 +86,23 @@ describe("PROTOCOL_VERSION parity", () => {
     expect(rMatch?.[1]).toBe(PROTOCOL_VERSION);
   });
 });
+
+describe("protocol fixture", () => {
+  it("round-trips the shared wire-contract fixture", () => {
+    // protocol/fixtures/config-restore.json is shared with the Python and R
+    // suites (see protocol/README.md). Mirrors Python's
+    // test_protocol_fixture_round_trips.
+    let repoRoot = process.cwd();
+    while (!existsSync(join(repoRoot, "protocol")) && dirname(repoRoot) !== repoRoot) {
+      repoRoot = dirname(repoRoot);
+    }
+    const fixturePath = join(repoRoot, "protocol", "fixtures", "config-restore.json");
+    if (!existsSync(fixturePath)) return; // monorepo sources not available
+    const expected = JSON.parse(readFileSync(fixturePath, "utf8"));
+    expect(expected.protocolVersion).toBe(PROTOCOL_VERSION);
+    // Apply the server-side escaping rule (every "<" as backslash-u003c) when
+    // emitting, exactly as the Python/R emitters do.
+    setConfigTag(JSON.stringify(expected).replace(/</g, "\\u003c"));
+    expect(readShinyReactConfig()).toEqual(expected);
+  });
+});

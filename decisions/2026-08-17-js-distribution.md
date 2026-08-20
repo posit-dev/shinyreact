@@ -1,7 +1,7 @@
 # Shipping the JS runtime: npm package + HTMLDependency hybrid
 
 **Date:** 2026-08-17
-**Status:** Decided, not yet implemented
+**Status:** Decided; in progress — config tag + handshake (#198), page modes (#208, #214), protocol doc + dual build + publish workflow (npm-package PR). Remaining: first npm publish, 09-hmr conversion (needs a server-side switch to omit the IIFE bundle for npm-tier pages)
 **Issues:** [#172](https://github.com/posit-dev/shinyreact/issues/172) (spike), [#28](https://github.com/posit-dev/shinyreact/issues/28) (upstream npm publication)
 
 ## Context
