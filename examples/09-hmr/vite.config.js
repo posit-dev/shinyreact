@@ -18,7 +18,7 @@ export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     // serve only: writes www/app.js as the dev stub (apply:"serve" inside).
-    shinyreactDevStub({ entry: ENTRY, outFile: "www/app.js" }),
+    shinyreactDevStub({ entry: ENTRY, outFile: "www/ui.js" }),
   ],
   resolve: {
     // One React instance across App.tsx and the bundled shiny-react source.
@@ -43,7 +43,7 @@ export default defineConfig(({ command }) => ({
       entry: path.resolve(__dirname, ENTRY),
       formats: ["iife"],
       name: "HmrExample",
-      fileName: () => "app.js",
+      fileName: () => "ui.js",
     },
     rollupOptions: {
       external: ["react", "react-dom", "react-dom/client"],
