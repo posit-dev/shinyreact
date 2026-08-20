@@ -2,7 +2,7 @@
 
 Demonstrates bookmark restoration in shinyreact:
 
-- `page_react_html()` emits a `<script>` in `<head>` carrying the restored
+- `page_react()` emits the `#shinyreact-config` tag in `<head>` carrying the restored
   input values when Shiny parses a bookmark query string. The UI is a
   function of `request` so the page re-renders per request and sees the
   active RestoreContext.

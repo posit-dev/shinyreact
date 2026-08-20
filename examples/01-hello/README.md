@@ -6,7 +6,7 @@ smallest possible `ui.tsx`-first app. No JSX, no bundler, no `package.json`.
 Edit `ui.js` and reload.
 
 `app.py` (Express, via `set_react_page()`) and `app-core.py` (Core, via
-`page_react_html()`) are two server-side entries for the same `www/` client;
+`page_react()`) are two server-side entries for the same `www/` client;
 `app.R` is the R twin.
 
 ## What it shows
@@ -80,7 +80,7 @@ uv run shiny run examples/01-hello/app.py
 # Core API (same client, same outputs)
 uv run shiny run examples/01-hello/app-core.py
 
-# R (same client, same outputs — the R package's page_react_html + reactive_output)
+# R (same client, same outputs — the R package's page_react + reactive_output)
 Rscript -e 'shiny::runApp("examples/01-hello/app.R")'
 ```
 
