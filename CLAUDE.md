@@ -19,7 +19,7 @@ The repo ships one first-class pattern: the **`ui.tsx` pattern** — `set_react_
 ## Repo structure
 
 ```
-js/                         # TypeScript/React Vite IIFE bundle
+pkg-js/                     # TypeScript/React Vite IIFE bundle
   src/                      # index.ts, global.ts, shiny-output.tsx, shiny.d.ts, shinyreact.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source (hooks, registries)
@@ -43,11 +43,11 @@ Makefile                    # All build/check/format commands
 ```bash
 # Initial setup
 uv sync --all-extras --all-groups   # Python env
-make js-setup                        # JS deps (cd js && npm install)
+make js-setup                        # JS deps (cd pkg-js && npm install)
 pre-commit install                   # Pre-commit hooks
 
 # Build
-make js-build                        # Build JS bundle (js/dist/)
+make js-build                        # Build JS bundle (pkg-js/dist/)
 make update-dist                     # Build JS + copy to pkg-py/www/ and pkg-r/inst/lib/shiny/
 
 # Python checks (run all before committing)
@@ -78,7 +78,7 @@ Run `make help` to see all targets.
 
 ### JS bundle
 
-The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`, and installs the public API at `window.shinyreact`.
+The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`, and installs the public API at `window.shinyreact`.
 
 **Global API exposed at `window.shinyreact`:**
 - `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy` — re-exported shiny-react hooks
@@ -109,7 +109,7 @@ The deliberate remaining divergences (decided in #184) are recorded in `decision
 
 ### Built assets
 
-`js/dist/` and `pkg-py/src/shinyreact/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
+`pkg-js/dist/` and `pkg-py/src/shinyreact/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
 
 ### Build backend
 
@@ -271,7 +271,7 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 
 - **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
 - **R tests:** `pkg-r/tests/testthat/` — run with `make r-check-tests`
-- **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
+- **JS tests:** `pkg-js/src/shiny-react/__tests__/` — run with `cd pkg-js && npx vitest run`
 - **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
 
 ### Cover both R and Python
@@ -301,5 +301,5 @@ R currently has no e2e suite; that gap is tracked in #194, so Playwright tests a
 ## Key decisions
 
 - `decisions/` contains architecture decision records. `decisions/2026-03-17-playwright-testing-architecture.md` documents the recommended approach (code-gen from TypeScript) for future browser testing — not yet implemented.
-- `shiny-react` is vendored at `js/src/shiny-react/` rather than installed as an npm dependency (commit `4137071`).
+- `shiny-react` is vendored at `pkg-js/src/shiny-react/` rather than installed as an npm dependency (commit `4137071`).
 - The app.py pattern (server-side JSON-spec rendering: `Node`/`node()`, `render_react`, `output_react`, `page_react`, the JS renderer/registry, and the `shinyui` prototype) was removed in #168. History pointers live in a comment on #167.

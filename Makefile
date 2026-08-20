@@ -3,7 +3,7 @@ QUARTO_VERSION ?= 1.8.27
 QUARTO_PATH = ~/.local/share/qvm/versions/v${QUARTO_VERSION}/bin/quarto
 PATH_PKG_R := pkg-r
 PATH_PKG_PY := pkg-py
-PATH_PKG_JS := js
+PATH_PKG_JS := pkg-js
 
 .PHONY: install-quarto
 install-quarto:

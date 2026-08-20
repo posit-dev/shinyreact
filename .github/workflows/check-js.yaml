@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - "js/**/*"
+      - "pkg-js/**/*"
       - "pkg-py/src/shinyreact/www/**"
       - "pkg-r/inst/lib/shiny/**"
       - ".github/workflows/check-js.yaml"
   pull_request:
     paths:
-      - "js/**/*"
+      - "pkg-js/**/*"
       - "pkg-py/src/shinyreact/www/**"
       - "pkg-r/inst/lib/shiny/**"
       - ".github/workflows/check-js.yaml"
@@ -27,7 +27,7 @@ jobs:
 
       - name: 🔎 Extract node version from .nvmrc
         id: nvm
-        working-directory: js
+        working-directory: pkg-js
         run: |
           echo "version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
 
@@ -57,7 +57,7 @@ jobs:
 
       - name: 🔎 Extract node version from .nvmrc
         id: nvm
-        working-directory: js
+        working-directory: pkg-js
         run: |
           echo "version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
 
