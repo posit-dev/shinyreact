@@ -138,17 +138,17 @@ page_react_html <- function(path = "www/index.html") {
 #' @param src_dir Directory containing the JS/CSS. Required; Python infers this
 #'   from the calling module's `__file__` when omitted, which R has no
 #'   equivalent of.
-#' @param js_file JS filename within `src_dir`. Defaults to `"main.js"`,
+#' @param js_file JS filename within `src_dir`. Defaults to `"ui.js"`,
 #'   matching Python; attached only if the file exists.
-#' @param css_file CSS filename within `src_dir`. Defaults to `"main.css"`,
+#' @param css_file CSS filename within `src_dir`. Defaults to `"ui.css"`,
 #'   matching Python; attached only if the file exists. `NULL` to skip.
 #' @param name Dependency name; defaults to `basename(src_dir)`.
 #' @return An [htmltools::htmlDependency].
 #' @export
 page_react_dep <- function(
   src_dir,
-  js_file = "main.js",
-  css_file = "main.css",
+  js_file = "ui.js",
+  css_file = "ui.css",
   name = basename(src_dir)
 ) {
   js_path <- file.path(src_dir, js_file)

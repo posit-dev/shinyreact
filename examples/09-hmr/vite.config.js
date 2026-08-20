@@ -17,7 +17,7 @@ export default defineConfig(({ command }) => ({
   },
   plugins: [
     react(),
-    // serve only: writes www/app.js as the dev stub (apply:"serve" inside).
+    // serve only: writes www/ui.js as the dev stub (apply:"serve" inside).
     shinyreactDevStub({ entry: ENTRY, outFile: "www/ui.js" }),
   ],
   resolve: {

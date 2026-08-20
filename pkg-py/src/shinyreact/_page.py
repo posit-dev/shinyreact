@@ -67,7 +67,7 @@ def page_react(
     *args: TagChild,
     src_dir: str | Path | None = None,
     js_file: str = "ui.js",
-    css_file: str = "ui.css",
+    css_file: str | None = "ui.css",
     title: str | None = None,
     lang: str = "en",
 ) -> Tag:
@@ -116,8 +116,8 @@ def page_react(
 def page_react_dep(
     *,
     src_dir: str | Path | None = None,
-    js_file: str = "main.js",
-    css_file: str | None = "main.css",
+    js_file: str = "ui.js",
+    css_file: str | None = "ui.css",
     name: str | None = None,
 ) -> HTMLDependency:
     """Build an HTMLDependency for a React app's JS and CSS entry points.
@@ -172,9 +172,9 @@ def page_react_dep(
         src_dir: Directory containing the JS/CSS. Inferred from the calling
             frame when omitted (see above).
         js_file: Filename of the JS entry point, relative to ``src_dir``
-            (default ``"main.js"``). Attached only if the file exists.
+            (default ``"ui.js"``). Attached only if the file exists.
         css_file: Filename of the CSS file, relative to ``src_dir`` (default
-            ``"main.css"``). Attached only if the file exists; ``None`` to skip.
+            ``"ui.css"``). Attached only if the file exists; ``None`` to skip.
         name: Dependency name. Defaults to ``src_dir``'s basename.
     """
     if src_dir is not None:

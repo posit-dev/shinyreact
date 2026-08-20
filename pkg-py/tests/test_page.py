@@ -31,7 +31,7 @@ def test_page_bare_no_shinyreact_dep():
 
 def test_page_react_dep_falls_back_to_cwd_without_file(tmp_path, monkeypatch):
     """page_react_dep() falls back to CWD when the caller has no __file__."""
-    (tmp_path / "main.js").write_text("// ...")
+    (tmp_path / "ui.js").write_text("// ...")
     monkeypatch.chdir(tmp_path)
 
     captured: dict[str, HTMLDependency] = {}
