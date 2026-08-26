@@ -318,16 +318,19 @@ def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
     render at the marker. Matches R's ``page_react_html()``
     (``htmltools::htmlTemplate()``).
 
-    Pass the result to :class:`shinyreact.ReactApp`::
+    You rarely need to call this yourself — :class:`shinyreact.ReactApp`
+    discovers ``www/index.html`` and calls it for you::
 
-        from shinyreact import ReactApp, page_react_html
+        from shinyreact import ReactApp
 
-        app = ReactApp(page_react_html(), server)
+        app = ReactApp(server)
 
-    ``shiny.App`` works too (via ``ui.PageDocument``, py-shiny#2475);
-    ``ReactApp`` additionally mounts the document's directory at ``/``, so the
-    assets the document references (your bundle's JS/CSS) are served when they
-    live next to it (conventionally ``www/``).
+    Call it directly to pass a non-default path (``ReactApp(server,
+    ui=page_react_html("client/index.html"))``). ``shiny.App`` works too (via
+    ``ui.PageDocument``, py-shiny#2475), but only ``ReactApp`` mounts the
+    document's directory at ``/``, so the assets the document references
+    (your bundle's JS/CSS) are served when they live next to it
+    (conventionally ``www/``).
 
     For apps that don't need to own the HTML document, prefer
     :func:`page_react` — it requires no HTML file at all and works with plain
