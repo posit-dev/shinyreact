@@ -318,15 +318,14 @@ def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
     render at the marker. Matches R's ``page_react_html()``
     (``htmltools::htmlTemplate()``).
 
-    Pass the result to :class:`shinyreact.App` (not ``shiny.App`` — see
-    `posit-dev/py-shiny#2462
-    <https://github.com/posit-dev/py-shiny/issues/2462>`_)::
+    Pass the result to :class:`shinyreact.ReactApp`::
 
-        from shinyreact import App, page_react_html
+        from shinyreact import ReactApp, page_react_html
 
-        app = App(page_react_html(), server)
+        app = ReactApp(page_react_html(), server)
 
-    ``shinyreact.App`` also mounts the document's directory at ``/``, so the
+    ``shiny.App`` works too (via ``ui.PageDocument``, py-shiny#2475);
+    ``ReactApp`` additionally mounts the document's directory at ``/``, so the
     assets the document references (your bundle's JS/CSS) are served when they
     live next to it (conventionally ``www/``).
 
@@ -360,23 +359,12 @@ def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
             "without an HTML file, use page_react() instead."
         )
 
-    # Shiny's own web assets must be part of the document's dependency list —
-    # shiny.App's usual _render_page() path would add them, but a pre-rendered
-    # document bypasses it (this mirrors shiny's App(ui=Path) route; the
-    # shiny.html_dependencies module is not re-exported, so this is a confined
-    # internal use, like the shiny___ wrappers in pkg-r/R/bookmark.R).
-    from shiny.html_dependencies import jquery_deps, require_deps, shiny_deps
-
+    # ui.PageDocument (py-shiny#2475) prefixes Shiny's own dependencies; we
+    # only add shinyreact's bundle and the #shinyreact-config tag.
     return ReactHtmlDocument(
         index_html,
         src_dir=index_path.parent,
-        deps=[
-            require_deps(),
-            jquery_deps(),
-            *shiny_deps(include_css=True),
-            _dep(),
-            _config_script_tag(),
-        ],
+        extra_deps=[_dep(), _config_script_tag()],
         deps_replace_pattern=_HEAD_CONTENT_MARKER,
     )
 

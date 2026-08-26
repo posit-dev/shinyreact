@@ -1,10 +1,9 @@
-"""shinyreact.App: full-document UI support (workaround for py-shiny#2462)."""
+"""shinyreact.ReactApp: full-document UI via ui.PageDocument (py-shiny#2475)."""
 
 from pathlib import Path
 
-import pytest
 from htmltools import TagList, div
-from shinyreact import App, page_react_html
+from shinyreact import ReactApp, page_react_html
 from starlette.testclient import TestClient
 
 
@@ -24,7 +23,7 @@ def _server(input, output, session) -> None:  # pragma: no cover - trivial
 
 
 def test_app_serves_full_document(tmp_path: Path) -> None:
-    app = App(page_react_html(_write_react_app(tmp_path)), _server)
+    app = ReactApp(page_react_html(_write_react_app(tmp_path)), _server)
     client = TestClient(app)
     r = client.get("/")
     assert r.status_code == 200
@@ -38,7 +37,7 @@ def test_app_serves_full_document(tmp_path: Path) -> None:
 def test_app_registers_dependency_routes(tmp_path: Path) -> None:
     import re
 
-    app = App(page_react_html(_write_react_app(tmp_path)), _server)
+    app = ReactApp(page_react_html(_write_react_app(tmp_path)), _server)
     client = TestClient(app)
     html = client.get("/").text
     match = re.search(r'src="(lib/[^"]*shinyreact[^"]*\.js)"', html)
@@ -47,26 +46,34 @@ def test_app_registers_dependency_routes(tmp_path: Path) -> None:
 
 
 def test_app_auto_mounts_document_dir(tmp_path: Path) -> None:
-    # The document references ui.js next to it; shinyreact.App mounts the
+    # The document references ui.js next to it; ReactApp mounts the
     # document's directory so it is served without a static_assets= argument.
-    app = App(page_react_html(_write_react_app(tmp_path)), _server)
+    app = ReactApp(page_react_html(_write_react_app(tmp_path)), _server)
     client = TestClient(app)
     assert client.get("/ui.js").status_code == 200
 
 
 def test_app_passes_plain_ui_through(tmp_path: Path) -> None:
     # Non-document UIs behave exactly like shiny.App.
-    app = App(TagList(div("plain", id="plain-ui")), _server)
+    app = ReactApp(TagList(div("plain", id="plain-ui")), _server)
     client = TestClient(app)
     r = client.get("/")
     assert r.status_code == 200
     assert 'id="plain-ui"' in r.text
 
 
-def test_app_rejects_bookmark_store_with_document(tmp_path: Path) -> None:
-    with pytest.raises(NotImplementedError, match="page_react"):
-        App(
-            page_react_html(_write_react_app(tmp_path)),
-            _server,
-            bookmark_store="url",
-        )
+def test_app_bookmark_store_works_with_ui_function(tmp_path: Path) -> None:
+    # Bookmarking needs a per-request UI; a function returning the document
+    # works (py-shiny#2475 renders it through the same path).
+    index = _write_react_app(tmp_path)
+    app = ReactApp(
+        lambda request: page_react_html(index),
+        _server,
+        bookmark_store="url",
+        static_assets={"/": index.parent},
+    )
+    client = TestClient(app)
+    r = client.get("/")
+    assert r.status_code == 200
+    assert r.text.count("<html") == 1
+    assert 'id="shinyreact-config"' in r.text
