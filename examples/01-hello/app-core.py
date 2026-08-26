@@ -1,8 +1,6 @@
 from faithful import histogram, waiting
-from shiny import App, Inputs, Outputs, Session
-from shinyreact import page_react, reactive_output
-
-app_ui = page_react()  # discovers www/ui.js + www/ui.css (Core API)
+from shiny import Inputs, Outputs, Session
+from shinyreact import ReactApp, reactive_output
 
 
 def server(input: Inputs, output: Outputs, session: Session):
@@ -16,6 +14,5 @@ def server(input: Inputs, output: Outputs, session: Session):
         return f"{len(waiting)} eruptions in {n} bin{'' if n == 1 else 's'}"
 
 
-# page_react() serves ui.js/ui.css itself (an mtime-versioned dependency), so
-# no static_assets mount is needed for them.
-app = App(app_ui, server)
+# ReactApp discovers www/ui.js + www/ui.css (Core API) and serves them itself.
+app = ReactApp(server)
