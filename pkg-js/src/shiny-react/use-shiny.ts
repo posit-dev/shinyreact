@@ -454,22 +454,23 @@ export function useSetShinyInput<T>(
  * A React hook for handling messages from the Shiny server.
  *
  * This hook registers a message handler with Shiny that will be called when the
- * server sends a message of the specified type using `post_message()` (which is
+ * server sends a message with the specified id using `send_message()` (which is
  * a wrapper for `session.send_custom_message()` with extra functionality.)
  *
  * The hook waits for Shiny to initialize before registering the handler and
  * properly manages the handler lifecycle, re-registering when dependencies
  * change.
  *
- * @param messageType The type/name of the custom message to listen for.
- * @param handler The function to call when a message of this type is received.
+ * @param id The id of the custom message to listen for, module-resolved like
+ * input/output ids.
+ * @param handler The function to call when a message with this id is received.
  * The handler receives the message data as its parameter. Inline arrow
  * functions are safe to pass — the handler is stored in a ref internally,
  * so a new function reference on each render won't cause the message
  * handler to be deregistered and re-registered.
  */
 export function useShinyMessageHandler<T = any>(
-  messageType: string,
+  id: string,
   handler: (data: T) => void,
   {
     namespace: explicitNamespace,
@@ -481,17 +482,17 @@ export function useShinyMessageHandler<T = any>(
 
   ensureShinyReactInitialized();
 
-  const namespacedMessageType = useNamespacedId(messageType, explicitNamespace);
+  const namespacedMessageId = useNamespacedId(id, explicitNamespace);
 
   // Stabilize handler reference: callers often pass inline arrow functions
   // which create a new reference every render, causing unnecessary
   // deregister/re-register cycles. Use a ref so the effect only re-runs
-  // when the message type changes, not on every render.
+  // when the message id changes, not on every render.
   const handlerRef = useRef(handler);
   handlerRef.current = handler;
 
   useEffect(() => {
-    if (!shinyInitialized || !namespacedMessageType) {
+    if (!shinyInitialized || !namespacedMessageId) {
       return;
     }
     const shiny = getShiny();
@@ -503,14 +504,14 @@ export function useShinyMessageHandler<T = any>(
     const stableHandler = (data: T) => handlerRef.current(data);
 
     // Register the message handler with our dedicated message registry
-    shiny.messageRegistry.addHandler(namespacedMessageType, stableHandler);
+    shiny.messageRegistry.addHandler(namespacedMessageId, stableHandler);
 
     // Cleanup function that removes the handler when component unmounts
-    // or when messageType changes
+    // or when the message id changes
     return () => {
-      shiny.messageRegistry.removeHandler(namespacedMessageType, stableHandler);
+      shiny.messageRegistry.removeHandler(namespacedMessageId, stableHandler);
     };
-  }, [shinyInitialized, namespacedMessageType]);
+  }, [shinyInitialized, namespacedMessageId]);
 }
 
 /**

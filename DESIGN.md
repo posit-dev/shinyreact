@@ -44,7 +44,7 @@ Shiny's core value is lazy, dependency-tracked, minimal recomputation — analog
 
 ### Tenet 7: The communication bridge is small and explicit
 
-Message passing between client and server should be targeted — addressed by element id, message type, and handler — not broadcast to the document. The bridge API surface should be minimal: a small set of React hooks (functions that let components interact with Shiny) on the client (`useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`) and corresponding server-side primitives. If the bridge grows large, something has gone wrong.
+Message passing between client and server should be targeted — addressed by element id, message id, and handler — not broadcast to the document. The bridge API surface should be minimal: a small set of React hooks (functions that let components interact with Shiny) on the client (`useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`) and corresponding server-side primitives. If the bridge grows large, something has gone wrong.
 
 ### Tenet 8: Pre-built component libraries are a parallel path
 
@@ -172,7 +172,7 @@ The core communication layer is intentionally minimal:
 |-----------|-----------|---------|
 | Client → Server | `useShinyInput(id, defaultValue)` | User selects a filter option |
 | Server → Client | `useShinyOutputValue(id)` | Server sends computed plot data |
-| Server → Client (push) | `useShinyMessageHandler(messageType, handler)` | Server pushes a notification |
+| Server → Client (push) | `useShinyMessageHandler(id, handler)` | Server pushes a notification |
 
 ### Server-side primitives
 
@@ -248,7 +248,7 @@ Evaluate whether a `reactive.sync(client_name=...)` primitive is worth adding as
 
 ### Message passing model
 
-Today, Shiny's custom messages are broadcast to the document — any handler registered for a given message type receives it. In the ui.tsx-first model, message passing should be more targeted: addressed by element id, message type, and handler. If the id is omitted, the message falls back to the document level. The exact API shape needs design work.
+Today, Shiny's custom messages are broadcast to the document — any handler registered for a given message type receives it. In the ui.tsx-first model, message passing should be more targeted: addressed by element id, message id, and handler. If the id is omitted, the message falls back to the document level. The exact API shape needs design work.
 
 ### Hybrid connection model
 

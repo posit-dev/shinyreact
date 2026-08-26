@@ -1,0 +1,15 @@
+{
+  "protocolVersion": "1.0",
+  "restore": {
+    "txt": "it's \"quoted\"\nand multiline\twith tabs",
+    "script_attack": "</script><script>alert(1)</script>",
+    "line_seps": "A\u2028B\u2029C",
+    "proto_key_sibling": "safe",
+    "__proto__": "evil",
+    "pi_ish": 3.14159265358979,
+    "count": 7,
+    "flag": true,
+    "nothing": null,
+    "scalars": [1, 2, 3]
+  }
+}
