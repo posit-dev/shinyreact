@@ -1,12 +1,6 @@
 import shinyreact
-from shiny import App, Inputs, Outputs, Session, reactive
-
-
-def app_ui(request):
-    # A function-of-request UI makes Shiny re-render the page per request, so
-    # page_react() sees the active RestoreContext and emits the restore payload
-    # in the #shinyreact-config tag when a bookmark query string is present.
-    return shinyreact.page_react()
+from shiny import Inputs, Outputs, Session, reactive
+from shinyreact import ReactApp
 
 
 def server(input: Inputs, output: Outputs, session: Session):
@@ -21,6 +15,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         await session.bookmark()
 
 
-# page_react() serves ui.js/ui.css itself (an mtime-versioned dependency), so
-# no static_assets mount is needed.
-app = App(app_ui, server, bookmark_store="url")
+# ReactApp discovers www/ui.js + www/ui.css and re-renders the page per
+# request, so the bookmark restore payload lands in #shinyreact-config.
+app = ReactApp(server, bookmark_store="url")
