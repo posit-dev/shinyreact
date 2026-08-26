@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// The contents of the dev-mode `www/app.js`. Shiny serves this file statically.
+// The contents of the dev-mode `www/ui.js`. Shiny serves this file statically.
 // It (1) installs the React Fast Refresh preamble that @vitejs/plugin-react
 // normally injects into the HTML it serves — but here Shiny serves the page, so
 // we install it ourselves — then (2) dynamically imports Vite's HMR client and
@@ -22,7 +22,7 @@ export function makeDevStub(origin, entry) {
 }
 
 // Vite plugin (serve only). On dev-server start it writes `outFile` (e.g.
-// www/app.js) as the dev stub, and removes it on shutdown so a later plain
+// www/ui.js) as the dev stub, and removes it on shutdown so a later plain
 // `shiny run` doesn't load a stub pointing at a dead dev server. `vite build`
 // (apply:"serve" excludes this plugin) overwrites `outFile` with the real bundle.
 export function shinyreactDevStub({ entry, outFile }) {

@@ -6,8 +6,8 @@
 \usage{
 page_react_dep(
   src_dir,
-  js_file = "main.js",
-  css_file = "main.css",
+  js_file = "ui.js",
+  css_file = "ui.css",
   name = basename(src_dir)
 )
 }
@@ -16,10 +16,10 @@ page_react_dep(
 from the calling module's \verb{__file__} when omitted, which R has no
 equivalent of.}
 
-\item{js_file}{JS filename within \code{src_dir}. Defaults to \code{"main.js"},
+\item{js_file}{JS filename within \code{src_dir}. Defaults to \code{"ui.js"},
 matching Python; attached only if the file exists.}
 
-\item{css_file}{CSS filename within \code{src_dir}. Defaults to \code{"main.css"},
+\item{css_file}{CSS filename within \code{src_dir}. Defaults to \code{"ui.css"},
 matching Python; attached only if the file exists. \code{NULL} to skip.}
 
 \item{name}{Dependency name; defaults to \code{basename(src_dir)}.}

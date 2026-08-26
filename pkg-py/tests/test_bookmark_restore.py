@@ -185,9 +185,7 @@ def test_dep_returns_htmldependency_only_with_context() -> None:
 def test_dep_page_no_context_includes_config_tag() -> None:
     result = _dep_page()
     assert isinstance(result, TagList)
-    assert any(
-        isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result
-    )
+    assert any(isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result)
     config = _extract_config(_rendered_html(result))
     assert config == {"protocolVersion": PROTOCOL_VERSION}
 
@@ -198,9 +196,7 @@ def test_dep_page_with_active_context_includes_restore() -> None:
     with restore_context_cm(ctx):
         result = _dep_page()
     assert isinstance(result, TagList)
-    assert any(
-        isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result
-    )
+    assert any(isinstance(c, HTMLDependency) and c.name == "shinyreact" for c in result)
     config = _extract_config(_rendered_html(result))
     assert config["restore"] == {"foo": "hello"}
 

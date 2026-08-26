@@ -3,10 +3,10 @@
 Shiny's canonical [`01_hello`](https://github.com/rstudio/shiny/blob/main/inst/examples-shiny/01_hello/app.R)
 app — a bins slider over the Old Faithful waiting times — rebuilt as the
 smallest possible `ui.tsx`-first app. No JSX, no bundler, no `package.json`.
-Edit `app.js` and reload.
+Edit `ui.js` and reload.
 
 `app.py` (Express, via `set_react_page()`) and `app-core.py` (Core, via
-`page_react_html()`) are two server-side entries for the same `www/` client;
+`page_react()`) are two server-side entries for the same `www/` client;
 `app.R` is the R twin.
 
 ## What it shows
@@ -20,7 +20,7 @@ produces a picture:
   from R's `hist(..., plot = FALSE)` / a dependency-free Python binner), plus a
   caption string. That's the entire server. No plotting library, no image
   encoding, no `plotOutput` placeholder.
-- **Client** — `www/app.js` reads that JSON with `useShinyOutputValue` and draws
+- **Client** — `www/ui.js` reads that JSON with `useShinyOutputValue` and draws
   the bars as SVG `<rect>`s. Because the chart is real DOM the client owns, it
   can be styled, animated, or made interactive without another round trip.
 
@@ -37,14 +37,13 @@ never tears the SVG down and re-mounts it.
 ```
 examples/01-hello/
 ├── app.py            # Express: set_react_page() + 2 reactive_output outputs
-├── app-core.py       # Core: page_react_html() + App(..., static_assets=), same outputs
-├── app.R             # R: page_react_html() + reactive_output, same outputs
+├── app-core.py       # Core: page_react() + App(app_ui, server), same outputs
+├── app.R             # R: page_react() + reactive_output, same outputs
 ├── faithful.py       # Old Faithful waiting times + a stdlib-only binner (Python)
 ├── faithful.csv      # base R's `faithful` dataset, exported for the Python servers
 └── www/
-    ├── index.html    # 2 lines: stylesheet, script (the app appends its own mount div to <body>)
-    ├── app.js        # raw React.createElement (with `h` shorthand) + an SVG histogram
-    └── main.css      # sidebar/panel layout
+    ├── ui.js         # raw React.createElement (with `h` shorthand) + an SVG histogram
+    └── ui.css        # sidebar/panel layout
 ```
 
 No `node_modules`, no Vite, no build script — and on the Python side no
@@ -56,14 +55,15 @@ return `NULL` until the client's first `bins` message arrives (Python raises a
 silent exception instead), and wrap the histogram vectors in `I()` so a
 single-bin result still serializes as a JSON array rather than a scalar.
 
-`app-core.py` passes `static_assets={"/": .../www}` to `App()`. Shiny Express
-(`app.py`) and R's `runApp()` (`app.R`) both mount the app directory's `www/`
-automatically; Core's `App()` does not, so without it `index.html` loads and
-then 404s on `app.js` and `main.css`.
+There is no `index.html`: every server calls a zero-argument page function
+(`set_react_page()` / `page_react()`) that discovers `www/ui.js` and
+`www/ui.css` and serves them as an mtime-versioned dependency — so edits are
+never stale in the browser cache, and Core's `App()` needs no
+`static_assets=` mount. The client appends its own container to `<body>`.
 
 ## Bridge primitives used
 
-- `from shinyreact import reactive_output, set_react_page` (Express server, `app.py`) / `page_react_html` (Core server, `app-core.py`); `library(shinyreact)` with `page_react_html()` + `reactive_output()` in `app.R`
+- `from shinyreact import reactive_output, set_react_page` (Express server, `app.py`) / `page_react` (Core server, `app-core.py`); `library(shinyreact)` with `page_react()` + `reactive_output()` in `app.R`
 - `window.shinyreact.useShinyInput(id, default)` for the bins slider
 - `window.shinyreact.useShinyOutputValue(id, default)` for the histogram data and caption
 - `window.shinyreact.useShinyOutputStatus(id)` to dim the chart while it recalculates
@@ -80,7 +80,7 @@ uv run shiny run examples/01-hello/app.py
 # Core API (same client, same outputs)
 uv run shiny run examples/01-hello/app-core.py
 
-# R (same client, same outputs — the R package's page_react_html + reactive_output)
+# R (same client, same outputs — the R package's page_react + reactive_output)
 Rscript -e 'shiny::runApp("examples/01-hello/app.R")'
 ```
 

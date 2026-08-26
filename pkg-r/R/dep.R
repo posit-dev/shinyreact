@@ -28,3 +28,18 @@ shinyreact_dep <- function() {
 shinyreact_dep_page <- function() {
   htmltools::tagList(shinyreact_dep(), config_script_tag())
 }
+
+# Internal: the `#shinyreact-config` tag as an htmlDependency `head` entry, for
+# UIs where a plain tag has no place to land — htmlTemplate() documents render
+# attached dependencies into `{{ headContent() }}`, and a dependency's `head`
+# HTML rides along verbatim. src is an empty href: the dependency ships no
+# files, only head content.
+config_head_dep <- function() {
+  htmltools::htmlDependency(
+    name = "shinyreact-config",
+    version = .protocol_version,
+    src = c(href = ""),
+    head = as.character(config_script_tag()),
+    all_files = FALSE
+  )
+}

@@ -23,13 +23,13 @@ pak::pak("posit-dev/shinyreact/pkg-r")
 
 ## Usage
 
-A minimal `app.R`. The UI lives in `www/` (a static `index.html` plus your React client); the server owns only reactive computation:
+A minimal `app.R`. The UI lives in `www/` (`ui.js`, plus `ui.css` if you want styles — discovered automatically); the server owns only reactive computation:
 
 ```r
 library(shiny)
 library(shinyreact)
 
-ui <- page_react_html("www/index.html")
+ui <- page_react() # discovers www/ui.js + www/ui.css
 
 server <- function(input, output, session) {
   output$greeting <- reactive_output({

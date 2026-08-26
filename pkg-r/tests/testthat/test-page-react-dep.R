@@ -1,8 +1,8 @@
 test_that("page_react_dep() returns an html_dependency pointing at src_dir", {
   dir <- withr::local_tempdir()
-  writeLines("// app", file.path(dir, "main.js"))
+  writeLines("// app", file.path(dir, "ui.js"))
 
-  dep <- page_react_dep(dir, "main.js")
+  dep <- page_react_dep(dir, "ui.js")
   expect_s3_class(dep, "html_dependency")
   expect_identical(dep$src$file, dir)
   expect_identical(dep$name, basename(dir))
@@ -10,16 +10,16 @@ test_that("page_react_dep() returns an html_dependency pointing at src_dir", {
 
 test_that("page_react_dep() versions by the JS file's mtime", {
   dir <- withr::local_tempdir()
-  js <- file.path(dir, "main.js")
+  js <- file.path(dir, "ui.js")
   writeLines("// app", js)
 
-  dep <- page_react_dep(dir, "main.js")
+  dep <- page_react_dep(dir, "ui.js")
   expect_identical(dep$version, as.character(as.integer(file.mtime(js))))
 })
 
 test_that("page_react_dep() falls back to version \"0\" when the JS is missing", {
   dir <- withr::local_tempdir()
-  expect_warning(dep <- page_react_dep(dir, "main.js"), "JS entry point")
+  expect_warning(dep <- page_react_dep(dir, "ui.js"), "JS entry point")
   expect_identical(dep$version, "0")
 })
 
@@ -42,20 +42,20 @@ test_that("page_react_dep() honours custom filenames and the name override", {
   expect_identical(dep$stylesheet, "app.css")
 })
 
-test_that("page_react_dep() defaults to main.js / main.css like Python", {
+test_that("page_react_dep() defaults to ui.js / ui.css like Python", {
   dir <- withr::local_tempdir()
-  writeLines("// app", file.path(dir, "main.js"))
-  writeLines("/* styles */", file.path(dir, "main.css"))
+  writeLines("// app", file.path(dir, "ui.js"))
+  writeLines("/* styles */", file.path(dir, "ui.css"))
 
   dep <- page_react_dep(dir)
-  expect_identical(dep$script[["src"]], "main.js")
-  expect_identical(dep$stylesheet, "main.css")
+  expect_identical(dep$script[["src"]], "ui.js")
+  expect_identical(dep$stylesheet, "ui.css")
 })
 
 test_that("page_react_dep() omits the stylesheet when the CSS is absent", {
-  # A bundle that ships no CSS should not 404 on main.css (#184).
+  # A bundle that ships no CSS should not 404 on ui.css (#184).
   dir <- withr::local_tempdir()
-  writeLines("// app", file.path(dir, "main.js"))
+  writeLines("// app", file.path(dir, "ui.js"))
 
   expect_null(page_react_dep(dir)$stylesheet)
   expect_null(page_react_dep(dir, css_file = NULL)$stylesheet)
@@ -65,9 +65,9 @@ test_that("page_react_dep() emits script type=\"module\" and no defer", {
   # Matches Python (`page_react_dep()` in _page.py); an ESM bundle throws on
   # its first `import` when served from a classic <script> tag. See #182.
   dir <- withr::local_tempdir()
-  writeLines("// app", file.path(dir, "main.js"))
+  writeLines("// app", file.path(dir, "ui.js"))
 
-  dep <- page_react_dep(dir, "main.js")
+  dep <- page_react_dep(dir, "ui.js")
   expect_identical(dep$script[["type"]], "module")
   expect_null(dep$script[["defer"]])
 

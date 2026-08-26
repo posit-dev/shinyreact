@@ -6,9 +6,9 @@ from shiny import App, Inputs, Outputs, Session, reactive
 
 def app_ui(request):
     # A function-of-request UI makes Shiny re-render the page per request, so
-    # page_react_html() sees the active RestoreContext and emits the restore
-    # <script> tag when a bookmark query string is present.
-    return shinyreact.page_react_html("www/index.html")
+    # page_react() sees the active RestoreContext and emits the restore payload
+    # in the #shinyreact-config tag when a bookmark query string is present.
+    return shinyreact.page_react()
 
 
 def server(input: Inputs, output: Outputs, session: Session):

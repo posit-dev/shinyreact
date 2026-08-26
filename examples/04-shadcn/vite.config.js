@@ -22,14 +22,16 @@ export default defineConfig({
     emptyOutDir: false,
     cssCodeSplit: false,
     lib: {
-      entry: path.resolve(__dirname, "src/main.jsx"),
+      entry: path.resolve(__dirname, "src/ui.jsx"),
       formats: ["iife"],
       name: "ColumnsShadcn",
-      fileName: () => "app.js",
+      fileName: () => "ui.js",
     },
     rollupOptions: {
       external: ["react", "react-dom", "react-dom/client"],
       output: {
+        // Name the emitted CSS asset ui.css (Vite 5 lib mode defaults to style.css).
+        assetFileNames: "ui.[ext]",
         globals: {
           react: "window.shinyreact.React",
           "react-dom": "window.shinyreact.ReactDOM",
