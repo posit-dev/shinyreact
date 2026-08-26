@@ -73,14 +73,21 @@ test_that("protocol fixture round-trips through the config tag", {
   # file. Mirrors Python's test_protocol_fixture_round_trips.
   fixture <- file.path(
     testthat::test_path(),
-    "..", "..", "..",
-    "protocol", "fixtures", "config-restore.json"
+    "..",
+    "..",
+    "..",
+    "protocol",
+    "fixtures",
+    "config-restore.json"
   )
   skip_if_not(
     file.exists(fixture),
     "monorepo sources not available (installed-package run)"
   )
-  expected <- jsonlite::fromJSON(brio::read_file(fixture), simplifyVector = FALSE)
+  expected <- jsonlite::fromJSON(
+    brio::read_file(fixture),
+    simplifyVector = FALSE
+  )
   expect_identical(expected$protocolVersion, .protocol_version)
   html <- config_html(expected$restore)
   expect_equal(extract_config(html), expected, tolerance = 1e-12)
