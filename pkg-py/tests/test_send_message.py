@@ -18,7 +18,7 @@ class TestSendMessage:
 
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",
-            {"type": "logEvent", "data": {"text": "hello"}},
+            {"id": "logEvent", "data": {"text": "hello"}},
         )
 
     @pytest.mark.asyncio
@@ -29,7 +29,7 @@ class TestSendMessage:
 
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",
-            {"type": "notify", "data": "simple string"},
+            {"id": "notify", "data": "simple string"},
         )
 
     @pytest.mark.asyncio
@@ -40,12 +40,12 @@ class TestSendMessage:
 
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",
-            {"type": "update", "data": [1, 2, 3]},
+            {"id": "update", "data": [1, 2, 3]},
         )
 
     @pytest.mark.asyncio
-    async def test_namespaces_type_with_resolve_id(self):
-        """send_message uses resolve_id to namespace the message type."""
+    async def test_namespaces_id_with_resolve_id(self):
+        """send_message uses resolve_id to namespace the message id."""
         session = AsyncMock()
 
         # Simulate being inside a Shiny module with namespace "mymod"
@@ -57,5 +57,5 @@ class TestSendMessage:
 
         session.send_custom_message.assert_called_once_with(
             "shinyReactMessage",
-            {"type": "mymod-logEvent", "data": {"text": "hello"}},
+            {"id": "mymod-logEvent", "data": {"text": "hello"}},
         )

@@ -66,13 +66,13 @@ Server → client, over Shiny's custom-message channel:
 
 ```jsonc
 // session.send_custom_message("shinyReactMessage", ...)
-{ "type": "<resolved-id>", "data": <any JSON value> }
+{ "id": "<resolved-id>", "data": <any JSON value> }
 ```
 
 | Member | Type | Meaning |
 |---|---|---|
-| `type` | string | The message type, namespaced by the server's module context (`resolve_id`) |
-| `data` | any JSON | Delivered as-is to `useShinyMessageHandler(type, handler)` |
+| `id` | string | The message id, namespaced by the server's module context (`resolve_id`) — every module-resolved string in this protocol (input, output, message) is an `id` |
+| `data` | any JSON | Delivered as-is to `useShinyMessageHandler(id, handler)` |
 
 ## 3. Input-handler suffixes
 

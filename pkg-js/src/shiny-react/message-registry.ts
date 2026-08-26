@@ -11,8 +11,8 @@ import { getShiny } from "./get-shiny";
  *
  * The registry uses a single dispatcher pattern where all messages are sent to
  * "shinyReactMessage" and then routed to the appropriate handlers based on
- * type. This allows multiple components to listen to the same message type and
- * ensures proper cleanup when handlers are no longer needed.
+ * the message id. This allows multiple components to listen to the same message
+ * id and ensures proper cleanup when handlers are no longer needed.
  */
 class ShinyMessageRegistry {
   private messageHandlers: Map<string, Set<(data: any) => void>> = new Map();
@@ -34,76 +34,76 @@ class ShinyMessageRegistry {
 
     shiny.addCustomMessageHandler(
       "shinyReactMessage",
-      (msg: { type: string; data: any }) => {
-        this.dispatchMessage(msg.type, msg.data);
+      (msg: { id: string; data: any }) => {
+        this.dispatchMessage(msg.id, msg.data);
       },
     );
     this.initialized = true;
   }
 
   /**
-   * Add a message handler for the specified message type.
+   * Add a message handler for the specified message id.
    *
-   * @param messageType The type/name of the message to listen for
-   * @param handler The function to call when a message of this type is received
+   * @param messageId The id of the message to listen for
+   * @param handler The function to call when a message with this id is received
    */
-  addHandler(messageType: string, handler: (data: any) => void) {
+  addHandler(messageId: string, handler: (data: any) => void) {
     this.init(); // Ensure registry is initialized
 
-    if (!this.messageHandlers.has(messageType)) {
-      this.messageHandlers.set(messageType, new Set());
+    if (!this.messageHandlers.has(messageId)) {
+      this.messageHandlers.set(messageId, new Set());
     }
-    this.messageHandlers.get(messageType)!.add(handler);
+    this.messageHandlers.get(messageId)!.add(handler);
   }
 
   /**
-   * Remove a message handler for the specified message type.
+   * Remove a message handler for the specified message id.
    *
-   * @param messageType The type/name of the message
+   * @param messageId The id of the message
    * @param handler The handler function to remove
    */
-  removeHandler(messageType: string, handler: (data: any) => void) {
-    const handlers = this.messageHandlers.get(messageType);
+  removeHandler(messageId: string, handler: (data: any) => void) {
+    const handlers = this.messageHandlers.get(messageId);
     if (handlers) {
       handlers.delete(handler);
       if (handlers.size === 0) {
-        this.messageHandlers.delete(messageType);
+        this.messageHandlers.delete(messageId);
       }
     }
   }
 
   /**
-   * Dispatch a message to all registered handlers for the given type.
+   * Dispatch a message to all registered handlers for the given id.
    *
-   * @param messageType The type of message to dispatch
+   * @param messageId The id of the message to dispatch
    * @param data The message data to pass to handlers
    */
-  private dispatchMessage(messageType: string, data: any) {
-    const handlers = this.messageHandlers.get(messageType);
+  private dispatchMessage(messageId: string, data: any) {
+    const handlers = this.messageHandlers.get(messageId);
     if (handlers) {
       handlers.forEach((handler) => handler(data));
     }
   }
 
   /**
-   * Get the number of handlers registered for a specific message type.
+   * Get the number of handlers registered for a specific message id.
    * Useful for debugging and testing.
    *
-   * @param messageType The message type to check
-   * @returns The number of handlers registered for this type
+   * @param messageId The message id to check
+   * @returns The number of handlers registered for this id
    */
-  getHandlerCount(messageType: string): number {
-    const handlers = this.messageHandlers.get(messageType);
+  getHandlerCount(messageId: string): number {
+    const handlers = this.messageHandlers.get(messageId);
     return handlers ? handlers.size : 0;
   }
 
   /**
-   * Get all message types that currently have registered handlers.
+   * Get all message ids that currently have registered handlers.
    * Useful for debugging and testing.
    *
-   * @returns Array of message types with active handlers
+   * @returns Array of message ids with active handlers
    */
-  getActiveMessageTypes(): string[] {
+  getActiveMessageIds(): string[] {
     return Array.from(this.messageHandlers.keys());
   }
 }

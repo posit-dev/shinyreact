@@ -90,7 +90,7 @@ The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundle
 ### Python package
 
 - `@shinyreact.reactive_output` — `Renderer[Jsonifiable]` subclass; passes raw JSON data through for `useShinyOutputValue()` hooks, with no placeholder (`auto_output_ui()` returns `None`)
-- `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
+- `shinyreact.send_message(session, id, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
 - `shinyreact.set_react_page(path=None)` — Express helper; with no args serves `www/index.html` when present, else discovers `www/ui.js` / `www/ui.css` and emits no body HTML. Auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
 - `shinyreact.page_react(src_dir=None, js_file="ui.js", css_file="ui.css", title=None)` — Core-mode zero-config page: discovers `www/ui.js` / `www/ui.css` next to the calling module, serves them as an mtime-versioned dependency (cache-busted), title defaults to the app folder name; the client appends its own mount container to `<body>`
 - `shinyreact.ReactApp(server, *, ui=None, **kwargs)` — `shiny.App` for the ui.tsx pattern with the UI discovered next to the calling module: `www/index.html` present → `page_react_html()` (document dir auto-mounted at `/`), else → `page_react()`. The discovered UI is a per-request function, so bookmark restore works with no wiring (`ReactApp(server, bookmark_store="url")`). `ui=` overrides discovery (a `ReactHtmlDocument` still gets its dir auto-mounted); discovery reads the *immediate* calling frame, so helpers wrapping `ReactApp(...)` must pass `ui=`
@@ -105,7 +105,7 @@ The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reacti
 - `reactive_output(expr, ...)` is a **function** assigned to `output$id`, not a decorator/`Renderer` class.
 - `page_react(src_dir = "www", ...)` matches Python's `page_react()` (R resolves against the working directory; Python against the calling module).
 - `page_react_html(path = "www/index.html")` matches Python: a complete HTML document with a `{{ headContent() }}` marker. R uses it directly as `shinyApp(ui = ...)`; Python discovers it via `shinyreact.ReactApp(server)` (asset auto-mount; py-shiny#2475 provides the document support). Python additionally has the Express-only `set_react_page()` and `ReactApp` (R has no `shiny.App` subclass equivalent).
-- `send_message(session, type, data)` matches Python.
+- `send_message(session, id, data)` matches Python.
 - `page_react_dep()` takes `src_dir` as a required first argument; Python's is keyword-only and infers `src_dir`/`name` from the caller's `__file__` when omitted (R has no equivalent). Pass `src_dir=` explicitly in Python too if you wrap the call in a helper — the inference reads the *immediate* calling frame.
 
 The deliberate remaining divergences (decided in #184) are recorded in `decisions/2026-08-13-r-python-parity.md`: relative-path resolution, `set_react_page()`'s renderer-dependency discovery, and scalar-array flattening in the default input handler.
