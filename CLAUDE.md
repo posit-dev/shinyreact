@@ -94,7 +94,7 @@ The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundle
 - `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html`; auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
 - `shinyreact.page_react_html(path="www/index.html")` — Core-mode helper that serves a static `www/index.html` as the `ui` argument of `App(ui=..., server=...)`; attaches the shinyreact dep. The Core counterpart to the Express-only `set_react_page()`. Unlike `set_react_page`, it does not auto-discover renderer dependencies
 - `shinyreact.page_bare(...)` / `shinyreact.page_react_dep(...)` — escape-hatch page builder and app-bundle `HTMLDependency` helper
-- Bookmark restore: page entry points emit a head `<script>` carrying restored input values (`_bookmark.py`); the bundle seeds `useShinyInput` initial values from it
+- Bookmark restore + protocol handshake: page entry points emit a `<script type="application/json" id="shinyreact-config">` tag carrying the wire-protocol version and any restored input values (`_bookmark.py` / `bookmark.R`); the bundle asserts the protocol major version and seeds `useShinyInput` initial values from it; the config tag is the only delivery channel (`window.shinyreact._restore` is a write-only DevTools sentinel)
 
 ### R package
 
@@ -285,11 +285,11 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 Practically, when writing a test ask: **does the other language have this behavior, and is it asserted there?**
 
 - **Yes, and asserted** — nothing to do.
-- **Yes, not asserted** — write both. Name them so they're findable from each other, and cross-reference in a comment (e.g. `# Mirrors Python's test_restore_script_tag_escapes_js_line_separators`).
+- **Yes, not asserted** — write both. Name them so they're findable from each other, and cross-reference in a comment (e.g. `# Mirrors Python's test_config_script_tag_line_separators_round_trip`).
 - **Behavior differs deliberately** — assert the *actual* behavior in each language and say why it differs, pointing at the decision record. `decisions/2026-08-13-r-python-parity.md` is the current one; scalar-array flattening in `default_input_handler()` is the worked example.
 - **Genuinely one-sided** — Express-only features (`set_react_page()`) have no R counterpart at all. Note that in the test or the decision record rather than leaving a silent hole.
 
-This applies to helpers too: a payload round-trip helper or fixture written for one language is usually worth porting, since divergent test *scaffolding* hides divergent behavior. `extract_restore_payload()` in `pkg-r/tests/testthat/test-bookmark-escaping.R` is a port of `_extract_restore_payload()` in `pkg-py/tests/test_bookmark_restore.py`.
+This applies to helpers too: a payload round-trip helper or fixture written for one language is usually worth porting, since divergent test *scaffolding* hides divergent behavior. `extract_restore_payload()` in `pkg-r/tests/testthat/helper-config.R` is a port of `_extract_restore_payload()` in `pkg-py/tests/test_bookmark_restore.py`.
 
 R currently has no e2e suite; that gap is tracked in #194, so Playwright tests are Python-only for now.
 

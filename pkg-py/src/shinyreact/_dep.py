@@ -2,7 +2,7 @@ from pathlib import Path
 
 from htmltools import HTMLDependency, TagChild, TagList
 
-from ._bookmark import _restore_script_tag
+from ._bookmark import _config_script_tag
 
 _WWW_DIR = Path(__file__).parent / "www"
 _SHINYREACT_JS_PATH = _WWW_DIR / "shinyreact.js"
@@ -32,10 +32,10 @@ def _dep() -> HTMLDependency:
 
 
 def _dep_page() -> TagChild:
-    """Page-level shinyreact dependency: bundle + bookmark restore script.
+    """Page-level shinyreact dependency: bundle + ``#shinyreact-config`` tag.
 
     Use from page entry points (``page_react_html``, ``set_react_page``'s page
-    function) — they carry page-level restore state.
+    function) — the config tag carries the protocol version on every page and
+    the bookmark restore payload when one is active.
     """
-    restore = _restore_script_tag()  # may be None
-    return TagList(_dep(), restore) if restore is not None else _dep()
+    return TagList(_dep(), _config_script_tag())
