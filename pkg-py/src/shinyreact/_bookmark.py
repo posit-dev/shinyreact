@@ -50,12 +50,16 @@ def _config_script_tag() -> HTMLDependency:
 
     The payload is plain JSON in a ``type="application/json"`` script tag —
     the browser never executes it as JavaScript, so no JS-string-literal
-    escaping is needed. Two properties of the encoding matter:
+    escaping is needed. Exactly one property of the encoding matters:
 
-    - ``json.dumps`` defaults to ``ensure_ascii=True``, so non-ASCII is
-      emitted as ``\\uXXXX`` escapes.
     - Every ``<`` is emitted as ``\\u003c`` so the payload can never contain
       ``</script`` (which would terminate the surrounding tag) or ``<!--``.
+
+    ``json.dumps`` also defaults to ``ensure_ascii=True``, so non-ASCII lands
+    as ``\\uXXXX`` escapes — but nothing depends on that. U+2028 / U+2029 were
+    a hazard only while the payload was a JS string literal (#183); inside a
+    JSON tag they are inert, which is why R emits them literally and the tests
+    in both languages assert a *round-trip* rather than an escape.
 
     The client reads it with ``JSON.parse``, which treats keys like
     ``__proto__`` and ``constructor`` as ordinary own properties.
