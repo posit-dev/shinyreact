@@ -28,6 +28,25 @@ where Shiny serves them statically.
 For apps that don't need to own the HTML document, prefer \code{\link[=page_react]{page_react()}} —
 it requires no HTML file at all.
 }
+\section{The whole document is a template}{
+
+\code{\link[htmltools:htmlTemplate]{htmltools::htmlTemplate()}} evaluates \strong{every} \code{{{ ... }}} in the file as R
+code, not just the \code{{{ headContent() }}} marker — anywhere in the document,
+\verb{<head>} or \verb{<body>}, with the global environment as parent. So a body
+containing \code{{{ 6*7 }}} renders \code{42}, and \code{{{ nonexistent() }}} is an error at
+page render.
+
+This is deliberate: it is R's own templating idiom, and it is useful. But it
+means a document written for a JS templating engine that also uses \code{{{ }}}
+(Handlebars, Mustache, Vue's text interpolation) is not safe to pass here as
+is — those braces will be evaluated as R. Escape them, or use \code{\link[=page_react]{page_react()}},
+which needs no HTML file at all.
+
+Python's \code{page_react_html()} differs: it replaces the marker and leaves the
+rest of the document untouched. Documented as a deliberate divergence rather
+than a bug — see \code{FEATURES.md} and issue #223.
+}
+
 \section{Path resolution}{
 
 A relative \code{path} resolves against the process working directory. Under
@@ -36,5 +55,9 @@ default \code{"www/index.html"} just works. R has no per-caller \verb{__file__},
 unlike Python — which resolves a relative path against the calling module's
 directory — there is nothing to resolve against outside the working
 directory. Pass an absolute path if you need to be independent of it.
+
+The marker must be spelled exactly \code{{{ headContent() }}} — the check is a
+fixed-string match, so \code{{{headContent()}}} is rejected even though
+\code{htmlTemplate()} itself would accept it.
 }
 

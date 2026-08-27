@@ -21,15 +21,18 @@ def test_custom_classname_lands_on_rendered_element(
     expect(out).to_be_attached()
 
     # `<ShinyOutput>` does not add classes of its own — caller-supplied classes
-    # must be present. (Shiny's binding pass adds `shiny-bound-output` after
-    # mount; the regexes below are deliberately tolerant of that extra class.)
+    # must be present. Regexes rather than equality so an added class is not a
+    # false failure.
     expect(out).to_have_class(re.compile(r"\bcustom-a\b"))
     expect(out).to_have_class(re.compile(r"\bcustom-b\b"))
 
-    # And the binding pass really did run: `shiny-bound-output` was only ever
-    # described in a comment, asserted nowhere, so nothing caught a regression
-    # where the element rendered but never bound.
-    expect(out).to_have_class(re.compile(r"\bshiny-bound-output\b"))
+    # NOT bound, and that is correct: this fixture renders a bare <div> with no
+    # output-binding class, so no binding's find() matches it and Shiny never
+    # marks it. (A comment here used to claim the binding pass adds
+    # `shiny-bound-output` "after mount" — false for this fixture. Asserting it
+    # is how that was discovered; the real assertion lives on the data-frame
+    # test below, where the element genuinely binds.)
+    expect(out).not_to_have_class(re.compile(r"\bshiny-bound-output\b"))
 
     # Arbitrary HTML attributes pass through to the rendered element.
     expect(out).to_have_attribute("data-test-marker", "x")
@@ -51,6 +54,11 @@ def test_data_frame_renders_inside_shiny_output(
 
     table = page.locator("shiny-data-frame#my_table")
     expect(table).to_be_visible()
+
+    # The binding pass really ran. `shiny-bound-output` was described in a
+    # comment and asserted nowhere, so nothing caught an element that rendered
+    # but never bound — the exact failure `<ShinyOutput>` exists to prevent.
+    expect(table).to_have_class(re.compile(r"\bshiny-bound-output\b"))
 
     # Smoke check: the binding fired and at least one cell from the dataframe
     # rendered. The frame is `{"a": [1, 2], "b": [3, 4]}` — "1" appears as the
