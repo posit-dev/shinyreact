@@ -12,6 +12,13 @@ export type OutputStatus = "pending" | "ready" | "recalculating" | "error";
 
 export class OutputRegistryEntry<T> {
   id: string;
+  /**
+   * The div this entry's binding renders into, inside the registry's hidden
+   * container. Held as a reference rather than re-found by id at cleanup time:
+   * output ids are author-chosen, so a document-wide lookup can match the
+   * app's own markup instead of ours.
+   */
+  el?: HTMLElement;
   private status: OutputStatus = "pending";
   private hasValue = false;
   // Cached most-recent value and error so a late-mounting subscriber can be
@@ -159,6 +166,7 @@ export class OutputRegistry {
       this.container.appendChild(div);
 
       outputEntry = new OutputRegistryEntry(outputId);
+      outputEntry.el = div;
       this.outputs.set(outputId, outputEntry);
 
       this.scheduleBindAll();
@@ -204,10 +212,7 @@ export class OutputRegistry {
       }
 
       this.outputs.delete(outputId);
-      const outputDiv = document.getElementById(outputId);
-      if (outputDiv) {
-        outputDiv.remove();
-      }
+      entry.el?.remove();
       this.scheduleBindAll();
     });
   }

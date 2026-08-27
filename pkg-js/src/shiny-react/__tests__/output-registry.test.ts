@@ -86,6 +86,28 @@ describe("OutputRegistry", () => {
     expect(document.getElementById("out1")).toBeNull();
   });
 
+  it("cleanup removes its own div, not a same-id element in the app's markup", async () => {
+    // Output ids are author-chosen, so an app can legitimately have an element
+    // with the same id. A document-global getElementById() would find that one
+    // first and delete the app's node instead of ours.
+    const appNode = document.createElement("div");
+    appNode.id = "out1";
+    appNode.textContent = "app content";
+    document.body.insertBefore(appNode, document.body.firstChild);
+
+    const registry = new OutputRegistry();
+    const dispose = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
+    dispose();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(appNode.isConnected).toBe(true);
+    expect(
+      document.querySelector(".shiny-react-output-container [id='out1']"),
+    ).toBeNull();
+
+    appNode.remove();
+  });
+
   it("scheduleCleanup preserves entry when re-subscribed before RAF", async () => {
     const registry = new OutputRegistry();
     const dispose1 = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
