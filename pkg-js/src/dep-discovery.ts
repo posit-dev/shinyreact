@@ -18,8 +18,20 @@ import { getShiny } from "./shiny-react/get-shiny";
  * `useShinyInput`. Python registers the same handler as a no-op today —
  * its bootstrap hook for posit-dev/shinyreact#220.
  */
+let installed = false;
+
+/** Test-only: allow re-installing in a fresh fixture. */
+export function _resetDepDiscoveryForTesting(): void {
+  installed = false;
+}
+
 export function installDepDiscovery(): void {
+  // Import-time safe by construction, which is what lets BOTH entry points
+  // call it: no `document` (SSR, node tests) is a no-op, no Shiny yet means a
+  // single event listener and nothing else, and calling it twice is a no-op.
   if (typeof document === "undefined") return;
+  if (installed) return;
+  installed = true;
 
   const start = (): void => {
     const shiny = getShiny();
@@ -44,7 +56,17 @@ export function installDepDiscovery(): void {
 
   if (getShiny()) {
     start();
-  } else {
-    document.addEventListener("shiny:connected", start, { once: true });
+    return;
   }
+
+  // Wait for Shiny. NOT `{ once: true }`: `shiny:connected` can fire before
+  // `window.Shiny` is readable, and a one-shot listener would consume the
+  // event, leave `start()` a no-op, and never install discovery at all. Stay
+  // subscribed until Shiny is actually there, then unsubscribe.
+  const onConnected = (): void => {
+    if (!getShiny()) return;
+    document.removeEventListener("shiny:connected", onConnected);
+    start();
+  };
+  document.addEventListener("shiny:connected", onConnected);
 }
