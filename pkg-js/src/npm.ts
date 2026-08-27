@@ -15,12 +15,24 @@
 // no CSS at all, and ImageOutput's placeholder spinner had no @keyframes spin.
 import "./shinyreact.css";
 
+import { installDepDiscovery } from "./dep-discovery";
 import { requireShinyReactConfigTag } from "./shiny-react/config";
 
 // An independently-installed client meeting a page without the
 // `#shinyreact-config` tag means the server predates the wire protocol —
 // fail loudly instead of degrading silently (see protocol/README.md §4).
 requireShinyReactConfigTag();
+
+// Automatic renderer dependency discovery, same as the IIFE bundle installs.
+// Without this an npm-tier app gets no `shinyreact-deps` handler AND never
+// sends the `.shinyreact_init` ping, so an R server never even installs
+// discovery for the session — a `<ShinyOutput>` whose binding arrives late
+// silently never binds.
+//
+// Safe as an import-time side effect: it no-ops without `document` (SSR, node
+// tests), and with no Shiny yet it only adds one event listener. See
+// dep-discovery.ts.
+installDepDiscovery();
 
 export {
   useSetShinyInput,

@@ -149,10 +149,38 @@ from is a separate, frozen artifact).
    breaking change" is answered by diffing the schema. This is also the class
    of test that would have caught the #182–#186 parity bugs earlier.
 
+### What the two entry points must and must not share
+
+"Single source" does not make the two builds equivalent on its own — they have
+*separate entry modules*, and an entry module is where side effects live. This
+diverged once already (posit-dev/shinyreact#233): `installDepDiscovery()` was
+called from `index.ts` and not `npm.ts`, so npm-tier apps got no
+`shinyreact-deps` handler and never sent the `.shinyreact_init` ping, meaning an
+R server never installed discovery for the session at all. A `<ShinyOutput>`
+whose binding arrived late simply never bound, with no error.
+
+The rule, then:
+
+- **Client behavior belongs in both entries.** Anything that adapts the client
+  to the server it meets — dependency discovery today — is not a tier
+  distinction and must be installed by both. To stay import-time safe, such an
+  installer must no-op without `document` (SSR, node tests), do nothing beyond
+  registering a listener until Shiny exists, and tolerate being called twice.
+- **Tier distinctions are deliberate and few.** Only two today: the IIFE
+  installs `window.shinyreact` (npm consumers import the hooks directly), and
+  the npm build treats a missing `#shinyreact-config` tag as fatal (an
+  independently installed client meeting a tagless page means the server
+  predates the protocol; the IIFE ships *with* the server, so absence is
+  legitimate for a hand-wired `page_bare()` page).
+- **Both are pinned by tests.** `pkg-js/src/__tests__/entry-parity.test.ts`
+  imports each entry for real and asserts its observable side effects, including
+  the deliberate differences. Comments do not stop drift; that test does.
+
 ### Accepted trade-offs
 
 - **Two shipped artifacts** (npm ESM + IIFE). Mitigated: single source, one
   release builds both; docs must be crisp about which tier an app is in.
+  The entries' side effects are the drift risk — see above.
 - **Drift between an old npm install and a new server package is possible.**
   The handshake makes it a clear, actionable error instead of silent
   breakage — the best any dual-registry design achieves (ipywidgets, plotly,
