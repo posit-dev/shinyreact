@@ -73,8 +73,10 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
     - `[r]` `page_react()` via `tags$head()`; `page_react_html()` via a
       dependency's `head` HTML, with `all_files = FALSE` since it ships no files
     - R emitted it inline in `<body>` until #224
-  - always carries `protocolVersion` — though `[js]` treats it as optional and
-    **skips the handshake when it is absent or falsy** (#223)
+  - always carries `protocolVersion`
+    - `[js]` a tag *without* one no longer skips the handshake silently: the
+      IIFE logs an error, and the npm build throws, since an independently
+      installed client cannot assume compatibility
   - carries `restore` (an `{inputId: value}` map) only when a bookmark restore
     is active *and* the map is non-empty
   - emitted by every page entry point except `page_bare()`
@@ -290,8 +292,11 @@ existing registry value at render time.
     defaults to `undefined`
   - it subscribes to the value channel only — status and error changes do not
     re-render it
-  - the held value is **not** reset when the id or namespace changes, so the
-    previous id's value stays visible until the new one delivers (#223)
+  - the held value **is** reset when the id or namespace changes, so the
+    previous id's data is never shown as the new id's
+    - it falls back to the caller's `defaultValue`
+    - a new id the registry already has a value for is adopted immediately, so
+      the reset does not cause a flash of `undefined`
 - `useShinyOutputStatus(id, options?)` → status
   - exactly four values: `"pending"`, `"ready"`, `"recalculating"`, `"error"`
   - it starts at `"pending"` and subscribes to the status channel only
@@ -388,13 +393,14 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
 ### Output registry
 
 - one hidden container div (`.shiny-react-output-container`,
-  `visibility: hidden`) is appended to `<body>`, holding one
-  `.shiny-react-output` div per subscribed output id
+  `visibility: hidden`) is appended to `<body>` on the **first** `add()`,
+  holding one `.shiny-react-output` div per subscribed output id
+  - created lazily, not in the constructor, so constructing the registry in a
+    DOM-less environment (SSR, a node test) does not throw
   - this is what lets a React component read a Shiny output with no
     server-rendered placeholder: the binding needs a DOM element, so the
     registry manufactures one
-  - each manufactured div also carries the literal text
-    `This is the output div for <id>` — hidden, but shipped into every page
+  - the manufactured divs are empty: no text content is shipped into the page
 - a `ReactOutputBinding` is registered with Shiny as `shiny.reactOutput`,
   finding `.shiny-react-output` elements and routing to registry entries
   - registration no-ops when `window.Shiny` is absent, with **no retry**, so on
@@ -442,19 +448,17 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
 
 - the registry pair is built by a one-time init and published on
   `window.Shiny.reactRegistry`
-- `getReactRegistry()` resolves in three ways
-  - with `window.Shiny` present it returns `shiny.reactRegistry` **unchecked**,
-    so it yields `undefined` if init never ran
-  - without `window.Shiny` it falls back to the module-level singleton — the
-    same no-Shiny tolerance the message registry relies on
-  - it throws `"React registry not initialized"` only when there is no Shiny
-    *and* init never ran
-- `initializeReactRegistry()` is **not idempotent** — each call builds fresh
-  registries and discards every held value; only the init latch makes this safe
-- the output registry's container is created with **no `document` guard**, so
-  init throws in a DOM-less environment
-  - the opposite of the lifecycle store's documented policy, which skips
-    installation when there is no `document`
+- the registry pair is **page-scoped**, reached through `getReactRegistry()`
+  - it attaches the module registries to `window.Shiny.reactRegistry` on first
+    use (`??=`), so the first copy of the library to run owns the page
+  - two registries would split one input id's producers from its consumers
+  - without `window.Shiny` it returns the module registries and attaches nothing
+  - it never returns `undefined`; the old unchecked read of
+    `shiny.reactRegistry` did, crashing a call later
+- `initializeReactRegistry()` is idempotent — a second call keeps every input
+  value and output subscriber, rather than silently discarding them
+- construction touches no DOM, so a DOM-less environment can initialize
+  shinyreact without throwing — matching the lifecycle store's policy
 
 ### Message registry
 
@@ -666,9 +670,10 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - a missing file raises, naming the resolved path
     - `[r]` the error also names the working directory, since that is what a
       relative path resolved against
-  - the file is read at call time, not cached across calls
-    - `[py]` under `ReactApp` the UI is a per-request function, so the document
-      is re-read on every request and edits appear with **no restart**
+  - the file is read at call time, and re-read only when it changes on disk
+    - `[py]` under `ReactApp` the UI is a per-request function, so edits appear
+      with **no restart**; the read is gated on `(st_mtime_ns, st_size)`, so an
+      unchanged document is read once and served from cache thereafter
     - `[py]` under `set_react_page()`'s HTML mode the read happens once, at
       call time, so edits there *do* need a restart (issue #82)
     - `[r]` read twice per call — once with `brio` for the marker check, once by
@@ -693,8 +698,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - the served document is decoded as UTF-8 by `htmlTemplate()` itself
       (`readChar(useBytes = TRUE)` + an explicit UTF-8 encoding); `brio` only
       reads the throwaway copy used for the marker check
-      - `[py]` by contrast reads with `Path.read_text()` and **no** `encoding=`,
-        so it follows the platform locale — an undocumented parity gap (#223)
+      - `[py]` reads with an explicit `encoding="utf-8"` too, on both the
+        `page_react_html()` and `set_react_page()` paths
     - the deps are attached with `attachDependencies(append = TRUE)`, and
       `htmlTemplate()` renders them at the marker
     - the config tag rides in as an `htmlDependency` named
@@ -736,16 +741,14 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     `ReactApp(...)` must pass `ui=` explicitly
 - the discovered UI is a **per-request function**, so `bookmark_store="url"`
   restore works with no further wiring
-  - but which *mode* was discovered is decided **once at construction**, so
-    creating or deleting `www/index.html` after startup never switches modes
-    (#223)
-  - and because the UI re-runs per request, `page_react`'s mtime/existence
-    checks — including the missing-`ui.js` warning — re-run on every request
-- `static_assets` handling has two untested edges (#223)
-  - the guard is `kwargs.get("static_assets") is None`, so an explicit
-    `static_assets=None` still auto-mounts
-  - a passed `static_assets` **replaces** rather than merges, leaving the
-    document's own directory unserved
+  - the mode is re-checked **per request**, so creating or deleting
+    `www/index.html` during a dev session switches modes with no restart
+  - `www/` is mounted at `/` whenever the directory exists, since
+    `static_assets` is a constructor argument and cannot be per-request —
+    mounting a dir the app never serves from is harmless, a missing mount is a
+    404 per asset
+  - an explicitly passed `static_assets` — **including `None`** — wins over the
+    auto-mount, and replaces rather than merges
 - `ui=` overrides discovery and otherwise behaves like `shiny.App`'s `ui`
   - a plain UI object passes straight through
   - a `ReactHtmlDocument` passed as `ui=` still gets its directory mounted at

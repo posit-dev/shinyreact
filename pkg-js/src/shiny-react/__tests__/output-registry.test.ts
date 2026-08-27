@@ -33,6 +33,29 @@ describe("OutputRegistry", () => {
       .forEach((el) => el.remove());
   });
 
+  it("manufactures a bare div — no debug text shipped into the page", () => {
+    const registry = new OutputRegistry();
+    registry.add("out1", vi.fn(), vi.fn(), vi.fn());
+
+    const div = document.querySelector(
+      ".shiny-react-output-container #out1",
+    ) as HTMLElement;
+    expect(div).not.toBeNull();
+    expect(div.textContent).toBe("");
+  });
+
+  it("does not touch document until the first add()", () => {
+    // Constructing the registry is part of shinyreact's one-time init, which a
+    // DOM-less environment reaches; creating the container eagerly threw there.
+    const before = document.querySelectorAll(
+      ".shiny-react-output-container",
+    ).length;
+    new OutputRegistry();
+    expect(
+      document.querySelectorAll(".shiny-react-output-container").length,
+    ).toBe(before);
+  });
+
   it("add returns a dispose function", () => {
     const registry = new OutputRegistry();
     const dispose = registry.add("out1", vi.fn(), vi.fn(), vi.fn());

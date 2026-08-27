@@ -32,6 +32,7 @@ vi.mock("../message-registry", () => ({
   initializeMessageRegistry: vi.fn(),
 }));
 
+import { _resetReactRegistryForTesting } from "../react-registry";
 import {
   _resetShinyReactInitializedForTesting,
   useSetShinyInput,
@@ -45,6 +46,10 @@ function freshState(): void {
   // Clear the reactRegistry that initializeReactRegistry() attaches to the
   // mock shiny object, so each test starts with a fresh InputRegistry.
   delete mockShiny.reactRegistry;
+  // Also drop the module-local registries: initializeReactRegistry() is
+  // idempotent now, so deleting the window property alone no longer gives a
+  // fresh InputRegistry.
+  _resetReactRegistryForTesting();
   _resetShinyReactInitializedForTesting();
 }
 

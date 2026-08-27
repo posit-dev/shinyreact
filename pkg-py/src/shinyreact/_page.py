@@ -222,6 +222,38 @@ def page_react_dep(
     )
 
 
+# Cache of documents read by page_react_html(), keyed by resolved path. Value is
+# (stat signature, text).
+_DOCUMENT_CACHE: dict[Path, tuple[tuple[int, int], str]] = {}
+
+
+def _read_document_cached(path: Path) -> str:
+    """Read an HTML document, re-reading only when it has changed on disk.
+
+    ``ReactApp`` makes the UI a per-request function, so ``page_react_html()``
+    runs on every page render. Reading the file each time is what lets an author
+    edit ``index.html`` and hit refresh — no restart — but re-reading bytes that
+    have not changed is pure waste on a page that never changes.
+
+    So: stat every call, read only when the signature moves. ``st_mtime_ns`` plus
+    ``st_size`` is the same heuristic build tools use; a same-nanosecond,
+    same-size edit would be missed, which needs a machine fast enough to write
+    twice within one filesystem timestamp tick.
+
+    Not thread-locked deliberately: two concurrent requests may both read the
+    file and both store the result, which costs one redundant read and cannot
+    produce a wrong answer.
+    """
+    stat = path.stat()
+    signature = (stat.st_mtime_ns, stat.st_size)
+    cached = _DOCUMENT_CACHE.get(path)
+    if cached is not None and cached[0] == signature:
+        return cached[1]
+    text = path.read_text(encoding="utf-8")
+    _DOCUMENT_CACHE[path] = (signature, text)
+    return text
+
+
 def set_react_page(path: str | Path | None = None) -> None:
     """Set the page for this Express app to a React app (the ui.tsx pattern).
 
@@ -353,7 +385,7 @@ def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
         index_path = caller_dir / path
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
-    index_html = index_path.read_text()
+    index_html = _read_document_cached(index_path)
     if _HEAD_CONTENT_MARKER not in index_html:
         raise ValueError(
             f"{index_path} must be a complete HTML document containing a "
@@ -447,7 +479,10 @@ def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
     # invoked once. A real fix needs an upstream py-shiny change adding an
     # opt-in for per-request `app_ui` independent of bookmarking. Until then,
     # editing `www/index.html` requires restarting the Shiny server.
-    index_html = index_path.read_text()
+    # Explicit encoding: the default follows the platform locale, so a document
+    # with non-ASCII content would decode differently on a machine whose locale
+    # is not UTF-8. R's page_react_html() decodes UTF-8 unconditionally.
+    index_html = index_path.read_text(encoding="utf-8")
 
     def _react_page_fn(*args: Any) -> Tag:
         deps = _harvest_renderer_deps(args)

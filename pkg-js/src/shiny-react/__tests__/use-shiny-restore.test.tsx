@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { _resetReactRegistryForTesting } from "../react-registry";
 import { describe, expect, it, afterEach, beforeEach, vi } from "vitest";
 
 vi.mock("../get-shiny", () => ({
@@ -93,6 +94,32 @@ describe("applyRestoredValues", () => {
       "-applied": true,
       "-values": { foo: "old" },
     });
+  });
+
+  it("warns when the config tag carries no protocolVersion", () => {
+    // Skipping the handshake entirely was the old behavior, which defeats the
+    // one thing the tag exists for. The IIFE ships with the server, so it logs
+    // rather than throwing.
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    setConfigTag({ restore: { foo: 1 } } as never);
+
+    applyRestoredValues(new InputRegistry());
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining("no protocolVersion"),
+    );
+    spy.mockRestore();
+  });
+
+  it("strict mode (npm build): throws when the tag carries no protocolVersion", () => {
+    // An independently installed client cannot assume compatibility — same
+    // reasoning as a missing tag being fatal there.
+    requireShinyReactConfigTag();
+    setConfigTag({ restore: { foo: 1 } } as never);
+
+    expect(() => applyRestoredValues(new InputRegistry())).toThrow(
+      /no protocolVersion/,
+    );
   });
 
   it("config tag without restore writes the empty sentinel", () => {
@@ -237,7 +264,11 @@ describe("useShinyInput + restore", () => {
     freshWindow();
     // Reset the module-level shinyReactInitialized flag so each test re-runs
     // ensureShinyReactInitialized (and therefore applyRestoredValues).
-    _resetShinyReactInitializedForTesting();
+    // Also drop the module-local registries: initializeReactRegistry() is
+  // idempotent now, so deleting the window property alone no longer gives a
+  // fresh InputRegistry.
+  _resetReactRegistryForTesting();
+  _resetShinyReactInitializedForTesting();
     // Reset the singleton react registry between tests.
     // Guard against the first run where the registry may not yet be initialized.
     try {

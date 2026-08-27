@@ -78,17 +78,26 @@ class ReactApp(_ShinyApp):
             app_dir = Path(caller_file).parent if caller_file else Path.cwd()
             src_dir = app_dir / "www"
             index_path = src_dir / "index.html"
-            use_index = index_path.exists()
-            if use_index and kwargs.get("static_assets") is None:
+
+            # Mount the document dir whenever it *could* be needed. The mode is
+            # decided per request below, but `static_assets` is a constructor
+            # argument, so it cannot be: mounting a directory the app never
+            # serves from is harmless, while failing to mount one it does serve
+            # from is a 404 per asset.
+            if src_dir.is_dir() and "static_assets" not in kwargs:
                 kwargs["static_assets"] = {"/": src_dir}
 
             def discovered_ui(request: Any) -> Any:
-                if use_index:
+                # Re-checked per request, not latched at construction: the UI is
+                # already a per-request function, so creating or deleting
+                # www/index.html during a dev session now switches modes without
+                # a restart. `exists()` is one stat call per page render.
+                if index_path.exists():
                     return page_react_html(index_path)
                 return page_react(src_dir=src_dir)
 
             ui = discovered_ui
 
-        if isinstance(ui, ReactHtmlDocument) and kwargs.get("static_assets") is None:
+        if isinstance(ui, ReactHtmlDocument) and "static_assets" not in kwargs:
             kwargs["static_assets"] = {"/": ui.src_dir}
         super().__init__(ui, server, **kwargs)

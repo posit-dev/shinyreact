@@ -24,7 +24,8 @@ export {
 } from "./ShinyModuleContext";
 
 export type ShinyClassExtended = ShinyClass & {
-  reactRegistry: ShinyReactRegistry;
+  /** Attached on first use by getReactRegistry(); absent before that. */
+  reactRegistry?: ShinyReactRegistry;
   /** Attached on first use by getMessageRegistry(); absent before that. */
   messageRegistry?: ShinyMessageRegistry;
 };
