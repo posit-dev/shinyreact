@@ -25,7 +25,8 @@ export {
 
 export type ShinyClassExtended = ShinyClass & {
   reactRegistry: ShinyReactRegistry;
-  messageRegistry: ShinyMessageRegistry;
+  /** Attached on first use by getMessageRegistry(); absent before that. */
+  messageRegistry?: ShinyMessageRegistry;
 };
 
 declare global {

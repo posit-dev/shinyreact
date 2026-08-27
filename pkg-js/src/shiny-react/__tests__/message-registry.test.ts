@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  getMessageRegistry,
   initializeMessageRegistry,
   ShinyMessageRegistry,
 } from "../message-registry";
@@ -11,6 +12,9 @@ type Dispatcher = (msg: { id: string; data: unknown }) => void;
 function fakeShiny() {
   const handlers = new Map<string, Dispatcher>();
   return {
+    // Present so the attach in getMessageRegistry() type-checks against this
+    // stand-in the way it does against ShinyClassExtended.
+    messageRegistry: undefined as unknown,
     addCustomMessageHandler: vi.fn((type: string, fn: Dispatcher) => {
       handlers.set(type, fn);
     }),
@@ -85,7 +89,7 @@ describe("ShinyMessageRegistry", () => {
     expect(() => shiny.send("unknown", 1)).not.toThrow();
   });
 
-  it("registers when Shiny arrives after the first attempt, and publishes itself", () => {
+  it("registers when Shiny arrives after the first attempt", () => {
     // initializeMessageRegistry() runs during shinyreact's one-time init, which
     // can happen before Shiny exists. It is a no-op then, with no retry — so
     // addHandler has to be able to install the dispatcher later.
@@ -99,9 +103,50 @@ describe("ShinyMessageRegistry", () => {
     registry.addHandler("late", handler);
 
     expect(shiny.addCustomMessageHandler).toHaveBeenCalledTimes(1);
-    expect((window as any).Shiny.messageRegistry).toBe(registry);
 
     shiny.send("late", "payload");
     expect(handler).toHaveBeenCalledWith("payload");
+  });
+});
+
+describe("getMessageRegistry", () => {
+  it("returns the module singleton when there is no Shiny, without attaching", () => {
+    delete (window as any).Shiny;
+
+    expect(getMessageRegistry()).toBe(getMessageRegistry());
+  });
+
+  it("attaches the registry to window.Shiny on first use", () => {
+    const shiny = fakeShiny();
+    (window as any).Shiny = shiny;
+
+    const registry = getMessageRegistry();
+
+    expect(shiny.messageRegistry).toBe(registry);
+  });
+
+  it("adopts a registry another copy of the library already attached", async () => {
+    // The page-scoped-not-module-scoped property this design exists for. Two
+    // copies of the bundle can coexist today (the server injects the IIFE even
+    // for npm-tier apps until #217), and each has its own module singleton.
+    // Whoever attaches first owns the page; everyone else must adopt it, or
+    // there would be two dispatchers competing for Shiny's single slot per
+    // message type and one copy's handlers would go dead.
+    const shiny = fakeShiny();
+    (window as any).Shiny = shiny;
+    const first = getMessageRegistry();
+    const handler = vi.fn();
+    first.addHandler("shared", handler);
+
+    // A second copy of the library: fresh module state, same page.
+    vi.resetModules();
+    const second = await import("../message-registry");
+    expect(second.getMessageRegistry()).toBe(first);
+
+    // Still exactly one dispatcher, and the first copy's handler still fires.
+    second.getMessageRegistry().addHandler("other", vi.fn());
+    expect(shiny.addCustomMessageHandler).toHaveBeenCalledTimes(1);
+    shiny.send("shared", 42);
+    expect(handler).toHaveBeenCalledWith(42);
   });
 });
