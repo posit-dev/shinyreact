@@ -42,6 +42,8 @@ shinyApp(ui, server)
 
 `reactive_output()` sends any JSON-serializable value through unchanged; the client reads it with `useShinyOutputValue("greeting")`. Push data to the client with `send_message()`.
 
+Traditional Shiny renderers (e.g. `plotly::renderPlotly()`) work too, rendered client-side with the `ShinyOutput` React component — their binding JS/CSS is discovered from the render function and delivered to the client automatically, no `*Output()` placeholder needed.
+
 See [`examples/01-hello/`](https://github.com/posit-dev/shinyreact/tree/main/examples/01-hello) for the complete runnable app (`app.R` alongside the equivalent `app.py`, sharing one `www/` client).
 
 ## Get started

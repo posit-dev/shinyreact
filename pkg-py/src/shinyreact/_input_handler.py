@@ -29,3 +29,12 @@ def _shinyreact_default(value: Any, name: ResolvedId, session: Session) -> Any:
 @input_handlers.add("shinyreact.asis", force=True)
 def _shinyreact_asis(value: Any, name: ResolvedId, session: Session) -> Any:
     return value
+
+
+# The JS bundle sends one `.shinyreact_init:shinyreact.init` ping per session
+# after Shiny initializes (pkg-js/src/dep-discovery.ts). In R this handler
+# bootstraps automatic output dependency discovery; in Python it is a no-op
+# today and the designated hook for the Core-mode port (issue #220).
+@input_handlers.add("shinyreact.init", force=True)
+def _shinyreact_init(value: Any, name: ResolvedId, session: Session) -> Any:
+    return value
