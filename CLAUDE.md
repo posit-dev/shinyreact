@@ -32,6 +32,7 @@ pkg-r/                      # R package — mirrors the Python API in R
   inst/lib/shiny/            # Bundled JS (R counterpart of pkg-py www/)
   tests/testthat/            # testthat tests
 examples/                   # ui.tsx pattern examples (01-hello … 10-bookmarking)
+FEATURES.md                 # behavior tree for all three packages — see below
 docs/                       # posit-conf-2026-goals.md, historical plans/specs
 decisions/                  # Architecture decision records
 pyproject.toml              # Root-level, hatchling backend
@@ -290,13 +291,88 @@ Dashboards with several cards driven by the same filter input should follow:
 
 This is what Shiny's reactive graph is good at: each input change recomputes `filtered_data` once and fans out to all cards. Static pre-aggregated tables that some inputs can't touch produce broken-feeling examples — the demo claims to react to a filter that visibly does nothing for half the page.
 
+## The feature tree (`FEATURES.md`)
+
+`FEATURES.md` at the repo root is a nested bullet list of **every behavior shinyreact actually has today** across all three packages, written so a model (or a human) can audit the code against it leaf by leaf.
+
+One file, not one per package. It is organized **by behavior, not by language** — `page_react()`'s Python and R claims sit side by side, so a divergence is a visible leaf instead of a diff you have to run between two files. Language markers do that work:
+
+- **unmarked leaf** — holds in every language its subtree applies to. State shared behavior once.
+- **`[py]` / `[r]` / `[js]`** — holds only there. A `[py]` leaf with no `[r]` sibling is either a parity bug or a divergence that needs the marked-leaf treatment below.
+
+Examples are **not** covered yet — deferred to a later pass.
+
+### The format
+
+One rule: **each leaf is one atomically checkable claim.** The tree path tells the auditor *where* the claim lives (data vs. UI vs. reactivity vs. wire); the leaf tells it *what to check*. Sketch, using an example app since it needs no shinyreact context:
+
+```
+- histogram of Old Faithful eruption WAITING times
+  - data: faithful.csv, column `waiting` (minutes, ~43–96)
+    - NOT the `eruptions` column
+  - binning matches R's hist(): equal-width, (lo, hi], first bin inclusive
+    - server-side, in faithful.py; client only draws
+- bins slider
+  - range 1–50, default 9 (verify)
+  - debounced? no: updates live
+  - drives BOTH outputs
+    - dist_data: {breaks: number[], counts: number[]}
+    - dist_caption: "272 eruptions in N bins"
+      - singular "bin" when N=1
+- while recalculating: previous chart stays mounted, dims (no skeleton flash)
+```
+
+Conventions:
+
+- **Behavior, not implementation.** "title defaults to the app folder name", not "calls `Path(__file__).parent.name`".
+- **Specifics or nothing.** Exact ids, defaults, ranges, wire shapes, error messages, singular/plural. "handles empty input" is unauditable; "`[]` stays `list()`, not `NULL`" is.
+- **No `file:line` references.** They rot, and locating the claim is the auditor's job. Naming a *file* coarsely ("server-side, in `faithful.py`") is fine and helpful.
+- **No prose paragraphs, no code blocks**, other than short inline literals (wire shapes, ids, messages). Explanations belong in `DESIGN.md`, `decisions/`, or this file.
+- **Mark uncertainty, don't omit it.** A `(verify)` suffix on a leaf is a valid state and a direct target for the next audit. Silently dropping a claim you weren't sure of is what makes the tree untrustworthy.
+- **Present tense, today's code.** Not roadmap, not aspiration. Planned work goes in the issue tracker.
+- **Deliberate divergences are sibling leaves**, both stated, with the reason as a child pointing at the decision record — e.g. `[r]` scalar-array flattening in `default_input_handler()` vs. `[py]` no-op → `decisions/2026-08-13-r-python-parity.md`.
+- **`(e2e)` marks a leaf pinned by a Playwright test.** Browser-verified behavior is the strongest claim in the file; say so where it applies.
+
+### The completeness bar
+
+A tree that only describes the happy path is worse than useless — it reads as complete while hiding exactly the behavior that breaks. **Derive the tree from an inventory of the source, not from reading order.** Read the whole package, then sweep for each of these and confirm every hit has a leaf:
+
+| Sweep | Why it earns a leaf |
+|---|---|
+| every public symbol, every parameter, every default | defaults are the most-relied-on, least-documented behavior |
+| every `raise` / `warnings.warn` / `cli_abort` | what triggers it, and what the message tells the reader |
+| every branch a caller can steer | existence checks, `None` fallbacks, absolute vs. relative paths, marker present/absent |
+| every fallback value | `"0"`, `"0.1.0"`, `Path.cwd()` — silent fallbacks are where drift hides |
+| every test name in `pkg-*/tests/` | each asserts a behavior; a test with no leaf means the tree is behind the suite |
+| every Playwright test | boundary behavior no unit test can express — mark it `(e2e)` |
+| every documented security property | e.g. bookmark values appearing in page source |
+| every deliberate divergence | with its decision record |
+
+What does *not* earn a leaf: private helper structure, internal call order, type annotations, or anything a reader would check by reading the code rather than by running it.
+
+Two counts worth stating when you finish a pass: how many leaves, and what you deliberately left out (with why). "Thorough" is a claim that needs evidence like any other.
+
+### Keeping it current
+
+`FEATURES.md` is only useful if it is true, so treat it like the test suite:
+
+- **Any PR that changes behavior updates `FEATURES.md` in the same PR** — added, changed, and removed leaves alike. A behavior change with no tree diff is an incomplete PR.
+- **When you add a language marker, look for its sibling.** Same reflex as [Cover both R and Python](#cover-both-r-and-python), applied to behavior instead of assertions: does the other language claim this? If not, say why — one-sided (Express-only `set_react_page()`), deliberate (decision record), or a bug worth filing.
+- **When reading unfamiliar code, read the tree first**, then verify rather than trust it. If the code and the tree disagree, the code wins and the tree gets fixed.
+
+### Auditing
+
+`/audit-shinyreact-features` walks the leaves and emits, per leaf: `CONFIRMED <file:line>` / `CONTRADICTED <what the code does>` / `NOT FOUND IN CODE`. The reverse pass is equally valuable: **behavior in the code that appears nowhere in the tree** — scope creep, or a real feature nobody documented. Both directions produce work: fix the code, or fix the tree.
+
+The audit is accountable to the same completeness bar: it runs the sweeps above as inventories and reports how many items in each were matched to a leaf, so "I checked everything" is a number rather than an assurance.
+
 ## Testing policy
 
 When fixing a bug, add or update unit tests to cover the fix whenever possible. The test should fail without the fix and pass with it. If the fix is purely a type annotation or comment change with no runtime behavior difference, tests are not required.
 
 - **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
 - **R tests:** `pkg-r/tests/testthat/` — run with `make r-check-tests`
-- **JS tests:** `pkg-js/src/shiny-react/__tests__/` — run with `cd pkg-js && npx vitest run`
+- **JS tests:** `pkg-js/src/__tests__/` (the shinyreact layer — `ShinyOutput`) and `pkg-js/src/shiny-react/__tests__/` (the vendored hooks/registries) — run both with `cd pkg-js && npx vitest run`. Requires `make js-setup` first; a missing `node_modules` fails with `ERR_MODULE_NOT_FOUND`, not a test failure
 - **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
 
 ### Cover both R and Python
