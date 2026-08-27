@@ -265,3 +265,11 @@ def test_set_react_page_none_falls_back_to_discovery(tmp_path: Path) -> None:
     dep_names = [d.name for d in rendered["dependencies"]]
     assert tmp_path.name in dep_names
     assert f"<title>{tmp_path.name}</title>" in rendered["html"]
+
+
+def test_set_react_page_explicit_missing_path_raises(tmp_path: Path) -> None:
+    # An explicitly passed path must exist. `test_set_react_page.py` had no
+    # pytest.raises at all, so nothing pinned this branch.
+    missing = tmp_path / "nope.html"
+    with pytest.raises(FileNotFoundError, match=str(missing)):
+        _build_react_page_fn(missing)

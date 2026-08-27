@@ -1,6 +1,7 @@
 import re
 
 import pytest
+import shinyreact
 from htmltools import HTMLDependency, Tag
 from shinyreact._page import page_bare
 
@@ -217,3 +218,25 @@ def test_page_react_defaults_resolve_against_cwd_without_caller_file(
     assert "cwd-app" in names
     rendered = str(ui.tagify())
     assert "<title>cwd-app</title>" in rendered
+
+
+def test_page_bare_emits_no_config_tag() -> None:
+    # page_bare() is the escape hatch: Shiny deps only, so no protocol tag.
+    # Mirrors R's "page_bare() emits no #shinyreact-config tag".
+    html = page_bare().tagify().render()["html"]
+    assert "shinyreact-config" not in html
+
+
+def test_public_api_surface_is_exactly_this() -> None:
+    # Pins the export set so an accidental addition or removal is a test
+    # failure. Mirrors R's NAMESPACE assertion.
+    assert sorted(shinyreact.__all__) == [
+        "ReactApp",
+        "page_bare",
+        "page_react",
+        "page_react_dep",
+        "page_react_html",
+        "reactive_output",
+        "send_message",
+        "set_react_page",
+    ]

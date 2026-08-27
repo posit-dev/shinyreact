@@ -34,15 +34,24 @@ output_ui <- function(render_fn, id) {
     cli::cli_abort(c(
       "{.arg render_fn} carries no {.code outputFunc} attribute to build UI
        from.",
-      "i" = "{.fn shinyreact::reactive_output} render functions deliberately
-             have none -- the React client owns their UI."
+      "i" = "Shiny normally substitutes a placeholder constructor, so this is
+             rare -- the render function was likely built without going through
+             {.fn shiny::createRenderFunction}."
     ))
   }
   do.call(output_fn, c(list(id), attr(render_fn, "outputArgs", exact = TRUE)))
 }
 
-# `output_ui()` for harvest loops: NULL (skip) instead of an error for render
-# functions without an outputFunc, such as reactive_output()'s.
+# `output_ui()` for harvest loops: NULL instead of an error when the render
+# function carries no outputFunc at all.
+#
+# Note this is NOT the reactive_output() path: passing `outputFunc = NULL` to
+# createRenderFunction() makes shiny substitute a placeholder constructor, so
+# reactive_output()'s render functions DO have the attribute and build shiny's
+# dep-less "<pre>No UI/output function provided</pre>". The harvest therefore
+# builds that placeholder and finds zero dependencies, rather than skipping the
+# output -- same end result, one wasted UI construction. Pinned by
+# test-output-ui.R.
 output_ui_or_null <- function(render_fn, id) {
   if (
     !inherits(render_fn, "shiny.render.function") ||

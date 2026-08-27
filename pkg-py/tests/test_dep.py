@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import shinyreact._dep as _dep_mod
 from htmltools import HTMLDependency
 from shinyreact._dep import _SHINYREACT_JS_PATH, _dep
 from shinyreact._page import page_react_dep
@@ -147,3 +148,19 @@ def test_page_react_dep_attaches_stylesheet_when_css_present(tmp_path):
     assert stylesheet is not None
     entry = stylesheet if isinstance(stylesheet, dict) else stylesheet[0]
     assert entry["href"] == "ui.css"
+
+
+def test_dep_stylesheet_attached_unconditionally() -> None:
+    # No existence check on the CSS, unlike page_react_dep()'s. Mirrors R's
+    # "shinyreact_dep() attaches the stylesheet unconditionally".
+    dep = _dep()
+    assert [s["href"] for s in dep.stylesheet] == ["shinyreact.css"]
+
+
+def test_dep_version_falls_back_when_bundle_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Deliberate divergence: R falls back to packageVersion("shinyreact").
+    # Mirrors R's "shinyreact_dep() version falls back to the package version".
+    monkeypatch.setattr(_dep_mod, "_SHINYREACT_JS_PATH", Path("/nonexistent/x.js"))
+    assert str(_dep().version) == "0.1.0"

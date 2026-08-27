@@ -199,3 +199,83 @@ test_that("page_react includes extra HTMLDependency arguments", {
     logical(1)
   )))
 })
+
+test_that("page_react() emits no body HTML of its own", {
+  # The client appends its own mount container; the server contributes nothing
+  # to <body>. Mirrors Python's test_page_react_attaches_bundle_app_dep_and_config.
+  app_dir <- withr::local_tempdir()
+  dir.create(file.path(app_dir, "www"))
+  writeLines("// ui", file.path(app_dir, "www", "ui.js"))
+  withr::local_dir(app_dir)
+
+  body <- as.character(htmltools::renderTags(page_react())$html)
+  expect_false(grepl("<div", body, fixed = TRUE))
+  expect_false(grepl("root", body, fixed = TRUE))
+})
+
+test_that("page_bare() emits no #shinyreact-config tag", {
+  # page_bare() is the escape hatch: Shiny's deps only, so no protocol tag.
+  rendered <- htmltools::renderTags(page_bare())
+  expect_no_match(
+    paste(as.character(rendered$head), as.character(rendered$html)),
+    "shinyreact-config",
+    fixed = TRUE
+  )
+})
+
+test_that("page_react_html() evaluates every {{ }} in the document (#223)", {
+  # Documented, deliberate: htmlTemplate() is a whole-document template, so
+  # braces in the BODY are R code too. Python replaces only the marker. This
+  # pins the divergence rather than asserting it is desirable.
+  dir <- withr::local_tempdir()
+  dir.create(file.path(dir, "www"))
+  writeLines(
+    c(
+      "<html><head>{{ headContent() }}</head>",
+      "<body><p>{{ 6*7 }}</p></body></html>"
+    ),
+    file.path(dir, "www", "index.html")
+  )
+  withr::local_dir(dir)
+
+  body <- as.character(htmltools::renderTags(page_react_html())$html)
+  expect_match(body, "<p>42</p>", fixed = TRUE)
+})
+
+test_that("page_react_html() rejects a marker without the exact spacing", {
+  # The check is a fixed-string match, so htmlTemplate()'s own tolerance for
+  # {{headContent()}} does not apply. Documented in ?page_react_html.
+  dir <- withr::local_tempdir()
+  dir.create(file.path(dir, "www"))
+  writeLines(
+    "<html><head>{{headContent()}}</head><body></body></html>",
+    file.path(dir, "www", "index.html")
+  )
+  withr::local_dir(dir)
+
+  expect_error(page_react_html(), "headContent")
+})
+
+test_that("the exported API surface is exactly this", {
+  # Pins the export set so an accidental addition or removal is a test
+  # failure. Mirrors Python's test_public_api_surface_is_exactly_this.
+  expect_identical(
+    sort(getNamespaceExports("shinyreact")),
+    sort(c(
+      "page_bare",
+      "page_react",
+      "page_react_dep",
+      "page_react_html",
+      "reactive_output",
+      "send_message"
+    ))
+  )
+})
+
+test_that("send_message() returns invisibly", {
+  session <- list(
+    ns = function(id) id,
+    sendCustomMessage = function(type, message) invisible(NULL)
+  )
+  expect_invisible(send_message(session, "id", list(a = 1)))
+})

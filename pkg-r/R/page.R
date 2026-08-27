@@ -80,6 +80,23 @@ page_react <- function(
 #' For apps that don't need to own the HTML document, prefer [page_react()] —
 #' it requires no HTML file at all.
 #'
+#' @section The whole document is a template:
+#' [htmltools::htmlTemplate()] evaluates **every** `{{ ... }}` in the file as R
+#' code, not just the `{{ headContent() }}` marker — anywhere in the document,
+#' `<head>` or `<body>`, with the global environment as parent. So a body
+#' containing `{{ 6*7 }}` renders `42`, and `{{ nonexistent() }}` is an error at
+#' page render.
+#'
+#' This is deliberate: it is R's own templating idiom, and it is useful. But it
+#' means a document written for a JS templating engine that also uses `{{ }}`
+#' (Handlebars, Mustache, Vue's text interpolation) is not safe to pass here as
+#' is — those braces will be evaluated as R. Escape them, or use [page_react()],
+#' which needs no HTML file at all.
+#'
+#' Python's `page_react_html()` differs: it replaces the marker and leaves the
+#' rest of the document untouched. Documented as a deliberate divergence rather
+#' than a bug — see `FEATURES.md` and issue #223.
+#'
 #' @section Path resolution:
 #' A relative `path` resolves against the process working directory. Under
 #' `shiny::runApp()` / `shiny::shinyApp()` that is the app directory, so the
@@ -87,6 +104,10 @@ page_react <- function(
 #' unlike Python — which resolves a relative path against the calling module's
 #' directory — there is nothing to resolve against outside the working
 #' directory. Pass an absolute path if you need to be independent of it.
+#'
+#' The marker must be spelled exactly `{{ headContent() }}` — the check is a
+#' fixed-string match, so `{{headContent()}}` is rejected even though
+#' `htmlTemplate()` itself would accept it.
 #'
 #' @param path Path to the HTML document. Defaults to `"www/index.html"`,
 #'   relative to the working directory.
