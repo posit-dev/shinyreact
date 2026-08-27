@@ -11,19 +11,36 @@
 # pkg-py/tests/test_protocol_surface.py and
 # pkg-js/src/__tests__/protocol-surface.test.ts.
 
+# These tests read repo files (protocol/surface.json, pkg-r/R/*.R), so they only
+# run from a source checkout. `R CMD check` tests an INSTALLED package, where
+# neither exists -- hence one skip helper rather than four scattered checks.
+skip_if_not_source_tree <- function() {
+  skip_if_not(
+    file.exists(manifest_path()) && dir.exists(r_source_dir()),
+    "not a source checkout (R CMD check installs the package without repo files)"
+  )
+}
+
+manifest_path <- function() {
+  testthat::test_path("..", "..", "..", "protocol", "surface.json")
+}
+
+r_source_dir <- function() {
+  testthat::test_path("..", "..", "R")
+}
+
 surface <- function() {
-  path <- testthat::test_path("..", "..", "..", "protocol", "surface.json")
-  skip_if_not(file.exists(path), "protocol/surface.json not found")
-  jsonlite::fromJSON(path, simplifyVector = FALSE)
+  skip_if_not_source_tree()
+  jsonlite::fromJSON(manifest_path(), simplifyVector = FALSE)
 }
 
 pkg_r_sources <- function() {
-  dir <- testthat::test_path("..", "..", "R")
-  vapply(
-    list.files(dir, pattern = "[.]R$", full.names = TRUE),
-    brio::read_file,
-    character(1)
-  )
+  skip_if_not_source_tree()
+  files <- list.files(r_source_dir(), pattern = "[.]R$", full.names = TRUE)
+  # Guard against the scan silently finding nothing and every assertion below
+  # passing vacuously.
+  expect_gt(length(files), 0L)
+  vapply(files, brio::read_file, character(1))
 }
 
 test_that("registered input handlers match the manifest", {
@@ -46,6 +63,7 @@ test_that("registered input handlers match the manifest", {
 
 test_that("custom message types match the manifest", {
   # Source scan: the type is a literal at the send site.
+  expected <- names(surface()$customMessages)
   sources <- pkg_r_sources()
   found <- unlist(regmatches(
     sources,
@@ -53,10 +71,11 @@ test_that("custom message types match the manifest", {
   ))
   found <- unique(sub('.*"([^"]+)"$', "\\1", found))
 
-  expect_length(setdiff(found, names(surface()$customMessages)), 0L)
+  expect_length(setdiff(found, expected), 0L)
 })
 
 test_that("the config tag id matches the manifest", {
+  expected <- names(surface()$domIds)
   sources <- pkg_r_sources()
   found <- unlist(regmatches(
     sources,
@@ -65,7 +84,7 @@ test_that("the config tag id matches the manifest", {
   found <- unique(sub('.*"([^"]+)"$', "\\1", found))
 
   expect_gt(length(found), 0L)
-  expect_length(setdiff(found, names(surface()$domIds)), 0L)
+  expect_length(setdiff(found, expected), 0L)
 })
 
 test_that("the protocol version matches the manifest", {
