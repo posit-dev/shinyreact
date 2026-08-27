@@ -645,7 +645,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - `[r]` the app name comes from `normalizePath(src_dir, mustWork = FALSE)`,
     so a missing `src_dir` does not error — but it degrades badly: the title
     becomes `.` and the asset dependency is named `.`, serving `/lib/.-0/`
-    (#223; untested in either language)
+    (#242; untested in either language)
 
 ### `page_react_html(path="www/index.html")`
 
@@ -654,7 +654,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     shinyreact's tags render **at the marker**, not appended to `<head>`
     - detection is a plain string match over the whole document, so a marker in
       `<body>` passes and the deps render there — despite the error message
-      asserting `<head>` (#223)
+      asserting `<head>` (#243)
     - `[r]` the match is `fixed = TRUE` on the exact spelling, so
       `{{headContent()}}` is rejected even though `htmlTemplate()` accepts it
       — documented in `?page_react_html`
