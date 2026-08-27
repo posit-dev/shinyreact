@@ -21,7 +21,7 @@
 #'   `plotly::renderPlotly()`).
 #' @param id Output id to build the UI for.
 #' @return The output UI (a `shiny.tag`).
-#' @export
+#' @noRd
 output_ui <- function(render_fn, id) {
   if (!inherits(render_fn, "shiny.render.function")) {
     cli::cli_abort(

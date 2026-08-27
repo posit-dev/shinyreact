@@ -10,7 +10,8 @@ for R outputs.
 delivery, Python side), [#138](https://github.com/posit-dev/shinyreact/issues/138)
 (R example using a renderer with obvious HTML dependencies).
 
-**Status: shipped.** Extraction primitive (`output_ui()`, exported) plus automatic
+**Status: shipped.** Extraction primitive (`output_ui()`, internal for now — not
+exported until the API has settled, per review) plus automatic
 per-flush dependency discovery. Browser-verified end to end with
 `examples/07-plotly/app.R` (`plotly::renderPlotly()` bound and rendered through
 `<ShinyOutput>` with zero manual dependency wiring).
@@ -50,11 +51,13 @@ page-generation time and inlines every dep into the initial `<head>`. R cannot:
 `shinyApp(ui, server)` renders the UI before the session's `server()` runs. So R pushes
 instead (`pkg-r/R/dep-discovery.R` + `pkg-js/src/dep-discovery.ts`):
 
-1. **Hook** — both shinyreact input handlers call `install_dep_discovery(session)`
-   (idempotent per session); the JS bundle sends one `.shinyreact_init` ping through
-   `shinyreact.default` after Shiny init, so discovery installs even with zero
-   `useShinyInput`s. (Input handlers are the only shinyreact code path that runs inside
-   every live session — shiny has no public session-created hook.)
+1. **Hook** — the JS bundle sends one `.shinyreact_init` ping (typed
+   `shinyreact.init`) after Shiny init; that type's dedicated input handler calls
+   `install_dep_discovery(session)` (idempotent per session). The guaranteed ping means
+   every session bootstraps exactly once, with or without other inputs, and the
+   value-transforming handlers (`shinyreact.default` / `shinyreact.asis`) stay pure.
+   (An input handler is the hook because shiny has no public session-created hook;
+   Python registers `shinyreact.init` as a no-op — its bootstrap point for #220.)
 2. **Harvest** — on **every** `onFlushed` (not just the first, so module servers mounted
    after startup are covered), diff `names(private$.outputs)` against the seen set —
    a `setdiff` on names, microseconds when nothing changed. For each new output, get the
@@ -82,7 +85,7 @@ instead (`pkg-r/R/dep-discovery.R` + `pkg-js/src/dep-discovery.ts`):
 
 | | Why rejected |
 |---|---|
-| Explicit `page_react_html(deps = ...)` arg | Was the fallback plan; unnecessary once the push proved out — `output_ui()` remains as the manual escape hatch |
+| Explicit `page_react_html(deps = ...)` arg | Was the fallback plan; unnecessary once the push proved out — `output_ui()` remains internally as the extraction primitive |
 | `MockShinySession` pre-run of `server()` at startup | Executes the user's whole server body twice (DB connects, side effects) |
 | Static AST scan of the server body for `render*()` calls | Misses dynamic/wrapped renderers; fragile pattern-match |
 

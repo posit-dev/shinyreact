@@ -9,4 +9,9 @@
     asis_input_handler,
     force = TRUE
   )
+  shiny::registerInputHandler(
+    "shinyreact.init",
+    init_input_handler,
+    force = TRUE
+  )
 }

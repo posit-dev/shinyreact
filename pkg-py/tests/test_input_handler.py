@@ -5,9 +5,13 @@ import shinyreact._input_handler
 from shiny.input_handler import input_handlers
 
 
-def test_both_handlers_are_registered():
+def test_all_handlers_are_registered():
     assert "shinyreact.default" in input_handlers
     assert "shinyreact.asis" in input_handlers
+    # The JS bundle pings `.shinyreact_init:shinyreact.init` every session;
+    # without this registration the ping would raise on the Python server.
+    # R's counterpart bootstraps dep discovery (test-dep-discovery.R).
+    assert "shinyreact.init" in input_handlers
 
 
 def test_default_handler_returns_value_unchanged():

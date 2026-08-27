@@ -13,9 +13,10 @@
 # Diffing on *every* flush (not just the first) also covers outputs registered
 # after startup — e.g. a module server mounted inside an observer.
 #
-# The hook: both shinyreact input handlers call `install_dep_discovery()`, and
-# the JS bundle sends one `.shinyreact_init` ping through the default handler
-# on connect, so discovery is installed even for apps with no `useShinyInput`.
+# The hook: the JS bundle sends one `.shinyreact_init` ping (type
+# `shinyreact.init`) after Shiny initializes; that type's dedicated input
+# handler (input-handler.R) calls `install_dep_discovery()`. Every session
+# gets exactly one ping, whether or not the app has any other inputs.
 
 install_dep_discovery <- function(session) {
   if (is.null(session)) {
@@ -43,43 +44,41 @@ install_dep_discovery <- function(session) {
 
   seen_outputs <- character()
   sent_deps <- character()
-  session$onFlushed(
-    function() {
-      output_names <- names(private$.outputs)
-      new_names <- setdiff(output_names, seen_outputs)
-      if (length(new_names) == 0L) {
-        return(invisible())
-      }
-      seen_outputs <<- c(seen_outputs, new_names)
+  push_new_output_deps <- function() {
+    output_names <- names(private$.outputs)
+    new_names <- setdiff(output_names, seen_outputs)
+    if (length(new_names) == 0L) {
+      return(invisible())
+    }
+    seen_outputs <<- c(seen_outputs, new_names)
 
-      deps <- list()
-      for (name in new_names) {
-        ui <- output_ui_or_null(session$getOutput(name), name)
-        if (!is.null(ui)) {
-          deps <- c(deps, htmltools::findDependencies(ui))
-        }
+    deps <- list()
+    for (name in new_names) {
+      ui <- output_ui_or_null(session$getOutput(name), name)
+      if (!is.null(ui)) {
+        deps <- c(deps, htmltools::findDependencies(ui))
       }
-      deps <- htmltools::resolveDependencies(deps)
-      keys <- vapply(
-        deps,
-        function(dep) paste0(dep$name, "@", dep$version),
-        character(1)
-      )
-      deps <- deps[!(keys %in% sent_deps)]
-      if (length(deps) == 0L) {
-        return(invisible())
-      }
-      sent_deps <<- c(sent_deps, setdiff(keys, sent_deps))
+    }
+    deps <- htmltools::resolveDependencies(deps)
+    keys <- vapply(
+      deps,
+      function(dep) paste0(dep$name, "@", dep$version),
+      character(1)
+    )
+    deps <- deps[!(keys %in% sent_deps)]
+    if (length(deps) == 0L) {
+      return(invisible())
+    }
+    sent_deps <<- c(sent_deps, setdiff(keys, sent_deps))
 
-      # createWebDependency() registers each dep's resource path with shiny so
-      # the client can fetch the files; the client skips deps already on the
-      # page by name, so overlap with the static <head> is harmless.
-      session$sendCustomMessage(
-        "shinyreact-deps",
-        lapply(deps, shiny::createWebDependency)
-      )
-    },
-    once = FALSE
-  )
+    # createWebDependency() registers each dep's resource path with shiny so
+    # the client can fetch the files; the client skips deps already on the
+    # page by name, so overlap with the static <head> is harmless.
+    session$sendCustomMessage(
+      "shinyreact-deps",
+      lapply(deps, shiny::createWebDependency)
+    )
+  }
+  session$onFlushed(push_new_output_deps, once = FALSE)
   invisible(TRUE)
 }

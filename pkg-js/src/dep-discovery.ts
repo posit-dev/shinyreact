@@ -12,10 +12,11 @@ import { getShiny } from "./shiny-react/get-shiny";
  * already marked `.shiny-bound-*`, so re-running it page-wide is safe, and
  * the shiny client replays stored output values on late bind.
  *
- * The `.shinyreact_init` ping routes a value through the server-side
- * `shinyreact.default` input handler — the hook that installs discovery — so
- * it works even in apps with no `useShinyInput`. Python's handler is a
- * pass-through, so the ping is a harmless no-op input there.
+ * The `.shinyreact_init` ping routes through the server-side
+ * `shinyreact.init` input handler, whose job is per-session bootstrap
+ * (installing discovery in R), so it works even in apps with no
+ * `useShinyInput`. Python registers the same handler as a no-op today —
+ * its bootstrap hook for posit-dev/shinyreact#220.
  */
 export function installDepDiscovery(): void {
   if (typeof document === "undefined") return;
@@ -37,7 +38,7 @@ export function installDepDiscovery(): void {
     });
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     shiny.initializedPromise.then(() => {
-      shiny.setInputValue?.(".shinyreact_init:shinyreact.default", 1);
+      shiny.setInputValue?.(".shinyreact_init:shinyreact.init", 1);
     });
   };
 

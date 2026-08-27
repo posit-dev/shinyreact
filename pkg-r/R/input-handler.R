@@ -22,10 +22,6 @@
 #' * Anything else — returned as-is.
 #' @keywords internal
 default_input_handler <- function(value, session = NULL, name = NULL) {
-  # Input handlers are the one shinyreact code path that runs inside every
-  # live session, so they double as the hook that installs automatic output
-  # dependency discovery (dep-discovery.R). Idempotent per session.
-  install_dep_discovery(session)
   if (!is.list(value) || !is.null(names(value))) {
     return(value)
   }
@@ -53,6 +49,19 @@ default_input_handler <- function(value, session = NULL, name = NULL) {
 #' untouched (no flattening), for nested structures the default would coerce.
 #' @keywords internal
 asis_input_handler <- function(value, session = NULL, name = NULL) {
+  value
+}
+
+#' Init shinyreact input handler (internal)
+#'
+#' Receives the single `.shinyreact_init` ping the JS bundle sends after Shiny
+#' initializes (`pkg-js/src/dep-discovery.ts`), typed `shinyreact.init`. Its
+#' job is per-session bootstrap: installing automatic output dependency
+#' discovery (dep-discovery.R). A dedicated handler keeps the
+#' value-transforming handlers above pure, and the guaranteed ping means every
+#' session bootstraps exactly once — with or without other inputs.
+#' @keywords internal
+init_input_handler <- function(value, session = NULL, name = NULL) {
   install_dep_discovery(session)
   value
 }

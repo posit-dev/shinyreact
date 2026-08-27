@@ -118,12 +118,15 @@ test_that("install_dep_discovery() no-ops without a real session", {
   expect_false(install_dep_discovery(list(userData = list())))
 })
 
-test_that("input handlers install discovery", {
+test_that("the shinyreact.init handler installs discovery", {
+  session <- fake_session()
+  expect_identical(init_input_handler(1, session = session), 1)
+  expect_true(session$userData[[".shinyreact_dep_discovery"]])
+})
+
+test_that("the value-transforming handlers do not install discovery", {
   session <- fake_session()
   default_input_handler(list(), session = session)
-  expect_true(session$userData[[".shinyreact_dep_discovery"]])
-
-  session2 <- fake_session()
-  asis_input_handler(1, session = session2)
-  expect_true(session2$userData[[".shinyreact_dep_discovery"]])
+  asis_input_handler(1, session = session)
+  expect_null(session$userData[[".shinyreact_dep_discovery"]])
 })
