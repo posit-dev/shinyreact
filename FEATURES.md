@@ -32,10 +32,17 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
     - `[r]` `.protocol_version` in `pkg-r/R/protocol.R` — note the R symbol is
       *not* named `PROTOCOL_VERSION`
     - a parity test in each language asserts all three match
-  - it covers exactly three boundary shapes, and bumps only when one changes
+  - the source comments in all three languages say it covers exactly three
+    boundary shapes, and bumps only when one changes
     - the `#shinyreact-config` payload
     - the `shinyReactMessage` custom message
     - the `shinyreact.default` / `shinyreact.asis` input-handler contract
+  - but the wire now carries two more, added by #221 without a version bump
+    - the `shinyreact.init` input-handler name, and the
+      `.shinyreact_init` ping id
+    - the `shinyreact-deps` custom message
+  - so the stated scope and the actual boundary disagree; nothing enforces the
+    bump rule (#232)
   - `[js]` the client compares only the **major** version at boot
     - a mismatch throws, with a message naming both versions and telling the
       reader to upgrade the older side
@@ -43,13 +50,11 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
       need not be released in lockstep
 - server → client boot config: one `<script type="application/json"
   id="shinyreact-config">` tag
-  - where it lands differs, and R is inconsistent with itself
-    - `[py]` `<head>`, via `head_content()`
-    - `[r]` `page_react_html()` → `<head>`, via a dependency's `head` HTML
-    - `[r]` `page_react()` → **`<body>`**: `shinyreact_dep_page()` returns a
-      bare `tagList`, so the tag renders inline. Works (the client reads it by
-      id either way) but is an undocumented R-only divergence with no decision
-      record — see #223
+  - it lands in `<head>` in every language and on every path
+    - `[py]` via `head_content()`
+    - `[r]` `page_react()` via `tags$head()`; `page_react_html()` via a
+      dependency's `head` HTML
+    - R emitted it inline in `<body>` until #224
   - always carries `protocolVersion` — though `[js]` treats it as optional and
     **skips the handshake when it is absent or falsy** (#223)
   - carries `restore` (an `{inputId: value}` map) only when a bookmark restore
@@ -85,11 +90,19 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
 
 ## Input handlers
 
-- two handlers are registered under fixed names
+- three handlers are registered under fixed names
   - `shinyreact.default` — the implicit handler; the JS hook appends
     `:shinyreact.default` to every untyped input id
   - `shinyreact.asis` — opt-in pass-through (`type: "shinyreact.asis"`),
     returns the parsed value untouched
+  - `shinyreact.init` — per-session bootstrap, not a value transform
+    - the client sends exactly one `.shinyreact_init:shinyreact.init` ping per
+      session, after Shiny initializes, so apps with no `useShinyInput` are
+      covered too
+    - `[r]` it installs renderer dependency discovery for the session
+    - `[py]` it is a no-op today, and is the designated hook for the Core-mode
+      port (#220)
+    - both return the value unchanged
 - the contract is defined in terms of the JSON the React hook sent
   - array of objects — `[{name, size}, ...]`
     - `[py]` list of dicts
@@ -390,8 +403,9 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     frame runs, so a re-subscribe within the same frame (React remount) keeps
     them
   - removal triggers a re-bind
-  - the div is looked up with a document-global `getElementById(outputId)`, so a
-    colliding id in user markup can get the wrong node removed (#223)
+  - the entry holds a reference to the div it created and removes that node, so
+    a colliding id in the app's own markup is untouched (#227; it used a
+    document-global `getElementById()` before)
 
 ### Registry initialization
 
@@ -412,16 +426,50 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
 
 - one dispatcher is registered with Shiny for `shinyReactMessage`, once, lazily
   on the first `addHandler`
-- `initializeMessageRegistry()` is a **silent no-op when `window.Shiny` is
-  absent**, with no retry, so handlers never register if Shiny loads after the
-  first hook call
-  - the input registry tolerates a missing Shiny by design; this asymmetry is
-    unintended (#223)
-- `message-registry.ts` has **zero tests**
+- `initializeMessageRegistry()` is a silent no-op when `window.Shiny` is absent
+  and never retries, so hooks register on the module singleton rather than
+  through `window.Shiny.messageRegistry`
+  - `addHandler()` installs Shiny's dispatcher lazily, so a late-loading Shiny
+    still works; reading through the window property threw a TypeError instead
+    (#228)
+  - the registry publishes itself on `window.Shiny` at the moment it installs
+    the dispatcher, so that debugging surface is populated on this path too
 - messages are routed by `id` to every handler registered for it, so several
   components can listen to one id
 - removing the last handler for an id drops the id's entry
 - a message with no registered handlers is silently ignored
+
+### `[r]` `output_ui(render_fn, id)`
+
+- builds the HTML a render function's matching `*Output()` would produce —
+  `output_ui(renderText(...), "x")` is `textOutput("x")` — without the caller
+  knowing which output function that is
+- it uses the render function's `outputFunc` / `outputArgs` attributes, the same
+  contract shiny's own `knit_print` and Express mode use
+- the render expression is **never evaluated**; only the UI constructor runs
+- it is the R counterpart of Python's `Renderer.auto_output_ui()`
+- a non-render-function argument aborts, naming the argument and the type given
+- a render function with no `outputFunc` aborts, and the message points out that
+  `reactive_output()`'s render functions deliberately have none
+- the internal `output_ui_or_null()` variant returns `NULL` instead of erroring,
+  so a harvest loop skips `reactive_output()` outputs rather than failing
+- it is unexported (`@noRd`)
+
+### `[js]` Pushed-dependency client
+
+- it registers a `shinyreact-deps` custom-message handler that renders the
+  pushed dependencies, then re-runs `bindAll` on `document.documentElement`
+  - this is what lets a `ShinyOutput` that mounted *before* its binding existed
+    get bound
+  - page-wide re-binding is safe because Shiny skips elements already marked
+    `.shiny-bound-*`, and the shiny client replays stored output values on late
+    bind
+- failures are caught and logged, never thrown
+- it sends the `.shinyreact_init:shinyreact.init` ping once, after
+  `initializedPromise` resolves
+- it installs immediately when Shiny is already present, otherwise once on
+  `shiny:connected`
+- it no-ops when there is no `document`
 
 ## `[js]` Client components
 
@@ -500,7 +548,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 ### `page_react(*args, src_dir=None, js_file="ui.js", css_file="ui.css", title=None, lang="en")`
 
 - the zero-config page: no HTML file exists or is needed
-  - `[py]` it emits **no body HTML at all** — the client appends its own mount
+  - it emits **no body HTML at all** — the client appends its own mount
     container to `<body>`
   - it attaches three things: the bundle dep, the config tag, and the app's own
     asset dep (`page_react_dep`)
@@ -681,14 +729,41 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     missing `bindAll` or `unbindAll`
   - `Shiny` appearing on `window` *after* mount is ignored — there is no retry
 
-### `[py]` Renderer dependency discovery
+### Renderer dependency discovery
 
-- only `set_react_page()` does this — `page_react()`, `page_react_html()`, and
-  `ReactApp` do not
+Both languages deliver traditional renderers' `HTMLDependency` objects
+automatically, by **different mechanisms** — Python inlines them into the
+initial page, R pushes them over the session after the fact.
+
+- `[py]` only `set_react_page()` does this — `page_react()`,
+  `page_react_html()`, and `ReactApp` do not
   - reason: `decisions/2026-08-13-r-python-parity.md`
   - Core-mode discovery is unimplemented, tracked in #220
-- `[r]` R has **no** discovery mechanism at all — an unresolved one-sided gap,
-  not a recorded divergence (#222)
+- `[r]` discovery is per-session and push-based, and covers every page function
+  - R's page functions are plain UI values rendered before any `server()` runs,
+    so deps cannot be inlined into the initial page the way Express can
+  - after **every** reactive flush the session's registered outputs are diffed,
+    so outputs registered after startup (a module server mounted in an
+    observer) are covered too, not just the first flush
+  - each new output's UI comes from `output_ui()`, and its deps from
+    `htmltools::findDependencies()`
+  - deps are resolved, de-duplicated by `name@version` against what this
+    session already sent, and skipped entirely when nothing is new
+  - each dep goes through `shiny::createWebDependency()` so its files get a
+    resource path, then ships as a `shinyreact-deps` custom message
+  - overlap with deps already in the static `<head>` is harmless — the client
+    skips those by name
+  - it reads private `session$.__enclos_env__$private$.outputs`, since shiny
+    exposes no API to enumerate registered outputs (the same private access
+    Python makes via `session.output._outputs`)
+  - it no-ops, rather than erroring, when the session is `NULL`, has no
+    `userData` environment, or lacks `onFlushed` / `getOutput` — which is what
+    makes `MockShinySession` safe
+  - it installs at most once per session, latched on
+    `userData$.shinyreact_dep_discovery`
+
+### `[py]` `set_react_page()` harvesting
+
 - top-level renderers Express passes to the page function are harvested
 - renderers registered on the active session are harvested too, which is what
   covers renderers defined inside `@module.server` (issue #87)
@@ -810,9 +885,9 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - a value pre-set there is **ignored** — the config tag is the only channel
   - it is idempotent: a second run sees `"-applied"` and preserves the existing
     snapshot rather than re-applying
-  - consequence: a pre-set or forged `_restore` with a truthy `"-applied"`
-    **silently disables restore entirely — and the protocol handshake with it**,
-    with no warning (#223)
+  - the protocol handshake runs **before** that check, so a pre-set or forged
+    sentinel cannot skip version checking — it only suppresses re-applying
+    (#226 fixed the ordering; before it, the sentinel silently disabled both)
   - the namespace is created when `window.shinyreact` does not exist yet
   - `"-values"` is a **null-prototype** object, so an input id of `__proto__` or
     `constructor` cannot pollute the prototype chain — defense in depth, since
@@ -870,9 +945,11 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - hooks are imported directly rather than read off `window.shinyreact`
   - it exports `PROTOCOL_VERSION`
   - it does **not** re-export React / ReactDOM
-  - it ships **no CSS** — the entry has no stylesheet import and the package
-    exposes no `./styles` export, so `ImageOutput`'s placeholder spinner has no
-    `@keyframes spin` and does not animate (#223)
+  - the stylesheet ships as `dist-npm/style.css`, reachable as
+    `@posit/shinyreact/styles` (#229; the build emitted no CSS at all before,
+    leaving `ImageOutput`'s spinner without its `@keyframes spin`)
+    - Vite does not inject a CSS import into a lib-mode ESM bundle, so
+      consumers opt in rather than having it forced on them
   - a missing `#shinyreact-config` tag is a hard error, opted into at import
 - `window.shinyreact` contains exactly: `useShinyInput`, `useShinyInputValue`,
   `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`,
@@ -896,10 +973,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - the input handlers, the bundle dependency, and the config tag are all
     internal — there is no exported way to attach the bundle without a page
     function
-  - `utils` is used (`getFromNamespace`, `packageVersion`) but declared in
-    neither `DESCRIPTION` nor `NAMESPACE` (#223)
   - it depends on `shiny (>= 1.13.0)`, and imports `brio`, `cli`, `htmltools`,
-    and `jsonlite`
+    `jsonlite`, and `utils` (#225 added the missing `utils`)
 - the R surface is Python's minus three: no `set_react_page()` (Express has no
   R counterpart), no `ReactApp` (no `shiny.App` class to subclass), and no
   renderer-dependency discovery
