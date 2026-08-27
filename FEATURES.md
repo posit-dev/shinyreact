@@ -373,10 +373,20 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
   - `setDelay()` affects only subsequent calls, not one already scheduled
   - the whole `opts` object, `debounceMs` included, is passed as
     `Shiny.setInputValue`'s third argument
-  - a `MISSING` write does **not** cancel a pending send, so a real value set
-    just before it still reaches the server
-- a conflicting `priority` across mounts is silently last-writer-wins — the
-  strict set-once policy applies to `type` only
+  - a `MISSING` write **cancels** any pending send, so "real value then
+    `MISSING`" inside the debounce window retracts the value rather than
+    delivering it late
+    - a real value written after the cancellation still delivers
+- a conflicting `priority` across mounts is last-writer-wins, and **warns** when
+  the value actually changes
+  - deliberately not an error, unlike `type`: priority changes *when* Shiny
+    recalculates, not what the value means, and throwing would break the
+    documented action-button pattern (a reader on `useShinyInput` plus a button
+    on `useSetShinyInput(..., { priority: "event" })` for one id)
+  - the warning names the id and both values, since the winner otherwise depends
+    on mount order with no signal
+  - setting the same priority again, or setting it for the first time, does not
+    warn
 - a missing `window.Shiny`, or a `Shiny` without `setInputValue`, is tolerated —
   values are held locally and nothing throws
 - `add()` on an id that already exists throws; `getOrCreate()` is the safe path

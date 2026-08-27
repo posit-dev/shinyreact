@@ -45,6 +45,24 @@ export class InputRegistryEntry<T> {
   }
 
   updatePriority(priority: EventPriority) {
+    // Last-writer-wins, deliberately: unlike `type`, priority changes *when*
+    // Shiny recalculates, not what the value means, so a disagreement costs a
+    // coalesced update rather than a wrong result. Throwing would break the
+    // documented action-button pattern, where a reader mounts
+    // useShinyInput("count", 0) and a button mounts useSetShinyInput("count",
+    // 0, { priority: "event" }) for the same id.
+    //
+    // But silent last-writer-wins is miserable to debug when two mounts fight
+    // over one id, so say something when the value actually changes.
+    const previous = this.opts.priority;
+    if (previous !== undefined && previous !== priority) {
+      console.warn(
+        `[shinyreact] Input "${this.id}" priority changed from ` +
+          `${JSON.stringify(previous)} to ${JSON.stringify(priority)}. ` +
+          `Priority is per-id here, so the most recent mount wins — if two ` +
+          `call sites for this id disagree, the winner depends on mount order.`,
+      );
+    }
     this.opts.priority = priority;
   }
 
@@ -91,8 +109,17 @@ export class InputRegistryEntry<T> {
     this.value = next;
     this.useStateSetValueFns.forEach((fn) => fn(next));
     if ((next as unknown) === MISSING) {
-      // MISSING means "not yet set" — update React state only, don't send to Shiny.
-      // This keeps the server-side input in its MISSING state (raises SilentException).
+      // MISSING means "not yet set" — update React state only, don't send to
+      // Shiny. This keeps the server-side input in its MISSING state (raises
+      // SilentException).
+      //
+      // Cancel any pending debounced send as well: without this, "real value
+      // then MISSING" inside the debounce window still delivered the real value
+      // ~debounceMs later, so the server held a value the client had already
+      // retracted. ImageOutput hits this whenever an element is measured and
+      // then hidden — the server would render a plot for dimensions that no
+      // longer apply.
+      this.shinySetInputValueDebounced.cancel();
       return;
     }
     this.shinySetInputValueDebounced(next);
