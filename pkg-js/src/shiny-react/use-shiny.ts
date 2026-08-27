@@ -18,7 +18,7 @@ import {
   getInitializedSnapshot,
   subscribeLifecycle,
 } from "./lifecycle-store";
-import { initializeMessageRegistry } from "./message-registry";
+import { initializeMessageRegistry, messageRegistry } from "./message-registry";
 import { MISSING } from "./missing";
 import {
   createReactOutputBinding,
@@ -495,21 +495,20 @@ export function useShinyMessageHandler<T = any>(
     if (!shinyInitialized || !namespacedMessageId) {
       return;
     }
-    const shiny = getShiny();
-    if (!shiny) {
-      return;
-    }
-
     // Wrap in a stable function that delegates to the latest handler ref
     const stableHandler = (data: T) => handlerRef.current(data);
 
-    // Register the message handler with our dedicated message registry
-    shiny.messageRegistry.addHandler(namespacedMessageId, stableHandler);
+    // Register on the module singleton rather than `window.Shiny.messageRegistry`.
+    // `initializeMessageRegistry()` is a no-op when Shiny is not yet present, so
+    // the window property can be missing here — reading through it threw a
+    // TypeError. The singleton's own `addHandler` installs Shiny's dispatcher
+    // lazily, so it works whenever Shiny arrives.
+    messageRegistry.addHandler(namespacedMessageId, stableHandler);
 
     // Cleanup function that removes the handler when component unmounts
     // or when the message id changes
     return () => {
-      shiny.messageRegistry.removeHandler(namespacedMessageId, stableHandler);
+      messageRegistry.removeHandler(namespacedMessageId, stableHandler);
     };
   }, [shinyInitialized, namespacedMessageId]);
 }

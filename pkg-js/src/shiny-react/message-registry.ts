@@ -38,6 +38,11 @@ class ShinyMessageRegistry {
         this.dispatchMessage(msg.id, msg.data);
       },
     );
+    // Publish here too, not only from initializeMessageRegistry(): that runs
+    // once during shinyreact's init, which can happen before Shiny exists, and
+    // it has no retry. This way the window property is set whenever the
+    // dispatcher actually gets installed.
+    shiny.messageRegistry = this;
     this.initialized = true;
   }
 
