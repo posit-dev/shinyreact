@@ -1,0 +1,42 @@
+{
+  "$comment": [
+    "The complete client/server boundary surface, and the protocol version that",
+    "describes it. Every name here crosses between the React client and the R or",
+    "Python server, so adding, renaming, or removing one is a protocol change.",
+    "",
+    "This file exists to make that unavoidable. All three languages assert their",
+    "live surface against it: the JS suite scans pkg-js/src, the Python suite",
+    "reads shiny's input-handler registry after importing shinyreact, and the R",
+    "suite reads the same registry after loading the package. Introduce a new",
+    "custom message type or handler name and those tests fail until you add it",
+    "here -- next to protocolVersion, where the question 'does this need a",
+    "version bump?' is impossible to miss.",
+    "",
+    "Adding a name here is NOT automatically a version bump. Both sides degrade",
+    "gracefully for purely additive changes (an older server never sends the new",
+    "message; an older client never sends the new input), and the client compares",
+    "only major versions, so a minor bump is documentation rather than",
+    "enforcement. The bump policy itself is still open -- see issue #232."
+  ],
+
+  "protocolVersion": "1.0",
+
+  "customMessages": {
+    "shinyReactMessage": "server -> client, payload {id, data}; consumed by useShinyMessageHandler()",
+    "shinyreact-deps": "server -> client, list of createWebDependency() results; the client renders them and re-runs bindAll"
+  },
+
+  "inputHandlers": {
+    "shinyreact.default": "implicit; the JS hook appends it to every untyped input id",
+    "shinyreact.asis": "opt-in pass-through via type: 'shinyreact.asis'",
+    "shinyreact.init": "per-session bootstrap; installs renderer dep discovery in R, no-op in Python"
+  },
+
+  "inputIds": {
+    ".shinyreact_init": "sent once per session after Shiny initializes, with the shinyreact.init handler"
+  },
+
+  "domIds": {
+    "shinyreact-config": "the JSON script tag carrying protocolVersion and any bookmark restore payload"
+  }
+}
