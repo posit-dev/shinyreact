@@ -3,6 +3,13 @@
 # pkg-py/tests/test_bookmark_restore.py. This is what the JS client does:
 # locate the tag by id and JSON.parse its text content.
 extract_config <- function(html) {
+  # Tags go through renderTags so `tags$head()` content is picked up: the
+  # config tag is hoisted to `<head>`, and `as.character()` alone returns only
+  # the body HTML. Plain character input passes through untouched.
+  if (inherits(html, c("shiny.tag", "shiny.tag.list"))) {
+    rendered <- htmltools::renderTags(html)
+    html <- c(rendered$head, rendered$html)
+  }
   html <- paste(as.character(html), collapse = "\n")
   m <- regmatches(
     html,

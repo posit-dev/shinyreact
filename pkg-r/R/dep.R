@@ -25,8 +25,17 @@ shinyreact_dep <- function() {
 # Internal: page-level dependency = bundle + `#shinyreact-config` tag. The
 # config tag carries the protocol version on every page and the bookmark
 # restore payload when one is active.
+#
+# The tag is wrapped in `tags$head()` so it lands in `<head>`, matching Python's
+# `head_content()`. Without the wrapper it renders inline in `<body>` -- the
+# client finds it by id either way, but the two servers disagreed about where a
+# documented `<head>` tag goes, and `page_react_html()` (via `config_head_dep()`)
+# already put it in the head.
 shinyreact_dep_page <- function() {
-  htmltools::tagList(shinyreact_dep(), config_script_tag())
+  htmltools::tagList(
+    shinyreact_dep(),
+    htmltools::tags$head(config_script_tag())
+  )
 }
 
 # Internal: the `#shinyreact-config` tag as an htmlDependency `head` entry, for
