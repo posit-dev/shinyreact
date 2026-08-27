@@ -34,11 +34,11 @@ export function applyRestoredValues(registry: InputRegistry): void {
   const ns = (win.shinyreact = win.shinyreact || {});
   const existing = ns._restore;
 
-  // Already applied — preserve the existing snapshot.
-  if (existing && typeof existing === "object" && existing["-applied"]) {
-    return;
-  }
-
+  // The protocol handshake runs BEFORE the already-applied check. It is a
+  // property of the page, not of the restore payload, so a second call — or a
+  // pre-set/forged `_restore` sentinel — must not be able to skip it. Doing the
+  // early return first turned that sentinel into a silent kill switch for
+  // version checking.
   const config = readShinyReactConfig();
   if (config == null && isShinyReactConfigTagRequired()) {
     throw new Error(
@@ -50,6 +50,12 @@ export function applyRestoredValues(registry: InputRegistry): void {
   if (config?.protocolVersion) {
     assertProtocolCompatible(config.protocolVersion);
   }
+
+  // Already applied — preserve the existing snapshot.
+  if (existing && typeof existing === "object" && existing["-applied"]) {
+    return;
+  }
+
   const restore = config?.restore;
 
   // Null-prototype object for the debug snapshot so an assignment with key
