@@ -224,11 +224,23 @@ export function useShinyOutputValue<T>(
 
   const namespacedOutputId = useNamespacedId(outputId, explicitNamespace);
 
+  // Stabilize defaultValue so the reset below does not re-run on every render
+  // when the caller passes an inline literal (same reasoning as useShinyInput).
+  const stableDefaultRef = useRef<T | undefined>(defaultValue);
+
   useEffect(() => {
     if (!shinyInitialized) {
       return;
     }
     const reactRegistry = getReactRegistry();
+
+    // Drop the previous id's value before subscribing to the new one.
+    // Without this, changing the id (or the namespace) left the old output's
+    // data on screen indefinitely: `outputs.add()` only pushes a value when the
+    // new entry has already received one, so an id the server has not answered
+    // yet showed the *other* output's data as if it were its own.
+    setValue(stableDefaultRef.current);
+
     const dispose = reactRegistry.outputs.add<T>(
       namespacedOutputId,
       setValue,

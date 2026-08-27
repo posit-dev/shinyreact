@@ -49,6 +49,20 @@ export function applyRestoredValues(registry: InputRegistry): void {
   }
   if (config?.protocolVersion) {
     assertProtocolCompatible(config.protocolVersion);
+  } else if (config != null) {
+    // A config tag with no `protocolVersion` is not a page we emit: both
+    // servers always include it. Previously this silently skipped version
+    // checking altogether, which is the one thing the tag exists to prevent.
+    const message =
+      "shinyreact: the #shinyreact-config tag carries no protocolVersion, so " +
+      "the client cannot verify it speaks the same protocol as the server. " +
+      "Upgrade the shinyreact Python/R package.";
+    if (isShinyReactConfigTagRequired()) {
+      // The npm client is installed independently of the server, so it cannot
+      // assume compatibility — same reasoning as a missing tag being fatal.
+      throw new Error(message);
+    }
+    console.error(message);
   }
 
   // Already applied — preserve the existing snapshot.

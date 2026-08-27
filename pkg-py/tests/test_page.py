@@ -1,8 +1,10 @@
 import re
+from pathlib import Path
 
 import pytest
 import shinyreact
 from htmltools import HTMLDependency, Tag
+from shinyreact import page_react_html
 from shinyreact._page import page_bare
 
 
@@ -240,3 +242,46 @@ def test_public_api_surface_is_exactly_this() -> None:
         "send_message",
         "set_react_page",
     ]
+
+
+def test_page_react_html_rereads_only_when_the_file_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # ReactApp calls page_react_html() per request, which is what lets an author
+    # edit index.html and just refresh. Re-reading unchanged bytes every request
+    # is waste, so the read is gated on a stat signature.
+    doc = tmp_path / "index.html"
+    doc.write_text("<html><head>{{ headContent() }}</head><body>v1</body></html>")
+
+    reads = 0
+    real_read_text = Path.read_text
+
+    def counting_read_text(self: Path, *args: object, **kwargs: object) -> str:
+        nonlocal reads
+        if self == doc:
+            reads += 1
+        return real_read_text(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "read_text", counting_read_text)
+
+    page_react_html(doc)
+    page_react_html(doc)
+    assert reads == 1, "unchanged document should be read once"
+
+    # A real edit must be picked up without a restart.
+    doc.write_text("<html><head>{{ headContent() }}</head><body>v2</body></html>")
+    document = page_react_html(doc)
+    assert reads == 2
+    assert "v2" in document.render()["html"]
+
+
+def test_page_react_html_reads_as_utf8(tmp_path: Path) -> None:
+    # The default encoding follows the platform locale; R decodes UTF-8
+    # unconditionally, so Python must too.
+    doc = tmp_path / "index.html"
+    doc.write_text(
+        "<html><head>{{ headContent() }}</head><body>café ☕</body></html>",
+        encoding="utf-8",
+    )
+
+    assert "café ☕" in page_react_html(doc).render()["html"]

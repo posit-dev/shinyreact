@@ -130,6 +130,60 @@ describe("InputRegistryEntry", () => {
     expect(mockSetInputValue).not.toHaveBeenCalled();
   });
 
+  it("MISSING cancels a pending debounced send (#223 item 18)", () => {
+    // "real value then MISSING" inside the debounce window used to deliver the
+    // real value anyway, ~debounceMs later, leaving the server holding a value
+    // the client had already retracted. ImageOutput hits this when an element
+    // is measured and then hidden.
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry<number | typeof MISSING>("test", 0);
+
+    entry.setValue(400);
+    entry.setValue(MISSING);
+    vi.advanceTimersByTime(500);
+
+    expect(mockSetInputValue).not.toHaveBeenCalled();
+  });
+
+  it("a real value after a cancelled send still delivers", () => {
+    vi.mocked(getShiny).mockReturnValue({
+      setInputValue: mockSetInputValue,
+    } as any);
+    const entry = new InputRegistryEntry<number | typeof MISSING>("test", 0);
+
+    entry.setValue(400);
+    entry.setValue(MISSING);
+    entry.setValue(300);
+    vi.advanceTimersByTime(500);
+
+    expect(mockSetInputValue).toHaveBeenCalledTimes(1);
+    expect(mockSetInputValue).toHaveBeenCalledWith(
+      "test:shinyreact.default",
+      300,
+      expect.anything(),
+    );
+  });
+
+  it("warns when priority changes after being set (#223 item 19)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const entry = new InputRegistryEntry("test", 0);
+
+    entry.updatePriority("event" as never);
+    expect(warn).not.toHaveBeenCalled(); // first value is not a change
+
+    entry.updatePriority("event" as never);
+    expect(warn).not.toHaveBeenCalled(); // same value is not a change
+
+    entry.updatePriority("deferred" as never);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Input "test" priority changed'),
+    );
+
+    warn.mockRestore();
+  });
+
   it("real value after MISSING calls setInputValue", () => {
     vi.mocked(getShiny).mockReturnValue({
       setInputValue: mockSetInputValue,

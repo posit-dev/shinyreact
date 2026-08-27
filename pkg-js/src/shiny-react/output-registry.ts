@@ -141,14 +141,26 @@ export class OutputRegistryEntry<T> {
 export class OutputRegistry {
   private outputs: Map<string, OutputRegistryEntry<any>> = new Map();
   private bindAllScheduled = false;
-  private container: HTMLElement;
+  private containerEl: HTMLElement | undefined;
 
-  constructor() {
-    const div = document.createElement("div");
-    div.className = "shiny-react-output-container";
-    div.style.visibility = "hidden";
-    this.container = div;
-    document.body.appendChild(this.container);
+  /**
+   * The hidden host for the manufactured output divs, created on first use.
+   *
+   * Lazily, not in the constructor: constructing the registry is part of
+   * shinyreact's one-time init, which a DOM-less environment (SSR, a node test
+   * importing a hook module) reaches. Touching `document` there threw — the
+   * opposite of the policy the lifecycle store follows, which is to no-op
+   * without a DOM.
+   */
+  private get container(): HTMLElement {
+    this.containerEl ??= (() => {
+      const div = document.createElement("div");
+      div.className = "shiny-react-output-container";
+      div.style.visibility = "hidden";
+      document.body.appendChild(div);
+      return div;
+    })();
+    return this.containerEl;
   }
 
   add<T>(
@@ -162,7 +174,6 @@ export class OutputRegistry {
       const div = document.createElement("div");
       div.className = "shiny-react-output";
       div.id = outputId;
-      div.textContent = `This is the output div for ${outputId}`;
       this.container.appendChild(div);
 
       outputEntry = new OutputRegistryEntry(outputId);
@@ -226,7 +237,8 @@ export class OutputRegistry {
    */
   private scheduleBindAll() {
     const shiny = getShiny();
-    if (!shiny) {
+    // No container yet means no manufactured divs to bind.
+    if (!shiny || !this.containerEl) {
       return;
     }
 

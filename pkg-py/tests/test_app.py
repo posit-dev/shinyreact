@@ -148,3 +148,30 @@ def test_app_bookmark_store_works_with_ui_function(tmp_path: Path) -> None:
     assert r.status_code == 200
     assert r.text.count("<html") == 1
     assert 'id="shinyreact-config"' in r.text
+
+
+def test_app_mode_is_rechecked_per_request(tmp_path: Path, monkeypatch) -> None:
+    # The mode used to be latched at construction, so creating www/index.html
+    # during a dev session never switched modes even though the UI is already a
+    # per-request function (#223 item 15).
+    _write_react_assets(tmp_path)
+    app = _make_app_from_cwd(tmp_path, monkeypatch)
+    client = TestClient(app)
+
+    assert "index.html marker" not in client.get("/").text
+
+    (tmp_path / "www" / "index.html").write_text(
+        "<html><head>{{ headContent() }}</head><body>index.html marker</body></html>"
+    )
+
+    assert "index.html marker" in client.get("/").text
+
+
+def test_app_explicit_static_assets_is_respected(tmp_path: Path, monkeypatch) -> None:
+    # The guard is `"static_assets" not in kwargs`, so an explicitly passed
+    # value wins over auto-mounting. Previously the check was `is None`, so
+    # passing None still auto-mounted.
+    _write_react_app(tmp_path)
+    app = _make_app_from_cwd(tmp_path, monkeypatch, static_assets=None)
+
+    assert app._static_assets == {}
