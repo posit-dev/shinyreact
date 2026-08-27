@@ -4,12 +4,12 @@
 \alias{send_message}
 \title{Send a custom message to client React components}
 \usage{
-send_message(session, type, data)
+send_message(session, id, data)
 }
 \arguments{
 \item{session}{The Shiny session.}
 
-\item{type}{Message type string; must match the \code{messageType} passed to
+\item{id}{Message id; must match the \code{id} passed to
 \code{useShinyMessageHandler()} in the React component.}
 
 \item{data}{Any JSON-serializable data.}
@@ -18,7 +18,7 @@ send_message(session, type, data)
 Invisibly \code{NULL}.
 }
 \description{
-Messages are consumed by \code{useShinyMessageHandler(type, handler)} on the
-React side. The \code{type} is namespaced to the current Shiny module (if any)
-so module-scoped handlers match.
+Messages are consumed by \code{useShinyMessageHandler(id, handler)} on the
+React side. The \code{id} is namespaced to the current Shiny module (if any)
+so module-scoped handlers match, just like input/output ids.
 }

@@ -6,20 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `shinyreact` is a monorepo providing React UI infrastructure for Shiny (Python and R). It provides zero UI components — it is the bridge between a Shiny server that contains only reactive computation and a React client the app author owns.
 
-The repo ships one first-class pattern: the **`ui.tsx` pattern** — `set_react_page()` (Python Express) / `page_react_html()` (Python Core, R) bootstraps a static `www/index.html` hosting a React client whose entry conventionally lives in `ui.tsx`; the client and server communicate through the `useShinyInput` / `useShinyOutputValue` hook family. See `DESIGN.md` for background.
+The repo ships one first-class pattern: the **`ui.tsx` pattern** — `set_react_page()` (Python Express) / `page_react()` (Python Core, R) bootstraps a React client whose entry conventionally lives in `ui.tsx` (compiled to `www/ui.js`, discovered automatically); the client and server communicate through the `useShinyInput` / `useShinyOutputValue` hook family. See `DESIGN.md` for background.
 
 ## Terminology
 
 **`ui.tsx`** is the canonical name of the pattern. **Never write "SPA", "Single Page App", "Single-Page Application", "traditional pattern", `client-ui`, or `ui-object`** in new content (docs, comments, commit messages, PR/issue text).
 
-- **`ui.tsx` pattern** — UI defined in a client-side codebase whose entry is conventionally `ui.tsx` (or `App.jsx`, or `app.js` for no-build); bootstrapped from the app file via `set_react_page()` / `page_react_html()`. `ui.tsx` is the *idiomatic* canonical name — examples may use simpler variants like `www/app.js` (no-build) or `src/App.jsx` (Vite + JSX). Treat `ui.tsx` as a *role label* for the React entry, not a strict filename requirement.
+- **`ui.tsx` pattern** — UI defined in a client-side codebase whose entry is conventionally `ui.tsx` (or `ui.jsx`, or `ui.js` for no-build); bootstrapped from the app file via `set_react_page()` / `page_react()` (or `page_react_html()` for apps that own a full HTML document). `ui.tsx` is the *idiomatic* canonical name — examples use the same role at different tiers: `www/ui.js` (no-build) or `src/ui.jsx` (Vite + JSX, built to `www/ui.js`). Treat `ui.tsx` as a *role label* for the React entry, not a strict filename requirement.
 - The phrase "traditional Shiny" is fine when it refers to vanilla Shiny (no shinyreact involved).
 - The repo formerly also shipped an **`app.py` pattern** (server-side JSON-spec rendering via `Node` / `render_react` / `page_react`). It was removed in #168; see the tracking comment on #167 for git-history pointers if you encounter stale references.
 
 ## Repo structure
 
 ```
-js/                         # TypeScript/React Vite IIFE bundle
+pkg-js/                     # TypeScript/React Vite IIFE bundle
   src/                      # index.ts, global.ts, shiny-output.tsx, shiny.d.ts, shinyreact.css
   dist/                     # Built assets (committed to repo)
   src/shiny-react/          # Vendored @posit/shiny-react source (hooks, registries)
@@ -43,11 +43,11 @@ Makefile                    # All build/check/format commands
 ```bash
 # Initial setup
 uv sync --all-extras --all-groups   # Python env
-make js-setup                        # JS deps (cd js && npm install)
+make js-setup                        # JS deps (cd pkg-js && npm install)
 pre-commit install                   # Pre-commit hooks
 
 # Build
-make js-build                        # Build JS bundle (js/dist/)
+make js-build                        # Build JS bundle (pkg-js/dist/)
 make update-dist                     # Build JS + copy to pkg-py/www/ and pkg-r/inst/lib/shiny/
 
 # Python checks (run all before committing)
@@ -78,7 +78,7 @@ Run `make help` to see all targets.
 
 ### JS bundle
 
-The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`, and installs the public API at `window.shinyreact`.
+The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`, and installs the public API at `window.shinyreact`.
 
 **Global API exposed at `window.shinyreact`:**
 - `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy` — re-exported shiny-react hooks
@@ -90,27 +90,30 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 ### Python package
 
 - `@shinyreact.reactive_output` — `Renderer[Jsonifiable]` subclass; passes raw JSON data through for `useShinyOutputValue()` hooks, with no placeholder (`auto_output_ui()` returns `None`)
-- `shinyreact.send_message(session, type, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
-- `shinyreact.set_react_page(path="www/index.html")` — Express helper that serves a static `www/index.html`; auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
-- `shinyreact.page_react_html(path="www/index.html")` — Core-mode helper that serves a static `www/index.html` as the `ui` argument of `App(ui=..., server=...)`; attaches the shinyreact dep. The Core counterpart to the Express-only `set_react_page()`. Unlike `set_react_page`, it does not auto-discover renderer dependencies
+- `shinyreact.send_message(session, id, data)` — sends `shinyReactMessage` custom messages consumed by `useShinyMessageHandler()`
+- `shinyreact.set_react_page(path=None)` — Express helper; with no args serves `www/index.html` when present, else discovers `www/ui.js` / `www/ui.css` and emits no body HTML. Auto-discovers `HTMLDependency` objects from traditional Shiny renderers and injects the shinyreact dep
+- `shinyreact.page_react(src_dir=None, js_file="ui.js", css_file="ui.css", title=None)` — Core-mode zero-config page: discovers `www/ui.js` / `www/ui.css` next to the calling module, serves them as an mtime-versioned dependency (cache-busted), title defaults to the app folder name; the client appends its own mount container to `<body>`
+- `shinyreact.ReactApp(server, *, ui=None, **kwargs)` — `shiny.App` for the ui.tsx pattern with the UI discovered next to the calling module: `www/index.html` present → `page_react_html()` (document dir auto-mounted at `/`), else → `page_react()`. The discovered UI is a per-request function, so bookmark restore works with no wiring (`ReactApp(server, bookmark_store="url")`). `ui=` overrides discovery (a `ReactHtmlDocument` still gets its dir auto-mounted); discovery reads the *immediate* calling frame, so helpers wrapping `ReactApp(...)` must pass `ui=`
+- `shinyreact.page_react_html(path="www/index.html")` — Core-mode helper for apps that own a complete HTML document with a `{{ headContent() }}` marker (the kind a Vite build emits); Shiny's and shinyreact's tags render at the marker. Rarely called directly — `ReactApp` discovers it (plain `shiny.App` works too via `ui.PageDocument`, consumed as a git dep until py-shiny#2475 releases — issue #216). Does not auto-discover renderer dependencies
 - `shinyreact.page_bare(...)` / `shinyreact.page_react_dep(...)` — escape-hatch page builder and app-bundle `HTMLDependency` helper
-- Bookmark restore: page entry points emit a head `<script>` carrying restored input values (`_bookmark.py`); the bundle seeds `useShinyInput` initial values from it
+- Bookmark restore + protocol handshake: page entry points emit a `<script type="application/json" id="shinyreact-config">` tag carrying the wire-protocol version and any restored input values (`_bookmark.py` / `bookmark.R`); the bundle asserts the protocol major version and seeds `useShinyInput` initial values from it; the config tag is the only delivery channel (`window.shinyreact._restore` is a write-only DevTools sentinel)
 
 ### R package
 
-The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reactive_output`, `page_bare`, `page_react_html`, `page_react_dep`, `send_message`, `output_ui`. Key shape differences from Python:
+The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reactive_output`, `page_bare`, `page_react`, `page_react_html`, `page_react_dep`, `send_message`, `output_ui`. Key shape differences from Python:
 
 - `reactive_output(expr, ...)` is a **function** assigned to `output$id`, not a decorator/`Renderer` class.
-- `page_react_html(path = "www/index.html")` matches Python's `page_react_html()`; Python additionally has the Express-only `set_react_page()`.
-- `send_message(session, type, data)` matches Python.
+- `page_react(src_dir = "www", ...)` matches Python's `page_react()` (R resolves against the working directory; Python against the calling module).
+- `page_react_html(path = "www/index.html")` matches Python: a complete HTML document with a `{{ headContent() }}` marker. R uses it directly as `shinyApp(ui = ...)`; Python discovers it via `shinyreact.ReactApp(server)` (asset auto-mount; py-shiny#2475 provides the document support). Python additionally has the Express-only `set_react_page()` and `ReactApp` (R has no `shiny.App` subclass equivalent).
+- `send_message(session, id, data)` matches Python.
 - `page_react_dep()` takes `src_dir` as a required first argument; Python's is keyword-only and infers `src_dir`/`name` from the caller's `__file__` when omitted (R has no equivalent). Pass `src_dir=` explicitly in Python too if you wrap the call in a helper — the inference reads the *immediate* calling frame.
-- `output_ui(render_fn, id)` builds the UI a render function's matching `*Output()` would produce (R counterpart of Python's `Renderer.auto_output_ui()`). It powers R's automatic renderer-dependency discovery (`pkg-r/R/dep-discovery.R`): because R renders the UI before `server()` runs, dependencies can't be inlined into `<head>` like Python's `set_react_page()` — instead, after every flush the session's registered outputs are diffed and new outputs' deps are pushed as a `shinyreact-deps` custom message; the JS bundle loads them and re-runs `bindAll`. The hook is the shinyreact input handlers plus a `.shinyreact_init` client ping (`js/src/dep-discovery.ts`), so it works with zero configuration, including for module servers mounted after startup.
+- `output_ui(render_fn, id)` builds the UI a render function's matching `*Output()` would produce (R counterpart of Python's `Renderer.auto_output_ui()`). It powers R's automatic renderer-dependency discovery (`pkg-r/R/dep-discovery.R`): because R renders the UI before `server()` runs, dependencies can't be inlined into `<head>` like Python's `set_react_page()` — instead, after every flush the session's registered outputs are diffed and new outputs' deps are pushed as a `shinyreact-deps` custom message; the JS bundle loads them and re-runs `bindAll`. The hook is the shinyreact input handlers plus a `.shinyreact_init` client ping (`pkg-js/src/dep-discovery.ts`), so it works with zero configuration, including for module servers mounted after startup.
 
 The deliberate remaining divergences (decided in #184) are recorded in `decisions/2026-08-13-r-python-parity.md`: relative-path resolution, `set_react_page()`'s renderer-dependency discovery, and scalar-array flattening in the default input handler.
 
 ### Built assets
 
-`js/dist/` and `pkg-py/src/shinyreact/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
+`pkg-js/dist/` and `pkg-py/src/shinyreact/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
 
 ### Build backend
 
@@ -272,7 +275,7 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 
 - **Python tests:** `pkg-py/tests/` — run with `make py-check-tests`
 - **R tests:** `pkg-r/tests/testthat/` — run with `make r-check-tests`
-- **JS tests:** `js/src/shiny-react/__tests__/` — run with `cd js && npx vitest run`
+- **JS tests:** `pkg-js/src/shiny-react/__tests__/` — run with `cd pkg-js && npx vitest run`
 - **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
 
 ### Cover both R and Python
@@ -286,11 +289,11 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 Practically, when writing a test ask: **does the other language have this behavior, and is it asserted there?**
 
 - **Yes, and asserted** — nothing to do.
-- **Yes, not asserted** — write both. Name them so they're findable from each other, and cross-reference in a comment (e.g. `# Mirrors Python's test_restore_script_tag_escapes_js_line_separators`).
+- **Yes, not asserted** — write both. Name them so they're findable from each other, and cross-reference in a comment (e.g. `# Mirrors Python's test_config_script_tag_line_separators_round_trip`).
 - **Behavior differs deliberately** — assert the *actual* behavior in each language and say why it differs, pointing at the decision record. `decisions/2026-08-13-r-python-parity.md` is the current one; scalar-array flattening in `default_input_handler()` is the worked example.
 - **Genuinely one-sided** — Express-only features (`set_react_page()`) have no R counterpart at all. Note that in the test or the decision record rather than leaving a silent hole.
 
-This applies to helpers too: a payload round-trip helper or fixture written for one language is usually worth porting, since divergent test *scaffolding* hides divergent behavior. `extract_restore_payload()` in `pkg-r/tests/testthat/test-bookmark-escaping.R` is a port of `_extract_restore_payload()` in `pkg-py/tests/test_bookmark_restore.py`.
+This applies to helpers too: a payload round-trip helper or fixture written for one language is usually worth porting, since divergent test *scaffolding* hides divergent behavior. `extract_restore_payload()` in `pkg-r/tests/testthat/helper-config.R` is a port of `_extract_restore_payload()` in `pkg-py/tests/test_bookmark_restore.py`.
 
 R currently has no e2e suite; that gap is tracked in #194, so Playwright tests are Python-only for now.
 
@@ -302,5 +305,5 @@ R currently has no e2e suite; that gap is tracked in #194, so Playwright tests a
 ## Key decisions
 
 - `decisions/` contains architecture decision records. `decisions/2026-03-17-playwright-testing-architecture.md` documents the recommended approach (code-gen from TypeScript) for future browser testing — not yet implemented.
-- `shiny-react` is vendored at `js/src/shiny-react/` rather than installed as an npm dependency (commit `4137071`).
+- `shiny-react` is vendored at `pkg-js/src/shiny-react/` rather than installed as an npm dependency (commit `4137071`).
 - The app.py pattern (server-side JSON-spec rendering: `Node`/`node()`, `render_react`, `output_react`, `page_react`, the JS renderer/registry, and the `shinyui` prototype) was removed in #168. History pointers live in a comment on #167.

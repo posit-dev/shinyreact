@@ -13,7 +13,7 @@ This repo ships per-language packages:
 
 ## How it works
 
-`shinyreact` implements the **`ui.tsx` pattern**: UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `App.jsx`, or `app.js` for no-build):
+`shinyreact` implements the **`ui.tsx` pattern**: UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `ui.jsx`, or `ui.js` for no-build):
 
 1. The Shiny server contains only reactive computation; it bootstraps a static page — `set_react_page()` (Express) or `page_react_html()` (Core) in Python, `page_react_html()` in R
 2. A static `www/index.html` plus your React client serve the UI
@@ -40,7 +40,7 @@ The bundle re-exports these hooks from `@posit/shiny-react`:
 
 ## Architecture
 
-- **JS bundle** (`js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`, exposing the hook API at `window.shinyreact`. Shared by both language packages.
+- **JS bundle** (`pkg-js/dist/shinyreact.js`): Self-contained IIFE bundling React 19 and vendored `@posit/shiny-react`, exposing the hook API at `window.shinyreact`. Shared by both language packages.
 - **Python package** (`pkg-py/`): `set_react_page()` / `page_react_html()` page entry points, the `reactive_output` renderer, `send_message()`, built-in input handlers, and bookmark restore support.
 - **R package** (`pkg-r/`): `page_react_html()`, `reactive_output()`, `send_message()`, the same input handlers and bookmark support. Same JS bundle as Python.
 
@@ -65,3 +65,29 @@ make js-build-watch    # JS watch mode
 ```
 
 Run `make help` to see all targets.
+
+## Prior and related work
+
+React and Shiny have been brought together many times, in several distinct
+shapes. The list below is roughly ordered from "closest to `shinyreact`" to
+"solves a different problem," so you can see where this repo sits.
+
+* Whole-frontend-in-React approaches (same shape as the `ui.tsx` pattern)
+
+  - **[glin/shiny-react-example](https://github.com/glin/shiny-react-example)**: (R) A worked example of an R Shiny app whose entire UI is a React app (React Bootstrap + Recharts, built with Vite), served through a Shiny HTML template.
+
+  - **[filipakkad/react-shiny-template](https://github.com/filipakkad/react-shiny-template)**: (R) A starter template pairing a React frontend with an R Shiny backend.
+
+* React components embedded inside a traditional Shiny UI
+
+  - **[react-R/reactR](https://github.com/react-R/reactR)**: (R) Scaffolding (`scaffoldReactWidget()`, `scaffoldReactShinyInput()`, `createReactShinyInput()`) for authoring htmlwidgets and Shiny inputs whose implementation is a React component. `rstudio::conf(2019)` talk [*Integrating React.js and Shiny*](https://posit.co/resources/videos/integrating-react-js-and-shiny/) and the [*Outstanding User Interfaces with Shiny*](https://unleash-shiny.rinterface.com/going-further-reactr) chapter.
+
+  - **[Appsilon/shiny.react](https://github.com/Appsilon/shiny.react)** & **[Appsilon/shiny.fluent](https://github.com/Appsilon/shiny.fluent)**: (R) A generic toolbox for wrapping React component libraries as R functions; `shiny.fluent` is the flagship consumer, exposing Microsoft's Fluent UI to R.
+
+  - **[posit-dev/shiny-bindings](https://github.com/posit-dev/shiny-bindings)**: (npm, py) `@posit-dev/shiny-bindings-react` and the Shiny for Python [custom components](https://shiny.posit.co/py/docs/custom-components-pkg.html) workflow it backs. Ship a custom React input/output as a Python package. See also [nstrayer/py-shiny-custom-react-component](https://github.com/nstrayer/py-shiny-custom-react-component).
+
+  - **[pvictor/shinyReactWidgets](https://github.com/pvictor/shinyReactWidgets)**: (R) An early collection of React-based input widgets for Shiny apps.
+
+* Broader catalogs
+
+  - **[nanxstats/awesome-shiny-extensions](https://github.com/nanxstats/awesome-shiny-extensions)**: Curated list of R and Python Shiny extension packages, including many React-backed ones not called out above.

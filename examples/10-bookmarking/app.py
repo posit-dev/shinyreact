@@ -1,14 +1,6 @@
-from pathlib import Path
-
 import shinyreact
-from shiny import App, Inputs, Outputs, Session, reactive
-
-
-def app_ui(request):
-    # A function-of-request UI makes Shiny re-render the page per request, so
-    # page_react_html() sees the active RestoreContext and emits the restore
-    # <script> tag when a bookmark query string is present.
-    return shinyreact.page_react_html("www/index.html")
+from shiny import Inputs, Outputs, Session, reactive
+from shinyreact import ReactApp
 
 
 def server(input: Inputs, output: Outputs, session: Session):
@@ -23,11 +15,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         await session.bookmark()
 
 
-# Core apps must mount www/ themselves — App() has no equivalent of Shiny
-# Express's automatic www/ static mount.
-app = App(
-    app_ui,
-    server,
-    static_assets={"/": Path(__file__).parent / "www"},
-    bookmark_store="url",
-)
+# ReactApp discovers www/ui.js + www/ui.css and re-renders the page per
+# request, so the bookmark restore payload lands in #shinyreact-config.
+app = ReactApp(server, bookmark_store="url")

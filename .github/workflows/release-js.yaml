@@ -1,0 +1,51 @@
+name: release-js
+
+# Publishes @posit/shinyreact to npm. Trigger manually (workflow_dispatch) or
+# by pushing a tag like js-v0.0.1. Requires the NPM_TOKEN repository secret.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "js-v*"
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: 🔎 Extract node version from .nvmrc
+        id: nvm
+        working-directory: pkg-js
+        run: |
+          echo "version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
+
+      - name: 🟡 Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "${{ steps.nvm.outputs.version }}"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: 🆙 Install dependencies
+        run: make js-setup-ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🧪 Lint and test
+        run: |
+          make js-lint
+          make js-test
+
+      - name: 🏭 Build (IIFE + npm ESM + types)
+        working-directory: pkg-js
+        run: npm run build
+
+      - name: 🚀 Publish @posit/shinyreact
+        working-directory: pkg-js
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

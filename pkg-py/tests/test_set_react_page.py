@@ -159,8 +159,7 @@ def test_set_react_page_falls_back_to_cwd_when_caller_has_no_file(
         # Caller frame has no __file__ — relative path resolves against CWD.
         exec(
             compile(
-                "from shinyreact import set_react_page\n"
-                "set_react_page('cwd.html')\n",
+                "from shinyreact import set_react_page\nset_react_page('cwd.html')\n",
                 "<test>",
                 "exec",
             ),
@@ -194,3 +193,75 @@ def test_set_react_page_absolute_path_works_without_caller_file(tmp_path: Path) 
 
     rendered = _render(captured["page_fn"])
     assert "<div id='abs'></div>" in rendered["html"]
+
+
+def test_build_page_fn_discovered_serves_conventional_assets(tmp_path: Path) -> None:
+    """The no-index.html mode serves www/ui.js + ui.css with the app-dir title."""
+    from shinyreact._page import _build_react_page_fn_discovered
+
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "ui.js").write_text("// entry")
+    (www / "ui.css").write_text("body {}")
+
+    rendered = _render(_build_react_page_fn_discovered(tmp_path))
+    deps_html = "".join(
+        d.as_html_tags().get_html_string() for d in rendered["dependencies"]
+    )
+    dep_names = [d.name for d in rendered["dependencies"]]
+    assert "shinyreact" in dep_names
+    assert tmp_path.name in dep_names
+    assert "ui.js" in deps_html
+    assert "ui.css" in deps_html
+    assert f"<title>{tmp_path.name}</title>" in rendered["html"]
+
+
+def test_set_react_page_none_prefers_index_html(tmp_path: Path) -> None:
+    """With no path, www/index.html wins over ui.js discovery when present."""
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "index.html").write_text("<div id='from-index'></div>")
+    (www / "ui.js").write_text("// entry")
+
+    app_file = tmp_path / "app.py"
+    app_file.write_text("from shinyreact import set_react_page\nset_react_page()\n")
+
+    captured: dict[str, Callable[..., Tag]] = {}
+
+    def fake_page_opts(*, page_fn: Callable[..., Tag], **_: Any) -> None:
+        captured["page_fn"] = page_fn
+
+    with patch("shinyreact._page.page_opts", fake_page_opts):
+        exec(
+            compile(app_file.read_text(), str(app_file), "exec"),
+            {"__file__": str(app_file)},
+        )
+
+    rendered = _render(captured["page_fn"])
+    assert "from-index" in rendered["html"]
+
+
+def test_set_react_page_none_falls_back_to_discovery(tmp_path: Path) -> None:
+    """With no path and no www/index.html, ui.js discovery kicks in."""
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "ui.js").write_text("// entry")
+
+    app_file = tmp_path / "app.py"
+    app_file.write_text("from shinyreact import set_react_page\nset_react_page()\n")
+
+    captured: dict[str, Callable[..., Tag]] = {}
+
+    def fake_page_opts(*, page_fn: Callable[..., Tag], **_: Any) -> None:
+        captured["page_fn"] = page_fn
+
+    with patch("shinyreact._page.page_opts", fake_page_opts):
+        exec(
+            compile(app_file.read_text(), str(app_file), "exec"),
+            {"__file__": str(app_file)},
+        )
+
+    rendered = _render(captured["page_fn"])
+    dep_names = [d.name for d in rendered["dependencies"]]
+    assert tmp_path.name in dep_names
+    assert f"<title>{tmp_path.name}</title>" in rendered["html"]

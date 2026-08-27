@@ -43,49 +43,69 @@ test_that(".restore_input_values() returns list() for an empty context", {
   expect_identical(with_restore_values(list(), .restore_input_values()), list())
 })
 
-test_that("restore_script_tag() emits the payload from a real context", {
+test_that("config_script_tag() emits the payload from a real context", {
   html <- with_restore_values(
     list(name = "Alice"),
-    as.character(restore_script_tag())
+    as.character(config_script_tag())
   )
-  expect_match(html, "window\\.shinyreact\\._restore = JSON\\.parse\\(")
-  expect_match(html, "Alice")
+  expect_identical(
+    extract_restore_payload(html),
+    list(name = "Alice")
+  )
 })
 
-test_that("shinyreact_dep_page() wraps in a tagList only with restore values", {
-  # No context: the bare dependency. With values: dep + <script>.
-  expect_s3_class(shinyreact_dep_page(), "html_dependency")
+test_that("shinyreact_dep_page() always includes the config tag", {
+  # The config tag is emitted on every page (it carries the protocol
+  # version); the restore payload appears only with restore values.
+  out_bare <- shinyreact_dep_page()
+  expect_s3_class(out_bare, "shiny.tag.list")
+  config <- extract_config(out_bare)
+  expect_identical(config, list(protocolVersion = .protocol_version))
+
   out <- with_restore_values(list(name = "Alice"), shinyreact_dep_page())
   expect_s3_class(out, "shiny.tag.list")
-  expect_match(as.character(out), "_restore")
+  expect_identical(
+    extract_restore_payload(out),
+    list(name = "Alice")
+  )
 })
 
-test_that("page_react_html() emits the restore script when a bookmark is active", {
+test_that("page_react_html() emits the restore payload when a bookmark is active", {
   # End-to-end through the exported entry point, mirroring Python's
-  # test_page_react_html_emits_restore_script_when_bookmark_active.
+  # test_page_react_html_emits_restore_when_bookmark_active.
   dir <- withr::local_tempdir()
   index <- file.path(dir, "index.html")
   writeLines(
-    "<!DOCTYPE html><html><body><div id='root'></div></body></html>",
+    paste0(
+      "<!DOCTYPE html><html><head>{{ headContent() }}</head>",
+      "<body><div id='root'></div></body></html>"
+    ),
     index
   )
 
   html <- with_restore_values(
     list(name = "Alice"),
-    as.character(htmltools::renderTags(page_react_html(index))$html)
+    render_document(page_react_html(index))
   )
-  expect_match(html, "window\\.shinyreact\\._restore")
-  expect_match(html, "Alice")
+  expect_identical(
+    extract_restore_payload(html),
+    list(name = "Alice")
+  )
 })
 
-test_that("page_react_html() emits no restore script without a bookmark", {
+test_that("page_react_html() emits the config tag without restore when not bookmarked", {
+  # Mirrors Python's test_page_react_html_config_without_bookmark_has_no_restore.
   dir <- withr::local_tempdir()
   index <- file.path(dir, "index.html")
   writeLines(
-    "<!DOCTYPE html><html><body><div id='root'></div></body></html>",
+    paste0(
+      "<!DOCTYPE html><html><head>{{ headContent() }}</head>",
+      "<body><div id='root'></div></body></html>"
+    ),
     index
   )
 
-  html <- as.character(htmltools::renderTags(page_react_html(index))$html)
-  expect_no_match(html, "_restore", fixed = TRUE)
+  html <- render_document(page_react_html(index))
+  config <- extract_config(html)
+  expect_identical(config, list(protocolVersion = .protocol_version))
 })

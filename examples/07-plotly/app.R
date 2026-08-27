@@ -6,7 +6,7 @@ library(shinyreact)
 # function and pushed to the client automatically — no *Output() placeholder,
 # no manual dependency wiring (#146/#203).
 
-ui <- page_react_html("www/index.html")
+ui <- page_react() # discovers www/ui.js
 
 server <- function(input, output, session) {
   output$greeting <- reactive_output({

@@ -19,7 +19,7 @@ pip install "git+https://github.com/posit-dev/shinyreact.git"
 
 ## How it works
 
-`shinyreact` implements the **`ui.tsx` pattern** — UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `App.jsx`, or `app.js` for no-build):
+`shinyreact` implements the **`ui.tsx` pattern** — UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `ui.jsx`, or `ui.js` for no-build):
 
 1. The Python server contains only reactive computation; it calls `set_react_page()` (Express) or uses `page_react_html()` as the `ui` argument (Core)
 2. A static `www/index.html` + client bundle serve as the React app
@@ -33,27 +33,22 @@ from shinyreact import reactive_output, set_react_page
 
 set_react_page()
 
+
 @reactive_output
 def greeting():
     return {"message": f"Hello, {input.name()}"}
 ```
 
-Pair with a `www/index.html` that loads your React client (no-build `app.js` or a built bundle from `src/ui.tsx`). See the [examples catalog](../examples/README.md) for file layouts and dev workflows, from no-build to Vite + HMR.
+Pair with client assets at `www/ui.js` / `www/ui.css` (written by hand for no-build, or built from `src/ui.tsx`). See the [examples catalog](../examples/README.md) for file layouts and dev workflows, from no-build to Vite + HMR.
 
-In Core mode, use `page_react_html()`. Core apps must also mount `www/`
-themselves — Shiny Express does this automatically, `App()` does not, and
-without it the page loads and then 404s on its own scripts and stylesheets:
+In Core mode, use `page_react()` — it serves the discovered assets itself
+(an mtime-versioned dependency), so no `static_assets=` mount is needed:
 
 ```python
-from pathlib import Path
 from shiny import App
 import shinyreact
 
-app = App(
-    shinyreact.page_react_html("www/index.html"),
-    server,
-    static_assets={"/": Path(__file__).parent / "www"},
-)
+app = App(shinyreact.page_react(), server)
 ```
 
 ### Sending messages to React components
@@ -84,7 +79,7 @@ Runnable apps live in [`examples/`](../examples/) — see the
 | `useSetShinyInput(id, default, opts)` | Write-only producer — registers an input and returns just the setter |
 | `useShinyOutputValue(id, default?)` | Consume arbitrary data sent by `@shinyreact.reactive_output` |
 | `useShinyOutputStatus(id)` | Output lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` |
-| `useShinyMessageHandler(type, fn)` | Handle server-to-client custom messages |
+| `useShinyMessageHandler(id, fn)` | Handle server-to-client custom messages |
 | `useShinyInitialized()` | Check whether Shiny is connected |
 | `useShinyBusy()` | Whether the Shiny server is currently processing a request |
 

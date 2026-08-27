@@ -30,7 +30,7 @@ examples/04-shadcn/
 ├── README.md
 ├── src/
 │   ├── App.jsx                     # composes the cards
-│   ├── main.jsx                    # mounts via window.shinyreact.React/ReactDOM
+│   ├── ui.jsx                      # mounts via window.shinyreact.React/ReactDOM (appends its own container)
 │   ├── index.css                   # Tailwind v4 + shadcn theme tokens
 │   ├── lib/utils.js                # cn() = clsx + tailwind-merge
 │   └── components/
@@ -46,16 +46,15 @@ examples/04-shadcn/
 │           ├── input.jsx
 │           └── separator.jsx
 └── www/
-    ├── index.html                  # 3 lines, committed
-    ├── app.js                      # built by Vite (gitignored)
-    └── style.css                   # built by Vite (gitignored)
+    ├── ui.js                       # built by Vite (gitignored)
+    └── ui.css                      # built by Vite (gitignored)
 ```
 
 ## Build plumbing
 
 The non-obvious bit is how the bundle stays compatible with the page-level `window.shinyreact` runtime:
 
-- `vite.config.js` is in **lib mode** with format `iife`, output filename `app.js`.
+- `vite.config.js` is in **lib mode** with format `iife`, output filename `ui.js` — the name `set_react_page()` discovers, so the app file needs no arguments and no `index.html`.
 - `react`, `react-dom`, and `react-dom/client` are listed as `external` and mapped via `rollupOptions.output.globals` to `window.shinyreact.React` / `window.shinyreact.ReactDOM`. The IIFE bundle reuses the React instance that owns the shinyreact hooks (mixing two React copies would break the hooks).
 - `react`/`react-dom` are still listed as `devDependencies` so `react/jsx-runtime` resolves at build time when Vite's automatic JSX transform inlines it.
 - Tailwind v4 is wired in through `@tailwindcss/vite`; the shadcn design tokens live in `src/index.css`.

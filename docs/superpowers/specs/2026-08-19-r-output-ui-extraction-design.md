@@ -48,7 +48,7 @@ Key properties (verified on R 4.5.2 / shiny 1.14.0.9000):
 Python's Express-mode `set_react_page()` harvests `session.output._outputs` at
 page-generation time and inlines every dep into the initial `<head>`. R cannot:
 `shinyApp(ui, server)` renders the UI before the session's `server()` runs. So R pushes
-instead (`pkg-r/R/dep-discovery.R` + `js/src/dep-discovery.ts`):
+instead (`pkg-r/R/dep-discovery.R` + `pkg-js/src/dep-discovery.ts`):
 
 1. **Hook** — both shinyreact input handlers call `install_dep_discovery(session)`
    (idempotent per session); the JS bundle sends one `.shinyreact_init` ping through

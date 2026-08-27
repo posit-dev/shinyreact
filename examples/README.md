@@ -2,8 +2,8 @@
 
 Runnable example apps for the `ui.tsx` pattern: the server contains only
 reactive computation, and the UI is defined in a client-side React codebase
-whose entry is conventionally `ui.tsx` (simpler variants like `www/app.js`
-for no-build or `src/App.jsx` for Vite + JSX fill the same role).
+whose entry is conventionally `ui.tsx` (simpler variants like `www/ui.js`
+for no-build or `src/ui.jsx` for Vite + JSX fill the same role).
 
 Examples are Python unless noted; [01-hello](01-hello/) also ships an `app.R`
 showing the same app on the R package.
@@ -18,5 +18,5 @@ showing the same app on the R package.
 | [06-data-frame](06-data-frame/) | Embeds `@render.data_frame` via `ShinyOutput` and `set_react_page()` |
 | [07-plotly](07-plotly/) | Embeds `@render_plotly` via `ShinyOutput` and `set_react_page()`. Also ships an `app.R` using `plotly::renderPlotly()` over the same `www/` client — its binding JS is discovered from the render function and pushed automatically |
 | [08-input-handler](08-input-handler/) | `useShinyInput` with `type="shiny.datetime"` — client sends unix seconds; server `input.when()` is a `datetime.datetime` via Shiny's built-in handler |
-| [09-hmr](09-hmr/) | React Fast Refresh in dev (Vite dev server alongside Shiny); the `app.py` and no-build `www/app.js` paths reload too |
-| [10-bookmarking](10-bookmarking/) | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via a head `<script>` emitted by `page_react_html()` |
+| [09-hmr](09-hmr/) | React Fast Refresh in dev (Vite dev server alongside Shiny); the `app.py` and no-build `www/ui.js` paths reload too |
+| [10-bookmarking](10-bookmarking/) | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via the `#shinyreact-config` tag emitted by `page_react()` |

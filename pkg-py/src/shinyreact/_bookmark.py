@@ -8,6 +8,8 @@ from shiny.bookmark._restore_state import (
     get_current_restore_context,
 )
 
+from ._protocol import PROTOCOL_VERSION
+
 
 def _read_restore_input_values(ctx: RestoreContext) -> dict[str, object]:
     """Return the underlying input value map from a RestoreContext.
@@ -22,58 +24,59 @@ def _read_restore_input_values(ctx: RestoreContext) -> dict[str, object]:
     return ctx.input.as_dict()
 
 
-def _restore_script_tag() -> HTMLDependency | None:
-    """Return a head-injected <script> carrying restored input values, or None.
+def _current_restore_values() -> dict[str, object]:
+    """Restored input values for the active request, or {} when none.
 
-    Reads the active Shiny ``RestoreContext`` set up during the HTTP request
-    that loaded the page. Returns ``None`` when no bookmark query string was
-    parsed or the context's input map is empty.
-
-    SECURITY
-    --------
-    Bookmarked input values appear in the rendered HTML page source. In
-    URL bookmark mode the values are also already in the URL itself, so this
-    script adds no exposure. In server-stored bookmark mode (``?_state_id_=...``)
-    the URL hides the values, but this script re-exposes them in the page
-    source. Anything that can read the HTML — browser extensions, logging
-    proxies, screen captures, "View Source" — can read these values. Apps must
-    not put credentials, tokens, PII, or other sensitive data into inputs that
-    participate in bookmarking.
+    Returns ``{}`` when no session/RestoreContext is active (outside an HTTP
+    request) or when no bookmark query string was parsed.
     """
     try:
         ctx = get_current_restore_context()
     except RuntimeError:
         # No active session/RestoreContext available outside an HTTP request.
-        return None
+        return {}
     if ctx is None:
-        return None
-    values = _read_restore_input_values(ctx)
-    if not values:
-        return None
+        return {}
+    return _read_restore_input_values(ctx)
 
-    # Wrap the JSON in JSON.parse(<js-string-literal>) so values whose
-    # keys happen to be "__proto__" or "constructor" survive intact.
-    # A bare JS object literal ``{"__proto__": ...}`` treats "__proto__"
-    # as the prototype setter rather than a data property; JSON.parse
-    # creates them as ordinary own properties.
-    #
-    # Two layers of escaping:
-    #   1. Inside the JSON payload: replace "</" with "<\\/" so the
-    #      embedded JSON can't prematurely close the surrounding <script>
-    #      tag.
-    #   2. Outside, wrapping the JSON as a JS string literal: a second
-    #      json.dumps double-encodes (quotes + escapes) the JSON text so
-    #      it parses as a normal JS string — avoiding the trap where
-    #      raw \\n / single-quote characters in JSON would be interpreted
-    #      by the JS parser before JSON.parse sees them.
-    #
-    # ``json.dumps`` defaults to ensure_ascii=True, so non-ASCII
-    # (including the JS-only-illegal U+2028 / U+2029) is emitted as
-    # \\uXXXX escapes — safe in both layers.
-    json_payload = json.dumps(values).replace("</", "<\\/")
-    js_string_literal = json.dumps(json_payload)
-    js = (
-        "window.shinyreact = window.shinyreact || {};"
-        f"window.shinyreact._restore = JSON.parse({js_string_literal});"
+
+def _config_script_tag() -> HTMLDependency:
+    """Head-injected ``#shinyreact-config`` JSON script tag.
+
+    Always emitted by page entry points. Carries the wire-protocol version
+    (asserted by the JS client at boot — see
+    ``decisions/2026-08-17-js-distribution.md``) and, when a bookmark is being
+    restored, the restored input values under ``restore``.
+
+    The payload is plain JSON in a ``type="application/json"`` script tag —
+    the browser never executes it as JavaScript, so no JS-string-literal
+    escaping is needed. Two properties of the encoding matter:
+
+    - ``json.dumps`` defaults to ``ensure_ascii=True``, so non-ASCII is
+      emitted as ``\\uXXXX`` escapes.
+    - Every ``<`` is emitted as ``\\u003c`` so the payload can never contain
+      ``</script`` (which would terminate the surrounding tag) or ``<!--``.
+
+    The client reads it with ``JSON.parse``, which treats keys like
+    ``__proto__`` and ``constructor`` as ordinary own properties.
+
+    SECURITY
+    --------
+    Bookmarked input values appear in the rendered HTML page source. In
+    URL bookmark mode the values are also already in the URL itself, so this
+    tag adds no exposure. In server-stored bookmark mode (``?_state_id_=...``)
+    the URL hides the values, but this tag re-exposes them in the page
+    source. Anything that can read the HTML — browser extensions, logging
+    proxies, screen captures, "View Source" — can read these values. Apps must
+    not put credentials, tokens, PII, or other sensitive data into inputs that
+    participate in bookmarking.
+    """
+    config: dict[str, object] = {"protocolVersion": PROTOCOL_VERSION}
+    values = _current_restore_values()
+    if values:
+        config["restore"] = values
+
+    payload = json.dumps(config).replace("<", "\\u003c")
+    return head_content(
+        tags.script(HTML(payload), type="application/json", id="shinyreact-config")
     )
-    return head_content(tags.script(HTML(js)))

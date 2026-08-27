@@ -10,7 +10,13 @@ from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 from shiny.session import get_current_session
 
-from ._dep import _dep_page, _file_mtime_int
+from ._app import ReactHtmlDocument
+from ._bookmark import _config_script_tag
+from ._dep import _dep, _dep_page, _file_mtime_int
+
+# The head-injection marker a page_react_html() document must contain. The
+# same literal works for R's htmlTemplate(), where it is evaluated as code.
+_HEAD_CONTENT_MARKER = "{{ headContent() }}"
 
 if TYPE_CHECKING:
     # Private, but it is the only name for HTMLDependency's stylesheet entry.
@@ -45,11 +51,79 @@ def page_bare(
     )
 
 
+def _resolve_react_dirs(
+    src_dir: str | Path | None, caller_dir: Path
+) -> tuple[Path, str]:
+    """Resolve ``page_react``'s asset dir and derive the app name.
+
+    Returns ``(base_dir, app_name)``. ``app_name`` is the app folder's name:
+    when the asset dir is the conventional ``www/``, its parent (the app dir)
+    names the app; otherwise the asset dir itself does.
+    """
+    if src_dir is None:
+        base_dir = caller_dir / "www"
+    else:
+        src_dir = Path(src_dir)
+        base_dir = src_dir if src_dir.is_absolute() else caller_dir / src_dir
+    app_name = base_dir.parent.name if base_dir.name == "www" else base_dir.name
+    return base_dir, app_name
+
+
+def page_react(
+    *args: TagChild,
+    src_dir: str | Path | None = None,
+    js_file: str = "ui.js",
+    css_file: str | None = "ui.css",
+    title: str | None = None,
+    lang: str = "en",
+) -> Tag:
+    """Create a React page from conventional assets — no HTML file required.
+
+    The zero-configuration page for the ui.tsx pattern: the server emits no
+    body HTML at all. It attaches the shinyreact bundle plus your app's entry
+    assets, discovered at ``www/ui.js`` and ``www/ui.css`` (relative to the
+    calling module). Your JS owns the DOM — create and append your own mount
+    container::
+
+        const root = ReactDOM.createRoot(
+          document.body.appendChild(document.createElement("div")),
+        );
+
+    ``ui.js`` is required (a missing file warns, pointing at the resolved
+    path); ``ui.css`` is attached only when it exists. Both are served as an
+    :class:`~htmltools.HTMLDependency` versioned by ``ui.js``'s mtime, so the
+    browser re-fetches after every edit — unlike raw ``<script src=...>``
+    tags in a hand-written HTML file, which the browser caches.
+
+    Args:
+        *args: Extra children or :class:`~htmltools.HTMLDependency` objects.
+        src_dir: Directory containing the assets. Defaults to ``www/`` next
+            to the calling module; relative paths resolve against the caller.
+        js_file: JS entry filename within ``src_dir`` (default ``"ui.js"``).
+        css_file: CSS filename within ``src_dir`` (default ``"ui.css"``).
+        title: Page title. Defaults to the app folder's name (``src_dir``'s
+            parent when ``src_dir`` is a ``www/`` dir).
+        lang: HTML ``lang`` attribute.
+    """
+    caller_file = sys._getframe(1).f_globals.get("__file__")
+    caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
+    base_dir, app_name = _resolve_react_dirs(src_dir, caller_dir)
+    return page_bare(
+        _dep_page(),
+        page_react_dep(
+            src_dir=base_dir, js_file=js_file, css_file=css_file, name=app_name
+        ),
+        *args,
+        title=title if title is not None else app_name,
+        lang=lang,
+    )
+
+
 def page_react_dep(
     *,
     src_dir: str | Path | None = None,
-    js_file: str = "main.js",
-    css_file: str | None = "main.css",
+    js_file: str = "ui.js",
+    css_file: str | None = "ui.css",
     name: str | None = None,
 ) -> HTMLDependency:
     """Build an HTMLDependency for a React app's JS and CSS entry points.
@@ -104,9 +178,9 @@ def page_react_dep(
         src_dir: Directory containing the JS/CSS. Inferred from the calling
             frame when omitted (see above).
         js_file: Filename of the JS entry point, relative to ``src_dir``
-            (default ``"main.js"``). Attached only if the file exists.
+            (default ``"ui.js"``). Attached only if the file exists.
         css_file: Filename of the CSS file, relative to ``src_dir`` (default
-            ``"main.css"``). Attached only if the file exists; ``None`` to skip.
+            ``"ui.css"``). Attached only if the file exists; ``None`` to skip.
         name: Dependency name. Defaults to ``src_dir``'s basename.
     """
     if src_dir is not None:
@@ -148,13 +222,19 @@ def page_react_dep(
     )
 
 
-def set_react_page(path: str | Path = "www/index.html") -> None:
-    """Set the page for this Express app to an HTML file hosting a React app.
+def set_react_page(path: str | Path | None = None) -> None:
+    """Set the page for this Express app to a React app (the ui.tsx pattern).
 
-    Reads the specified HTML file once (cached at call time) and uses it as
-    the page body. Dependencies from traditional Shiny renderers (e.g.
-    ``@render.data_frame``) are discovered automatically and injected into
-    the page head.
+    With no arguments, serves ``www/index.html`` when it exists; otherwise
+    falls back to :func:`page_react`-style discovery of ``www/ui.js`` /
+    ``www/ui.css``, emitting no body HTML at all (your JS appends its own
+    mount container to ``<body>``). Passing ``path`` explicitly requires the
+    file to exist.
+
+    When an HTML file is used, it is read once (cached at call time) and used
+    as the page body. In both modes, dependencies from traditional Shiny
+    renderers (e.g. ``@render.data_frame``) are discovered automatically and
+    injected into the page head.
 
     Renderers defined inside ``@module.server`` are discovered too: every
     renderer mounted while the app body runs is found via the session's
@@ -210,55 +290,54 @@ def set_react_page(path: str | Path = "www/index.html") -> None:
         path: Path to the HTML file. Absolute paths are used verbatim;
             relative paths resolve against the caller module's directory,
             or against ``Path.cwd()`` when there is no caller ``__file__``.
-            Defaults to ``"www/index.html"``.
+            When ``None`` (the default), uses ``www/index.html`` if it
+            exists, else discovers ``www/ui.js`` / ``www/ui.css``.
     """
-    path = Path(path)
-    if path.is_absolute():
-        index_path = path
+    caller_file = sys._getframe(1).f_globals.get("__file__")
+    # If the caller has no __file__ (REPL or dynamically exec'd code),
+    # fall back to the current working directory.
+    caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
+
+    if path is None:
+        index_path = caller_dir / "www" / "index.html"
+        if not index_path.exists():
+            page_opts(page_fn=_build_react_page_fn_discovered(caller_dir))
+            return
     else:
-        caller_file = sys._getframe(1).f_globals.get("__file__")
-        # If the caller has no __file__ (REPL or dynamically exec'd code),
-        # fall back to the current working directory.
-        caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
-        index_path = caller_dir / path
+        path = Path(path)
+        index_path = path if path.is_absolute() else caller_dir / path
     page_opts(page_fn=_build_react_page_fn(index_path))
 
 
-def page_react_html(path: str | Path = "www/index.html") -> TagList:
-    """Serve a static React ``index.html`` (the ui.tsx pattern, Core API).
+def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
+    """Serve a React ``index.html`` document (the ui.tsx pattern, Core API).
 
-    The Core-mode counterpart to :func:`set_react_page`. Reads an HTML file,
-    attaches the shinyreact page-level dependency, and returns UI suitable for
-    use as the ``ui`` argument of :class:`shiny.App`. Use this when you write a
-    Core-style app (``App(app_ui, server)``); use :func:`set_react_page` for
-    Shiny Express apps.
+    Reads a complete HTML document — the kind a Vite build emits — and injects
+    Shiny's and shinyreact's dependencies into it. The document must contain a
+    ``{{ headContent() }}`` marker inside ``<head>``; the script/link tags
+    render at the marker. Matches R's ``page_react_html()``
+    (``htmltools::htmlTemplate()``).
 
-    Unlike :func:`set_react_page`, this does not auto-discover dependencies
-    from traditional Shiny renderers — it only attaches the shinyreact bundle.
+    You rarely need to call this yourself — :class:`shinyreact.ReactApp`
+    discovers ``www/index.html`` and calls it for you::
 
-    Serving the client's files
-    --------------------------
-    This function only reads ``index.html``; it does not serve the sibling
-    files that ``index.html`` references. Shiny Express mounts the app
-    directory's ``www/`` at ``/`` automatically, but :class:`shiny.App` does
-    not, so a Core app must do it explicitly — otherwise the page loads and
-    then 404s on its own scripts and stylesheets::
+        from shinyreact import ReactApp
 
-        from pathlib import Path
-        from shiny import App
-        from shinyreact import page_react_html
+        app = ReactApp(server)
 
-        app = App(
-            page_react_html(),
-            server,
-            static_assets={"/": Path(__file__).parent / "www"},
-        )
+    Call it directly to pass a non-default path (``ReactApp(server,
+    ui=page_react_html("client/index.html"))``). ``shiny.App`` works too (via
+    ``ui.PageDocument``, py-shiny#2475), but only ``ReactApp`` mounts the
+    document's directory at ``/``, so the assets the document references
+    (your bundle's JS/CSS) are served when they live next to it
+    (conventionally ``www/``).
 
-    (R's ``shiny::runApp()`` serves ``www/`` next to ``app.R`` automatically,
-    so the R counterpart needs no equivalent.)
+    For apps that don't need to own the HTML document, prefer
+    :func:`page_react` — it requires no HTML file at all and works with plain
+    ``shiny.App``.
 
     Args:
-        path: Path to the HTML file. Absolute paths are used verbatim;
+        path: Path to the HTML document. Absolute paths are used verbatim;
             relative paths resolve against the caller module's directory, or
             against :func:`pathlib.Path.cwd` when there is no caller
             ``__file__``. Defaults to ``"www/index.html"``.
@@ -275,7 +354,22 @@ def page_react_html(path: str | Path = "www/index.html") -> TagList:
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
     index_html = index_path.read_text()
-    return TagList(_dep_page(), HTML(index_html))
+    if _HEAD_CONTENT_MARKER not in index_html:
+        raise ValueError(
+            f"{index_path} must be a complete HTML document containing a "
+            f"'{_HEAD_CONTENT_MARKER}' marker inside <head> — shinyreact's "
+            "script and stylesheet tags render at the marker. For a page "
+            "without an HTML file, use page_react() instead."
+        )
+
+    # ui.PageDocument (py-shiny#2475) prefixes Shiny's own dependencies; we
+    # only add shinyreact's bundle and the #shinyreact-config tag.
+    return ReactHtmlDocument(
+        index_html,
+        src_dir=index_path.parent,
+        extra_deps=[_dep(), _config_script_tag()],
+        deps_replace_pattern=_HEAD_CONTENT_MARKER,
+    )
 
 
 def _collect_renderer_deps(renderer: Renderer, deps: list[HTMLDependency]) -> None:
@@ -291,6 +385,45 @@ def _collect_renderer_deps(renderer: Renderer, deps: list[HTMLDependency]) -> No
     ui = renderer.auto_output_ui()
     if isinstance(ui, (Tag, TagList)):
         deps.extend(ui.tagify().get_dependencies())
+
+
+def _harvest_renderer_deps(args: tuple[Any, ...]) -> list[HTMLDependency]:
+    """Collect HTMLDependencies from Express renderers for the page head.
+
+    Looks at the top-level renderers Shiny Express hands to the page function,
+    plus every renderer registered on the active session — including those
+    defined inside ``@module.server``, which ``args`` never sees (issue #87).
+    At the tagify pass the stub session already holds every synchronously
+    mounted renderer in ``output._outputs``.
+    """
+    deps: list[HTMLDependency] = []
+    for arg in args:
+        if isinstance(arg, Renderer):
+            _collect_renderer_deps(arg, deps)
+    session = get_current_session()
+    if session is not None:
+        # `_outputs` is private; Shiny exposes no public API to iterate
+        # registered outputs.
+        for info in session.output._outputs.values():
+            _collect_renderer_deps(info.renderer, deps)
+    return deps
+
+
+def _build_react_page_fn_discovered(app_dir: Path) -> Callable[..., Tag]:
+    """Express page function for the no-HTML-file mode.
+
+    Serves a :func:`page_react` page from ``app_dir/www`` with the same
+    renderer-dependency discovery as the index.html mode.
+    """
+
+    def _react_page_fn(*args: Any) -> Tag:
+        return page_react(
+            *_harvest_renderer_deps(args),
+            src_dir=app_dir / "www",
+            title=app_dir.name,
+        )
+
+    return _react_page_fn
 
 
 def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
@@ -317,26 +450,9 @@ def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
     index_html = index_path.read_text()
 
     def _react_page_fn(*args: Any) -> Tag:
-        deps: list[HTMLDependency] = []
-
-        # Top-level renderers Shiny Express hands to the page function.
-        for arg in args:
-            if isinstance(arg, Renderer):
-                _collect_renderer_deps(arg, deps)
-
-        # Renderers registered on the active session — including those defined
-        # inside @module.server, which `*args` never sees (issue #87). At the
-        # tagify pass the stub session already holds every synchronously
-        # mounted renderer in `output._outputs`.
-        session = get_current_session()
-        if session is not None:
-            # `_outputs` is private; Shiny exposes no public API to iterate
-            # registered outputs.
-            for info in session.output._outputs.values():
-                _collect_renderer_deps(info.renderer, deps)
-
+        deps = _harvest_renderer_deps(args)
         # Shiny de-duplicates dependencies by name+version when hoisting to
-        # <head>, so any overlap between the two passes is harmless.
+        # <head>, so any overlap between the harvest passes is harmless.
         # page_opts types page_fn as -> Tag, but TagList works at runtime
         return cast(Tag, TagList(_dep_page(), *deps, HTML(index_html)))
 

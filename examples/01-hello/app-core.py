@@ -1,10 +1,6 @@
-from pathlib import Path
-
 from faithful import histogram, waiting
-from shiny import App, Inputs, Outputs, Session
-from shinyreact import page_react_html, reactive_output
-
-app_ui = page_react_html()  # serves www/index.html (Core API)
+from shiny import Inputs, Outputs, Session
+from shinyreact import ReactApp, reactive_output
 
 
 def server(input: Inputs, output: Outputs, session: Session):
@@ -18,7 +14,5 @@ def server(input: Inputs, output: Outputs, session: Session):
         return f"{len(waiting)} eruptions in {n} bin{'' if n == 1 else 's'}"
 
 
-# Core apps must mount www/ themselves. Shiny Express auto-serves the app
-# directory's www/ at "/", but App() does not — without this, index.html loads
-# and then 404s on app.js and main.css.
-app = App(app_ui, server, static_assets={"/": Path(__file__).parent / "www"})
+# ReactApp discovers www/ui.js + www/ui.css (Core API) and serves them itself.
+app = ReactApp(server)

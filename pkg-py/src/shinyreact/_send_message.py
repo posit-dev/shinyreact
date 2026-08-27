@@ -11,18 +11,19 @@ if TYPE_CHECKING:
 
 async def send_message(
     session: Session,
-    type: str,
+    id: str,
     data: Jsonifiable,
 ) -> None:
     """Send a custom message from server to client React components.
 
-    Messages are consumed by ``useShinyMessageHandler(type, handler)`` on the
+    Messages are consumed by ``useShinyMessageHandler(id, handler)`` on the
     React side via the ``@posit/shiny-react`` hooks bundled in shinyreact.
 
     Args:
         session: The Shiny session to send the message through.
-        type: The message type string. Must match the ``messageType`` argument
-            passed to ``useShinyMessageHandler()`` in the React component.
+        id: The message id, module-resolved like input/output ids. Must match
+            the ``id`` argument passed to ``useShinyMessageHandler()`` in the
+            React component.
         data: Any JSON-serializable data to include in the message.
 
     Example::
@@ -33,7 +34,7 @@ async def send_message(
                 session, "notification", {"text": "Hello!", "level": "info"}
             )
     """
-    namespaced_type = resolve_id(type)
+    namespaced_id = resolve_id(id)
     await session.send_custom_message(
-        "shinyReactMessage", {"type": namespaced_type, "data": data}
+        "shinyReactMessage", {"id": namespaced_id, "data": data}
     )

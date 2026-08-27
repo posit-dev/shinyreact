@@ -19,23 +19,22 @@ examples/03-columns-shadcn/
 ├── vite.config.js                  # lib-mode IIFE; React → window.shinyreact
 ├── src/
 │   ├── App.jsx                     # composes Column → ItemRow with shadcn Card/Button
-│   ├── main.jsx                    # mounts via window.shinyreact.React/ReactDOM
+│   ├── ui.jsx                      # mounts via window.shinyreact.React/ReactDOM (appends its own container)
 │   ├── index.css                   # Tailwind v4 + shadcn theme tokens
 │   ├── lib/utils.js                # cn() = clsx + tailwind-merge
 │   └── components/ui/
 │       ├── button.jsx              # actual shadcn Button (cva variants)
 │       └── card.jsx                # actual shadcn Card stack
 └── www/
-    ├── index.html                  # 3 lines, committed
-    ├── app.js                      # built by Vite (gitignored)
-    └── style.css                   # built by Vite (gitignored)
+    ├── ui.js                       # built by Vite (gitignored)
+    └── ui.css                      # built by Vite (gitignored)
 ```
 
 ## Build plumbing
 
 Worth understanding because every shadcn-style example in this repo uses the same setup:
 
-- `vite.config.js` is in **lib mode** with `format: "iife"`, output filename `app.js`. We can't use Vite's regular HTML pipeline because we need a single self-contained bundle that reuses the page's existing React.
+- `vite.config.js` is in **lib mode** with `format: "iife"`, output filename `ui.js` — the name `set_react_page()` discovers, so the app file needs no arguments and no `index.html`. We can't use Vite's regular HTML pipeline because we need a single self-contained bundle that reuses the page's existing React.
 - `react`, `react-dom`, `react-dom/client` are listed as `external` and mapped via `rollupOptions.output.globals` to `window.shinyreact.React` / `window.shinyreact.ReactDOM`. The IIFE bundle reuses the React instance that owns the shinyreact hooks (mixing two React copies would break the hooks).
 - `@tailwindcss/vite` wires Tailwind v4 in directly; the shadcn design tokens live in `src/index.css`.
 - `define: { "process.env.NODE_ENV": '"production"' }` is set because lib mode does not auto-replace it (it assumes a downstream bundler will). Without it the bundled React jsx-runtime hits a `process is not defined` error in the browser.
