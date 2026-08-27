@@ -87,6 +87,27 @@ The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundle
 
 `ShinyOutput` renders a traditional Shiny output element (e.g. `shiny-data-frame`, a plotly widget) inside a React tree and wires `Shiny.bindAll`/`unbindAll` — it has no dependency on any server-side placeholder.
 
+#### Don't write to `window` — with two named exceptions
+
+**Default: module-level state, not globals.** A module singleton is testable, typed, and cannot be clobbered by another script on the page. Reach for it first.
+
+Writing to `window` (including `window.Shiny.*`) is justified in exactly one situation: **state that must be shared per *page*, not per *bundle copy*.** Two copies of this library can be on one page today — the server injects the IIFE bundle even for an npm-tier app, until the opt-out in #217 lands — and each copy has its own module singletons. Anything that must be single per page has to travel through something both copies can see.
+
+The two sanctioned cases, both mediated by a single accessor:
+
+| Accessor | Why page-scoped |
+|---|---|
+| `getReactRegistry()` | input/output values and their subscribers; two registries would split one input id's producers and consumers across them |
+| `getMessageRegistry()` | Shiny gives **one dispatcher slot per message type**, so a second `addCustomMessageHandler("shinyReactMessage")` either replaces the first or throws — either way one copy's handlers go dead |
+
+Rules if you find yourself adding a third:
+
+- **Go through an accessor**, never a bare assignment at the point of use. One place attaches (`shiny.x ??= singleton`), everyone reads through it. Scattered assignments are how `window.Shiny.messageRegistry` ended up written from two places and read from none.
+- **Fall back to the module singleton when `window.Shiny` is absent** rather than throwing or returning `undefined` — the client legitimately runs before Shiny loads.
+- **Type the property optional** (`x?: T`). It genuinely is, before the first attach.
+- **Test the sharing**, not just the happy path: `vi.resetModules()` plus a re-import simulates a second copy of the library on the same page.
+- **Write down why page scope is required.** If the answer is "so I can inspect it in DevTools", that is not a reason — use a module export and a test.
+
 ### Python package
 
 - `@shinyreact.reactive_output` — `Renderer[Jsonifiable]` subclass; passes raw JSON data through for `useShinyOutputValue()` hooks, with no placeholder (`auto_output_ui()` returns `None`)

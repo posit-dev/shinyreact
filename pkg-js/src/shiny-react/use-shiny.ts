@@ -18,7 +18,10 @@ import {
   getInitializedSnapshot,
   subscribeLifecycle,
 } from "./lifecycle-store";
-import { initializeMessageRegistry } from "./message-registry";
+import {
+  getMessageRegistry,
+  initializeMessageRegistry,
+} from "./message-registry";
 import { MISSING } from "./missing";
 import {
   createReactOutputBinding,
@@ -495,21 +498,21 @@ export function useShinyMessageHandler<T = any>(
     if (!shinyInitialized || !namespacedMessageId) {
       return;
     }
-    const shiny = getShiny();
-    if (!shiny) {
-      return;
-    }
-
     // Wrap in a stable function that delegates to the latest handler ref
     const stableHandler = (data: T) => handlerRef.current(data);
 
-    // Register the message handler with our dedicated message registry
-    shiny.messageRegistry.addHandler(namespacedMessageId, stableHandler);
+    // Go through getMessageRegistry() rather than reading
+    // `window.Shiny.messageRegistry`, which could be unset here and threw a
+    // TypeError: the eager publish is a no-op when Shiny has not loaded yet.
+    // The accessor attaches on first use and returns the page-scoped registry,
+    // so a second copy of the library on the page shares this one dispatcher.
+    const registry = getMessageRegistry();
+    registry.addHandler(namespacedMessageId, stableHandler);
 
     // Cleanup function that removes the handler when component unmounts
     // or when the message id changes
     return () => {
-      shiny.messageRegistry.removeHandler(namespacedMessageId, stableHandler);
+      registry.removeHandler(namespacedMessageId, stableHandler);
     };
   }, [shinyInitialized, namespacedMessageId]);
 }

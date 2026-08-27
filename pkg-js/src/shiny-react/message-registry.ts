@@ -114,15 +114,45 @@ const messageRegistry = new ShinyMessageRegistry();
 // Note: Global Window interface is extended in use-shiny.ts to avoid conflicts
 
 /**
- * Initialize the global message registry and make it available on window.Shiny
- * This function should be called after Shiny is initialized
+ * The message registry for this *page*.
+ *
+ * Deliberately page-scoped rather than module-scoped, and the one place that
+ * attaches it to `window.Shiny`. Two copies of this library can be on a page
+ * today — the server injects the IIFE bundle even for an npm-tier app, until
+ * the opt-out in #217 lands — and each copy has its own module singleton. Two
+ * registries would mean two `addCustomMessageHandler("shinyReactMessage")`
+ * calls, and Shiny gives us one dispatcher slot per message type: whichever
+ * behaviour it has (silently replacing the first, or throwing), one copy's
+ * handlers stop receiving messages. Sharing through Shiny's own object is what
+ * keeps a single dispatcher and a single handler map.
+ *
+ * `??=` so the first caller wins and later callers adopt it. Reading through
+ * this accessor instead of `shiny.messageRegistry` directly is also what fixes
+ * the crash it replaced: the property could be unset when a hook ran, because
+ * the old eager publish was a no-op if Shiny had not loaded yet.
+ *
+ * Handlers registered before Shiny exists live on the module singleton, which
+ * becomes the page registry if it attaches first. If a *different* copy
+ * attached first, those early handlers stay on the local instance — an
+ * accepted edge, since hooks only register after Shiny reports initialized.
  */
-export function initializeMessageRegistry(): void {
+export function getMessageRegistry(): ShinyMessageRegistry {
   const shiny = getShiny();
   if (!shiny) {
-    return;
+    return messageRegistry;
   }
-  shiny.messageRegistry = messageRegistry;
+  return (shiny.messageRegistry ??= messageRegistry);
+}
+
+/**
+ * Attach the registry to `window.Shiny` eagerly, during shinyreact's one-time
+ * init. A no-op without Shiny; `getMessageRegistry()` attaches later in that
+ * case, so nothing depends on this having run.
+ */
+export function initializeMessageRegistry(): void {
+  if (getShiny()) {
+    getMessageRegistry();
+  }
 }
 
 export { messageRegistry, ShinyMessageRegistry };
