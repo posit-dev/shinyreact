@@ -26,6 +26,11 @@ def test_custom_classname_lands_on_rendered_element(
     expect(out).to_have_class(re.compile(r"\bcustom-a\b"))
     expect(out).to_have_class(re.compile(r"\bcustom-b\b"))
 
+    # And the binding pass really did run: `shiny-bound-output` was only ever
+    # described in a comment, asserted nowhere, so nothing caught a regression
+    # where the element rendered but never bound.
+    expect(out).to_have_class(re.compile(r"\bshiny-bound-output\b"))
+
     # Arbitrary HTML attributes pass through to the rendered element.
     expect(out).to_have_attribute("data-test-marker", "x")
 

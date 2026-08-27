@@ -49,3 +49,31 @@ test_that("page_react() puts the config tag in <head>, not <body>", {
     fixed = TRUE
   )
 })
+
+test_that("shinyreact_dep() emits the bundle script with defer and no type", {
+  # Mirrors Python's test_dep_script_has_defer. R had no assertion on the
+  # bundle's script attributes at all, which is exactly how #182 (wrong
+  # attributes in R, pinned in Python) survived as long as it did.
+  dep <- shinyreact:::shinyreact_dep()
+  script <- if (is.null(dep$script$src)) dep$script[[1]] else dep$script
+  expect_identical(script$src, "shinyreact.js")
+  expect_identical(script$defer, "")
+  expect_null(script$type)
+})
+
+test_that("shinyreact_dep() attaches the stylesheet unconditionally", {
+  # No existence check on the CSS, unlike page_react_dep()'s. Asserted in both
+  # languages so the divergence stays deliberate.
+  dep <- shinyreact:::shinyreact_dep()
+  expect_identical(unname(unlist(dep$stylesheet)), "shinyreact.css")
+})
+
+test_that("shinyreact_dep() version falls back to the package version", {
+  # Deliberate divergence: Python falls back to the literal "0.1.0".
+  # Mirrors Python's test_dep_version_tracks_bundle_mtime.
+  local_mocked_bindings(.www_dir = function() withr::local_tempdir())
+  expect_identical(
+    shinyreact:::shinyreact_dep()$version,
+    as.character(utils::packageVersion("shinyreact"))
+  )
+})

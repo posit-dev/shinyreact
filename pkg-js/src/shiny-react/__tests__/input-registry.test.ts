@@ -169,6 +169,11 @@ describe("InputRegistryEntry", () => {
     );
   });
 
+  it("defaults debounceMs to 100 (the documented default)", () => {
+    const entry = new InputRegistryEntry("id", 1);
+    expect(entry.shinySetInputValueDebounced.getDelay()).toBe(100);
+  });
+
   it("isEmpty returns true when no setState functions registered", () => {
     const entry = new InputRegistryEntry("test", 0);
     expect(entry.isEmpty()).toBe(true);

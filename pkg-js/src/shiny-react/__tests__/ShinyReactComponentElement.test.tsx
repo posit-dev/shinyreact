@@ -17,6 +17,50 @@ afterEach(() => {
 });
 
 describe("ShinyReactComponentElement", () => {
+  describe("lifecycle", () => {
+    it("mounts a React root on connect and unmounts it on disconnect", () => {
+      const el = document.createElement(
+        "test-shiny-react-component",
+      ) as ShinyReactComponentElement;
+      el.innerHTML = "<span>server content</span>";
+      document.body.appendChild(el);
+
+      // connectedCallback captured the slot content and cleared the element
+      // before rendering, so the server markup is no longer a child.
+      expect(el.querySelector("span")).toBeNull();
+      expect((el as any).root).not.toBeNull();
+
+      el.remove();
+
+      expect((el as any).root).toBeNull();
+    });
+
+    it("unbinds Shiny on disconnect, WITHOUT includeSelf", () => {
+      // Deliberately pinned as-is: ShinyOutput passes includeSelf=true so it
+      // unbinds only itself, while this passes the element as a plain scope,
+      // which unbinds descendants and leaves the element itself bound. The
+      // asymmetry is unexplained (#223); this test documents today's behavior
+      // so a change to it is a visible decision rather than a silent drift.
+      const el = document.createElement("test-shiny-react-component");
+      document.body.appendChild(el);
+      el.remove();
+
+      expect((window as any).Shiny.unbindAll).toHaveBeenCalledWith(el);
+      expect((window as any).Shiny.unbindAll).not.toHaveBeenCalledWith(
+        el,
+        true,
+      );
+    });
+
+    it("does not throw when Shiny is absent on disconnect", () => {
+      delete (window as any).Shiny;
+      const el = document.createElement("test-shiny-react-component");
+      document.body.appendChild(el);
+
+      expect(() => el.remove()).not.toThrow();
+    });
+  });
+
   describe("getConfig", () => {
     it("parses data-* attributes into a config object", () => {
       const el = new ShinyReactComponentElement();
