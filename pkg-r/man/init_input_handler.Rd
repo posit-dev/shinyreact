@@ -7,11 +7,15 @@
 init_input_handler(value, session = NULL, name = NULL)
 }
 \description{
-Receives the single \code{.shinyreact_init} ping the JS bundle sends after Shiny
-initializes (\code{pkg-js/src/dep-discovery.ts}), typed \code{shinyreact.init}. Its
-job is per-session bootstrap: installing automatic output dependency
-discovery (dep-discovery.R). A dedicated handler keeps the
-value-transforming handlers above pure, and the guaranteed ping means every
-session bootstraps exactly once — with or without other inputs.
+Registered in \code{.onLoad()} (zzz.R) for the \code{shinyreact.init} input type;
+shiny invokes it when the JS bundle's single per-session
+\code{.shinyreact_init:shinyreact.init} ping arrives (sent after Shiny
+initializes -- \code{pkg-js/src/dep-discovery.ts}). Its job is per-session
+bootstrap: installing automatic output dependency discovery
+(dep-discovery.R). The hook is installed before the ping's own reactive
+flush runs, so that same flush performs the first dependency harvest --
+\code{server()} has already registered its outputs by then. A dedicated handler
+keeps the value-transforming handlers above pure, and the guaranteed ping
+means every session bootstraps exactly once, with or without other inputs.
 }
 \keyword{internal}
