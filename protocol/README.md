@@ -32,6 +32,26 @@ Shared fixtures live in [`fixtures/`](fixtures/); each language has a test
 that round-trips them through its emit/parse path (grep for the fixture
 filename to find them).
 
+### The surface manifest
+
+[`surface.json`](surface.json) enumerates the whole boundary — custom message
+types, input-handler names, input ids, DOM ids — beside the protocol version.
+All three suites assert their live surface against it (`test_protocol_surface.py`,
+`test-protocol-surface.R`, `protocol-surface.test.ts`): the JS suite scans
+`pkg-js/src`, and the Python and R suites read shiny's input-handler registry
+after loading the package. A new message type or handler name therefore fails a
+test until it is listed, next to the version, where the bump question above is
+impossible to miss.
+
+This exists because the surface grew without a bump: #221 added the
+`shinyreact.init` handler (with its `.shinyreact_init` ping) and the
+`shinyreact-deps` message while the version stayed at `1.0`, which the "minor
+bump — a new message type" rule above says should have been `1.1`. Nothing
+enforced the rule, and the three protocol constants still describe a
+three-shape surface. Resolving that — bump, or amend the policy — is
+[#232](https://github.com/posit-dev/shinyreact/issues/232); the manifest and
+its guards land first so the next addition cannot slip through the same way.
+
 ## 1. The `#shinyreact-config` script tag
 
 Every page entry point renders, in `<head>`:
