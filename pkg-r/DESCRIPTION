@@ -18,7 +18,8 @@ Imports:
     cli,
     htmltools,
     jsonlite,
-    shiny (>= 1.13.0)
+    shiny (>= 1.13.0),
+    utils
 Suggests:
     testthat (>= 3.0.0),
     withr
