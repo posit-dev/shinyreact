@@ -31,7 +31,13 @@ function App() {
       { style: { marginTop: "1rem", height: "400px" } },
       h(ShinyOutput, {
         id: "scatter",
-        className: "shiny-ipywidget-output shiny-report-size",
+        // One client, two servers: "shiny-ipywidget-output" is what Python's
+        // shinywidgets binding looks for; "plotly html-widget
+        // html-widget-output" is what R's htmlwidgets binding looks for
+        // (mirrors plotly::plotlyOutput()). Whichever server runs, only its
+        // binding JS is loaded, so the other side's classes are inert.
+        className:
+          "shiny-ipywidget-output plotly html-widget html-widget-output shiny-report-size",
         style: { width: "100%", height: "100%" },
       }),
     ),

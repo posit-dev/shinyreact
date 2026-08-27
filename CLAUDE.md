@@ -98,12 +98,13 @@ The JS output (`js/dist/shinyreact.js`) is a self-contained IIFE that bundles Re
 
 ### R package
 
-The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reactive_output`, `page_bare`, `page_react_html`, `page_react_dep`, `send_message`. Key shape differences from Python:
+The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reactive_output`, `page_bare`, `page_react_html`, `page_react_dep`, `send_message`, `output_ui`. Key shape differences from Python:
 
 - `reactive_output(expr, ...)` is a **function** assigned to `output$id`, not a decorator/`Renderer` class.
 - `page_react_html(path = "www/index.html")` matches Python's `page_react_html()`; Python additionally has the Express-only `set_react_page()`.
 - `send_message(session, type, data)` matches Python.
 - `page_react_dep()` takes `src_dir` as a required first argument; Python's is keyword-only and infers `src_dir`/`name` from the caller's `__file__` when omitted (R has no equivalent). Pass `src_dir=` explicitly in Python too if you wrap the call in a helper — the inference reads the *immediate* calling frame.
+- `output_ui(render_fn, id)` builds the UI a render function's matching `*Output()` would produce (R counterpart of Python's `Renderer.auto_output_ui()`). It powers R's automatic renderer-dependency discovery (`pkg-r/R/dep-discovery.R`): because R renders the UI before `server()` runs, dependencies can't be inlined into `<head>` like Python's `set_react_page()` — instead, after every flush the session's registered outputs are diffed and new outputs' deps are pushed as a `shinyreact-deps` custom message; the JS bundle loads them and re-runs `bindAll`. The hook is the shinyreact input handlers plus a `.shinyreact_init` client ping (`js/src/dep-discovery.ts`), so it works with zero configuration, including for module servers mounted after startup.
 
 The deliberate remaining divergences (decided in #184) are recorded in `decisions/2026-08-13-r-python-parity.md`: relative-path resolution, `set_react_page()`'s renderer-dependency discovery, and scalar-array flattening in the default input handler.
 

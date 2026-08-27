@@ -22,6 +22,10 @@
 #' * Anything else — returned as-is.
 #' @keywords internal
 default_input_handler <- function(value, session = NULL, name = NULL) {
+  # Input handlers are the one shinyreact code path that runs inside every
+  # live session, so they double as the hook that installs automatic output
+  # dependency discovery (dep-discovery.R). Idempotent per session.
+  install_dep_discovery(session)
   if (!is.list(value) || !is.null(names(value))) {
     return(value)
   }
@@ -49,5 +53,6 @@ default_input_handler <- function(value, session = NULL, name = NULL) {
 #' untouched (no flattening), for nested structures the default would coerce.
 #' @keywords internal
 asis_input_handler <- function(value, session = NULL, name = NULL) {
+  install_dep_discovery(session)
   value
 }
