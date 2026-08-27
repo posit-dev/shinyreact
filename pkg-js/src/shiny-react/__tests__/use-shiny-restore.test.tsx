@@ -65,6 +65,36 @@ describe("applyRestoredValues", () => {
     });
   });
 
+  it("still runs the protocol handshake when _restore is already applied", () => {
+    // The handshake is a property of the page, not of the restore payload. A
+    // pre-set (or forged) "-applied" sentinel must not be able to skip version
+    // checking — that would make the sentinel a silent kill switch.
+    setConfigTag({ protocolVersion: "99.0" });
+    (window as any).shinyreact = {
+      _restore: { "-applied": true, "-values": {} },
+    };
+
+    expect(() => applyRestoredValues(new InputRegistry())).toThrow(
+      /protocol mismatch/,
+    );
+  });
+
+  it("preserves the existing snapshot when already applied and the protocol matches", () => {
+    setConfigTag({ protocolVersion: "1.0", restore: { foo: "new" } });
+    (window as any).shinyreact = {
+      _restore: { "-applied": true, "-values": { foo: "old" } },
+    };
+    const registry = new InputRegistry();
+
+    applyRestoredValues(registry);
+
+    expect(registry.size()).toBe(0);
+    expect((window as any).shinyreact._restore).toEqual({
+      "-applied": true,
+      "-values": { foo: "old" },
+    });
+  });
+
   it("config tag without restore writes the empty sentinel", () => {
     setConfigTag({ protocolVersion: "1.0" });
     const registry = new InputRegistry();
