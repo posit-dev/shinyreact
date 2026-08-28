@@ -184,17 +184,27 @@ test_that("page_react warns on a missing ui.js", {
   expect_warning(page_react(), "ui.js")
 })
 
-test_that("page_react falls back to shinyreact-app when src_dir is missing", {
-  # A missing src_dir stays relative through normalizePath(mustWork = FALSE),
-  # which used to yield a "." title and a "/lib/.-0/" asset URL (#242).
+test_that("page_react never names the app '.' when src_dir is missing", {
+  # A missing src_dir used to yield a "." title and a "/lib/.-0/" asset URL
+  # (#242).
   withr::local_dir(withr::local_tempdir("nowww"))
-  rendered <- suppressWarnings(htmltools::renderTags(page_react()))
+  ui <- suppressWarnings(page_react())
+  rendered <- htmltools::renderTags(ui)
   html <- paste0(as.character(rendered$head), as.character(rendered$html))
-  expect_match(html, "<title>shinyreact-app</title>", fixed = TRUE)
-  deps <- suppressWarnings(htmltools::findDependencies(page_react()))
-  expect_true(
-    "shinyreact-app" %in% vapply(deps, function(d) d$name, character(1))
+  dep_names <- vapply(
+    htmltools::findDependencies(ui),
+    function(d) d$name,
+    character(1)
   )
+  expect_no_match(html, "<title>.</title>", fixed = TRUE)
+  expect_false("." %in% dep_names)
+
+  # On Windows, normalizePath() resolves a nonexistent relative path against
+  # the working directory, so the name comes out as the app folder's and the
+  # fallback is unreachable.
+  skip_on_os("windows")
+  expect_match(html, "<title>shinyreact-app</title>", fixed = TRUE)
+  expect_true("shinyreact-app" %in% dep_names)
 })
 
 test_that("page_react includes extra HTMLDependency arguments", {

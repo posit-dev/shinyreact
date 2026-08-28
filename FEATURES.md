@@ -658,6 +658,9 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
       which leaves a missing relative path unresolved; when the derived name is
       empty, `.`, or `..` it falls back to `shinyreact-app` for both the title
       and the dependency name (#242)
+      - on Windows `normalizePath()` resolves a nonexistent relative path
+        against the working directory, so the name is the app folder's and the
+        fallback never fires
     - `[py]` needs no fallback: the path resolves against the calling module, so
       it is absolute whether or not it exists
 
