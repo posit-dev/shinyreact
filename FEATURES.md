@@ -746,13 +746,12 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 - in **both** modes, traditional Shiny renderer dependencies are discovered and
   injected into `<head>`
 
-### `[py]` `ReactApp(server, *, ui=None, **kwargs)`
+### `[py]` `ReactApp(server, *, ui=None, static_assets=MISSING, bookmark_store="disable", **kwargs)`
 
 - a `shiny.App` subclass whose UI is discovered, not passed — the app file is
   just the server
 - with no `ui=`, discovery runs next to the **calling module**
-  - `www/index.html` present → `page_react_html()`, and `www/` is mounted at
-    `/` through `static_assets`, unless `static_assets` was passed
+  - `www/index.html` present → `page_react_html()`
   - otherwise → `page_react(src_dir=www)`, whose dependency serves the assets
   - no caller `__file__` → discovery resolves against `Path.cwd()`
   - the frame read is the *immediate* caller, so a helper wrapping
@@ -761,17 +760,34 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   restore works with no further wiring
   - the mode is re-checked **per request**, so creating or deleting
     `www/index.html` during a dev session switches modes with no restart
-  - `www/` is mounted at `/` whenever the directory exists, since
-    `static_assets` is a constructor argument and cannot be per-request —
-    mounting a dir the app never serves from is harmless, a missing mount is a
-    404 per asset
-  - an explicitly passed `static_assets` — **including `None`** — wins over the
-    auto-mount, and replaces rather than merges
+- `bookmark_store=` is an explicit parameter, forwarded to `shiny.App`
+  - `ui=page_react_html(...)` plus a non-`"disable"` store raises `TypeError`,
+    naming both fixes: drop `ui=`, or pass `ui=lambda request:
+    page_react_html(...)`
+    - the message says "rebuilt per request"; shiny's own error would say only
+      "must be a function"
+    - the reason the obvious workaround is wrong: `page_react_html()` reads the
+      `RestoreContext` when it builds the config tag, so re-rendering one
+      already-built document per request never restores
+- **static assets**: the React asset dir is mounted at `/`, since a full
+  document references its bundle with a relative URL
+  - discovery mode → `www/` next to the app file, mounted whenever the dir
+    exists, in `page_react()` mode too: the mode is per-request while
+    `static_assets` is a constructor argument, so an unused mount is the price
+    of both modes working (unused mount harmless, missing mount = 404 per asset)
+  - `ui=page_react_html(...)` → the document's own dir, from
+    `ReactHtmlDocument.src_dir`
+  - a passed `static_assets` **mapping is merged with** that mount, not
+    substituted for it — `{"/data": D}` serves `/data` *and* `/`
+  - the author wins on collision, three ways
+    - an explicit `"/"` key replaces the React dir
+    - a bare `str`/`Path` (which *is* the `/` mount) replaces it
+    - `None` mounts **nothing at all**
+  - the default is `shiny.types.MISSING`, not `None`, so `None` can mean "mount
+    nothing" and still differ from not passing the argument
 - `ui=` overrides discovery and otherwise behaves like `shiny.App`'s `ui`
   - a plain UI object passes straight through
-  - a `ReactHtmlDocument` passed as `ui=` still gets its directory mounted at
-    `/`, unless `static_assets` was passed
-- all other `kwargs` reach `shiny.App` untouched
+- all other `kwargs` (`debug=`, `test_mode=`) reach `shiny.App` untouched
 - a `GET /` returns the complete HTML document, not a fragment
 - it registers the dependency file routes, so the `/lib/<name>-<version>/`
   URLs the page references actually resolve
