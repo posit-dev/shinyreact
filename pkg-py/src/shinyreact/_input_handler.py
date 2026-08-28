@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING, Any
 
 from shiny.input_handler import input_handlers
 
+from ._dep_discovery import install_dep_discovery
+
 if TYPE_CHECKING:
     from shiny.module import ResolvedId
     from shiny.session import Session
@@ -32,9 +34,9 @@ def _shinyreact_asis(value: Any, name: ResolvedId, session: Session) -> Any:
 
 
 # The JS bundle sends one `.shinyreact_init:shinyreact.init` ping per session
-# after Shiny initializes (pkg-js/src/dep-discovery.ts). In R this handler
-# bootstraps automatic output dependency discovery; in Python it is a no-op
-# today and the designated hook for the Core-mode port (issue #220).
+# after Shiny initializes (pkg-js/src/dep-discovery.ts); the handler bootstraps
+# automatic output dependency discovery, matching R (issue #220).
 @input_handlers.add("shinyreact.init", force=True)
 def _shinyreact_init(value: Any, name: ResolvedId, session: Session) -> Any:
+    install_dep_discovery(session)
     return value
