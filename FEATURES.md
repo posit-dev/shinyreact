@@ -113,10 +113,8 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
     - the client sends exactly one `.shinyreact_init:shinyreact.init` ping per
       session, after Shiny initializes, so apps with no `useShinyInput` are
       covered too
-    - `[r]` it installs renderer dependency discovery for the session
-    - `[py]` it is a no-op today, and is the designated hook for the Core-mode
-      port (#220)
-    - both return the value unchanged
+    - it installs renderer dependency discovery for the session
+    - it returns the value unchanged
 - the contract is defined in terms of the JSON the React hook sent
   - array of objects — `[{name, size}, ...]`
     - `[py]` list of dicts
@@ -533,7 +531,7 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
 - **both entry points install it** — `src/index.ts` (IIFE) and `src/npm.ts`
   (npm ESM), so both tiers get discovery and both send the bootstrap ping
   - the npm entry omitted it until #233, which left bundler-tier apps with no
-    `shinyreact-deps` handler and no ping, so an R server never installed
+    `shinyreact-deps` handler and no ping, so the server never installed
     discovery for the session at all
   - pinned by `entry-parity.test.ts`, which imports each entry and asserts its
     side effects — including the two *deliberate* tier differences (only the
@@ -815,35 +813,42 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 ### Renderer dependency discovery
 
 Both languages deliver traditional renderers' `HTMLDependency` objects
-automatically, by **different mechanisms** — Python inlines them into the
-initial page, R pushes them over the session after the fact.
+automatically. Every page function gets push-based per-session discovery;
+Python's Express `set_react_page()` *additionally* inlines them into the
+initial page.
 
-- `[py]` only `set_react_page()` does this — `page_react()`,
-  `page_react_html()`, and `ReactApp` do not
-  - reason: `decisions/2026-08-13-r-python-parity.md`
-  - Core-mode discovery is unimplemented, tracked in #220
-- `[r]` discovery is per-session and push-based, and covers every page function
-  - R's page functions are plain UI values rendered before any `server()` runs,
-    so deps cannot be inlined into the initial page the way Express can
+- discovery is per-session and push-based, and covers every page function
+  - Core-mode page functions are plain UI values rendered before any `server()`
+    runs, so deps cannot be inlined into the initial page the way Express can
   - after **every** reactive flush the session's registered outputs are diffed,
     so outputs registered after startup (a module server mounted in an
     observer) are covered too, not just the first flush
-  - each new output's UI comes from `output_ui()`, and its deps from
-    `htmltools::findDependencies()`
-  - deps are resolved, de-duplicated by `name@version` against what this
-    session already sent, and skipped entirely when nothing is new
-  - each dep goes through `shiny::createWebDependency()` so its files get a
-    resource path, then ships as a `shinyreact-deps` custom message
+  - each new output's UI comes from the renderer's matching output function
+    (`[r]` `output_ui()` + `htmltools::findDependencies()`, `[py]`
+    `auto_output_ui()` tagified + `get_dependencies()`); an output whose UI is
+    not a tag (e.g. `reactive_output`) contributes nothing
+  - deps are de-duplicated by `name@version` against what this session already
+    sent, and nothing is sent when nothing is new
+  - each dep is registered as a served resource (`[r]`
+    `shiny::createWebDependency()`, `[py]` `session._process_ui()`), then ships
+    as a `shinyreact-deps` custom message
   - overlap with deps already in the static `<head>` is harmless — the client
     skips those by name
-  - it reads private `session$.__enclos_env__$private$.outputs`, since shiny
-    exposes no API to enumerate registered outputs (the same private access
-    Python makes via `session.output._outputs`)
-  - it no-ops, rather than erroring, when the session is `NULL`, has no
-    `userData` environment, or lacks `onFlushed` / `getOutput` — which is what
-    makes `MockShinySession` safe
-  - it installs at most once per session, latched on
-    `userData$.shinyreact_dep_discovery`
+  - `[py]` an output registered after page load in an app with no dynamic-UI
+    holder gets its binding only this way `(e2e)`
+  - it reads the session's private registered-output list, since neither shiny
+    exposes an API to enumerate outputs (`[r]`
+    `session$.__enclos_env__$private$.outputs`, `[py]`
+    `session.output._outputs`)
+  - it no-ops, rather than erroring, on a session missing the pieces it needs
+    (`[r]` `NULL`, no `userData`, no `onFlushed` / `getOutput` — which is what
+    makes `MockShinySession` safe; `[py]` `None`, no `output._outputs`, no
+    `on_flushed`)
+  - it installs at most once per session (`[r]` latched on
+    `userData$.shinyreact_dep_discovery`, `[py]` on a
+    `_shinyreact_dep_discovery` session attribute)
+- it does not fix shinywidgets' `comm_open` race (#160) — that message has its
+  own side channel, which R's htmlwidgets do not
 
 ### `[py]` `set_react_page()` harvesting
 
@@ -857,10 +862,16 @@ initial page, R pushes them over the session after the fact.
   `reactive_output`, which returns `None`) contributes no dependencies
 - each renderer's `auto_output_ui()` is **tagified** before its dependencies
   are read, so deps that only materialize during tagification are found
-- renderers mounted dynamically *after* page load are not harvested
-  - a renderer registered inside a `@reactive.effect` is absent from `<head>`,
-    and Shiny's own dynamic-UI path delivers its dependency when the holder
-    renders — both the absence and the later arrival are pinned `(e2e)`
+- renderers mounted dynamically *after* page load are not harvested into
+  `<head>` (the post-flush push above delivers their deps instead)
+  - a renderer registered inside a `@reactive.effect` is absent from the served
+    HTML, and its dependency still arrives — pinned `(e2e)` for both delivery
+    paths: a `@render.ui` holder (Shiny's own dynamic-UI path also covers that
+    one) and a bare `<ShinyOutput>` with no holder, where the post-flush push
+    is the only route
+    - `[py]` the no-holder case: a `render.data_frame` registered in an effect
+      renders its rows and gains `shiny-bound-output` only because the pushed
+      dep loaded and `bindAll` re-ran `(e2e)`
 - duplicate deps across the two harvest passes are harmless: Shiny
   de-duplicates by name + version
 

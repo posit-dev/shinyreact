@@ -1,0 +1,9 @@
+<p>
+  Click <b>Add tab</b>: a two-row grid (<code>alpha</code> / <code>beta</code>)
+  must appear. Its renderer is only registered by that click, so the grid's
+  binding script is not in the initial page — the grid renders only if
+  shinyreact pushed the dependency after the flush and re-ran
+  <code>bindAll</code>.
+</p>
+<div id="root"></div>
+<script src="app.js" defer></script>

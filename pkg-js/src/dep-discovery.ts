@@ -14,9 +14,9 @@ import { getShiny } from "./shiny-react/get-shiny";
  *
  * The `.shinyreact_init` ping routes through the server-side
  * `shinyreact.init` input handler, whose job is per-session bootstrap
- * (installing discovery in R), so it works even in apps with no
- * `useShinyInput`. Python registers the same handler as a no-op today —
- * its bootstrap hook for posit-dev/shinyreact#220.
+ * (installing discovery), so it works even in apps with no `useShinyInput`.
+ * Both servers implement it: R in `pkg-r/R/dep-discovery.R`, Python in
+ * `pkg-py/src/shinyreact/_dep_discovery.py`.
  */
 let installed = false;
 
