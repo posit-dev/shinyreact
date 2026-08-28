@@ -38,7 +38,8 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
     - `[py]` that test skips when the fixture is missing, so its enforcement is
       conditional
     - the README's prose does not yet mention `shinyreact.init`,
-      `.shinyreact_init`, or `shinyreact-deps` (#232)
+      `.shinyreact_init`, or `shinyreact-deps` in its per-shape sections; they
+      are listed in `surface.json`
   - `protocol/surface.json` enumerates the whole boundary — custom messages,
     input-handler names, input ids, DOM ids — beside the protocol version
     - all three suites assert their live surface against it: the JS suite scans
@@ -47,20 +48,13 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
     - so a new custom message type or handler name fails a test until it is
       added to the manifest, where the version-bump question is unavoidable
     - each guard is verified to fail on an unlisted name, not merely to pass
-    - listing a name is **not** automatically a version bump: additive changes
-      degrade gracefully both ways and the client compares majors only, so the
-      bump policy itself is still open (#232)
-  - the source comments in all three languages say it covers exactly three
-    boundary shapes, and bumps only when one changes
-    - the `#shinyreact-config` payload
-    - the `shinyReactMessage` custom message
-    - the `shinyreact.default` / `shinyreact.asis` input-handler contract
-  - but the wire now carries two more, added by #221 without a version bump
-    - the `shinyreact.init` input-handler name, and the
-      `.shinyreact_init` ping id
-    - the `shinyreact-deps` custom message
-  - so the stated scope and the actual boundary disagree; nothing enforces the
-    bump rule (#232)
+    - listing a name is **not** a version bump: per `protocol/README.md`,
+      additive ignorable shapes (a new message type, handler name, or optional
+      payload member) do not bump, since the client compares majors only and no
+      peer reads the minor (#232)
+  - the source comments in all three languages point at `surface.json` for the
+    covered shapes rather than enumerating them, and state the bump rule: only
+    changes an existing peer would misinterpret
   - `[js]` the client compares only the **major** version at boot
     - a mismatch throws, with a message naming both versions and telling the
       reader to upgrade the older side
