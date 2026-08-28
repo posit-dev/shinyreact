@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Columns — shadcn/ui</title>
+    <!-- Shiny's and shinyreact's script/link tags are inserted here. It is a
+         plain <meta> tag, so this file stays valid HTML. -->
+    <meta name="shiny-dependency-placeholder" content="">
+    <link rel="stylesheet" href="ui.css" />
+  </head>
+  <body class="bg-background">
+    <!-- The mount point. Visible until React takes over, so a slow bundle
+         shows something other than a blank page — the reason to own the
+         document at all. -->
+    <div id="root" class="p-6 text-sm text-muted-foreground">Loading…</div>
+    <!-- `defer`, not a bare script: the shinyreact bundle in <head> is
+         deferred, and deferred scripts run in document order. A non-deferred
+         script here would run first and find no `window.shinyreact`. -->
+    <script src="ui.js" defer></script>
+  </body>
+</html>

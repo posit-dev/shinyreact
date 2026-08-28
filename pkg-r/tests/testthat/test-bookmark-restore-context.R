@@ -77,7 +77,9 @@ test_that("page_react_html() emits the restore payload when a bookmark is active
   index <- file.path(dir, "index.html")
   writeLines(
     paste0(
-      "<!DOCTYPE html><html><head>{{ headContent() }}</head>",
+      "<!DOCTYPE html><html><head>",
+      deps_placeholder,
+      "</head>",
       "<body><div id='root'></div></body></html>"
     ),
     index
@@ -99,7 +101,9 @@ test_that("page_react_html() emits the config tag without restore when not bookm
   index <- file.path(dir, "index.html")
   writeLines(
     paste0(
-      "<!DOCTYPE html><html><head>{{ headContent() }}</head>",
+      "<!DOCTYPE html><html><head>",
+      deps_placeholder,
+      "</head>",
       "<body><div id='root'></div></body></html>"
     ),
     index

@@ -3,16 +3,21 @@
 import re
 from pathlib import Path
 
+import pytest
 from htmltools import TagList, div
+from shiny.ui import PageDocument
 from shinyreact import ReactApp, page_react_html
 from starlette.testclient import TestClient
+
+# Where a full document's dependencies are inserted. Owned by py-shiny, not us.
+DEPS = PageDocument.DEPS_PLACEHOLDER
 
 
 def _write_react_app(tmp_path: Path) -> Path:
     www = tmp_path / "www"
     www.mkdir()
     (www / "index.html").write_text(
-        "<!DOCTYPE html><html><head><title>T</title>{{ headContent() }}</head>"
+        f"<!DOCTYPE html><html><head><title>T</title>{DEPS}</head>"
         '<body><script src="ui.js" defer></script></body></html>'
     )
     (www / "ui.js").write_text("// ui entry")
@@ -161,17 +166,66 @@ def test_app_mode_is_rechecked_per_request(tmp_path: Path, monkeypatch) -> None:
     assert "index.html marker" not in client.get("/").text
 
     (tmp_path / "www" / "index.html").write_text(
-        "<html><head>{{ headContent() }}</head><body>index.html marker</body></html>"
+        f"<html><head>{DEPS}</head><body>index.html marker</body></html>"
     )
 
     assert "index.html marker" in client.get("/").text
 
 
-def test_app_explicit_static_assets_is_respected(tmp_path: Path, monkeypatch) -> None:
-    # The guard is `"static_assets" not in kwargs`, so an explicitly passed
-    # value wins over auto-mounting. Previously the check was `is None`, so
-    # passing None still auto-mounted.
+def test_app_static_assets_none_mounts_nothing(tmp_path: Path, monkeypatch) -> None:
+    # `static_assets` defaults to MISSING, not None, precisely so that an
+    # explicit None can mean "mount nothing" and still be distinguishable from
+    # not passing the argument.
     _write_react_app(tmp_path)
     app = _make_app_from_cwd(tmp_path, monkeypatch, static_assets=None)
 
     assert app._static_assets == {}
+
+
+def test_app_static_assets_are_added_to_the_react_dir(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # An unrelated mount must not take the bundle down with it: before the
+    # merge, passing any static_assets replaced the www/ mount, so the
+    # document's `<script src="ui.js">` 404'd.
+    _write_react_app(tmp_path)
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "x.csv").write_text("a,b\n")
+    app = _make_app_from_cwd(tmp_path, monkeypatch, static_assets={"/data": data})
+
+    assert app._static_assets == {"/data": data, "/": tmp_path / "www"}
+    client = TestClient(app)
+    assert client.get("/data/x.csv").status_code == 200
+    assert client.get("/ui.js").status_code == 200
+
+
+def test_app_static_assets_explicit_root_wins(tmp_path: Path, monkeypatch) -> None:
+    # "/" is the one key that collides, so an explicit one replaces ours.
+    _write_react_app(tmp_path)
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    app = _make_app_from_cwd(tmp_path, monkeypatch, static_assets={"/": dist})
+
+    assert app._static_assets == {"/": dist}
+
+
+def test_app_static_assets_bare_path_wins(tmp_path: Path, monkeypatch) -> None:
+    # A bare path *is* the "/" mount, so it collides the same way a {"/": ...}
+    # mapping does.
+    _write_react_app(tmp_path)
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    app = _make_app_from_cwd(tmp_path, monkeypatch, static_assets=dist)
+
+    assert app._static_assets == {"/": dist}
+
+
+def test_app_bookmark_store_rejects_a_static_document(tmp_path: Path) -> None:
+    # Shiny's own error says "must be a function"; ours names the fix, because
+    # the obvious workaround (wrapping the document object in a lambda) yields
+    # a callable UI that silently never restores — page_react_html() reads the
+    # RestoreContext when it builds the config tag, i.e. before any request.
+    index = _write_react_app(tmp_path)
+    with pytest.raises(TypeError, match="rebuilt per request"):
+        ReactApp(_server, ui=page_react_html(index), bookmark_store="url")

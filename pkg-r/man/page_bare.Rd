@@ -7,7 +7,11 @@
 page_bare(..., title = NULL, lang = "en")
 }
 \arguments{
-\item{...}{Child tags or \link[htmltools:htmlDependency]{htmltools::htmlDependency} objects.}
+\item{...}{Child tags or \link[htmltools:htmlDependency]{htmltools::htmlDependency} objects. Named
+arguments pass through to \code{\link[shiny:bootstrapPage]{shiny::bootstrapPage()}} — including its own
+\code{theme}. Deliberately not surfaced as named parameters: in the \code{ui.tsx}
+pattern the client owns styling, so Bootstrap theming is a passthrough,
+not part of this API. Mirrors Python's \verb{page_bare(**kwargs)}.}
 
 \item{title}{Page title.}
 
