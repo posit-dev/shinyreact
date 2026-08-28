@@ -24,19 +24,30 @@ That is why the examples carry `examples/*/FEATURES.md` and why
 
 ## Where the tests live
 
-**Beside the app, run by the package.** Each example keeps its own tests in
-`examples/<app>/tests/` — `test_*.py`, `test-*.R`, `ui.test.ts` — because they
-describe that app, and someone reading the app should find them without
-knowing the repo's package layout.
+**Beside the app, runnable from the app, and also run by the package.** Each
+example keeps its own tests in `examples/<app>/tests/` — `test_*.py`,
+`testthat/test-*.R`, `ui.test.ts` — because they describe that app. Someone
+sitting in the app directory runs them there, without the packages:
 
-Every package's test run includes them anyway, so a package change that breaks
-an example fails immediately rather than at the next manual run:
+```bash
+pytest                                   # Python
+Rscript -e 'shiny::runTests()'           # R — also shinytest2::test_app()
+npx vitest run --root .. <app>           # UI
+```
+
+That is why the R files use the `tests/testthat.R` + `tests/testthat/` layout
+`shiny::runTests()` and `shinytest2::test_app()` expect, and why
+`examples/package.json` carries one JS toolchain for the whole examples tree
+(the no-build examples deliberately have no `package.json` of their own).
+
+Every package's test run includes the same files, so a package change that
+breaks an example fails immediately rather than at the next manual run:
 
 | Package | How |
 |---|---|
 | Python | `testpaths = ["pkg-py/tests", "examples"]` in `pyproject.toml` |
 | JS | `include: [..., "../examples/**/tests/*.test.ts"]` in `pkg-js/vitest.config.ts` (with `resolve.alias` + `server.fs.allow`, since the files sit outside the package root) |
-| R | `pkg-r/tests/testthat/test-examples.R` sources every `examples/*/tests/test-*.R`, and skips when `examples/` is absent (installed package) |
+| R | `pkg-r/tests/testthat/test-examples.R` sources every `examples/*/tests/testthat/test-*.R`, and skips when `examples/` is absent (installed package) |
 
 ## The three layers, and what each can actually prove
 

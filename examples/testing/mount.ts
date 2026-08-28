@@ -2,8 +2,10 @@
  * Mount a real example's `www/ui.js` in jsdom and drive it like a server.
  *
  * Lives with the examples, not with the package source: these are the example
- * apps' own tests. `pkg-js`'s vitest config includes them so a change to the
- * hooks that breaks an example fails the package's own test run.
+ * apps' own tests. Run them from the examples tree with no package installed
+ * (`cd examples && npm install && npm test`, or `npx vitest run 01-hello`);
+ * `pkg-js`'s vitest config includes the same files, so a change to the hooks
+ * that breaks an example fails the package's own test run too.
  *
  * The point is to test the *client the example ships*, not a copy of it: the
  * file is read off disk and evaluated the way a browser evaluates a classic

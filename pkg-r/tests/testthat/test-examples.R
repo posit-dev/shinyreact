@@ -1,5 +1,7 @@
 # Runs the example apps' own R tests, which live beside each app in
-# examples/<app>/tests/test-*.R.
+# examples/<app>/tests/testthat/ -- the layout shiny::runTests() and
+# shinytest2::test_app() expect, so a user sitting in the app can run them
+# without this file.
 #
 # They are the examples' tests, not the package's -- but a package change that
 # breaks an example should fail here rather than be discovered later, which is
@@ -29,9 +31,10 @@ if (dir.exists(examples_dir)) {
     recursive = TRUE,
     full.names = TRUE
   )
-  # Only files under examples/<app>/tests/.
+  # Only files under examples/<app>/tests/testthat/, the layout
+  # shiny::runTests() and shinytest2::test_app() expect.
   example_tests <- example_tests[
-    basename(dirname(example_tests)) == "tests"
+    basename(dirname(example_tests)) == "testthat"
   ]
   for (file in example_tests) {
     source(file, local = TRUE)

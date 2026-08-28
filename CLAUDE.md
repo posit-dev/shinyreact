@@ -377,14 +377,17 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
 - **R tests:** `pkg-r/tests/testthat/` — run with `make r-check-tests`
 - **JS tests:** `pkg-js/src/__tests__/` (the shinyreact layer — `ShinyOutput`) and `pkg-js/src/shiny-react/__tests__/` (the vendored hooks/registries) — run both with `cd pkg-js && npx vitest run`. Requires `make js-setup` first; a missing `node_modules` fails with `ERR_MODULE_NOT_FOUND`, not a test failure
 - **Example tests:** each example app keeps its own tests beside it in
-  `examples/<app>/tests/` — `test_*.py`, `test-*.R`, and `ui.test.ts`, which
-  mounts the example's real `www/ui.js` in jsdom against a fake Shiny using the
-  shared harness at `examples/testing/mount.ts`. They assert the `(test)`
-  leaves in that example's `FEATURES.md`. **Each package's own test run
-  includes them**, so a package change that breaks an example fails there:
-  pytest `testpaths` covers `examples/`, `pkg-js/vitest.config.ts` includes
+  `examples/<app>/tests/` — `test_*.py`, `testthat/test-*.R`, and `ui.test.ts`,
+  which mounts the example's real `www/ui.js` in jsdom against a fake Shiny
+  using the shared harness at `examples/testing/mount.ts`. They assert the
+  `(test)` leaves in that example's `FEATURES.md`. **They run from the app**
+  (`pytest`, `shiny::runTests()` / `shinytest2::test_app()`,
+  `npx vitest run --root .. <app>`; `examples/package.json` is the JS
+  toolchain for the tree) **and each package's own test run includes them**, so
+  a package change that breaks an example fails there: pytest `testpaths`
+  covers `examples/`, `pkg-js/vitest.config.ts` includes
   `../examples/**/tests/`, and `pkg-r/tests/testthat/test-examples.R` sources
-  the examples' R files. **Read
+  the examples' testthat files. **Read
   [`.claude/references/verifying-ui-code.md`](.claude/references/verifying-ui-code.md)
   before writing a UI test** — it covers the harness, the three layers, and the
   traps (React ignores raw `change` events, debounce coalescing, gitignored

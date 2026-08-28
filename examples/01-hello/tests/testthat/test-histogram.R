@@ -6,8 +6,17 @@
 # in faithful.py. The golden counts below are asserted verbatim in both, and in
 # ui.test.ts, which draws them.
 #
-# Run by the R package's suite via pkg-r/tests/testthat/test-examples.R. It
-# reimplements app.R's two lines rather than sourcing the app, because the
+# Run it from this directory, the way a user of the app would:
+#
+#   Rscript -e 'shiny::runTests()'
+#   Rscript -e 'shinytest2::test_app()'
+#   Rscript -e 'testthat::test_dir("tests/testthat")'
+#
+# The shinyreact package's own suite also runs it, via
+# pkg-r/tests/testthat/test-examples.R, so a package change that breaks this
+# example fails there too.
+#
+# It reimplements app.R's two lines rather than sourcing the app, because the
 # logic lives inside server() where no test can reach it.
 
 hist_counts <- function(values, n) {
@@ -29,39 +38,13 @@ test_that("binning matches the Python binner, count for count", {
     hist_counts(faithful$waiting, 9),
     c(16L, 37L, 30L, 16L, 14L, 57L, 67L, 29L, 6L)
   )
+  # fmt: skip
   expect_equal(
     hist_counts(faithful$waiting, 30),
     c(
-      1L,
-      8L,
-      7L,
-      10L,
-      6L,
-      12L,
-      15L,
-      7L,
-      4L,
-      13L,
-      4L,
-      7L,
-      3L,
-      3L,
-      3L,
-      9L,
-      8L,
-      6L,
-      17L,
-      27L,
-      18L,
-      13L,
-      26L,
-      16L,
-      8L,
-      6L,
-      9L,
-      2L,
-      3L,
-      1L
+      1L, 8L, 7L, 10L, 6L, 12L, 15L, 7L, 4L, 13L,
+      4L, 7L, 3L, 3L, 3L, 9L, 8L, 6L, 17L, 27L,
+      18L, 13L, 26L, 16L, 8L, 6L, 9L, 2L, 3L, 1L
     )
   )
 })

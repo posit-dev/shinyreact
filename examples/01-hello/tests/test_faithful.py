@@ -6,6 +6,13 @@ same data, because `www/ui.js` draws whichever one answers. The golden counts
 below are asserted verbatim in R too — see
 `tests/test-histogram.R` next to it, which the R package's test suite runs.
 
+Run it from the app directory, the way a user of the app would::
+
+    pytest
+
+The shinyreact package's own suite also runs it (pytest `testpaths` covers
+`examples/`), so a package change that breaks this example fails there too.
+
 Only `faithful.py` is importable; `app.py` calls `set_react_page()` at module
 scope, so the two outputs' logic cannot be unit tested. That factoring — pure
 functions in a module beside the app — is what makes example server logic
