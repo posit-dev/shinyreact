@@ -14,10 +14,6 @@ from ._app import ReactHtmlDocument
 from ._bookmark import _config_script_tag
 from ._dep import _dep, _dep_page, _file_mtime_int
 
-# The head-injection marker a page_react_html() document must contain. The
-# same literal works for R's htmlTemplate(), where it is evaluated as code.
-_HEAD_CONTENT_MARKER = "{{ headContent() }}"
-
 if TYPE_CHECKING:
     # Private, but it is the only name for HTMLDependency's stylesheet entry.
     from htmltools._core import ScriptItem, StylesheetItem
@@ -27,6 +23,7 @@ def page_bare(
     *args: TagChild,
     title: str | None = None,
     lang: str = "en",
+    **kwargs: Any,
 ) -> Tag:
     """Create a bare HTML page with only Shiny dependencies.
 
@@ -41,6 +38,11 @@ def page_bare(
         *args: Child tags or HTMLDependency objects to include in the page.
         title: Page title.
         lang: HTML ``lang`` attribute.
+        **kwargs: Forwarded to :func:`shiny.ui.page_bootstrap` — its own
+            ``theme=``, or tag attributes for the page. Deliberately not
+            surfaced as named parameters: in the ui.tsx pattern the client owns
+            styling, so Bootstrap theming is a passthrough, not part of this
+            API.
     """
     from shiny.ui import page_bootstrap
 
@@ -48,6 +50,7 @@ def page_bare(
         *args,
         title=title,
         lang=lang,
+        **kwargs,
     )
 
 
@@ -76,6 +79,7 @@ def page_react(
     css_file: str | None = "ui.css",
     title: str | None = None,
     lang: str = "en",
+    **kwargs: Any,
 ) -> Tag:
     """Create a React page from conventional assets — no HTML file required.
 
@@ -104,6 +108,8 @@ def page_react(
         title: Page title. Defaults to the app folder's name (``src_dir``'s
             parent when ``src_dir`` is a ``www/`` dir).
         lang: HTML ``lang`` attribute.
+        **kwargs: Forwarded to :func:`page_bare`, and on to
+            :func:`shiny.ui.page_bootstrap`.
     """
     caller_file = sys._getframe(1).f_globals.get("__file__")
     caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
@@ -111,11 +117,15 @@ def page_react(
     return page_bare(
         _dep_page(),
         page_react_dep(
-            src_dir=base_dir, js_file=js_file, css_file=css_file, name=app_name
+            src_dir=base_dir,
+            js_file=js_file,
+            css_file=css_file,
+            name=app_name,
         ),
         *args,
         title=title if title is not None else app_name,
         lang=lang,
+        **kwargs,
     )
 
 
@@ -128,8 +138,15 @@ def page_react_dep(
 ) -> HTMLDependency:
     """Build an HTMLDependency for a React app's JS and CSS entry points.
 
-    The JS file's mtime is used as the dependency version for automatic
-    cache-busting during development.
+    The JS file's mtime is the dependency version, so the
+    ``/lib/<name>-<version>/`` URL changes on every rebuild and the browser
+    re-fetches. That is what you want while developing, and the wrong thing for
+    a published package — an mtime is whatever the install happened to write, so
+    it is neither stable across machines nor meaningful to a reader. There is no
+    ``version=`` here on purpose: a package shipping a fixed version should
+    build its own :class:`~htmltools.HTMLDependency` (the same advice as for a
+    classic, non-module bundle), which is five lines and leaves nothing about
+    the dependency implicit.
 
     Both the script and the stylesheet are attached only when the file exists
     inside the resolved ``src_dir``, so a bundle that ships no CSS — or that has
@@ -341,14 +358,23 @@ def set_react_page(path: str | Path | None = None) -> None:
     page_opts(page_fn=_build_react_page_fn(index_path))
 
 
-def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
+def page_react_html(
+    path: str | Path = "www/index.html",
+    *,
+    extra_deps: list[HTMLDependency] | None = None,
+) -> ReactHtmlDocument:
     """Serve a React ``index.html`` document (the ui.tsx pattern, Core API).
 
     Reads a complete HTML document — the kind a Vite build emits — and injects
-    Shiny's and shinyreact's dependencies into it. The document must contain a
-    ``{{ headContent() }}`` marker inside ``<head>``; the script/link tags
-    render at the marker. Matches R's ``page_react_html()``
-    (``htmltools::htmlTemplate()``).
+    Shiny's and shinyreact's dependencies into it. The document must contain
+    Shiny's dependency placeholder in ``<head>``::
+
+        <meta name="shiny-dependency-placeholder" content="">
+
+    The script/link tags render in its place; the same literal is
+    :attr:`shiny.ui.PageDocument.DEPS_PLACEHOLDER`. It is an ordinary ``<meta>``
+    tag rather than template syntax, so the document stays valid HTML that a
+    bundler's dev server can serve unchanged. Matches R's ``page_react_html()``.
 
     You rarely need to call this yourself — :class:`shinyreact.ReactApp`
     discovers ``www/index.html`` and calls it for you::
@@ -373,6 +399,12 @@ def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
             relative paths resolve against the caller module's directory, or
             against :func:`pathlib.Path.cwd` when there is no caller
             ``__file__``. Defaults to ``"www/index.html"``.
+        extra_deps: Additional :class:`~htmltools.HTMLDependency` objects to
+            render at the placeholder. A full document has no tag tree to
+            attach dependencies to, so this is the only way in — the
+            counterpart of :func:`page_react`'s positional ``*args``. They
+            render *after* Shiny's and shinyreact's, so they can rely on
+            ``window.shinyreact`` existing.
     """
     path = Path(path)
     if path.is_absolute():
@@ -385,22 +417,14 @@ def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
         index_path = caller_dir / path
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
-    index_html = _read_document_cached(index_path)
-    if _HEAD_CONTENT_MARKER not in index_html:
-        raise ValueError(
-            f"{index_path} must be a complete HTML document containing a "
-            f"'{_HEAD_CONTENT_MARKER}' marker inside <head> — shinyreact's "
-            "script and stylesheet tags render at the marker. For a page "
-            "without an HTML file, use page_react() instead."
-        )
-
-    # ui.PageDocument (py-shiny#2475) prefixes Shiny's own dependencies; we
-    # only add shinyreact's bundle and the #shinyreact-config tag.
+    # ui.PageDocument (py-shiny#2475) owns the placeholder: it prefixes Shiny's
+    # own dependencies and raises at render time when the document has no
+    # placeholder to insert them at. We only add shinyreact's bundle and the
+    # #shinyreact-config tag.
     return ReactHtmlDocument(
-        index_html,
+        _read_document_cached(index_path),
         src_dir=index_path.parent,
-        extra_deps=[_dep(), _config_script_tag()],
-        deps_replace_pattern=_HEAD_CONTENT_MARKER,
+        extra_deps=[_dep(), _config_script_tag(), *(extra_deps or [])],
     )
 
 
@@ -441,6 +465,32 @@ def _harvest_renderer_deps(args: tuple[Any, ...]) -> list[HTMLDependency]:
     return deps
 
 
+# The `page_opts()` options a React page can honor, mapped onto page_bare()'s
+# (i.e. page_bootstrap()'s) parameters. Everything else page_auto() might
+# forward describes a Bootstrap layout a bare React page does not have.
+_SUPPORTED_PAGE_OPTS = ("title", "lang", "theme")
+
+
+def _react_page_opts(kwargs: dict[str, Any], *, mode: str) -> dict[str, Any]:
+    """Validate the options ``page_auto()`` forwards to our page function.
+
+    ``page_opts()`` records its arguments and ``page_auto()`` splats them into
+    whatever ``page_fn`` it resolved — ours. So a page function taking only
+    ``*args`` raises ``TypeError: ... unexpected keyword argument 'title'`` from
+    inside a private local, which tells an author nothing about what to do.
+    Accept what the page can express, and name the rest.
+    """
+    unsupported = [k for k in kwargs if k not in _SUPPORTED_PAGE_OPTS]
+    if unsupported:
+        supported = ", ".join(_SUPPORTED_PAGE_OPTS)
+        raise TypeError(
+            f"page_opts({unsupported[0]}=...) is not supported by "
+            f"set_react_page()'s {mode}: a React page has no Bootstrap layout "
+            f"to apply it to. Supported page options: {supported}."
+        )
+    return {k: v for k, v in kwargs.items() if v is not None}
+
+
 def _build_react_page_fn_discovered(app_dir: Path) -> Callable[..., Tag]:
     """Express page function for the no-HTML-file mode.
 
@@ -448,11 +498,13 @@ def _build_react_page_fn_discovered(app_dir: Path) -> Callable[..., Tag]:
     renderer-dependency discovery as the index.html mode.
     """
 
-    def _react_page_fn(*args: Any) -> Tag:
+    def _react_page_fn(*args: Any, **kwargs: Any) -> Tag:
+        # `title` here is a default, so `page_opts(title=...)` overrides it.
+        opts = {"title": app_dir.name, **_react_page_opts(kwargs, mode="page")}
         return page_react(
             *_harvest_renderer_deps(args),
             src_dir=app_dir / "www",
-            title=app_dir.name,
+            **opts,
         )
 
     return _react_page_fn
@@ -484,7 +536,19 @@ def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
     # is not UTF-8. R's page_react_html() decodes UTF-8 unconditionally.
     index_html = index_path.read_text(encoding="utf-8")
 
-    def _react_page_fn(*args: Any) -> Tag:
+    def _react_page_fn(*args: Any, **kwargs: Any) -> Tag:
+        if kwargs:
+            # This mode emits no page tag at all — the document's own HTML is
+            # the body — so there is nothing for title/lang/theme to land on.
+            # Raise instead of ignoring, and instead of the bare TypeError that
+            # page_auto()'s splat used to produce from inside this local.
+            raise TypeError(
+                f"page_opts({next(iter(kwargs))}=...) is not supported by "
+                "set_react_page()'s HTML-file mode, which emits the document "
+                "as the page body and no page tag of its own. Put it in the "
+                "HTML, or use the no-HTML-file mode, which supports "
+                f"{', '.join(_SUPPORTED_PAGE_OPTS)}."
+            )
         deps = _harvest_renderer_deps(args)
         # Shiny de-duplicates dependencies by name+version when hoisting to
         # <head>, so any overlap between the harvest passes is harmless.

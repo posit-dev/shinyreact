@@ -8,12 +8,12 @@ version = "0.1.0"
 description = "Shiny UI infrastructure for React-based component rendering"
 requires-python = ">=3.10"
 dependencies = [
-    "shiny @ git+https://github.com/posit-dev/py-shiny.git@schloerke/issue-2462",  # TODO(#216): release pin once py-shiny#2475 ships
+    "shiny @ git+https://github.com/posit-dev/py-shiny.git@schloerke/issue-2462",  # TODO: release pin once py-shiny#2475 ships in a release
     "htmltools>=0.7.0",
 ]
 
 [tool.hatch.metadata]
-# TODO(#216): remove with the git dep once py-shiny#2475 ships in a release.
+# TODO: remove with the git dep once py-shiny#2475 ships in a release.
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]

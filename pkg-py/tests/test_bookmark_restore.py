@@ -6,11 +6,15 @@ import pytest
 from htmltools import HTMLDependency, TagList
 from shiny.bookmark._restore_state import RestoreContext, RestoreInputSet
 from shiny.bookmark._restore_state import restore_context as restore_context_cm
+from shiny.ui import PageDocument
 from shinyreact import page_react_html
 from shinyreact._bookmark import _config_script_tag, _read_restore_input_values
 from shinyreact._dep import _dep, _dep_page
 from shinyreact._page import _build_react_page_fn
 from shinyreact._protocol import PROTOCOL_VERSION
+
+# Where a full document's dependencies are inserted. Owned by py-shiny, not us.
+DEPS = PageDocument.DEPS_PLACEHOLDER
 
 
 def _render_dep_to_head(dep: HTMLDependency) -> str:
@@ -214,7 +218,7 @@ def test_page_react_html_emits_restore_when_bookmark_active(
 ) -> None:
     index = tmp_path / "index.html"
     index.write_text(
-        "<!DOCTYPE html><html><head>{{ headContent() }}</head>"
+        f"<!DOCTYPE html><html><head>{DEPS}</head>"
         "<body><div id='root'></div></body></html>"
     )
 
@@ -230,7 +234,7 @@ def test_page_react_html_config_without_bookmark_has_no_restore(
 ) -> None:
     index = tmp_path / "index.html"
     index.write_text(
-        "<!DOCTYPE html><html><head>{{ headContent() }}</head>"
+        f"<!DOCTYPE html><html><head>{DEPS}</head>"
         "<body><div id='root'></div></body></html>"
     )
     html = page_react_html(index).render(lib_prefix="lib/")["html"]

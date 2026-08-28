@@ -6,11 +6,16 @@ import pytest
 from htmltools import Tag
 from shiny import render
 from shinyreact import reactive_output, set_react_page
-from shinyreact._page import _build_react_page_fn
+from shinyreact._page import _build_react_page_fn, _build_react_page_fn_discovered
 
 
 def _render(page_fn: Callable[..., Tag], *args: Any) -> dict[str, Any]:
     return page_fn(*args).tagify().render()
+
+
+def _render_with(page_fn: Callable[..., Tag], **kwargs: Any) -> dict[str, Any]:
+    """Render a page_fn the way page_auto() calls it: options as kwargs."""
+    return page_fn(**kwargs).tagify().render()
 
 
 def test_build_page_fn_injects_shinyreact_dep(tmp_path: Path) -> None:
@@ -273,3 +278,59 @@ def test_set_react_page_explicit_missing_path_raises(tmp_path: Path) -> None:
     missing = tmp_path / "nope.html"
     with pytest.raises(FileNotFoundError, match=str(missing)):
         _build_react_page_fn(missing)
+
+
+def test_page_opts_title_reaches_the_discovered_page(tmp_path: Path) -> None:
+    # page_opts() records its arguments and page_auto() splats them into the
+    # resolved page_fn — ours. Taking only *args meant `page_opts(title=...)`
+    # plus `set_react_page()` died at app startup with
+    # "unexpected keyword argument 'title'" from inside a private local.
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "ui.js").write_text("// ui")
+
+    page_fn = _build_react_page_fn_discovered(tmp_path)
+    rendered = _render_with(page_fn, title="My React App")
+    assert "<title>My React App</title>" in rendered["html"]
+
+
+def test_page_opts_title_defaults_to_the_app_folder(tmp_path: Path) -> None:
+    # No page_opts(title=) → the folder name, as before.
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "ui.js").write_text("// ui")
+
+    rendered = _render_with(_build_react_page_fn_discovered(tmp_path))
+    assert f"<title>{tmp_path.name}</title>" in rendered["html"]
+
+
+def test_page_opts_lang_reaches_the_discovered_page(tmp_path: Path) -> None:
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "ui.js").write_text("// ui")
+
+    rendered = _render_with(_build_react_page_fn_discovered(tmp_path), lang="fr")
+    assert 'lang="fr"' in rendered["html"]
+
+
+def test_unsupported_page_opts_names_itself(tmp_path: Path) -> None:
+    # A bare React page has no Bootstrap layout, so `fillable` cannot be
+    # honored. Say so, rather than raising from inside a private local.
+    www = tmp_path / "www"
+    www.mkdir()
+    (www / "ui.js").write_text("// ui")
+
+    page_fn = _build_react_page_fn_discovered(tmp_path)
+    with pytest.raises(TypeError, match=r"page_opts\(fillable=\.\.\.\)"):
+        page_fn(fillable=True)
+
+
+def test_page_opts_rejected_in_html_file_mode(tmp_path: Path) -> None:
+    # The HTML-file mode emits no page tag of its own, so there is nothing for
+    # title/lang/theme to land on.
+    index = tmp_path / "index.html"
+    index.write_text("<div id='root'></div>")
+
+    page_fn = _build_react_page_fn(index)
+    with pytest.raises(TypeError, match="HTML-file mode"):
+        page_fn(title="nope")

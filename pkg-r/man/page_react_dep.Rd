@@ -28,8 +28,15 @@ matching Python; attached only if the file exists. \code{NULL} to skip.}
 An \link[htmltools:htmlDependency]{htmltools::htmlDependency}.
 }
 \description{
-Convenience mirroring Python's \code{page_react_dep()}. Versioned by the JS
-file's mtime so browsers re-fetch after a rebuild.
+Convenience mirroring Python's \code{page_react_dep()}. It is versioned by the JS
+file's mtime, so the \verb{/lib/\{name\}-\{version\}/} URL changes on every rebuild and
+the browser re-fetches. That is what you want while developing and the wrong
+thing for a published package — an mtime is whatever the install happened to
+write, so it is neither stable across machines nor meaningful to a reader.
+There is no \code{version} argument on purpose: a package shipping a fixed version
+should build its own \link[htmltools:htmlDependency]{htmltools::htmlDependency} (the same advice as for a
+classic, non-module bundle), which is five lines and leaves nothing about the
+dependency implicit.
 }
 \details{
 The script tag is emitted as \code{type="module"}. A classic
