@@ -1,3 +1,21 @@
+"""How a renderer's HTMLDependency reaches the browser, one test per path.
+
+Three delivery paths, and which one a given app gets depends on *when* the
+renderer registers and whether the output element comes from the server:
+
+| registers at | element from | delivery path                          |
+| ------------ | ------------ | -------------------------------------- |
+| page-gen     | React        | `set_react_page()` harvest -> `<head>` |
+| after load   | `@render.ui` | Shiny dynamic-UI (renderContent)       |
+| after load   | React        | shinyreact post-flush push (#220)      |
+
+The last two both register late, so *lateness* is not what separates them —
+who emits the output element is. The holder test below passes with
+`install_dep_discovery()` stubbed out; the no-holder test does not. That is
+the discriminator, and it is why the no-holder fixture is the one that proves
+the push is required.
+"""
+
 import re
 
 from playwright.sync_api import Page, expect
@@ -25,15 +43,22 @@ def test_module_renderer_dep_injected(
 dynamic_plotly_app = create_app_fixture("apps/dynamic_plotly/app.py")
 
 
-def test_dynamic_ui_plotly_dep(page: Page, dynamic_plotly_app: ShinyAppProc) -> None:
-    """Checkbox-gated Plotly chart via @render.ui → output_widget mounts natively.
+def test_late_dep_with_a_server_side_holder(
+    page: Page, dynamic_plotly_app: ShinyAppProc
+) -> None:
+    """Late renderer + `@render.ui` holder: Shiny's own dynamic-UI path covers it.
 
-    The fixture registers `scatter` inside a `@reactive.effect` so the renderer
-    is not on the session at page-generation time — the page-generation harvest
-    cannot pre-inject its dependency into <head>, which the served-HTML
-    assertion below pins down. Two paths then deliver it: shinyreact's
-    post-flush push (#220), and Shiny's own dynamic-UI path
-    (renderContent → renderDependencies) when the holder renders.
+    The fixture registers `scatter` inside a `@reactive.effect`, so the
+    page-generation harvest cannot pre-inject its dependency into `<head>` —
+    the served-HTML assertion below pins that down. The output element then
+    comes from the *server* (`@render.ui` → `output_widget()`), so Shiny sends
+    `{html, deps}` and its client loads the dep via renderContent →
+    renderDependencies.
+
+    Two paths therefore deliver it here — that one and shinyreact's post-flush
+    push (#220) — which is exactly why this test cannot prove the push is
+    required: it passes with `install_dep_discovery()` stubbed out. See
+    `test_late_dep_without_a_holder` for the case that cannot.
     """
     # `lib/` prefix, not the bare name: the fixture's own explainer paragraph
     # mentions the dependency by name.
@@ -58,17 +83,22 @@ def test_dynamic_ui_plotly_dep(page: Page, dynamic_plotly_app: ShinyAppProc) -> 
 late_data_frame_app = create_app_fixture("apps/late_data_frame/app.py")
 
 
-def test_late_renderer_dep_is_pushed_after_flush(
+def test_late_dep_without_a_holder(
     page: Page, late_data_frame_app: ShinyAppProc
 ) -> None:
-    """The post-flush dep push (#220) is the only delivery path here.
+    """Late renderer + React-emitted element: the post-flush push is the only path.
 
     "Open a tab whose outputs don't exist yet": `grid` is registered only when
-    the user clicks, so `set_react_page()`'s page-generation harvest never sees
-    it, and — unlike `apps/dynamic_plotly` — there is no `@render.ui` holder,
-    so Shiny's dynamic-UI dependency path never runs either. Without
-    shinyreact's flush-diff push, `data-frame.js` never reaches the browser and
-    `<shiny-data-frame>` stays an empty, unbound custom element.
+    the user clicks, so the page-generation harvest never sees it. Unlike
+    `apps/dynamic_plotly` the output element is emitted by **React**, not by a
+    server-side `@render.ui` holder, so Shiny never sends HTML for it and its
+    dynamic-UI dependency path never runs. Only shinyreact's flush-diff push
+    can deliver `data-frame.js`; stub `install_dep_discovery()` out and this
+    test fails while its holder-based sibling still passes.
+
+    Not a widget fixture on purpose: shinywidgets' `comm_open` arrives on its
+    own channel and races the dep load (#160), so a holder-less plotly output
+    would not be a clean proof even with the push working.
     """
     page.goto(late_data_frame_app.url)
 
