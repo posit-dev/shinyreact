@@ -26,9 +26,36 @@ Both paths are contracts with an installer, not internal layout — the Python o
 is what `library-skills` scans site-packages for, the R one is where `btw`
 looks. Neither is discoverable by reading our code, so do not "tidy" them.
 
-**After editing a skill, run `make update-skills`.** `pkg-py/tests/test_skills.py`
-and `pkg-r/tests/testthat/test-skills.R` fail on drift, so a forgotten copy is a
-failing suite rather than a silently stale release.
+A skill may be more than one file. `<name>/references/*.md` ships with it (the
+copy is a whole-directory `cp -R`, and the installers symlink the directory), so
+`[modules.md](references/modules.md)` from a `SKILL.md` resolves for a user with
+no checkout. **That is the escape valve for depth**, and it is not a link to
+this repo.
+
+**What belongs in the body vs. a reference.** The body is a decision guide read
+start to finish, every time. A reference is opened only when its trigger fires,
+so the test is: *is the trigger unmistakable?*
+
+| Keep in the body | Move to a reference |
+|---|---|
+| decisions that shape everything after them (pick the build tier; use libraries, don't hand-roll) | material for one moment with an obvious name — testing, debugging, bookmarking |
+| anything whose absence fails **silently** (externalize React, or hooks quietly return nothing) | anything only some apps need — modules, hosting a widget, the no-build fallback |
+| short idioms worth copying verbatim | the full rule set behind a short idiom |
+
+Each pointer keeps two or three sentences of substance in the body, so an agent
+that never opens the file still gets the load-bearing part. A bare "see
+`references/x.md`" is how a reference goes unread.
+
+The trap: a reference that changes a default. Guidance like "prefer a library
+over writing a component" must sit in the body, because an agent that does not
+open the file will do the wrong thing by default rather than merely do it less
+well.
+
+**After editing a skill, run `make update-skills`** and commit the result.
+Three things catch a forgotten copy: `pkg-py/tests/test_skills.py`,
+`pkg-r/tests/testthat/test-skills.R`, and the `check-skills` workflow, which
+runs `make update-skills` and fails if it produced a diff. The workflow is the
+one that catches a copy edited *directly* rather than through the source.
 
 Two traps in the copy flow:
 
@@ -134,10 +161,21 @@ checklist than to documentation:
   working example over invented code.
 - **No repo trivia.** File layouts, build commands, and test-suite mechanics
   belong in `CLAUDE.md`; a user who installed the package has none of that.
-- **Point at the repo for depth** (`examples/`,
-  `.claude/references/verifying-ui-code.md`) rather than inlining it. Those
-  pointers are repo-relative on purpose: they are for developers, and a reader
-  who has the repo is the one who needs them.
+- **Assume the reader has no checkout.** This is the one place a skill differs
+  from every other Markdown file in the repo, and it is easy to undo by reflex:
+  - **No repo-relative paths.** `.claude/references/verifying-ui-code.md`
+    resolves to nothing from `site-packages`.
+  - **No pointers to contributor-only documents, even as URLs.** `CLAUDE.md`,
+    `FEATURES.md`, `decisions/`, and this `references/` tree all assume the
+    repo. **Inline the material instead** — the skill is where a user can
+    actually read it. `test_skill_links_are_reachable_by_a_user` enforces both
+    rules.
+  - **Full `https://github.com/posit-dev/shinyreact/…` URLs are fine for things
+    a user genuinely benefits from opening** — `examples/` above all, since
+    they are runnable apps rather than notes to contributors.
+  - The cost is duplication: `verifying-ui-code.md` and the build-app skill's
+    "Verify it" section now say overlapping things. That is deliberate. If you
+    change one, check the other.
 - **Terminology is not optional.** The `ui.tsx` pattern; never "SPA". A skill
   that uses the wrong word teaches every app built with it to use the wrong
   word.

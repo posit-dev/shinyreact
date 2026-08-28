@@ -26,6 +26,11 @@ other than you.
 Use the `shinyreact-build-app` skill for how to *write* the new app. This skill is about
 knowing what to write.
 
+**This skill covers Python and R together** — both as the source you are
+porting from and as the target. Anything unmarked holds in both; `[py]` and
+`[r]` mark the few places they differ. The port does not have to stay in the
+source app's language, and the client half is identical either way.
+
 ## Phase 1 — inspect the source
 
 Read the whole app before summarizing any of it. Build these inventories and
@@ -78,10 +83,26 @@ than exploring further.
 
 One file at the root of the new app. It has two parts, and both matter:
 
-**Part 1 — the behavior tree.** What the app does, in plain English, one
-atomically checkable claim per leaf. This is the same format as
-`examples/*/FEATURES.md` in the shinyreact repo — read one of those first; they
-are worked examples. The rules:
+**Part 1 — the behavior tree.** What the app does, in plain English, as a
+nested bullet list, one atomically checkable claim per leaf. The tree path says
+*where* the claim lives (data vs. UI vs. reactivity vs. wire); the leaf says
+*what to check*:
+
+```
+- histogram of Old Faithful eruption WAITING times
+  - data: faithful.csv, column `waiting` (minutes, ~43-96)
+    - NOT the `eruptions` column
+  - binning matches R's hist(): equal-width, (lo, hi], first bin inclusive
+- bins slider
+  - range 1-50, default 9
+  - updates live, not debounced
+  - drives BOTH outputs
+    - dist_data: {breaks: number[], counts: number[]}
+    - dist_caption: "272 eruptions in N bins", singular "bin" when N=1
+- while recalculating: previous chart stays mounted, dims (no skeleton flash)
+```
+
+The rules:
 
 - Behavior, not implementation. "the caption reads `N eruptions in M bins`,
   singular `bin` at M=1", not "calls `format()`".
@@ -128,10 +149,16 @@ rendered), then the rest of the outputs, then layout and polish.
 
 ## Phase 5 — verify
 
-Read `.claude/references/verifying-ui-code.md` before writing tests. In short:
-factor pure logic out of the app file so it is importable, test the client by
-mounting the real `www/ui.js` against a fake Shiny, and reserve Playwright for
-what those cannot reach.
+Three layers, cheapest first: factor pure logic out of the app file so it is
+importable and test it directly; test the client by evaluating the real
+`www/ui.js` against a fake `window.Shiny` in jsdom (not by importing the
+component — that tests a copy the app does not ship); and reserve Playwright
+for layout and real bindings, which the other two structurally cannot see. The
+`shinyreact-build-app` skill's `references/testing.md` has the traps.
+
+A port has one advantage a new app does not: **the original still runs.** Where
+the logic is a pure transform, capture its output from the original app and
+assert the same values in the port.
 
 Every leaf you assert gets a `(test)` marker in `PORT.md`. Finish by
 re-driving the ported app in the browser against the checklists — including the
@@ -141,20 +168,82 @@ initial state screenshot from Phase 2, side by side.
 
 | Original | shinyreact |
 |---|---|
-| `sliderInput` / `textInput` / `selectInput` | your own React control + `useShinyInput(id, default)` |
-| `actionButton` | `useShinyInput(id, 0, {debounceMs: 0, priority: "event"})`, increment on click; `@reactive.event(..., ignore_init=True)` server-side |
+| `sliderInput` / `textInput` / `selectInput` | a library control (shadcn/ui `Slider`, `Input`, `Select`) + `useShinyInput(id, default)` |
+| `dateRangeInput` / `selectizeInput` | a real library component — a date picker or combobox, with `react-day-picker` / shadcn's `Combobox` underneath. Never hand-roll these |
+| `actionButton` | `useShinyInput(id, 0, {debounceMs: 0, priority: "event"})`, increment on click; ignore the initial 0 server-side (`[py]` `@reactive.event(..., ignore_init=True)`, `[r]` an explicit `if (is.null(x) \|\| x == 0) return(NULL)`) |
 | `renderText` / `renderPrint` | `reactive_output` returning the string, `useShinyOutputValue` client-side |
 | `renderPlot` (data you could draw) | `reactive_output` returning the data; draw in React |
 | `renderPlot` (matplotlib/ggplot-specific) | keep the renderer, host it with `ImageOutput` |
-| `renderDT` / `render.data_frame` / `renderPlotly` | keep the renderer, host it with `ShinyOutput` — no `*Output()` placeholder needed |
+| `renderDT` / `render.data_frame` / `renderPlotly` | keep the renderer, host it with `ShinyOutput` — no `*Output()` placeholder needed, and its binding JS is discovered for you in both languages |
+| `downloadButton` + `downloadHandler` | keep the `downloadHandler` unchanged — it is a server route, not a rendered value, and it works with no `downloadButton()` in any UI; host `<a class="shiny-download-link">` via `ShinyOutput` and Shiny's own binding fills in `href`. Never rebuild the file client-side from the JSON another output uses: the serializers disagree on details (R's `write.csv` renders `0.0002` as `2e-04`; a JS re-implementation will not) |
+| `fileInput` | host a native `<input type="file">` (plus its label/button markup) via `ShinyOutput` so Shiny's own file-input binding does the multipart upload. Raw bytes cannot travel through `useShinyInput`, and reimplementing the upload RPC means depending on internal Shiny API |
+| `tabsetPanel` / `navset_*` | a client-side tab strip that keeps every panel **mounted** and hides inactive ones (CSS `hidden`; Radix `Tabs` needs `forceMount`). Unmounting a panel drops its outputs' subscriptions mid-session (`Output not found` in the console); there is no suspend-when-hidden in this pattern, so note the always-computes divergence in `PORT.md` |
+| `htmlTemplate("www/index.html")` / an app that owns `index.html` | keep the document and serve it with `page_react_html()` — see the next section |
 | `conditionalPanel` | ordinary React conditional rendering; no server round trip |
 | `update*Input` | the client already owns the value — set React state; use `send_message` only for genuine server-initiated events |
 | `req()` / `validate` | return `None` / `NULL` and let the client show its empty state |
 | Shiny modules | `ShinyModuleProvider` around the subtree |
 | `insertUI` / `removeUI` | React state, not DOM surgery |
 
-Two things worth deciding early rather than discovering late: the app's
-**layout system** (Tailwind + shadcn/ui if it needs a component library, plain
-CSS if not — a `package.json` is a permanent cost) and whether any output must
-stay server-rendered, because that decides whether the port needs
-`ImageOutput` / `ShinyOutput` at all.
+### Porting an app that owns its HTML document
+
+When the source UI is `htmlTemplate("www/index.html")` (or `[py]` a
+hand-written `index.html`), the document is part of the app's surface — port
+the document, don't flatten it into `page_react()`:
+
+- **Upgrade the head.** Delete the hardcoded Shiny includes old templates
+  carry (`shared/jquery.min.js`, `shared/shiny.min.js`, `shiny.css`) and put
+  the `{{ headContent() }}` marker inside `<head>` — spelled exactly like
+  that, spaces included ([r] the check is a fixed-string match). Shiny's and
+  shinyreact's tags render at the marker.
+- **Serve it.** `[r]` `shinyApp(ui = page_react_html("www/index.html"), server)`;
+  `[py]` `ReactApp(server)` discovers `www/index.html` on its own.
+- The document keeps what the app owns (meta tags, fonts, analytics, the
+  layout shell); the parts with *behavior* move into the React client as
+  usual.
+- `[r]` the whole file is an `htmlTemplate()`: every `{{ ... }}` in it
+  evaluates as R, so escape Mustache/Vue-style braces the document may
+  already contain.
+
+Fall back to `page_react()` only when the document carries nothing worth
+keeping — default scaffolding with no custom head content — and record that
+in `PORT.md`'s Deliberate divergences, because silently dropping a file the
+original ships reads as an omission.
+
+### Startup ordering is not the original's
+
+In the original app every input value exists synchronously at session start.
+In the port each `useShinyInput` arrives on its own async round trip after
+mount, so:
+
+- An `eventReactive(..., ignoreNULL = FALSE)` / `@reactive.event(...,
+  ignore_init=False)` can fire with sibling inputs still `NULL`.
+- An event input with `debounceMs: 0` can outrun inputs left on the 100 ms
+  default — the click counter's initial `0` reaches the server before the
+  values the handler reads.
+
+Give every input the handler reads at event time (via `isolate()` or inside
+the event) `debounceMs: 0` as well, and guard the first flush with an explicit
+`NULL`-or-initial-`0` check rather than trusting `ignoreInit` /
+`ignore_init` alone — shinyreact's init ping flushes the reactive graph once
+before real values arrive, which can spend that exemption.
+
+### Two decisions to make before you start porting
+
+**Which widgets you are not going to write.** Shiny's inputs look small in the
+source and are not: `dateRangeInput` is a calendar with keyboard navigation and
+range validation, `selectizeInput` is a searchable multi-select. A port that
+re-implements them by hand is where the schedule goes, and it is code with no
+upstream tests that the user now owns. Take shadcn/ui + Tailwind as the default
+component layer, `@tanstack/react-table` for tables, `recharts` for ordinary
+charts, `react-hook-form` + `zod` for form validation, `date-fns` for dates.
+
+Write from scratch only what is specific to *this* app — its dashboard layout,
+its one bespoke visualization.
+
+**Which outputs stay server-rendered.** Decide per output, because it decides
+whether the port needs `ImageOutput` / `ShinyOutput` at all. A `renderPlot` of
+a small data frame becomes data plus a React chart. A ggplot with custom
+annotations, or an existing DT/plotly/leaflet widget, stays where it is and
+gets hosted — re-implementing a widget that already works is work you can
+simply not do.

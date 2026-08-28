@@ -1073,8 +1073,29 @@ initial page.
   - hatchling includes it with no packaging config
 - `[r]` installed at `system.file("skills", "<name>", package = "shinyreact")`,
   where btw looks (`btw::btw_skill_install_package("shinyreact")`)
+- a skill ships as a whole directory, so `<name>/references/*.md` travels with
+  it and a `](references/…)` link from the `SKILL.md` resolves for a user with
+  no checkout
+  - `shinyreact-build-app` keeps its situational material there —
+    `no-build.md`, `shiny-outputs.md`, `modules.md`, `bookmarking.md`,
+    `testing.md`, `debugging.md` — so the body stays a decision guide
+  - `[js]` the `window.shinyreact` coverage test reads the skill directory, not
+    just `SKILL.md`, since `ShinyOutput` / `ImageOutput` are taught in a
+    reference
 - the shipped copies are generated from `.claude/skills/` by
-  `make update-skills`; a stale copy fails both packages' test suites
+  `make update-skills`; a stale copy fails both packages' test suites, which
+  compare the whole directory rather than just `SKILL.md`
+  - and the `check-skills` workflow, which regenerates and fails on any
+    resulting `git status` change — the only check that catches a copy edited
+    directly instead of through the source, and the only one that catches a
+    skill added to `SHIPPED_SKILLS` but never copied
+- a `SKILL.md` assumes the reader has no checkout, and a test enforces it
+  - no repo-relative paths: a shipped skill is read from site-packages or an R
+    library, where one resolves to nothing
+  - no pointers to contributor-only documents (`CLAUDE.md`, `FEATURES.md`,
+    `decisions/`, `.claude/`) even as URLs — that material is inlined instead
+  - full `github.com/posit-dev/shinyreact` URLs to `examples/` are allowed:
+    they are runnable apps, not notes to contributors
 - each `SKILL.md` frontmatter is exactly two keys, `name` then a single-line
   `description` — a description spilling onto a second line is silently skipped
   by the installers' strict YAML parsers

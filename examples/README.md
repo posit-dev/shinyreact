@@ -5,8 +5,16 @@ reactive computation, and the UI is defined in a client-side React codebase
 whose entry is conventionally `ui.tsx` (simpler variants like `www/ui.js`
 for no-build or `src/ui.jsx` for Vite + JSX fill the same role).
 
-Examples are Python unless noted; [01-hello](01-hello/) also ships an `app.R`
-showing the same app on the R package.
+Examples are Python unless noted; [01-hello](01-hello/) and
+[07-plotly](07-plotly/) also ship an `app.R` showing the same app on the R
+package.
+
+**Shipping several servers over one `www/` client is a device of these
+examples, not a pattern to copy.** A real app has one server. It exists here
+for two reasons: it demonstrates that the client does not know which language
+answers, and it lets a single behavior be asserted with the *same* golden
+values in Python and in R — which is how a divergence between the two
+implementations becomes visible rather than silently correct in isolation.
 
 Every example carries a `FEATURES.md` describing what it does, leaf by leaf —
 see [Example behavior trees](#example-behavior-trees) below.
