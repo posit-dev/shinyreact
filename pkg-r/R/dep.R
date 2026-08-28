@@ -40,7 +40,7 @@ shinyreact_dep_page <- function() {
 
 # Internal: the `#shinyreact-config` tag as an htmlDependency `head` entry, for
 # UIs where a plain tag has no place to land — htmlTemplate() documents render
-# attached dependencies into `{{ headContent() }}`, and a dependency's `head`
+# attached dependencies at the dependency placeholder, and a dependency's `head`
 # HTML rides along verbatim. src is an empty href: the dependency ships no
 # files, only head content.
 config_head_dep <- function() {

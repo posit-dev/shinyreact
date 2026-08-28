@@ -659,23 +659,32 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 ### `page_react_html(path="www/index.html")`
 
 - for apps that own a complete HTML document (what a Vite build emits)
-  - the document must contain a `{{ headContent() }}` marker; Shiny's and
-    shinyreact's tags render **at the marker**, not appended to `<head>`
-    - detection is a plain string match over the whole document, so a marker in
-      `<body>` passes and the deps render there — despite the error message
-      asserting `<head>` (#243)
-    - `[r]` the match is `fixed = TRUE` on the exact spelling, so
-      `{{headContent()}}` is rejected even though `htmlTemplate()` accepts it
-      — documented in `?page_react_html`
+  - the document must contain `<meta name="shiny-dependency-placeholder"
+    content="">`; Shiny's and shinyreact's tags render **in its place**, not
+    appended to `<head>`
+    - it is py-shiny's marker, `shiny.ui.PageDocument.DEPS_PLACEHOLDER`; both
+      languages use the same literal, so one document works on either server
+    - an ordinary `<meta>` tag, not template syntax, so the document stays valid
+      HTML a bundler's dev server can serve unchanged
+    - detection is a plain string match over the whole document, so a
+      placeholder in `<body>` passes and the deps render there
+    - the match is on the exact spelling, so a reordered or differently-quoted
+      equivalent `<meta>` tag is rejected
+    - `[r]` a bare `{{ headContent() }}` is **not** accepted; R rewrites the
+      placeholder to it internally before calling `htmlTemplate()`
   - `[py]` the document's own body is preserved verbatim
   - `[r]` the body is **not** verbatim: `htmlTemplate()` evaluates every
     `{{ ... }}` anywhere in the document as R code, with `parent = globalenv()`
     - a body containing `{{ 6*7 }}` renders `42`; a Handlebars/Mustache/Vue
       document with `{{ }}` in the body is evaluated as R or errors
     - **deliberate**, and documented in `?page_react_html`: it is R's own
-      templating idiom. Python replaces only the marker (#223)
-  - a document without the marker raises, and the message names the file, the
-    marker, and `page_react()` as the alternative
+      templating idiom. Python replaces only the placeholder (#223)
+  - a document without the placeholder raises
+    - `[r]` in `page_react_html()` itself; the message names the file, the
+      placeholder, and `page_react()` as the alternative
+    - `[py]` at page render, from `ui.PageDocument` — the placeholder is
+      py-shiny's contract, so py-shiny enforces it; the message names
+      `deps_replace_pattern=` and the default placeholder
   - a missing file raises, naming the resolved path
     - `[r]` the error also names the working directory, since that is what a
       relative path resolved against
@@ -685,8 +694,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
       unchanged document is read once and served from cache thereafter
     - `[py]` under `set_react_page()`'s HTML mode the read happens once, at
       call time, so edits there *do* need a restart (issue #82)
-    - `[r]` read twice per call — once with `brio` for the marker check, once by
-      `htmlTemplate()` to render
+    - `[r]` read once per call, with `brio` (UTF-8, line endings untouched);
+      `htmlTemplate()` renders the in-memory text
   - it does **not** discover traditional-renderer dependencies
   - `[py]` it returns a `ReactHtmlDocument`
     - a `shiny.ui.PageDocument` subclass that also remembers the document's

@@ -4,8 +4,12 @@ from pathlib import Path
 import pytest
 import shinyreact
 from htmltools import HTMLDependency, Tag
+from shiny.ui import PageDocument
 from shinyreact import page_react_html
 from shinyreact._page import page_bare
+
+# Where a full document's dependencies are inserted. Owned by py-shiny, not us.
+DEPS = PageDocument.DEPS_PLACEHOLDER
 
 
 def test_page_bare_returns_tag():
@@ -54,7 +58,7 @@ def _full_doc(body="<div id='root'></div>", title="T"):
     # Mirrors R's full_doc() in pkg-r/tests/testthat/test-page.R.
     return (
         f"<!DOCTYPE html><html><head><title>{title}</title>"
-        "{{ headContent() }}</head><body>" + body + "</body></html>"
+        f"{DEPS}</head><body>{body}</body></html>"
     )
 
 
@@ -86,16 +90,19 @@ def test_page_react_html_preserves_document_body(tmp_path):
     assert "<main class='xyz'>content</main>" in html
 
 
-def test_page_react_html_errors_without_marker(tmp_path):
-    # Mirrors R's "page_react_html errors on a document without the marker".
-    from shinyreact import page_react_html
+def test_page_react_html_missing_placeholder_errors_at_render(tmp_path):
+    # R's counterpart ("page_react_html errors on a document without the
+    # placeholder") errors in page_react_html() itself; Python defers to
+    # ui.PageDocument, which raises when the page is rendered. Deliberate: the
+    # placeholder is py-shiny's contract, so py-shiny gets to enforce it.
+    from shiny import App
 
     index = tmp_path / "index.html"
     index.write_text("<!DOCTYPE html><html><head></head><body>hi</body></html>")
-    with pytest.raises(ValueError, match="headContent"):
-        page_react_html(index)
-    with pytest.raises(ValueError, match="page_react"):
-        page_react_html(index)
+
+    doc = page_react_html(index)  # no error here
+    with pytest.raises(ValueError, match="dependencies are inserted"):
+        App(doc, lambda i, o, s: None)
 
 
 def test_page_react_html_missing_file_raises(tmp_path):
@@ -265,7 +272,7 @@ def test_page_react_html_rereads_only_when_the_file_changes(
     # edit index.html and just refresh. Re-reading unchanged bytes every request
     # is waste, so the read is gated on a stat signature.
     doc = tmp_path / "index.html"
-    doc.write_text("<html><head>{{ headContent() }}</head><body>v1</body></html>")
+    doc.write_text(f"<html><head>{DEPS}</head><body>v1</body></html>")
 
     reads = 0
     real_read_text = Path.read_text
@@ -283,7 +290,7 @@ def test_page_react_html_rereads_only_when_the_file_changes(
     assert reads == 1, "unchanged document should be read once"
 
     # A real edit must be picked up without a restart.
-    doc.write_text("<html><head>{{ headContent() }}</head><body>v2</body></html>")
+    doc.write_text(f"<html><head>{DEPS}</head><body>v2</body></html>")
     document = page_react_html(doc)
     assert reads == 2
     assert "v2" in document.render()["html"]
@@ -294,7 +301,7 @@ def test_page_react_html_reads_as_utf8(tmp_path: Path) -> None:
     # unconditionally, so Python must too.
     doc = tmp_path / "index.html"
     doc.write_text(
-        "<html><head>{{ headContent() }}</head><body>café ☕</body></html>",
+        f"<html><head>{DEPS}</head><body>café ☕</body></html>",
         encoding="utf-8",
     )
 

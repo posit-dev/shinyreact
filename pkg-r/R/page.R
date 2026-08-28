@@ -1,3 +1,8 @@
+# Internal: the marker a page_react_html() document must contain, where the
+# rendered dependencies are inserted. Same literal as Python's
+# shiny.ui.PageDocument.DEPS_PLACEHOLDER, so one document works on both servers.
+deps_placeholder <- '<meta name="shiny-dependency-placeholder" content="">'
+
 #' Bare HTML page with Shiny dependencies
 #'
 #' Escape hatch for custom setups. Wraps [shiny::bootstrapPage()].
@@ -77,11 +82,17 @@ page_react <- function(
 #' Serve a React `index.html` document (the `ui.tsx` pattern)
 #'
 #' Reads a complete HTML document — the kind a Vite build emits — and injects
-#' the shinyreact page-level dependencies into it via
-#' [htmltools::htmlTemplate()]. The document must contain a
-#' `{{ headContent() }}` marker inside `<head>`; Shiny's and shinyreact's
-#' script/link tags render there. Use as the `ui` argument:
-#' `shinyApp(ui = page_react_html(), server = ...)`.
+#' the shinyreact page-level dependencies into it. The document must contain
+#' Shiny's dependency placeholder inside `<head>`:
+#'
+#' ```html
+#' <meta name="shiny-dependency-placeholder" content="">
+#' ```
+#'
+#' Shiny's and shinyreact's script/link tags render in its place. It is an
+#' ordinary `<meta>` tag rather than template syntax, so the document stays
+#' valid HTML that a bundler's dev server can serve unchanged. Use as the `ui`
+#' argument: `shinyApp(ui = page_react_html(), server = ...)`.
 #'
 #' Assets the document references (your bundle's JS/CSS) should live in `www/`,
 #' where Shiny serves them statically.
@@ -90,21 +101,20 @@ page_react <- function(
 #' it requires no HTML file at all.
 #'
 #' @section The whole document is a template:
-#' [htmltools::htmlTemplate()] evaluates **every** `{{ ... }}` in the file as R
-#' code, not just the `{{ headContent() }}` marker — anywhere in the document,
-#' `<head>` or `<body>`, with the global environment as parent. So a body
-#' containing `{{ 6*7 }}` renders `42`, and `{{ nonexistent() }}` is an error at
-#' page render.
+#' R places the dependencies with [htmltools::htmlTemplate()], which evaluates
+#' **every** `{{ ... }}` in the document as R code — anywhere in it, `<head>` or
+#' `<body>`, with the global environment as parent. So a body containing
+#' `{{ 6*7 }}` renders `42`, and `{{ nonexistent() }}` is an error at page
+#' render.
 #'
-#' This is deliberate: it is R's own templating idiom, and it is useful. But it
-#' means a document written for a JS templating engine that also uses `{{ }}`
-#' (Handlebars, Mustache, Vue's text interpolation) is not safe to pass here as
-#' is — those braces will be evaluated as R. Escape them, or use [page_react()],
-#' which needs no HTML file at all.
+#' A document written for a JS templating engine that also uses `{{ }}`
+#' (Handlebars, Mustache, Vue's text interpolation) is therefore not safe to
+#' pass here as is — those braces will be evaluated as R. Escape them, or use
+#' [page_react()], which needs no HTML file at all.
 #'
-#' Python's `page_react_html()` differs: it replaces the marker and leaves the
-#' rest of the document untouched. Documented as a deliberate divergence rather
-#' than a bug — see `FEATURES.md` and issue #223.
+#' Python's `page_react_html()` differs: it replaces the placeholder and leaves
+#' the rest of the document untouched. Documented as a deliberate divergence
+#' rather than a bug — see `FEATURES.md` and issue #223.
 #'
 #' @section Path resolution:
 #' A relative `path` resolves against the process working directory. Under
@@ -114,9 +124,9 @@ page_react <- function(
 #' directory — there is nothing to resolve against outside the working
 #' directory. Pass an absolute path if you need to be independent of it.
 #'
-#' The marker must be spelled exactly `{{ headContent() }}` — the check is a
-#' fixed-string match, so `{{headContent()}}` is rejected even though
-#' `htmlTemplate()` itself would accept it.
+#' The placeholder must be spelled exactly as above — the check is a
+#' fixed-string match, so a differently-quoted or reordered `<meta>` tag is
+#' rejected.
 #'
 #' @param path Path to the HTML document. Defaults to `"www/index.html"`,
 #'   relative to the working directory.
@@ -132,15 +142,19 @@ page_react_html <- function(path = "www/index.html") {
   }
   # brio::read_file() always reads UTF-8 and never touches line endings.
   html <- brio::read_file(path)
-  if (!grepl("{{ headContent() }}", html, fixed = TRUE)) {
+  if (!grepl(deps_placeholder, html, fixed = TRUE)) {
     cli::cli_abort(c(
-      "{.path {path}} must be a complete HTML document containing a
-       {.code {{{{ headContent() }}}}} marker inside {.code <head>}.",
-      "i" = "shinyreact's script and stylesheet tags render at the marker.",
+      "{.path {path}} must be a complete HTML document containing
+       {.code {deps_placeholder}} inside {.code <head>}.",
+      "i" = "Shiny's and shinyreact's script and stylesheet tags render there.",
       "i" = "For a page without an HTML file, use {.fn page_react} instead."
     ))
   }
-  ui <- htmltools::htmlTemplate(path, document_ = TRUE)
+  # `htmlTemplate()` is how R places rendered dependencies, and it only knows
+  # `headContent()`. Swapping the placeholder for it here keeps the *document*
+  # free of template syntax, matching Python's placeholder.
+  html <- sub(deps_placeholder, "{{ headContent() }}", html, fixed = TRUE)
+  ui <- htmltools::htmlTemplate(text_ = html, document_ = TRUE)
   htmltools::attachDependencies(
     ui,
     list(shinyreact_dep(), config_head_dep()),

@@ -4,15 +4,19 @@ import re
 from pathlib import Path
 
 from htmltools import TagList, div
+from shiny.ui import PageDocument
 from shinyreact import ReactApp, page_react_html
 from starlette.testclient import TestClient
+
+# Where a full document's dependencies are inserted. Owned by py-shiny, not us.
+DEPS = PageDocument.DEPS_PLACEHOLDER
 
 
 def _write_react_app(tmp_path: Path) -> Path:
     www = tmp_path / "www"
     www.mkdir()
     (www / "index.html").write_text(
-        "<!DOCTYPE html><html><head><title>T</title>{{ headContent() }}</head>"
+        f"<!DOCTYPE html><html><head><title>T</title>{DEPS}</head>"
         '<body><script src="ui.js" defer></script></body></html>'
     )
     (www / "ui.js").write_text("// ui entry")
@@ -161,7 +165,7 @@ def test_app_mode_is_rechecked_per_request(tmp_path: Path, monkeypatch) -> None:
     assert "index.html marker" not in client.get("/").text
 
     (tmp_path / "www" / "index.html").write_text(
-        "<html><head>{{ headContent() }}</head><body>index.html marker</body></html>"
+        f"<html><head>{DEPS}</head><body>index.html marker</body></html>"
     )
 
     assert "index.html marker" in client.get("/").text

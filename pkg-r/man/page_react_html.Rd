@@ -15,13 +15,18 @@ UI suitable for \code{shinyApp(ui = ...)}.
 }
 \description{
 Reads a complete HTML document — the kind a Vite build emits — and injects
-the shinyreact page-level dependencies into it via
-\code{\link[htmltools:htmlTemplate]{htmltools::htmlTemplate()}}. The document must contain a
-\code{{{ headContent() }}} marker inside \verb{<head>}; Shiny's and shinyreact's
-script/link tags render there. Use as the \code{ui} argument:
-\code{shinyApp(ui = page_react_html(), server = ...)}.
+the shinyreact page-level dependencies into it. The document must contain
+Shiny's dependency placeholder inside \verb{<head>}:
 }
 \details{
+\if{html}{\out{<div class="sourceCode html">}}\preformatted{<meta name="shiny-dependency-placeholder" content="">
+}\if{html}{\out{</div>}}
+
+Shiny's and shinyreact's script/link tags render in its place. It is an
+ordinary \verb{<meta>} tag rather than template syntax, so the document stays
+valid HTML that a bundler's dev server can serve unchanged. Use as the \code{ui}
+argument: \code{shinyApp(ui = page_react_html(), server = ...)}.
+
 Assets the document references (your bundle's JS/CSS) should live in \verb{www/},
 where Shiny serves them statically.
 
@@ -30,21 +35,20 @@ it requires no HTML file at all.
 }
 \section{The whole document is a template}{
 
-\code{\link[htmltools:htmlTemplate]{htmltools::htmlTemplate()}} evaluates \strong{every} \code{{{ ... }}} in the file as R
-code, not just the \code{{{ headContent() }}} marker — anywhere in the document,
-\verb{<head>} or \verb{<body>}, with the global environment as parent. So a body
-containing \code{{{ 6*7 }}} renders \code{42}, and \code{{{ nonexistent() }}} is an error at
-page render.
+R places the dependencies with \code{\link[htmltools:htmlTemplate]{htmltools::htmlTemplate()}}, which evaluates
+\strong{every} \code{{{ ... }}} in the document as R code — anywhere in it, \verb{<head>} or
+\verb{<body>}, with the global environment as parent. So a body containing
+\code{{{ 6*7 }}} renders \code{42}, and \code{{{ nonexistent() }}} is an error at page
+render.
 
-This is deliberate: it is R's own templating idiom, and it is useful. But it
-means a document written for a JS templating engine that also uses \code{{{ }}}
-(Handlebars, Mustache, Vue's text interpolation) is not safe to pass here as
-is — those braces will be evaluated as R. Escape them, or use \code{\link[=page_react]{page_react()}},
-which needs no HTML file at all.
+A document written for a JS templating engine that also uses \code{{{ }}}
+(Handlebars, Mustache, Vue's text interpolation) is therefore not safe to
+pass here as is — those braces will be evaluated as R. Escape them, or use
+\code{\link[=page_react]{page_react()}}, which needs no HTML file at all.
 
-Python's \code{page_react_html()} differs: it replaces the marker and leaves the
-rest of the document untouched. Documented as a deliberate divergence rather
-than a bug — see \code{FEATURES.md} and issue #223.
+Python's \code{page_react_html()} differs: it replaces the placeholder and leaves
+the rest of the document untouched. Documented as a deliberate divergence
+rather than a bug — see \code{FEATURES.md} and issue #223.
 }
 
 \section{Path resolution}{
@@ -56,8 +60,8 @@ unlike Python — which resolves a relative path against the calling module's
 directory — there is nothing to resolve against outside the working
 directory. Pass an absolute path if you need to be independent of it.
 
-The marker must be spelled exactly \code{{{ headContent() }}} — the check is a
-fixed-string match, so \code{{{headContent()}}} is rejected even though
-\code{htmlTemplate()} itself would accept it.
+The placeholder must be spelled exactly as above — the check is a
+fixed-string match, so a differently-quoted or reordered \verb{<meta>} tag is
+rejected.
 }
 

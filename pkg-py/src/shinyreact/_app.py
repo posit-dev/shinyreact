@@ -34,11 +34,8 @@ class ReactHtmlDocument(_shiny_ui.PageDocument):
         *,
         src_dir: Path,
         extra_deps: list[HTMLDependency],
-        deps_replace_pattern: str,
     ) -> None:
-        super().__init__(
-            html, extra_deps=extra_deps, deps_replace_pattern=deps_replace_pattern
-        )
+        super().__init__(html, extra_deps=extra_deps)
         self.src_dir = src_dir
 
 

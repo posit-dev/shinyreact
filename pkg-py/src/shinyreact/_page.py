@@ -14,10 +14,6 @@ from ._app import ReactHtmlDocument
 from ._bookmark import _config_script_tag
 from ._dep import _dep, _dep_page, _file_mtime_int
 
-# The head-injection marker a page_react_html() document must contain. The
-# same literal works for R's htmlTemplate(), where it is evaluated as code.
-_HEAD_CONTENT_MARKER = "{{ headContent() }}"
-
 if TYPE_CHECKING:
     # Private, but it is the only name for HTMLDependency's stylesheet entry.
     from htmltools._core import ScriptItem, StylesheetItem
@@ -345,10 +341,15 @@ def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
     """Serve a React ``index.html`` document (the ui.tsx pattern, Core API).
 
     Reads a complete HTML document — the kind a Vite build emits — and injects
-    Shiny's and shinyreact's dependencies into it. The document must contain a
-    ``{{ headContent() }}`` marker inside ``<head>``; the script/link tags
-    render at the marker. Matches R's ``page_react_html()``
-    (``htmltools::htmlTemplate()``).
+    Shiny's and shinyreact's dependencies into it. The document must contain
+    Shiny's dependency placeholder in ``<head>``::
+
+        <meta name="shiny-dependency-placeholder" content="">
+
+    The script/link tags render in its place; the same literal is
+    :attr:`shiny.ui.PageDocument.DEPS_PLACEHOLDER`. It is an ordinary ``<meta>``
+    tag rather than template syntax, so the document stays valid HTML that a
+    bundler's dev server can serve unchanged. Matches R's ``page_react_html()``.
 
     You rarely need to call this yourself — :class:`shinyreact.ReactApp`
     discovers ``www/index.html`` and calls it for you::
@@ -385,22 +386,14 @@ def page_react_html(path: str | Path = "www/index.html") -> ReactHtmlDocument:
         index_path = caller_dir / path
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
-    index_html = _read_document_cached(index_path)
-    if _HEAD_CONTENT_MARKER not in index_html:
-        raise ValueError(
-            f"{index_path} must be a complete HTML document containing a "
-            f"'{_HEAD_CONTENT_MARKER}' marker inside <head> — shinyreact's "
-            "script and stylesheet tags render at the marker. For a page "
-            "without an HTML file, use page_react() instead."
-        )
-
-    # ui.PageDocument (py-shiny#2475) prefixes Shiny's own dependencies; we
-    # only add shinyreact's bundle and the #shinyreact-config tag.
+    # ui.PageDocument (py-shiny#2475) owns the placeholder: it prefixes Shiny's
+    # own dependencies and raises at render time when the document has no
+    # placeholder to insert them at. We only add shinyreact's bundle and the
+    # #shinyreact-config tag.
     return ReactHtmlDocument(
-        index_html,
+        _read_document_cached(index_path),
         src_dir=index_path.parent,
         extra_deps=[_dep(), _config_script_tag()],
-        deps_replace_pattern=_HEAD_CONTENT_MARKER,
     )
 
 

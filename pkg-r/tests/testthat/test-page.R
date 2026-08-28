@@ -39,7 +39,8 @@ full_doc <- function(body = "<div id='root'></div>", title = "T") {
     "<!DOCTYPE html><html><head><title>",
     title,
     "</title>",
-    "{{ headContent() }}</head><body>",
+    deps_placeholder,
+    "</head><body>",
     body,
     "</body></html>"
   )
@@ -78,13 +79,16 @@ test_that("page_react_html preserves the document body", {
   expect_match(html, "<main class='xyz'>content</main>", fixed = TRUE)
 })
 
-test_that("page_react_html errors on a document without the marker", {
+test_that("page_react_html errors on a document without the placeholder", {
+  # Python's counterpart is
+  # test_page_react_html_missing_placeholder_errors_at_render: it defers the
+  # check to ui.PageDocument, so it raises at page render rather than here.
   tmp <- withr::local_tempfile(fileext = ".html")
   writeLines(
     "<!DOCTYPE html><html><head></head><body>hi</body></html>",
     tmp
   )
-  expect_error(page_react_html(tmp), "headContent")
+  expect_error(page_react_html(tmp), "shiny-dependency-placeholder")
   expect_error(page_react_html(tmp), "page_react")
 })
 
@@ -248,13 +252,13 @@ test_that("page_bare() emits no #shinyreact-config tag", {
 
 test_that("page_react_html() evaluates every {{ }} in the document (#223)", {
   # Documented, deliberate: htmlTemplate() is a whole-document template, so
-  # braces in the BODY are R code too. Python replaces only the marker. This
-  # pins the divergence rather than asserting it is desirable.
+  # braces in the BODY are R code too. Python replaces only the placeholder.
+  # This pins the divergence rather than asserting it is desirable.
   dir <- withr::local_tempdir()
   dir.create(file.path(dir, "www"))
   writeLines(
     c(
-      "<html><head>{{ headContent() }}</head>",
+      paste0("<html><head>", deps_placeholder, "</head>"),
       "<body><p>{{ 6*7 }}</p></body></html>"
     ),
     file.path(dir, "www", "index.html")
@@ -265,18 +269,33 @@ test_that("page_react_html() evaluates every {{ }} in the document (#223)", {
   expect_match(body, "<p>42</p>", fixed = TRUE)
 })
 
-test_that("page_react_html() rejects a marker without the exact spacing", {
-  # The check is a fixed-string match, so htmlTemplate()'s own tolerance for
-  # {{headContent()}} does not apply. Documented in ?page_react_html.
+test_that("page_react_html() rejects a placeholder spelled differently", {
+  # The check is a fixed-string match, so an equivalent-but-differently-written
+  # <meta> tag is rejected. Documented in ?page_react_html.
   dir <- withr::local_tempdir()
   dir.create(file.path(dir, "www"))
   writeLines(
-    "<html><head>{{headContent()}}</head><body></body></html>",
+    "<html><head><meta content='' name='shiny-dependency-placeholder'>
+     </head><body></body></html>",
     file.path(dir, "www", "index.html")
   )
   withr::local_dir(dir)
 
-  expect_error(page_react_html(), "headContent")
+  expect_error(page_react_html(), "shiny-dependency-placeholder")
+})
+
+test_that("page_react_html() no longer accepts a bare headContent() marker", {
+  # The document is not a template as far as the *placeholder* goes -- it is a
+  # <meta> tag now, matching py-shiny's ui.PageDocument.DEPS_PLACEHOLDER.
+  dir <- withr::local_tempdir()
+  dir.create(file.path(dir, "www"))
+  writeLines(
+    "<html><head>{{ headContent() }}</head><body></body></html>",
+    file.path(dir, "www", "index.html")
+  )
+  withr::local_dir(dir)
+
+  expect_error(page_react_html(), "shiny-dependency-placeholder")
 })
 
 test_that("the exported API surface is exactly this", {
