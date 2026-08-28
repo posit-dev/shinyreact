@@ -25,6 +25,7 @@ describe("installGlobal", () => {
       "useShinyInput",
       "useShinyInputValue",
       "useShinyMessageHandler",
+      "useShinyOutputError",
       "useShinyOutputStatus",
       "useShinyOutputValue",
     ]);

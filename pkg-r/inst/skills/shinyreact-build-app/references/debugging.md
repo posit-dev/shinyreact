@@ -1,13 +1,14 @@
 # Debugging a shinyreact app
 
 The client is a normal React app, so React DevTools works. What is specific to
-shinyreact is the wire, and these four hooks are the instruments — reach for
+shinyreact is the wire, and these five hooks are the instruments — reach for
 them before adding `console.log`:
 
 | Hook | Tells you |
 |---|---|
 | `useShinyInitialized()` | whether the WebSocket handshake finished at all |
 | `useShinyOutputStatus(id)` | `"pending"` / `"ready"` / `"recalculating"` / `"error"` for one output |
+| `useShinyOutputError(id)` | the server's sanitized error message for one output, or `null` |
 | `useShinyBusy()` | whether the server is processing *anything* right now |
 | `useShinyInputValue(id)` | what a channel currently holds, read from any component |
 
@@ -26,4 +27,3 @@ Symptoms, in the order they actually come up:
 
 On the server, `reactive_output` is an ordinary Shiny output — print inside it,
 and its errors surface in the Shiny console exactly as usual.
-

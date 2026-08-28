@@ -13,6 +13,7 @@ import {
   useShinyBusy,
   useShinyInput,
   useShinyInputValue,
+  useShinyOutputError,
   useShinyOutputStatus,
   useShinyOutputValue,
   useShinyMessageHandler,
@@ -31,6 +32,7 @@ declare global {
       useShinyBusy: typeof useShinyBusy;
       useShinyInput: typeof useShinyInput;
       useShinyInputValue: typeof useShinyInputValue;
+      useShinyOutputError: typeof useShinyOutputError;
       useShinyOutputStatus: typeof useShinyOutputStatus;
       useShinyOutputValue: typeof useShinyOutputValue;
       useShinyMessageHandler: typeof useShinyMessageHandler;
@@ -58,6 +60,7 @@ export function installGlobal(): void {
     useShinyBusy,
     useShinyInput,
     useShinyInputValue,
+    useShinyOutputError,
     useShinyOutputStatus,
     useShinyOutputValue,
     useShinyMessageHandler,

@@ -66,7 +66,7 @@ the `useShinyMessageHandler("ping", ...)` inside the matching provider.
 Every id-taking hook and component goes through one shared resolver, so the
 behavior is identical for `useShinyInput`, `useShinyInputValue`,
 `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`,
-`useShinyMessageHandler`, `ShinyOutput`, and `ImageOutput`.
+`useShinyOutputError`, `useShinyMessageHandler`, `ShinyOutput`, and `ImageOutput`.
 
 Each of them takes an optional `namespace`:
 

@@ -25,6 +25,7 @@ import {
 import { MISSING } from "./missing";
 import {
   createReactOutputBinding,
+  type ErrorsMessageValue,
   type OutputStatus,
 } from "./output-registry";
 import { getReactRegistry, initializeReactRegistry } from "./react-registry";
@@ -302,6 +303,62 @@ export function useShinyOutputStatus(
   }, [namespacedOutputId, shinyInitialized]);
 
   return status;
+}
+
+/**
+ * Hook to subscribe to the error of a Shiny output.
+ *
+ * Returns the server's (already sanitized) error, or `null` when the output is
+ * not in the `"error"` state. `message` is the condition/exception text — the
+ * same text vanilla Shiny paints into the output element — unless the app has
+ * `shiny.sanitize.errors` / `sanitize_errors` on, in which case the server
+ * sends its generic message instead. `call` and `type` are R-only extras;
+ * Python sends `null` for both.
+ *
+ * Silent errors (`req()`, and `validate()` with no message) never reach this
+ * hook: the server sends them with an empty message, which shinyreact treats
+ * as a `null` value rather than an error.
+ *
+ * @param outputId The ID of the Shiny output to subscribe to.
+ * @param options Optional configuration object.
+ * @param options.namespace Module namespace to apply (or `null` to suppress
+ * the surrounding `ShinyModuleProvider` namespace).
+ * @returns The current output error, or `null`.
+ */
+export function useShinyOutputError(
+  outputId: string,
+  {
+    namespace: explicitNamespace,
+  }: {
+    namespace?: string | null;
+  } = {},
+): ErrorsMessageValue | null {
+  const [error, setError] = useState<ErrorsMessageValue | null>(null);
+  const shinyInitialized = useShinyInitialized();
+
+  ensureShinyReactInitialized();
+
+  const namespacedOutputId = useNamespacedId(outputId, explicitNamespace);
+
+  useEffect(() => {
+    if (!shinyInitialized) {
+      return;
+    }
+    // Drop the previous id's error before subscribing to the new one, for the
+    // same reason `useShinyOutputValue` resets its value.
+    setError(null);
+
+    const reactRegistry = getReactRegistry();
+    const dispose = reactRegistry.outputs.add<unknown>(
+      namespacedOutputId,
+      NOOP_SETTER,
+      NOOP_SETTER,
+      setError,
+    );
+    return dispose;
+  }, [namespacedOutputId, shinyInitialized]);
+
+  return error;
 }
 
 /**

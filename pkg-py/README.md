@@ -79,6 +79,7 @@ Runnable apps live in [`examples/`](../examples/) — see the
 | `useSetShinyInput(id, default, opts)` | Write-only producer — registers an input and returns just the setter |
 | `useShinyOutputValue(id, default?)` | Consume arbitrary data sent by `@shinyreact.reactive_output` |
 | `useShinyOutputStatus(id)` | Output lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` |
+| `useShinyOutputError(id)` | The server's sanitized error message for an output, or `null` |
 | `useShinyMessageHandler(id, fn)` | Handle server-to-client custom messages |
 | `useShinyInitialized()` | Check whether Shiny is connected |
 | `useShinyBusy()` | Whether the Shiny server is currently processing a request |
