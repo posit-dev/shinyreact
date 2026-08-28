@@ -82,7 +82,7 @@ Run `make help` to see all targets.
 The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`, and installs the public API at `window.shinyreact`.
 
 **Global API exposed at `window.shinyreact`:**
-- `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy` — re-exported shiny-react hooks
+- `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy` — re-exported shiny-react hooks
 - `ImageOutput`, `ShinyModuleProvider`, `ShinyReactComponentElement`, `ShinyOutput`, `MISSING` — components/utilities
 - `React`, `ReactDOM` — shared instances (downstream ESM builds should externalize to these to avoid duplicate React)
 
@@ -204,6 +204,7 @@ The hook surface follows the Jotai/Recoil cadence — each hook has one responsi
 | **Input** | `useShinyInput(id, default)` → `[value, setValue]` | `useShinyInputValue(id)` → `value` | `useSetShinyInput(id, default)` → `setValue` |
 | **Output** | — (no compound) | `useShinyOutputValue(id, default?)` → `value` | — |
 | **Output status** | | `useShinyOutputStatus(id)` → `"pending" \| "ready" \| "recalculating" \| "error"` | |
+| **Output error** | | `useShinyOutputError(id)` → `{message, call, type} \| null` | |
 
 Pick the narrowest hook that fits the call site. A button that pushes events but never reads its own state should use `useSetShinyInput`, not `useShinyInput` with a discarded `[value]`. A display card that just reads should use `useShinyInputValue` / `useShinyOutputValue`. Narrow hooks make data-flow direction visible at the call site, prevent accidental writes from read-only components, and avoid spurious re-renders from subscribing to channels you don't observe.
 

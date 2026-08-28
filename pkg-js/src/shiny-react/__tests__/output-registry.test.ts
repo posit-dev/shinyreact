@@ -309,6 +309,27 @@ describe("OutputRegistryEntry status lifecycle", () => {
     expect(entry.getLastError()).toBeNull();
   });
 
+  it("an empty-message error is a silent error, delivered as a null value", () => {
+    // #257. `req()` in R arrives as an error with message "" (vanilla Shiny
+    // blanks the output); py-shiny sends a null value for the same `req()`.
+    // Both servers must look the same to the React component.
+    const entry = new OutputRegistryEntry("test");
+    entry.setValue("first");
+    const setStatus = vi.fn();
+    const setError = vi.fn();
+    const setValue = vi.fn();
+    entry.addUseStateSetStatusFn(setStatus);
+    entry.addUseStateSetErrorFn(setError);
+    entry.addUseStateSetValueFn(setValue);
+
+    entry.setError({ message: "", call: [], type: ["shiny.silent.error"] });
+
+    expect(entry.getStatus()).toBe("ready");
+    expect(entry.getLastError()).toBeNull();
+    expect(setError).not.toHaveBeenCalled();
+    expect(setValue).toHaveBeenCalledWith(null);
+  });
+
   it("isEmpty considers status and error subscribers", () => {
     const entry = new OutputRegistryEntry("test");
     expect(entry.isEmpty()).toBe(true);

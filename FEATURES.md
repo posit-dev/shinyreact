@@ -234,8 +234,8 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
   - `null` is deliberately not conflated with `undefined` — a `??` would
     silently fall through to the context, so the check is `!== undefined`
   - applies to `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`,
-    `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyMessageHandler`,
-    `ShinyOutput`, and `ImageOutput`
+    `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyOutputError`,
+    `useShinyMessageHandler`, `ShinyOutput`, and `ImageOutput`
 - `[js]` the prefix is joined with a single hyphen: `${namespace}-${id}`
   - an empty-string namespace yields the bare id, same as `null`
 - `[js]` nesting `ShinyModuleProvider`s **overrides** rather than concatenates —
@@ -328,6 +328,20 @@ registers a second `shiny.reactOutput` binding.
 - `useShinyOutputStatus(id, options?)` → status
   - exactly four values: `"pending"`, `"ready"`, `"recalculating"`, `"error"`
   - it starts at `"pending"` and subscribes to the status channel only
+- `useShinyOutputError(id, options?)` → `{message, call, type}` or `null`
+  - it starts at `null` and subscribes to the error channel only — value and
+    status changes do not re-render it
+  - `message` is the server's already-sanitized condition/exception text, the
+    same text vanilla Shiny paints into the output element; sanitization is
+    shiny's (`shiny.sanitize.errors` / `sanitize_errors`), not shinyreact's
+  - `[r]` `call` / `type` carry the condition's call and extra classes;
+    `[py]` both are `null`
+  - it returns `null` whenever the output is not in the `"error"` state:
+    initially, after a value arrives, and while recalculating
+  - the held error **is** reset to `null` when the id or namespace changes
+  - a late-mounting subscriber is synced to the cached error on attach
+  - an erroring `reactive_output` delivers its message end to end, and the
+    message clears when the output recovers (e2e)
 - `useShinyMessageHandler(id, handler, options?)`
   - the effect re-runs only when the resolved id changes or Shiny flips to
     initialized, never on handler identity
@@ -465,6 +479,12 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
   - `setRecalculating(false)` → back to `"ready"` only from `"recalculating"`;
     `"pending"` and `"error"` are left alone
   - `setError` → `"error"`, fanning the error out
+  - `setError` with an **empty message** is a *silent* error (`req()`, and
+    `validate()` with no message) and is handled as `setValue(null)` instead:
+    status `"ready"`, error left `null`
+    - only `[r]` sends this shape — py-shiny already sends a `null` value for
+      `req()` — so the two servers look identical to the same component (e2e,
+      Python side)
   - a value arriving in the `"error"` state clears the error and returns to
     `"ready"`
   - entering `"recalculating"` from `"error"` clears the error, so status and
@@ -1170,7 +1190,8 @@ initial page.
   - a missing `#shinyreact-config` tag is a hard error, opted into at import
 - `window.shinyreact` contains exactly: `useShinyInput`, `useShinyInputValue`,
   `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`,
-  `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy`,
+  `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`,
+  `useShinyBusy`,
   `ImageOutput`, `MISSING`, `ShinyModuleProvider`,
   `ShinyReactComponentElement`, `ShinyOutput`, `React`, `ReactDOM`
   - `React` / `ReactDOM` are exposed so downstream ESM builds can externalize

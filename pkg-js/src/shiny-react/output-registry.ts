@@ -4,8 +4,9 @@ import { getShiny } from "./get-shiny";
 
 export type ErrorsMessageValue = {
   message: string;
-  call: string[];
-  type?: string[];
+  // `call` / `type` are R-only extras; py-shiny sends null for both.
+  call: string[] | null;
+  type?: string[] | null;
 };
 
 export type OutputStatus = "pending" | "ready" | "recalculating" | "error";
@@ -124,6 +125,15 @@ export class OutputRegistryEntry<T> {
   }
 
   setError(err: ErrorsMessageValue) {
+    // An empty message is how Shiny signals a *silent* error (`req()`): vanilla
+    // Shiny blanks the output element rather than showing error text. Only R
+    // takes this path — py-shiny sends a `null` value for `req()` — so mapping
+    // it to a `null` value keeps the two servers saying the same thing to the
+    // same React component.
+    if (err.message === "") {
+      this.setValue(null as T);
+      return;
+    }
     this.lastError = err;
     this.useStateSetErrorFns.forEach((fn) => fn(err));
     this.setStatus("error");
