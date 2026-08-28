@@ -63,20 +63,22 @@ def test_late_renderer_dep_is_pushed_after_flush(
 ) -> None:
     """The post-flush dep push (#220) is the only delivery path here.
 
-    `grid` is registered inside a `@reactive.effect`, so `set_react_page()`'s
-    page-generation harvest never sees it, and — unlike `apps/dynamic_plotly` —
-    there is no `@render.ui` holder, so Shiny's dynamic-UI dependency path
-    never runs either. Without shinyreact's flush-diff push, `data-frame.js`
-    never reaches the browser and `<shiny-data-frame>` stays an empty, unbound
-    custom element.
+    "Open a tab whose outputs don't exist yet": `grid` is registered only when
+    the user clicks, so `set_react_page()`'s page-generation harvest never sees
+    it, and — unlike `apps/dynamic_plotly` — there is no `@render.ui` holder,
+    so Shiny's dynamic-UI dependency path never runs either. Without
+    shinyreact's flush-diff push, `data-frame.js` never reaches the browser and
+    `<shiny-data-frame>` stays an empty, unbound custom element.
     """
-    # The served HTML — not the live DOM, which the push mutates — proves the
-    # dependency was not inlined into <head>.
-    assert "lib/shiny-data-frame-output" not in page.request.get(
-        late_data_frame_app.url
-    ).text()
-
     page.goto(late_data_frame_app.url)
+
+    # Nothing registered yet on either side: no output element, and no binding
+    # script anywhere on the page.
+    expect(page.locator("#add")).to_be_attached()
+    expect(page.locator("shiny-data-frame")).to_have_count(0)
+    expect(page.locator("script[src*='data-frame.js']")).to_have_count(0)
+
+    page.locator("#add").click()
 
     grid = page.locator("[data-test=container] > shiny-data-frame")
     expect(grid).to_be_attached()
