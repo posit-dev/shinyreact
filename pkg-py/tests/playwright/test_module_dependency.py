@@ -1,3 +1,5 @@
+import re
+
 from playwright.sync_api import Page, expect
 from shiny.pytest import create_app_fixture
 from shiny.run import ShinyAppProc
@@ -26,23 +28,22 @@ dynamic_plotly_app = create_app_fixture("apps/dynamic_plotly/app.py")
 def test_dynamic_ui_plotly_dep(page: Page, dynamic_plotly_app: ShinyAppProc) -> None:
     """Checkbox-gated Plotly chart via @render.ui → output_widget mounts natively.
 
-    Shiny's own dynamic-UI path (renderContent → renderDependencies) delivers the
-    ipywidget-output-binding dependency to the client when the holder renders, so
-    Layer B (flush-diff dep push) is not needed for this case.
-
     The fixture registers `scatter` inside a `@reactive.effect` so the renderer
-    is not on the session at page-generation time — the Layer-A harvest cannot
-    pre-inject its dependency into <head>. The absence assertion below pins
-    that down; without it, a head-injected dep would satisfy the test even if
-    the dynamic-UI path delivered nothing.
+    is not on the session at page-generation time — the page-generation harvest
+    cannot pre-inject its dependency into <head>, which the served-HTML
+    assertion below pins down. Two paths then deliver it: shinyreact's
+    post-flush push (#220), and Shiny's own dynamic-UI path
+    (renderContent → renderDependencies) when the holder renders.
     """
+    # `lib/` prefix, not the bare name: the fixture's own explainer paragraph
+    # mentions the dependency by name.
+    assert "lib/ipywidget-output-binding" not in page.request.get(
+        dynamic_plotly_app.url
+    ).text()
+
     page.goto(dynamic_plotly_app.url)
 
-    # The React app must be mounted (checkbox present) with the dependency NOT
-    # yet on the page — proving what follows is dynamic delivery, not initial
-    # <head> injection.
     expect(page.locator("#show")).to_be_attached()
-    expect(page.locator("script[src*='ipywidget-output-binding']")).to_have_count(0)
 
     page.locator("#show").check()
 
@@ -52,3 +53,34 @@ def test_dynamic_ui_plotly_dep(page: Page, dynamic_plotly_app: ShinyAppProc) -> 
     ).to_be_attached()
     # ...and the Plotly chart must actually render inside the dynamic holder.
     expect(page.locator("#holder .plotly").first).to_be_attached()
+
+
+late_data_frame_app = create_app_fixture("apps/late_data_frame/app.py")
+
+
+def test_late_renderer_dep_is_pushed_after_flush(
+    page: Page, late_data_frame_app: ShinyAppProc
+) -> None:
+    """The post-flush dep push (#220) is the only delivery path here.
+
+    `grid` is registered inside a `@reactive.effect`, so `set_react_page()`'s
+    page-generation harvest never sees it, and — unlike `apps/dynamic_plotly` —
+    there is no `@render.ui` holder, so Shiny's dynamic-UI dependency path
+    never runs either. Without shinyreact's flush-diff push, `data-frame.js`
+    never reaches the browser and `<shiny-data-frame>` stays an empty, unbound
+    custom element.
+    """
+    # The served HTML — not the live DOM, which the push mutates — proves the
+    # dependency was not inlined into <head>.
+    assert "lib/shiny-data-frame-output" not in page.request.get(
+        late_data_frame_app.url
+    ).text()
+
+    page.goto(late_data_frame_app.url)
+
+    grid = page.locator("[data-test=container] > shiny-data-frame")
+    expect(grid).to_be_attached()
+    # Binding present (pushed dep loaded + bindAll re-run)...
+    expect(grid).to_have_class(re.compile(r"\bshiny-bound-output\b"))
+    # ...and the value actually rendered through it.
+    expect(grid.get_by_text("alpha")).to_be_attached()

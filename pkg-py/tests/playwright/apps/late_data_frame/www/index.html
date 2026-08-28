@@ -1,0 +1,8 @@
+<p>
+  A two-row grid (<code>alpha</code> / <code>beta</code>) must appear below. Its
+  renderer is registered after page load, so the grid's binding script is not
+  in the initial page — the grid only renders if shinyreact pushed the
+  dependency after the flush and re-ran <code>bindAll</code>.
+</p>
+<div id="root"></div>
+<script src="app.js" defer></script>

@@ -833,6 +833,8 @@ initial page.
     as a `shinyreact-deps` custom message
   - overlap with deps already in the static `<head>` is harmless — the client
     skips those by name
+  - `[py]` an output registered after page load in an app with no dynamic-UI
+    holder gets its binding only this way `(e2e)`
   - it reads the session's private registered-output list, since neither shiny
     exposes an API to enumerate outputs (`[r]`
     `session$.__enclos_env__$private$.outputs`, `[py]`
@@ -861,9 +863,14 @@ initial page.
   are read, so deps that only materialize during tagification are found
 - renderers mounted dynamically *after* page load are not harvested into
   `<head>` (the post-flush push above delivers their deps instead)
-  - a renderer registered inside a `@reactive.effect` is absent from `<head>`,
-    and Shiny's own dynamic-UI path delivers its dependency when the holder
-    renders — both the absence and the later arrival are pinned `(e2e)`
+  - a renderer registered inside a `@reactive.effect` is absent from the served
+    HTML, and its dependency still arrives — pinned `(e2e)` for both delivery
+    paths: a `@render.ui` holder (Shiny's own dynamic-UI path also covers that
+    one) and a bare `<ShinyOutput>` with no holder, where the post-flush push
+    is the only route
+    - `[py]` the no-holder case: a `render.data_frame` registered in an effect
+      renders its rows and gains `shiny-bound-output` only because the pushed
+      dep loaded and `bindAll` re-ran `(e2e)`
 - duplicate deps across the two harvest passes are harmless: Shiny
   de-duplicates by name + version
 
