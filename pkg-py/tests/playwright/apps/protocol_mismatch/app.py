@@ -6,9 +6,8 @@ are pinned equal by a parity test. The client should paint the handshake
 failure onto the page instead of just leaving it blank (#213).
 """
 
-from shiny.express import render  # noqa: F401
-
 import shinyreact._bookmark as _bookmark
+from shiny.express import render  # noqa: F401
 from shinyreact import set_react_page
 
 # Expected on screen: a red banner across the top naming both protocol

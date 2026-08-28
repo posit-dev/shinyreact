@@ -9,7 +9,6 @@ page. The fixture app under ``apps/protocol_mismatch/`` claims protocol
 from playwright.sync_api import Page, expect
 from shiny.pytest import create_app_fixture
 from shiny.run import ShinyAppProc
-
 from shinyreact._protocol import PROTOCOL_VERSION
 
 mismatch_app = create_app_fixture("apps/protocol_mismatch/app.py")
