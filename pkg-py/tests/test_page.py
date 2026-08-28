@@ -163,6 +163,20 @@ def test_page_react_title_defaults_to_app_folder_name(tmp_path):
     assert re.findall(r"<title>.*?</title>", rendered) == ["<title>myapp</title>"]
 
 
+def test_page_react_title_with_missing_src_dir(tmp_path):
+    """A missing src_dir still names the app folder — no "." degradation (#242).
+
+    Mirrors R's "page_react falls back to shinyreact-app when src_dir is
+    missing"; Python needs no fallback because the path is resolved against the
+    caller's directory, so it is absolute whether or not it exists.
+    """
+    from shinyreact import page_react
+
+    with pytest.warns(UserWarning, match="ui.js"):
+        rendered = str(page_react(src_dir=tmp_path / "myapp" / "www").tagify())
+    assert re.findall(r"<title>.*?</title>", rendered) == ["<title>myapp</title>"]
+
+
 def test_page_react_title_override(tmp_path):
     from shinyreact import page_react
 
