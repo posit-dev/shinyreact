@@ -50,6 +50,7 @@ def test_custom_message_types_match_the_manifest() -> None:
         ):
             sent.add(match.group(1))
 
+    assert sent, "found no send_custom_message() calls to check — did the scan break?"
     unlisted = sent - set(_SURFACE["customMessages"])
     assert not unlisted, (
         f"custom message type(s) {sorted(unlisted)} are not in "

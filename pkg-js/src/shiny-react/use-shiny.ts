@@ -576,7 +576,7 @@ function ensureShinyReactInitialized() {
   // begins consuming server messages, so the registry already holds the
   // restored values by the first useShinyInput mount.
   applyRestoredValues(getReactRegistry().inputs);
-  createReactOutputBinding();
+  createReactOutputBinding(() => getReactRegistry().outputs);
   initializeMessageRegistry();
 
   shinyReactInitialized = true;
