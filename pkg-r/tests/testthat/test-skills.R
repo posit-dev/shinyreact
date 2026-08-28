@@ -34,11 +34,12 @@ test_that("skill frontmatter is a two-key YAML block", {
     expect_equal(front[[1]], paste0("name: ", name))
     expect_length(front, 2)
     expect_match(front[[2]], "^description: ")
-    expect_false(grepl(
-      ": ",
-      sub("^description: ", "", front[[2]]),
-      fixed = TRUE
-    ))
+    # An unquoted `: ` turns the scalar into a mapping and breaks the parse;
+    # a quoted value is fine, so only check the unquoted case.
+    value <- sub("^description: ", "", front[[2]])
+    if (!grepl('^".*"$', value)) {
+      expect_false(grepl(": ", value, fixed = TRUE))
+    }
   }
 })
 
@@ -49,7 +50,9 @@ test_that("shipped copies match the repo's .claude/skills", {
   skip_if_not(dir.exists(repo_skills), "not running from the repo")
 
   tree <- function(root) {
-    files <- sort(list.files(root, recursive = TRUE))
+    # all.files so a dotfile in a skill directory is compared too, matching
+    # Python's rglob("*")
+    files <- sort(list.files(root, recursive = TRUE, all.files = TRUE))
     stats::setNames(
       lapply(files, function(f) readLines(file.path(root, f))),
       files

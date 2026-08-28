@@ -35,7 +35,11 @@ def test_skill_frontmatter(name: str):
     assert front[0] == f"name: {name}"
     assert front[1].startswith("description: ")
     assert len(front) == 2
-    assert ": " not in front[1][len("description: ") :], "quote the description"
+    # An unquoted `: ` turns the scalar into a mapping and breaks the parse;
+    # a quoted value is fine, so only check the unquoted case.
+    value = front[1][len("description: ") :]
+    if not (value.startswith('"') and value.endswith('"')):
+        assert ": " not in value, "quote the description"
 
 
 @pytest.mark.parametrize("name", SHIPPED)

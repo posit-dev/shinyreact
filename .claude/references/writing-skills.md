@@ -134,7 +134,7 @@ or no longer the best way. Concretely:
   entry points are exactly what a zero-config API keeps absorbing.
 - **a new idiom we would tell someone to copy** (the action-button shape, the
   loading-vs-recalculating pattern) → "The patterns worth copying verbatim".
-- **a new footgun** → "Things that bite". Every entry there should be a mistake
+- **a new footgun** → "Known pitfalls". Every entry there should be a mistake
   someone actually made; the section is worthless as a list of things that
   *could* go wrong.
 - **a new example** → the "Worked examples" line, and the translation table in
@@ -152,8 +152,8 @@ skill gets fixed in that PR, not the next one.
 Skills are read by an agent under context pressure, so they are closer to a
 checklist than to documentation:
 
-- **Say the decision, not the options.** "Start at no-build" beats a comparison
-  of three tiers the reader has to adjudicate.
+- **Say the decision, not the options.** "Default to a real Vite build" beats a
+  comparison of tiers the reader has to adjudicate.
 - **Lead with what breaks.** "Two React copies is the single most common failure
   mode, and it presents as *hooks return nothing* rather than as an error" is
   worth more than the correct config it precedes.
