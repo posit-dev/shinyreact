@@ -84,3 +84,19 @@ Runnable apps live in [`examples/`](../examples/) — see the
 | `useShinyBusy()` | Whether the Shiny server is currently processing a request |
 
 Shared `React` and `ReactDOM` instances are available at `window.shinyreact.React` / `window.shinyreact.ReactDOM` — externalize to these in your build to avoid duplicate React.
+
+## Agent Skills
+
+The package ships two Agent Skills, so a coding agent can build a shinyreact
+app without you pasting this README into it:
+
+- **`shinyreact-build-app`** — build a `ui.tsx`-pattern app from scratch
+- **`shinyreact-convert-app`** — port an existing Shiny app to the pattern
+
+Install them into a project with [`library-skills`](https://github.com/tiangolo/library-skills),
+which symlinks them so they stay current when you upgrade the package:
+
+```bash
+uvx library-skills --claude   # Claude Code (.claude/skills)
+uvx library-skills            # standard location (.agents/skills)
+```

@@ -137,6 +137,12 @@ The deliberate remaining divergences (decided in #184) are recorded in `decision
 
 `pkg-js/dist/` and `pkg-py/src/shinyreact/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
 
+### Shipped Agent Skills
+
+`.claude/skills/shinyreact-build-app/` and `.claude/skills/shinyreact-convert-app/` are the canonical sources; **after editing either, run `make update-skills`** to copy them into `pkg-py/src/shinyreact/.agents/skills/` (the path `library-skills` scans) and `pkg-r/inst/skills/` (where btw looks). Same committed-copy flow as `make update-dist`, and `pkg-py/tests/test_skills.py` / `pkg-r/tests/testthat/test-skills.R` fail on drift. `audit-shinyreact-features` is repo-internal and deliberately not shipped.
+
+Because they ship, a stale skill is a stale *release*, not a stale note. **A PR that changes the recommended way to build an app updates the skills in the same PR** — the same reflex as `FEATURES.md`, applied to a narrower slice (most tree leaves do not belong in a skill). **Read [`.claude/references/writing-skills.md`](.claude/references/writing-skills.md) before editing or adding one**: naming, the single-line-`description` frontmatter contract that makes a skill silently invisible when broken, which feature changes oblige a skill change, and the copy-flow traps (ruff formats Python code blocks inside Markdown).
+
 ### Build backend
 
 `pyproject.toml` uses hatchling (not uv_build) because the package source lives at `pkg-py/src/shinyreact/` — a non-standard path that requires explicit hatchling configuration.

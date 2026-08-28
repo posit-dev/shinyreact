@@ -1058,6 +1058,32 @@ initial page.
   - `React` / `ReactDOM` are exposed so downstream ESM builds can externalize
     to them and avoid a second React instance
 
+## Agent Skills
+
+- both packages ship the `shinyreact-build-app` and `shinyreact-convert-app`
+  skills, so an installed package is enough — no repo checkout required
+  - `audit-shinyreact-features` is not shipped: it audits this repo
+- skill names are namespaced by package (`shinyreact-`) and by task
+  (`-build-app` / `-convert-app`), not by language: one bilingual skill each,
+  covering R and Python side by side
+  - so the R and Python packages ship byte-identical files under the same
+    names, and installing both into one project is a no-op rather than a clash
+- `[py]` installed at `shinyreact/.agents/skills/<name>/SKILL.md`, the path
+  `library-skills` scans site-packages for (`uvx library-skills --claude`)
+  - hatchling includes it with no packaging config
+- `[r]` installed at `system.file("skills", "<name>", package = "shinyreact")`,
+  where btw looks (`btw::btw_skill_install_package("shinyreact")`)
+- the shipped copies are generated from `.claude/skills/` by
+  `make update-skills`; a stale copy fails both packages' test suites
+- each `SKILL.md` frontmatter is exactly two keys, `name` then a single-line
+  `description` — a description spilling onto a second line is silently skipped
+  by the installers' strict YAML parsers
+  - `name` equals the directory name
+- `[js]` every name on `window.shinyreact` is either taught by
+  `shinyreact-build-app` or listed as a deliberate omission (`MISSING`,
+  `ShinyReactComponentElement`), so a new export fails a test until someone
+  decides which it is
+
 ## Public API surface
 
 - `[py]` `shinyreact.__all__` is exactly: `ReactApp`, `page_bare`,

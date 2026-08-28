@@ -1,5 +1,5 @@
 ---
-name: shinyreact
+name: shinyreact-build-app
 description: Build a Shiny app whose UI is a React client (the ui.tsx pattern) using shinyreact for Python or R. Use when the user asks to build, extend, or debug a Shiny app with a React front end, mentions shinyreact, set_react_page(), page_react(), reactive_output, or the useShinyInput / useShinyOutputValue hooks, or wants a Shiny server that returns JSON to a client-owned UI instead of rendering HTML.
 ---
 
