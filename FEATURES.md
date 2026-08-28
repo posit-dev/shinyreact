@@ -68,6 +68,25 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
       reader to upgrade the older side
     - equal majors means compatible, so client and server package releases
       need not be released in lockstep
+  - `[js]` every fatal handshake failure is visible on the page, not only in
+    DevTools (#213)
+    - before throwing, a fixed banner `<div id="shinyreact-fatal-error"
+      role="alert">` is appended to `<body>` carrying the same text as the
+      thrown error (e2e)
+    - literals in the message (both versions, `#shinyreact-config`,
+      `@posit/shinyreact`) are marked with backticks and render as `<code>`
+      chips; the backticks are stripped from the thrown error and the
+      console-only warning (e2e)
+    - the message is written with `textContent`, never `innerHTML`, so a
+      server-supplied version string cannot inject markup
+    - #7f1d1d on #fee2e2 (~9.5:1) — the banner carries the full sentence, never
+      color alone
+    - plain DOM, no dependency on Shiny being initialized — the failure being
+      reported is that client and server cannot talk
+    - one element reused across repeated failures; the newest message wins
+    - the throw is unchanged (fail fast); the banner is additive
+    - covers all three fatal paths: major mismatch (either direction), missing
+      tag in the npm build, and a tag with no `protocolVersion` in the npm build
 - server → client boot config: one `<script type="application/json"
   id="shinyreact-config">` tag
   - it lands in `<head>` in every language and on every path

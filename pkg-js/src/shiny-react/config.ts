@@ -40,6 +40,60 @@ export function readShinyReactConfig(): ShinyReactConfig | null {
 }
 
 /**
+ * Show a handshake failure on the page, then throw it.
+ *
+ * The throw alone leaves a blank page whose only explanation is in DevTools —
+ * the handshake fails during the first hook mount, before anything renders.
+ * The banner is plain DOM on purpose: the failure being reported is precisely
+ * "the bundle and the server cannot talk to each other", so the surface must
+ * not depend on Shiny being alive. Idempotent by element id.
+ *
+ * `message` may mark literals (versions, ids, package names) with backticks;
+ * they render as `<code>` chips on the page and are stripped from the thrown
+ * Error, whose consumer is a console. Text is set via `textContent`, never
+ * `innerHTML` — a server-supplied version string must not be able to inject
+ * markup.
+ *
+ * Colors are WCAG AA at minimum: #7f1d1d on #fee2e2 is ~9.5:1, and the chips
+ * are ~11:1 on white. The banner never relies on color alone — it carries the
+ * full sentence and `role="alert"`.
+ */
+export function throwVisibly(message: string): never {
+  if (typeof document !== "undefined" && document.body) {
+    const id = "shinyreact-fatal-error";
+    let existing = document.getElementById(id);
+    if (!existing) {
+      existing = document.createElement("div");
+      existing.id = id;
+      existing.setAttribute("role", "alert");
+      existing.style.cssText =
+        "position:fixed;top:0;left:0;right:0;z-index:99999;padding:1rem 1.25rem;" +
+        "background:#fee2e2;color:#7f1d1d;border-bottom:4px solid #991b1b;" +
+        "font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;" +
+        "white-space:pre-wrap";
+      document.body.appendChild(existing);
+    }
+    const el = existing;
+    el.textContent = "";
+    // Odd segments were inside backticks.
+    message.split("`").forEach((segment, i) => {
+      if (i % 2 === 0) {
+        el.appendChild(document.createTextNode(segment));
+        return;
+      }
+      const code = document.createElement("code");
+      code.textContent = segment;
+      code.style.cssText =
+        "background:#fff;color:#7f1d1d;border:1px solid #f0a3a3;border-radius:4px;" +
+        "padding:0.1em 0.35em;font-family:ui-monospace,SFMono-Regular,monospace;" +
+        "font-size:0.95em";
+      el.appendChild(code);
+    });
+  }
+  throw new Error(message.replace(/`/g, ""));
+}
+
+/**
  * Fail fast when the server's protocol major version disagrees with this
  * client's. Same-major means compatible; a mismatch means one side must be
  * upgraded, and silently continuing would surface as undebuggable payload
@@ -48,9 +102,10 @@ export function readShinyReactConfig(): ShinyReactConfig | null {
 export function assertProtocolCompatible(serverVersion: string): void {
   const major = (v: string) => v.split(".")[0];
   if (major(serverVersion) !== major(PROTOCOL_VERSION)) {
-    throw new Error(
+    throwVisibly(
       `shinyreact protocol mismatch: the server speaks protocol ` +
-        `${serverVersion} but this JS client supports ${PROTOCOL_VERSION}. ` +
+        `\`${serverVersion}\` but this JS client supports ` +
+        `\`${PROTOCOL_VERSION}\`. ` +
         `Upgrade the older side (the shinyreact R/Python package, or the ` +
         `client bundle) so the major protocol versions match.`,
     );

@@ -4,6 +4,7 @@ import {
   assertProtocolCompatible,
   isShinyReactConfigTagRequired,
   readShinyReactConfig,
+  throwVisibly,
 } from "./config";
 
 /**
@@ -41,9 +42,9 @@ export function applyRestoredValues(registry: InputRegistry): void {
   // version checking.
   const config = readShinyReactConfig();
   if (config == null && isShinyReactConfigTagRequired()) {
-    throw new Error(
-      "shinyreact: no #shinyreact-config tag found in this page. The " +
-        "@posit/shinyreact client requires a shinyreact server recent " +
+    throwVisibly(
+      "shinyreact: no `#shinyreact-config` tag found in this page. The " +
+        "`@posit/shinyreact` client requires a shinyreact server recent " +
         "enough to emit it — upgrade the shinyreact Python/R package.",
     );
   }
@@ -54,15 +55,16 @@ export function applyRestoredValues(registry: InputRegistry): void {
     // servers always include it. Previously this silently skipped version
     // checking altogether, which is the one thing the tag exists to prevent.
     const message =
-      "shinyreact: the #shinyreact-config tag carries no protocolVersion, so " +
+      "shinyreact: the `#shinyreact-config` tag carries no `protocolVersion`, so " +
       "the client cannot verify it speaks the same protocol as the server. " +
       "Upgrade the shinyreact Python/R package.";
     if (isShinyReactConfigTagRequired()) {
       // The npm client is installed independently of the server, so it cannot
       // assume compatibility — same reasoning as a missing tag being fatal.
-      throw new Error(message);
+      throwVisibly(message);
     }
-    console.error(message);
+    // Backticks mark literals for the on-page banner; a console has no chips.
+    console.error(message.replace(/`/g, ""));
   }
 
   // Already applied — preserve the existing snapshot.
