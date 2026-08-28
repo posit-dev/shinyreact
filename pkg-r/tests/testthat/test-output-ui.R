@@ -50,6 +50,18 @@ test_that("output_ui() rejects non-render functions", {
   expect_error(output_ui(identity, "x"), "render function")
 })
 
+test_that("output_ui() aborts for a render function built outside createRenderFunction", {
+  # The only way to reach the no-outputFunc branch (#234): createRenderFunction()
+  # always substitutes a placeholder, so the attribute is absent only for render
+  # functions hand-classed like this one.
+  render_fn <- structure(
+    function(...) "value",
+    class = "shiny.render.function"
+  )
+  expect_error(output_ui(render_fn, "x"), "outputFunc")
+  expect_null(output_ui_or_null(render_fn, "x"))
+})
+
 test_that("output_ui() on reactive_output yields shiny's dep-less placeholder", {
   # shiny substitutes a placeholder outputFunc ("No UI/output function
   # provided...") when a render function declares none, so reactive_output
