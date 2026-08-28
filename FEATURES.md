@@ -652,10 +652,14 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - R has no per-caller `__file__`, so there is nothing else to resolve
       against; pass an absolute path to be independent of the working directory
     - reason: `decisions/2026-08-13-r-python-parity.md`
-  - `[r]` the app name comes from `normalizePath(src_dir, mustWork = FALSE)`,
-    so a missing `src_dir` does not error — but it degrades badly: the title
-    becomes `.` and the asset dependency is named `.`, serving `/lib/.-0/`
-    (#242; untested in either language)
+  - a missing `src_dir` does not error (the bundle may not be built yet) — only
+    the `js_file` warning fires
+    - `[r]` the app name comes from `normalizePath(src_dir, mustWork = FALSE)`,
+      which leaves a missing relative path unresolved; when the derived name is
+      empty, `.`, or `..` it falls back to `shinyreact-app` for both the title
+      and the dependency name (#242)
+    - `[py]` needs no fallback: the path resolves against the calling module, so
+      it is absolute whether or not it exists
 
 ### `page_react_html(path="www/index.html")`
 

@@ -32,7 +32,9 @@ page_bare <- function(..., title = NULL, lang = "en") {
 #' @param js_file JS entry filename within `src_dir`. Defaults to `"ui.js"`.
 #' @param css_file CSS filename within `src_dir`. Defaults to `"ui.css"`.
 #' @param title Page title. Defaults to the app folder's name (`src_dir`'s
-#'   parent when `src_dir` is a `www` directory).
+#'   parent when `src_dir` is a `www` directory), or `"shinyreact-app"` when
+#'   that resolves to nothing usable (a missing `src_dir` is not an error —
+#'   the bundle may not be built yet).
 #' @param lang HTML `lang` attribute.
 #' @return UI suitable for `shinyApp(ui = ...)`.
 #' @export
@@ -51,6 +53,13 @@ page_react <- function(
       normalizePath(src_dir, mustWork = FALSE)
     }
   app_name <- basename(base_dir)
+  if (!nzchar(app_name) || app_name %in% c(".", "..")) {
+    # A missing src_dir leaves normalizePath()'s path relative, so the app name
+    # can come out as "." -- a nonsense title and a `/lib/.-0/` asset URL. Keep
+    # the permissive resolution (the bundle may not be built yet) but name it
+    # something a reader can recognize.
+    app_name <- "shinyreact-app"
+  }
   page_bare(
     shinyreact_dep_page(),
     page_react_dep(
