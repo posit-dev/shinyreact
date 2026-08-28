@@ -31,7 +31,10 @@ install_dep_discovery <- function(session) {
   }
   # `.outputs` is private; shiny exposes no API to enumerate registered
   # outputs (Python reads `session.output._outputs`, same deal). getOutput()
-  # is public. MockShinySession has neither -- discovery no-ops there.
+  # is public. This guard is for sessions that lack the pieces entirely -- note
+  # it does NOT exclude MockShinySession, which has onFlushed(), getOutput()
+  # and userData: discovery installs there and is simply inert, because the
+  # mock's private `.outputs` is NULL so every diff finds nothing.
   private <- tryCatch(session$.__enclos_env__$private, error = function(e) NULL)
   if (
     is.null(private) ||

@@ -114,7 +114,15 @@ divergence only shows up outside that. Documented in the R function's
 `@section Path resolution`, and the not-found error now names the working
 directory so a wrong CWD is diagnosable rather than mysterious.
 
-### Renderer `HTMLDependency` discovery
+### Renderer `HTMLDependency` discovery — SUPERSEDED 2026-08-28
+
+> **Superseded 2026-08-28** (recorded while auditing `FEATURES.md`, issue #245).
+> This is no longer a divergence: R gained push-based per-session discovery in
+> #221 (merged 2026-08-27), and Python Core gained it in #249 (merged
+> 2026-08-28, closing #220). Both languages now discover renderer dependencies
+> automatically; Express's `set_react_page()` additionally inlines them into the
+> initial page. The decision below is kept as the record of what was believed on
+> 2026-08-13.
 
 `set_react_page()` harvests dependencies off renderers and off
 `session.output._outputs`. R has no analogue.
