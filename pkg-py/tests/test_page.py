@@ -306,3 +306,72 @@ def test_page_react_html_reads_as_utf8(tmp_path: Path) -> None:
     )
 
     assert "café ☕" in page_react_html(doc).render()["html"]
+
+
+def test_page_react_dep_version_override(tmp_path: Path) -> None:
+    # The mtime default is right for development and wrong for a published
+    # package — an mtime is whatever the install happened to write. Mirrors R's
+    # "page_react_dep() accepts an explicit version".
+    (tmp_path / "ui.js").write_text("// ui")
+    dep = shinyreact.page_react_dep(src_dir=tmp_path, version="1.2.3")
+    assert str(dep.version) == "1.2.3"
+
+
+def test_page_react_dep_version_defaults_to_mtime(tmp_path: Path) -> None:
+    js = tmp_path / "ui.js"
+    js.write_text("// ui")
+    dep = shinyreact.page_react_dep(src_dir=tmp_path)
+    assert str(dep.version) == str(int(js.stat().st_mtime))
+
+
+def test_page_react_version_reaches_the_dep(tmp_path: Path) -> None:
+    (tmp_path / "ui.js").write_text("// ui")
+    ui = shinyreact.page_react(src_dir=tmp_path, version="9.9.9")
+    rendered = ui.tagify().render()
+    versions = {d.name: str(d.version) for d in rendered["dependencies"]}
+    assert versions[tmp_path.name] == "9.9.9"
+
+
+def _dep_html(ui) -> str:
+    rendered = ui.tagify().render()
+    return "".join(
+        d.as_html_tags().get_html_string() for d in rendered["dependencies"]
+    )
+
+
+def test_page_bare_forwards_theme() -> None:
+    # page_bootstrap() takes `theme=`; page_bare() used to drop it, so a
+    # page_react() app could not be themed at all. A str theme keeps this test
+    # off libsass (a Theme object would need compiling). Mirrors R's
+    # "page_bare() forwards theme to bootstrapPage()".
+    html = _dep_html(page_bare(theme="https://cdn.example/custom.css"))
+    assert 'href="https://cdn.example/custom.css"' in html
+
+
+def test_page_react_forwards_theme(tmp_path: Path) -> None:
+    (tmp_path / "ui.js").write_text("// ui")
+    html = _dep_html(
+        shinyreact.page_react(
+            src_dir=tmp_path, theme="https://cdn.example/custom.css"
+        )
+    )
+    assert 'href="https://cdn.example/custom.css"' in html
+
+
+def test_page_react_html_extra_deps_render_after_ours(tmp_path: Path) -> None:
+    # A full document has no tag tree to attach dependencies to, so extra_deps
+    # is the only way in. Ours must come first, so the author's bundle can rely
+    # on window.shinyreact. Mirrors R's
+    # "page_react_html() renders extra_deps after shinyreact's".
+    index = tmp_path / "index.html"
+    index.write_text(_full_doc())
+    mine = HTMLDependency(
+        name="my-bundle",
+        version="1.0.0",
+        source={"subdir": str(tmp_path)},
+        script={"src": "mine.js"},
+    )
+    (tmp_path / "mine.js").write_text("// mine")
+
+    html = _render_doc(page_react_html(index, extra_deps=[mine]))
+    assert html.index("shinyreact.js") < html.index("mine.js")

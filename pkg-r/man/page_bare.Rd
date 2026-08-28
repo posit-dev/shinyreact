@@ -4,7 +4,7 @@
 \alias{page_bare}
 \title{Bare HTML page with Shiny dependencies}
 \usage{
-page_bare(..., title = NULL, lang = "en")
+page_bare(..., title = NULL, lang = "en", theme = NULL)
 }
 \arguments{
 \item{...}{Child tags or \link[htmltools:htmlDependency]{htmltools::htmlDependency} objects.}
@@ -12,6 +12,10 @@ page_bare(..., title = NULL, lang = "en")
 \item{title}{Page title.}
 
 \item{lang}{HTML \code{lang} attribute.}
+
+\item{theme}{A Bootstrap theme, as accepted by \code{\link[shiny:bootstrapPage]{shiny::bootstrapPage()}} —
+e.g. a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} object or a path to a compiled CSS bundle.
+Mirrors Python's \code{page_bare(theme=)}.}
 }
 \value{
 A \code{shiny.tag} page.

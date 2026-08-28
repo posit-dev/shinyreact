@@ -606,7 +606,7 @@ Shared across all of them: the server emits no UI components. Each attaches
 the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 `page_bare()`, which attaches neither.
 
-### `page_bare(*args, title=None, lang="en")`
+### `page_bare(*args, title=None, lang="en", theme=None)`
 
 - the escape hatch: Shiny's own dependencies, nothing of shinyreact's
   - `[py]` wraps `shiny.ui.page_bootstrap()`, so the page carries Bootstrap
@@ -616,8 +616,11 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - `HTMLDependency` positional args are hoisted to `<head>` by Shiny
   - children are wrapped with no mount container of their own — no `#root`
   - `lang` sets the `<html lang>` attribute, defaulting to `"en"`
+  - `theme` is forwarded to the wrapped page function, so a `page_react()`
+    app can carry a Bootstrap theme (a `bslib` object, a `Theme`, or a
+    path/URL to compiled CSS)
 
-### `page_react(*args, src_dir=None, js_file="ui.js", css_file="ui.css", title=None, lang="en")`
+### `page_react(*args, src_dir=None, js_file="ui.js", css_file="ui.css", version=None, title=None, lang="en", theme=None)`
 
 - the zero-config page: no HTML file exists or is needed
   - it emits **no body HTML at all** — the client appends its own mount
@@ -629,8 +632,9 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - the app folder is `src_dir`'s **parent** when `src_dir` is named `www`,
       and `src_dir` itself otherwise
     - an explicit `title` overrides that
-  - `js_file` / `css_file` are forwarded to `page_react_dep`, so a missing
-    `ui.css` is skipped and a missing `ui.js` warns
+  - `js_file` / `css_file` / `version` are forwarded to `page_react_dep`, so a
+    missing `ui.css` is skipped and a missing `ui.js` warns
+  - `theme` is forwarded to `page_bare`
   - `[py]` `src_dir` defaults to `www/` next to the **calling module**
     - a relative `src_dir` resolves against the calling module's directory
     - an absolute `src_dir` is used verbatim
@@ -656,7 +660,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - `[py]` needs no fallback: the path resolves against the calling module, so
       it is absolute whether or not it exists
 
-### `page_react_html(path="www/index.html")`
+### `page_react_html(path="www/index.html", extra_deps=None)`
 
 - for apps that own a complete HTML document (what a Vite build emits)
   - the document must contain `<meta name="shiny-dependency-placeholder"
@@ -697,6 +701,12 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - `[r]` read once per call, with `brio` (UTF-8, line endings untouched);
       `htmlTemplate()` renders the in-memory text
   - it does **not** discover traditional-renderer dependencies
+  - `extra_deps` renders additional `HTMLDependency` objects at the
+    placeholder — a complete document has no tag tree to attach them to, so
+    it is the only way in (the counterpart of `page_react()`'s `*args` /
+    `...`)
+    - they render **after** Shiny's and shinyreact's, so they can rely on
+      `window.shinyreact` existing
   - `[py]` it returns a `ReactHtmlDocument`
     - a `shiny.ui.PageDocument` subclass that also remembers the document's
       directory, so `ReactApp` can serve the assets the document references
@@ -708,14 +718,14 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
       document's directory — under plain `shiny.App` the sibling `ui.js` is
       not served
     - `shiny.ui.PageDocument` arrives with py-shiny#2475, consumed as a git
-      dependency until it releases (issue #216)
-  - `[r]` used directly as `shinyApp(ui = page_react_html())`, implemented with
-    `htmltools::htmlTemplate(path, document_ = TRUE)`
+      dependency until it releases
+  - `[r]` used directly as `shinyApp(ui = page_react_html())`, implemented by
+    rewriting the placeholder to `{{ headContent() }}` in memory and calling
+    `htmltools::htmlTemplate(text_ = ..., document_ = TRUE)`
     - a relative `path` resolves against the working directory; there is no
       caller-directory fallback because R has no `__file__`
-    - the served document is decoded as UTF-8 by `htmlTemplate()` itself
-      (`readChar(useBytes = TRUE)` + an explicit UTF-8 encoding); `brio` only
-      reads the throwaway copy used for the marker check
+    - the document is read once by `brio` (UTF-8) and rendered from that
+      in-memory text via `htmlTemplate(text_ = ...)`
       - `[py]` reads with an explicit `encoding="utf-8"` too, on both the
         `page_react_html()` and `set_react_page()` paths
     - the deps are attached with `attachDependencies(append = TRUE)`, and
@@ -745,6 +755,19 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     (issue #82), so editing `index.html` requires a server restart
 - in **both** modes, traditional Shiny renderer dependencies are discovered and
   injected into `<head>`
+- `page_opts()` options reach the page, because `page_auto()` splats them into
+  the resolved `page_fn` — ours
+  - the no-HTML-file mode honors `title`, `lang`, and `theme`, forwarding them
+    to `page_react()`
+    - `page_opts(title=...)` overrides the app-folder default
+  - any other option (`fillable`, `full_width`, `window_title`, …) raises
+    `TypeError` naming the option and listing the supported ones — a bare React
+    page has no Bootstrap layout to apply it to
+  - the HTML-file mode raises for **every** page option, since it emits the
+    document as the page body and no page tag of its own
+  - before this, a page function taking only `*args` made
+    `page_opts(title=...)` + `set_react_page()` a startup `TypeError:
+    _react_page_fn() got an unexpected keyword argument 'title'`
 
 ### `[py]` `ReactApp(server, *, ui=None, static_assets=MISSING, bookmark_store="disable", **kwargs)`
 
@@ -925,9 +948,14 @@ initial page.
     - except from `page_react()`, which overrides it with the *app folder* name,
       so the URL is `/lib/<appname>-<mtime>/` and never `/lib/www-<mtime>/`
       (both languages)
-  - the version is `js_file`'s mtime in whole seconds — every edit busts the
-    browser cache, which is why this beats hand-written `<script src>` tags
-  - the version is `"0"` when `js_file` is missing
+  - the version **defaults** to `js_file`'s mtime in whole seconds — every
+    edit busts the browser cache, which is why this beats hand-written
+    `<script src>` tags
+    - the default is `"0"` when `js_file` is missing
+    - an explicit `version=` wins, for published packages: an mtime is
+      whatever the install wrote, so it is neither stable across machines nor
+      meaningful to a reader
+    - `page_react()` forwards its own `version=` here
   - the script tag is `type="module"` — unlike the bundle's `defer`
     - a classic `<script defer>` throws on the bundle's first `import`, and
       `type="module"` is implicitly deferred, so no `defer` is added
