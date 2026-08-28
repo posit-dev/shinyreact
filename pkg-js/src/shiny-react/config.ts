@@ -3,12 +3,12 @@
  *
  * The server (shinyreact for R/Python) renders its protocol version into the
  * page via the `#shinyreact-config` JSON script tag; the client asserts the
- * major versions match at boot. The protocol covers the shapes that cross the
- * client/server boundary — the `#shinyreact-config` payload itself, the
- * `shinyReactMessage` custom message, and the `shinyreact.default` /
- * `shinyreact.asis` input-handler contract — and only bumps when one of those
- * changes, so client and server package releases do not need to be in
- * lockstep. Decided in decisions/2026-08-17-js-distribution.md.
+ * major versions match at boot. The protocol covers every shape that crosses
+ * the client/server boundary; protocol/surface.json enumerates them and a test
+ * in each language enforces it. Only changes an existing peer would
+ * misinterpret bump this version — additive shapes do not (see
+ * protocol/README.md) — so client and server package releases do not need to
+ * be in lockstep. Decided in decisions/2026-08-17-js-distribution.md.
  */
 export const PROTOCOL_VERSION = "1.0";
 

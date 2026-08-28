@@ -21,9 +21,13 @@ each language:
 - **Major bump** — any change an existing peer would misinterpret: renaming
   or restructuring a payload member, changing a member's type, changing
   escaping rules, removing a message.
-- **Minor bump** — additive, ignorable changes: a new optional payload
-  member, a new message type. A client or server must tolerate unknown
-  members and unknown message types from a same-major peer.
+- **Additive, ignorable changes do not bump** — a new optional payload
+  member, a new message type, a new input-handler name. A client or server
+  must tolerate unknown members and unknown message types from a same-major
+  peer, so neither side can act on the minor anyway: nothing reads it, and no
+  peer changes behavior when it moves. The record of what is on the wire is
+  [`surface.json`](surface.json), which is enforced; the minor is not.
+  (Bumping it for a notable addition is allowed, never required.)
 - The client's handshake accepts any same-major server version and throws on
   a major mismatch, naming both versions (see
   `assertProtocolCompatible()`).
@@ -43,14 +47,12 @@ after loading the package. A new message type or handler name therefore fails a
 test until it is listed, next to the version, where the bump question above is
 impossible to miss.
 
-This exists because the surface grew without a bump: #221 added the
+This exists because the surface grew unnoticed: #221 added the
 `shinyreact.init` handler (with its `.shinyreact_init` ping) and the
-`shinyreact-deps` message while the version stayed at `1.0`, which the "minor
-bump — a new message type" rule above says should have been `1.1`. Nothing
-enforced the rule, and the three protocol constants still describe a
-three-shape surface. Resolving that — bump, or amend the policy — is
-[#232](https://github.com/posit-dev/shinyreact/issues/232); the manifest and
-its guards land first so the next addition cannot slip through the same way.
+`shinyreact-deps` message while the version stayed at `1.0`. Those additions
+stand at `1.0` — they are additive and ignorable, which per the policy above
+is not a bump — and the manifest, not the version, is now what records them
+([#232](https://github.com/posit-dev/shinyreact/issues/232)).
 
 ## 1. The `#shinyreact-config` script tag
 
