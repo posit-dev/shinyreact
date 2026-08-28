@@ -8,6 +8,7 @@ Shared by `app.py` (Express) and `app-core.py` (Core). R's `app.R` uses the
 from __future__ import annotations
 
 import csv
+import math
 from pathlib import Path
 
 _CSV = Path(__file__).parent / "faithful.csv"
@@ -23,5 +24,11 @@ def histogram(values: list[float], bins: int) -> dict[str, list[float] | list[in
     breaks = [lo + i * width for i in range(bins + 1)]
     counts = [0] * bins
     for v in values:
-        counts[min(int((v - lo) / width), bins - 1)] += 1
+        # ceil, so a value sitting exactly on a break belongs to the bin BELOW
+        # it — that is what makes the interval (lo, hi]. Clamping to bin 0
+        # gives the first bin its inclusive `lo`. Truncating instead ([lo, hi))
+        # agrees with R on the Old Faithful data only because no waiting time
+        # lands on an interior break.
+        idx = math.ceil((v - lo) / width) - 1
+        counts[min(max(idx, 0), bins - 1)] += 1
     return {"breaks": breaks, "counts": counts}

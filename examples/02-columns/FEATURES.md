@@ -23,10 +23,12 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
     ignore_init=True)`, so the initial `null` from mount is ignored
   - the move is applied to a copy of the dict, then `columns.set(...)` — the
     reactive value is replaced, not mutated in place
-  - if `item` is not in `data[from]`, nothing changes (no error) `(test)`
+  - if `item` is not in `data[from]`, nothing changes (no error)
   - the item is appended to the end of the destination column, never inserted
-    `(test)`
 - `[py]` only — this example has no R server
+- the server logic lives inside `app.py` next to `set_react_page()`, so it is
+  not importable and no unit test covers it; `01-hello`'s `faithful.py` shows
+  the factoring that makes server logic testable
 
 ## Client (`www/ui.js`)
 

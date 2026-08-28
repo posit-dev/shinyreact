@@ -39,7 +39,10 @@ because it is the one an audit can falsify.
 
 The format is the repo-root [`FEATURES.md`](../FEATURES.md)'s, scoped to one
 app instead of the packages, plus a `(test)` marker for a claim pinned by a
-unit test.
+unit test in that example's own `tests/` directory (`test_*.py`, `test-*.R`,
+`ui.test.ts`). Each package's test run includes those, so breaking an example
+fails the package's suite — see
+[`.claude/references/verifying-ui-code.md`](../.claude/references/verifying-ui-code.md).
 
 Two rules keep them worth reading:
 

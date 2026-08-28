@@ -27,6 +27,9 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
     inclusive of `lo` `(test)`
     - `[py]` hand-written in `faithful.py:histogram()`, stdlib only — no numpy
     - `[r]` `hist(waiting, breaks = seq(...), plot = FALSE)`
+    - a value sitting exactly on an interior break belongs to the bin *below*
+      it, in both languages: `histogram([0, 5, 10], 2)` is `[2, 1]`, not
+      `[1, 2]` `(test)`
   - counts always sum to 272 `(test)`
   - `bins = 1` → `counts == [272]`, `breaks == [43, 96]` `(test)`
   - `bins = 9` → `counts == [16, 37, 30, 16, 14, 57, 67, 29, 6]`, identical in
