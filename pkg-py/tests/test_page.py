@@ -308,28 +308,14 @@ def test_page_react_html_reads_as_utf8(tmp_path: Path) -> None:
     assert "café ☕" in page_react_html(doc).render()["html"]
 
 
-def test_page_react_dep_version_override(tmp_path: Path) -> None:
-    # The mtime default is right for development and wrong for a published
-    # package — an mtime is whatever the install happened to write. Mirrors R's
-    # "page_react_dep() accepts an explicit version".
-    (tmp_path / "ui.js").write_text("// ui")
-    dep = shinyreact.page_react_dep(src_dir=tmp_path, version="1.2.3")
-    assert str(dep.version) == "1.2.3"
-
-
-def test_page_react_dep_version_defaults_to_mtime(tmp_path: Path) -> None:
+def test_page_react_dep_version_is_the_js_mtime(tmp_path: Path) -> None:
+    # There is deliberately no `version=`: a package shipping a fixed version
+    # builds its own HTMLDependency. Mirrors R's
+    # "page_react_dep() versions the dependency by the JS file's mtime".
     js = tmp_path / "ui.js"
     js.write_text("// ui")
     dep = shinyreact.page_react_dep(src_dir=tmp_path)
     assert str(dep.version) == str(int(js.stat().st_mtime))
-
-
-def test_page_react_version_reaches_the_dep(tmp_path: Path) -> None:
-    (tmp_path / "ui.js").write_text("// ui")
-    ui = shinyreact.page_react(src_dir=tmp_path, version="9.9.9")
-    rendered = ui.tagify().render()
-    versions = {d.name: str(d.version) for d in rendered["dependencies"]}
-    assert versions[tmp_path.name] == "9.9.9"
 
 
 def _dep_html(ui) -> str:
@@ -339,23 +325,22 @@ def _dep_html(ui) -> str:
     )
 
 
-def test_page_bare_forwards_theme() -> None:
-    # page_bootstrap() takes `theme=`; page_bare() used to drop it, so a
-    # page_react() app could not be themed at all. A str theme keeps this test
-    # off libsass (a Theme object would need compiling). Mirrors R's
-    # "page_bare() forwards theme to bootstrapPage()".
+def test_page_bare_kwargs_reach_page_bootstrap() -> None:
+    # `theme=` is NOT a named parameter: in the ui.tsx pattern the client owns
+    # styling, so Bootstrap theming is a passthrough, not part of this API. The
+    # **kwargs escape hatch keeps it reachable. A str theme keeps this test off
+    # libsass (a Theme object would need compiling). Mirrors R's
+    # "page_bare() passes ... through to bootstrapPage()".
     html = _dep_html(page_bare(theme="https://cdn.example/custom.css"))
     assert 'href="https://cdn.example/custom.css"' in html
 
 
-def test_page_react_forwards_theme(tmp_path: Path) -> None:
+def test_page_react_kwargs_reach_page_bootstrap(tmp_path: Path) -> None:
     (tmp_path / "ui.js").write_text("// ui")
-    html = _dep_html(
-        shinyreact.page_react(
-            src_dir=tmp_path, theme="https://cdn.example/custom.css"
-        )
+    ui = shinyreact.page_react(
+        src_dir=tmp_path, theme="https://cdn.example/custom.css"
     )
-    assert 'href="https://cdn.example/custom.css"' in html
+    assert 'href="https://cdn.example/custom.css"' in _dep_html(ui)
 
 
 def test_page_react_html_extra_deps_render_after_ours(tmp_path: Path) -> None:

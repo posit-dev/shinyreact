@@ -7,16 +7,17 @@ deps_placeholder <- '<meta name="shiny-dependency-placeholder" content="">'
 #'
 #' Escape hatch for custom setups. Wraps [shiny::bootstrapPage()].
 #'
-#' @param ... Child tags or [htmltools::htmlDependency] objects.
+#' @param ... Child tags or [htmltools::htmlDependency] objects. Named
+#'   arguments pass through to [shiny::bootstrapPage()] — including its own
+#'   `theme`. Deliberately not surfaced as named parameters: in the `ui.tsx`
+#'   pattern the client owns styling, so Bootstrap theming is a passthrough,
+#'   not part of this API. Mirrors Python's `page_bare(**kwargs)`.
 #' @param title Page title.
 #' @param lang HTML `lang` attribute.
-#' @param theme A Bootstrap theme, as accepted by [shiny::bootstrapPage()] —
-#'   e.g. a [bslib::bs_theme()] object or a path to a compiled CSS bundle.
-#'   Mirrors Python's `page_bare(theme=)`.
 #' @return A `shiny.tag` page.
 #' @export
-page_bare <- function(..., title = NULL, lang = "en", theme = NULL) {
-  shiny::bootstrapPage(..., title = title, theme = theme, lang = lang)
+page_bare <- function(..., title = NULL, lang = "en") {
+  shiny::bootstrapPage(..., title = title, lang = lang)
 }
 
 #' Create a React page from conventional assets — no HTML file required
@@ -39,14 +40,11 @@ page_bare <- function(..., title = NULL, lang = "en", theme = NULL) {
 #'   relative to the working directory.
 #' @param js_file JS entry filename within `src_dir`. Defaults to `"ui.js"`.
 #' @param css_file CSS filename within `src_dir`. Defaults to `"ui.css"`.
-#' @param version Dependency version for the app's assets. Defaults to
-#'   `js_file`'s mtime — see [page_react_dep()].
 #' @param title Page title. Defaults to the app folder's name (`src_dir`'s
 #'   parent when `src_dir` is a `www` directory), or `"shinyreact-app"` when
 #'   that resolves to nothing usable (a missing `src_dir` is not an error —
 #'   the bundle may not be built yet).
 #' @param lang HTML `lang` attribute.
-#' @param theme A Bootstrap theme, as for [page_bare()].
 #' @return UI suitable for `shinyApp(ui = ...)`.
 #' @export
 page_react <- function(
@@ -54,10 +52,8 @@ page_react <- function(
   src_dir = "www",
   js_file = "ui.js",
   css_file = "ui.css",
-  version = NULL,
   title = NULL,
-  lang = "en",
-  theme = NULL
+  lang = "en"
 ) {
   base_dir <-
     if (basename(src_dir) == "www") {
@@ -79,13 +75,11 @@ page_react <- function(
       src_dir,
       js_file = js_file,
       css_file = css_file,
-      name = app_name,
-      version = version
+      name = app_name
     ),
     ...,
     title = if (is.null(title)) app_name else title,
-    lang = lang,
-    theme = theme
+    lang = lang
   )
 }
 
@@ -180,12 +174,15 @@ page_react_html <- function(path = "www/index.html", extra_deps = NULL) {
 
 #' HTML dependency for a downstream package's own JS/CSS bundle
 #'
-#' Convenience mirroring Python's `page_react_dep()`. By default it is versioned
-#' by the JS file's mtime, so the `/lib/{name}-{version}/` URL changes on every
-#' rebuild and the browser re-fetches. That is what you want while developing and
-#' the wrong thing for a published package — an mtime is whatever the install
-#' happened to write, so it is neither stable across machines nor meaningful to a
-#' reader. Pass `version` to pin it (typically your package's own version).
+#' Convenience mirroring Python's `page_react_dep()`. It is versioned by the JS
+#' file's mtime, so the `/lib/{name}-{version}/` URL changes on every rebuild and
+#' the browser re-fetches. That is what you want while developing and the wrong
+#' thing for a published package — an mtime is whatever the install happened to
+#' write, so it is neither stable across machines nor meaningful to a reader.
+#' There is no `version` argument on purpose: a package shipping a fixed version
+#' should build its own [htmltools::htmlDependency] (the same advice as for a
+#' classic, non-module bundle), which is five lines and leaves nothing about the
+#' dependency implicit.
 #'
 #' The script tag is emitted as `type="module"`. A classic
 #' `<script defer>` tag throws on the bundle's first `import`. `type="module"`
@@ -207,29 +204,23 @@ page_react_html <- function(path = "www/index.html", extra_deps = NULL) {
 #' @param css_file CSS filename within `src_dir`. Defaults to `"ui.css"`,
 #'   matching Python; attached only if the file exists. `NULL` to skip.
 #' @param name Dependency name; defaults to `basename(src_dir)`.
-#' @param version Dependency version. Defaults to `js_file`'s mtime (or `"0"`
-#'   when it does not exist), for dev cache-busting; pass a fixed value when
-#'   publishing. Mirrors Python's `page_react_dep(version=)`.
 #' @return An [htmltools::htmlDependency].
 #' @export
 page_react_dep <- function(
   src_dir,
   js_file = "ui.js",
   css_file = "ui.css",
-  name = basename(src_dir),
-  version = NULL
+  name = basename(src_dir)
 ) {
   js_path <- file.path(src_dir, js_file)
   js_exists <- file.exists(js_path)
-  if (is.null(version)) {
-    mtime <- suppressWarnings(file.mtime(js_path))
-    version <-
-      if (length(mtime) == 1L && !is.na(mtime)) {
-        as.character(as.integer(mtime))
-      } else {
-        "0"
-      }
-  }
+  mtime <- suppressWarnings(file.mtime(js_path))
+  version <-
+    if (length(mtime) == 1L && !is.na(mtime)) {
+      as.character(as.integer(mtime))
+    } else {
+      "0"
+    }
   if (!js_exists) {
     # An empty dependency loads nothing and reports nothing, so say so here --
     # without the tag there is not even a 404 in the console to go on.

@@ -17,18 +17,13 @@ from ._dep import _dep, _dep_page, _file_mtime_int
 if TYPE_CHECKING:
     # Private, but it is the only name for HTMLDependency's stylesheet entry.
     from htmltools._core import ScriptItem, StylesheetItem
-    from shiny.ui import Theme
-    from shiny.ui._html_deps_external import ThemeProvider
-
-    # page_bootstrap()'s `theme=` type, spelled once.
-    PageTheme = str | Path | Theme | ThemeProvider
 
 
 def page_bare(
     *args: TagChild,
     title: str | None = None,
     lang: str = "en",
-    theme: PageTheme | None = None,
+    **kwargs: Any,
 ) -> Tag:
     """Create a bare HTML page with only Shiny dependencies.
 
@@ -43,9 +38,11 @@ def page_bare(
         *args: Child tags or HTMLDependency objects to include in the page.
         title: Page title.
         lang: HTML ``lang`` attribute.
-        theme: A Bootstrap theme, as accepted by
-            :func:`shiny.ui.page_bootstrap` — e.g. a ``bslib`` /
-            :class:`shiny.ui.Theme` object or a path to a compiled CSS bundle.
+        **kwargs: Forwarded to :func:`shiny.ui.page_bootstrap` — its own
+            ``theme=``, or tag attributes for the page. Deliberately not
+            surfaced as named parameters: in the ui.tsx pattern the client owns
+            styling, so Bootstrap theming is a passthrough, not part of this
+            API.
     """
     from shiny.ui import page_bootstrap
 
@@ -53,7 +50,7 @@ def page_bare(
         *args,
         title=title,
         lang=lang,
-        theme=theme,
+        **kwargs,
     )
 
 
@@ -80,10 +77,9 @@ def page_react(
     src_dir: str | Path | None = None,
     js_file: str = "ui.js",
     css_file: str | None = "ui.css",
-    version: str | None = None,
     title: str | None = None,
     lang: str = "en",
-    theme: PageTheme | None = None,
+    **kwargs: Any,
 ) -> Tag:
     """Create a React page from conventional assets — no HTML file required.
 
@@ -109,12 +105,11 @@ def page_react(
             to the calling module; relative paths resolve against the caller.
         js_file: JS entry filename within ``src_dir`` (default ``"ui.js"``).
         css_file: CSS filename within ``src_dir`` (default ``"ui.css"``).
-        version: Dependency version for the app's assets. Defaults to
-            ``js_file``'s mtime — see :func:`page_react_dep`.
         title: Page title. Defaults to the app folder's name (``src_dir``'s
             parent when ``src_dir`` is a ``www/`` dir).
         lang: HTML ``lang`` attribute.
-        theme: A Bootstrap theme, as for :func:`page_bare`.
+        **kwargs: Forwarded to :func:`page_bare`, and on to
+            :func:`shiny.ui.page_bootstrap`.
     """
     caller_file = sys._getframe(1).f_globals.get("__file__")
     caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
@@ -126,12 +121,11 @@ def page_react(
             js_file=js_file,
             css_file=css_file,
             name=app_name,
-            version=version,
         ),
         *args,
         title=title if title is not None else app_name,
         lang=lang,
-        theme=theme,
+        **kwargs,
     )
 
 
@@ -141,16 +135,18 @@ def page_react_dep(
     js_file: str = "ui.js",
     css_file: str | None = "ui.css",
     name: str | None = None,
-    version: str | None = None,
 ) -> HTMLDependency:
     """Build an HTMLDependency for a React app's JS and CSS entry points.
 
-    By default the JS file's mtime is used as the dependency version, so the
+    The JS file's mtime is the dependency version, so the
     ``/lib/<name>-<version>/`` URL changes on every rebuild and the browser
     re-fetches. That is what you want while developing, and the wrong thing for
     a published package — an mtime is whatever the install happened to write, so
-    it is neither stable across machines nor meaningful to a reader. Pass
-    ``version`` to pin it (typically your package's own version).
+    it is neither stable across machines nor meaningful to a reader. There is no
+    ``version=`` here on purpose: a package shipping a fixed version should
+    build its own :class:`~htmltools.HTMLDependency` (the same advice as for a
+    classic, non-module bundle), which is five lines and leaves nothing about
+    the dependency implicit.
 
     Both the script and the stylesheet are attached only when the file exists
     inside the resolved ``src_dir``, so a bundle that ships no CSS — or that has
@@ -203,9 +199,6 @@ def page_react_dep(
         css_file: Filename of the CSS file, relative to ``src_dir`` (default
             ``"ui.css"``). Attached only if the file exists; ``None`` to skip.
         name: Dependency name. Defaults to ``src_dir``'s basename.
-        version: Dependency version. Defaults to ``js_file``'s mtime (or
-            ``"0"`` when it does not exist), for dev cache-busting; pass a
-            fixed value when publishing.
     """
     if src_dir is not None:
         base_dir = Path(src_dir)
@@ -218,9 +211,8 @@ def page_react_dep(
     dep_name = name if name is not None else base_dir.name
 
     js_path = base_dir / js_file
-    if version is None:
-        mtime = _file_mtime_int(js_path)
-        version = str(mtime) if mtime is not None else "0"
+    mtime = _file_mtime_int(js_path)
+    version = str(mtime) if mtime is not None else "0"
 
     script: ScriptItem | None = None
     if js_path.exists():

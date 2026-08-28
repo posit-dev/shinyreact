@@ -9,10 +9,8 @@ page_react(
   src_dir = "www",
   js_file = "ui.js",
   css_file = "ui.css",
-  version = NULL,
   title = NULL,
-  lang = "en",
-  theme = NULL
+  lang = "en"
 )
 }
 \arguments{
@@ -25,17 +23,12 @@ relative to the working directory.}
 
 \item{css_file}{CSS filename within \code{src_dir}. Defaults to \code{"ui.css"}.}
 
-\item{version}{Dependency version for the app's assets. Defaults to
-\code{js_file}'s mtime — see \code{\link[=page_react_dep]{page_react_dep()}}.}
-
 \item{title}{Page title. Defaults to the app folder's name (\code{src_dir}'s
 parent when \code{src_dir} is a \code{www} directory), or \code{"shinyreact-app"} when
 that resolves to nothing usable (a missing \code{src_dir} is not an error —
 the bundle may not be built yet).}
 
 \item{lang}{HTML \code{lang} attribute.}
-
-\item{theme}{A Bootstrap theme, as for \code{\link[=page_bare]{page_bare()}}.}
 }
 \value{
 UI suitable for \code{shinyApp(ui = ...)}.

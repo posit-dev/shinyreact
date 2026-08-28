@@ -322,19 +322,10 @@ test_that("send_message() returns invisibly", {
   expect_invisible(send_message(session, "id", list(a = 1)))
 })
 
-test_that("page_react_dep() accepts an explicit version", {
-  # The mtime default is right for development and wrong for a published
-  # package -- an mtime is whatever the install happened to write. Mirrors
-  # Python's test_page_react_dep_version_override.
-  dir <- withr::local_tempdir()
-  writeLines("// ui", file.path(dir, "ui.js"))
-
-  dep <- page_react_dep(dir, version = "1.2.3")
-  expect_identical(dep$version, "1.2.3")
-})
-
-test_that("page_react_dep() defaults version to the JS file's mtime", {
-  # Mirrors Python's test_page_react_dep_version_defaults_to_mtime.
+test_that("page_react_dep() versions the dependency by the JS file's mtime", {
+  # There is deliberately no `version` argument: a package shipping a fixed
+  # version builds its own htmlDependency(). Mirrors Python's
+  # test_page_react_dep_version_is_the_js_mtime.
   dir <- withr::local_tempdir()
   js <- file.path(dir, "ui.js")
   writeLines("// ui", js)
@@ -343,32 +334,17 @@ test_that("page_react_dep() defaults version to the JS file's mtime", {
   expect_identical(dep$version, as.character(as.integer(file.mtime(js))))
 })
 
-test_that("page_react() forwards version to the dependency", {
-  # Mirrors Python's test_page_react_version_reaches_the_dep.
-  dir <- withr::local_tempdir()
-  www <- file.path(dir, "www")
-  dir.create(www)
-  writeLines("// ui", file.path(www, "ui.js"))
-
-  deps <- htmltools::findDependencies(page_react(
-    src_dir = www,
-    version = "9.9.9"
-  ))
-  app_dep <- Filter(function(d) d$name == basename(dir), deps)
-  expect_length(app_dep, 1L)
-  expect_identical(app_dep[[1]]$version, "9.9.9")
-})
-
-test_that("page_bare() forwards theme to bootstrapPage()", {
-  # bootstrapPage() takes `theme=`; page_bare() used to drop it, so a
-  # page_react() app could not be themed at all. Mirrors Python's
-  # test_page_bare_forwards_theme.
+test_that("page_bare() passes ... through to bootstrapPage()", {
+  # `theme` is NOT a named parameter: in the ui.tsx pattern the client owns
+  # styling, so Bootstrap theming is a passthrough, not part of this API. R's
+  # `...` already reaches bootstrapPage(), which is the escape hatch. Mirrors
+  # Python's test_page_bare_kwargs_reach_page_bootstrap.
   html <- dep_tags_html(page_bare(theme = "https://cdn.example/custom.css"))
   expect_match(html, 'href="https://cdn.example/custom.css"', fixed = TRUE)
 })
 
-test_that("page_react() forwards theme", {
-  # Mirrors Python's test_page_react_forwards_theme.
+test_that("page_react() passes ... through to bootstrapPage()", {
+  # Mirrors Python's test_page_react_kwargs_reach_page_bootstrap.
   dir <- withr::local_tempdir()
   www <- file.path(dir, "www")
   dir.create(www)

@@ -606,7 +606,7 @@ Shared across all of them: the server emits no UI components. Each attaches
 the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 `page_bare()`, which attaches neither.
 
-### `page_bare(*args, title=None, lang="en", theme=None)`
+### `page_bare(*args, title=None, lang="en", **kwargs)`
 
 - the escape hatch: Shiny's own dependencies, nothing of shinyreact's
   - `[py]` wraps `shiny.ui.page_bootstrap()`, so the page carries Bootstrap
@@ -616,11 +616,15 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - `HTMLDependency` positional args are hoisted to `<head>` by Shiny
   - children are wrapped with no mount container of their own — no `#root`
   - `lang` sets the `<html lang>` attribute, defaulting to `"en"`
-  - `theme` is forwarded to the wrapped page function, so a `page_react()`
-    app can carry a Bootstrap theme (a `bslib` object, a `Theme`, or a
-    path/URL to compiled CSS)
+  - extra named arguments pass through to the wrapped page function — its own
+    `theme=`, or tag attributes for the page
+    - `theme` is **not** a named parameter, in either language: in the ui.tsx
+      pattern the client owns styling, so Bootstrap theming is a passthrough
+      rather than part of this API
+    - `[r]` needs nothing extra — `...` already forwards named arguments to
+      `bootstrapPage()`
 
-### `page_react(*args, src_dir=None, js_file="ui.js", css_file="ui.css", version=None, title=None, lang="en", theme=None)`
+### `page_react(*args, src_dir=None, js_file="ui.js", css_file="ui.css", title=None, lang="en", **kwargs)`
 
 - the zero-config page: no HTML file exists or is needed
   - it emits **no body HTML at all** — the client appends its own mount
@@ -632,9 +636,10 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - the app folder is `src_dir`'s **parent** when `src_dir` is named `www`,
       and `src_dir` itself otherwise
     - an explicit `title` overrides that
-  - `js_file` / `css_file` / `version` are forwarded to `page_react_dep`, so a
-    missing `ui.css` is skipped and a missing `ui.js` warns
-  - `theme` is forwarded to `page_bare`
+  - `js_file` / `css_file` are forwarded to `page_react_dep`, so a missing
+    `ui.css` is skipped and a missing `ui.js` warns
+  - extra named arguments pass through to `page_bare`, and on to the wrapped
+    page function
   - `[py]` `src_dir` defaults to `www/` next to the **calling module**
     - a relative `src_dir` resolves against the calling module's directory
     - an absolute `src_dir` is used verbatim
@@ -758,7 +763,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 - `page_opts()` options reach the page, because `page_auto()` splats them into
   the resolved `page_fn` — ours
   - the no-HTML-file mode honors `title`, `lang`, and `theme`, forwarding them
-    to `page_react()`
+    to `page_react()` — `theme` lands in its `**kwargs` passthrough
     - `page_opts(title=...)` overrides the app-folder default
   - any other option (`fillable`, `full_width`, `window_title`, …) raises
     `TypeError` naming the option and listing the supported ones — a bare React
@@ -948,14 +953,13 @@ initial page.
     - except from `page_react()`, which overrides it with the *app folder* name,
       so the URL is `/lib/<appname>-<mtime>/` and never `/lib/www-<mtime>/`
       (both languages)
-  - the version **defaults** to `js_file`'s mtime in whole seconds — every
-    edit busts the browser cache, which is why this beats hand-written
-    `<script src>` tags
-    - the default is `"0"` when `js_file` is missing
-    - an explicit `version=` wins, for published packages: an mtime is
-      whatever the install wrote, so it is neither stable across machines nor
-      meaningful to a reader
-    - `page_react()` forwards its own `version=` here
+  - the version is `js_file`'s mtime in whole seconds — every edit busts the
+    browser cache, which is why this beats hand-written `<script src>` tags
+  - the version is `"0"` when `js_file` is missing
+  - there is **no** `version` argument, in either language: an mtime is whatever
+    the install wrote, so a package shipping a fixed version should build its
+    own `HTMLDependency` / `htmlDependency()` rather than have this helper take
+    a knob (the same advice as for a classic, non-module bundle)
   - the script tag is `type="module"` — unlike the bundle's `defer`
     - a classic `<script defer>` throws on the bundle's first `import`, and
       `type="module"` is implicitly deferred, so no `defer` is added

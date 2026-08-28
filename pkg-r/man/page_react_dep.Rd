@@ -8,8 +8,7 @@ page_react_dep(
   src_dir,
   js_file = "ui.js",
   css_file = "ui.css",
-  name = basename(src_dir),
-  version = NULL
+  name = basename(src_dir)
 )
 }
 \arguments{
@@ -24,21 +23,20 @@ matching Python; attached only if the file exists.}
 matching Python; attached only if the file exists. \code{NULL} to skip.}
 
 \item{name}{Dependency name; defaults to \code{basename(src_dir)}.}
-
-\item{version}{Dependency version. Defaults to \code{js_file}'s mtime (or \code{"0"}
-when it does not exist), for dev cache-busting; pass a fixed value when
-publishing. Mirrors Python's \code{page_react_dep(version=)}.}
 }
 \value{
 An \link[htmltools:htmlDependency]{htmltools::htmlDependency}.
 }
 \description{
-Convenience mirroring Python's \code{page_react_dep()}. By default it is versioned
-by the JS file's mtime, so the \verb{/lib/\{name\}-\{version\}/} URL changes on every
-rebuild and the browser re-fetches. That is what you want while developing and
-the wrong thing for a published package — an mtime is whatever the install
-happened to write, so it is neither stable across machines nor meaningful to a
-reader. Pass \code{version} to pin it (typically your package's own version).
+Convenience mirroring Python's \code{page_react_dep()}. It is versioned by the JS
+file's mtime, so the \verb{/lib/\{name\}-\{version\}/} URL changes on every rebuild and
+the browser re-fetches. That is what you want while developing and the wrong
+thing for a published package — an mtime is whatever the install happened to
+write, so it is neither stable across machines nor meaningful to a reader.
+There is no \code{version} argument on purpose: a package shipping a fixed version
+should build its own \link[htmltools:htmlDependency]{htmltools::htmlDependency} (the same advice as for a
+classic, non-module bundle), which is five lines and leaves nothing about the
+dependency implicit.
 }
 \details{
 The script tag is emitted as \code{type="module"}. A classic
