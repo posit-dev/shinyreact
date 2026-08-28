@@ -37,8 +37,9 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
   - `protocol/README.md` is the authoritative prose contract, and
     `protocol/fixtures/config-restore.json` is a shared wire-contract fixture
     that all three suites round-trip through their own config-tag code
-    - `[py]` that test skips when the fixture is missing, so its enforcement is
-      conditional
+    - all three skip when the fixture is missing, so enforcement is conditional
+      in every language — `[py]` and `[r]` skip loudly, `[js]` returns silently,
+      so its run reports a green parity test that checked nothing
     - the README's prose does not yet mention `shinyreact.init`,
       `.shinyreact_init`, or `shinyreact-deps` in its per-shape sections; they
       are listed in `surface.json`
@@ -49,7 +50,12 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
       registry after loading the package
     - so a new custom message type or handler name fails a test until it is
       added to the manifest, where the version-bump question is unavoidable
-    - each guard is verified to fail on an unlisted name, not merely to pass
+    - each guard asserts its scan is non-vacuous, so a broken regex fails rather
+      than passing with nothing found; no guard is failure-injected with an
+      unlisted name
+    - the failure message names the offending name and points at
+      `surface.json` and #232, so the reader is told to list the name and decide
+      the version question — not merely that something mismatched
     - listing a name is **not** a version bump: per `protocol/README.md`,
       additive ignorable shapes (a new message type, handler name, or optional
       payload member) do not bump, since the client compares majors only and no
@@ -171,8 +177,10 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
     - `[py]` a `Renderer[Jsonifiable]` subclass, used as a decorator, assigned
       to `output[id]`
     - `[r]` a function, called as `output$id <- reactive_output(expr, ...)`
-    - reason: each language's renderer idiom —
-      `decisions/2026-08-13-r-python-parity.md`
+    - reason: each language's renderer idiom — a Python `Renderer` subclass has
+      no R equivalent, and an R render function is not a decorator. Not in
+      `decisions/2026-08-13-r-python-parity.md`: it predates that record and was
+      never a #184 parity question
   - `[py]` accepted types are whatever `Jsonifiable` admits: `dict`, `list`,
     `tuple`, `str`, `int`, `float`, `bool`, `None`
   - `[py]` a `str` return is sent as a JSON string, not a text node
@@ -236,12 +244,19 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
 
 ## `[js]` Client hooks
 
-Shared across every hook: the first hook call on the page initializes shinyreact
-once (registry, restore adoption, output binding, message registry, in that
+Shared across every hook: the first hook call initializes shinyreact once
+(registry, restore adoption, output binding, message registry, in that
 order), and no hook *registers with or sends to* Shiny until Shiny reports
 initialized. Note what does **not** wait for Shiny: that one-time init itself,
 the protocol-mismatch throw, the `type` validation throw, and reading an
 existing registry value at render time.
+
+The init latch is **module-scoped, not page-scoped** — unlike the two
+registries it builds, which are page-scoped through their accessors. So two
+copies of the library on one page each run init in full. The registries
+themselves are idempotent and restore adoption self-guards on the `_restore`
+sentinel, but `createReactOutputBinding()` has no guard, so the second copy
+registers a second `shiny.reactOutput` binding.
 
 - `useShinyInput(id, defaultValue, options?)` → `[value, setValue]`
   - `defaultValue` is captured on **first mount only**, like `useState`'s
@@ -309,8 +324,8 @@ existing registry value at render time.
   - an erroring `reactive_output` delivers its message end to end, and the
     message clears when the output recovers (e2e)
 - `useShinyMessageHandler(id, handler, options?)`
-  - the effect re-runs only when the resolved id changes, never on handler
-    identity
+  - the effect re-runs only when the resolved id changes or Shiny flips to
+    initialized, never on handler identity
   - the handler is removed on unmount and on id change
   - an empty-string resolved id silently skips registration, with no log
 - `useShinyInitialized()` → boolean
@@ -430,6 +445,12 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
   - `renderValue` → `setValue`, `renderError` → `setError`,
     `showProgress` → `setRecalculating`
   - a value or progress event for an unknown id logs an error and returns
+  - it reaches the output registry through the same page-scoped accessor the
+    hooks use, resolved **per call** rather than captured when the binding was
+    constructed, so it can never route to a registry a second copy of the
+    library has since replaced
+    - the accessor is passed in by the caller rather than imported, since
+      importing it here would make a cycle with `react-registry.ts`
 - status transitions are exact
   - a fresh entry is `"pending"`
   - `setValue` → `"ready"`, and fans the value out to subscribers
@@ -560,6 +581,9 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     IIFE installs `window.shinyreact`; only the npm build treats a missing
     config tag as fatal)
 - installing twice is a no-op, so calling it from both entries is safe
+  - the latch is **module-scoped**, so this holds per copy of the library, not
+    per page: two copies each install a `shinyreact-deps` handler and each send
+    the bootstrap ping
 
 ## `[js]` Client components
 
@@ -716,18 +740,25 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - `[py]` at page render, from `ui.PageDocument` — the placeholder is
       py-shiny's contract, so py-shiny enforces it; the message names
       `deps_replace_pattern=` and the default placeholder
-  - a missing file raises, naming the resolved path
-    - `[r]` the error also names the working directory, since that is what a
-      relative path resolved against
-  - the file is read at call time, and re-read only when it changes on disk
+  - a missing file raises, naming the path it looked for
+    - `[py]` that path is resolved (absolute), since a relative one resolved
+      against the calling module's directory
+    - `[r]` the path is printed **as given**, so the default reads
+      `www/index.html`; the error also names the working directory, since that
+      is what a relative path resolved against
+  - the file is read at call time
+    - `[py]` re-read only when it changes on disk
     - `[py]` under `ReactApp` the UI is a per-request function, so edits appear
       with **no restart**; the read is gated on `(st_mtime_ns, st_size)`, so an
       unchanged document is read once and served from cache thereafter
     - `[py]` under `set_react_page()`'s HTML mode the read happens once, at
       call time, so edits there *do* need a restart (issue #82)
     - `[r]` read once per call, with `brio` (UTF-8, line endings untouched);
-      `htmlTemplate()` renders the in-memory text
-  - it does **not** discover traditional-renderer dependencies
+      `htmlTemplate()` renders the in-memory text — but no cache, so every call
+      re-reads
+  - it does **not** inline traditional-renderer dependencies into the document;
+    since #249 they still arrive, pushed per session after the first flush (see
+    Renderer dependency discovery)
   - `extra_deps` renders additional `HTMLDependency` objects at the
     placeholder — a complete document has no tag tree to attach them to, so
     it is the only way in (the counterpart of `page_react()`'s `*args` /
@@ -803,6 +834,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 - with no `ui=`, discovery runs next to the **calling module**
   - `www/index.html` present → `page_react_html()`
   - otherwise → `page_react(src_dir=www)`, whose dependency serves the assets
+  - the `www/` mount is not part of this choice — it is decided once at
+    construction from the directory's existence alone (see below)
   - no caller `__file__` → discovery resolves against `Path.cwd()`
   - the frame read is the *immediate* caller, so a helper wrapping
     `ReactApp(...)` must pass `ui=` explicitly
@@ -825,6 +858,9 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     exists, in `page_react()` mode too: the mode is per-request while
     `static_assets` is a constructor argument, so an unused mount is the price
     of both modes working (unused mount harmless, missing mount = 404 per asset)
+    - the existence check runs at construction, so unlike the mode it is
+      latched: creating `www/` mid-session switches the mode but serves no
+      assets until a restart
   - `ui=page_react_html(...)` → the document's own dir, from
     `ReactHtmlDocument.src_dir`
   - a passed `static_assets` **mapping is merged with** that mount, not
@@ -860,7 +896,10 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - pinned by both a direct-child locator and a computed-style check `(e2e)`
 - it adds no classes of its own; caller `className` and arbitrary HTML
   attributes land on the rendered element `(e2e)`
-  - Shiny's binding pass adds `shiny-bound-output` after mount
+  - Shiny's binding pass adds `shiny-bound-output` only when the element
+    actually matches a binding's `find()` — a `shiny-data-frame` gains it
+    `(e2e)`, a bare `div` carrying only caller classes does **not**, and both
+    directions are asserted `(e2e)`
 - binding scope is deliberately asymmetric, because Shiny's API is
   - `bindAll` receives the **parent** element, since output bindings search
     descendants only and would otherwise skip the element itself
@@ -916,9 +955,12 @@ initial page.
     `session$.__enclos_env__$private$.outputs`, `[py]`
     `session.output._outputs`)
   - it no-ops, rather than erroring, on a session missing the pieces it needs
-    (`[r]` `NULL`, no `userData`, no `onFlushed` / `getOutput` — which is what
-    makes `MockShinySession` safe; `[py]` `None`, no `output._outputs`, no
-    `on_flushed`)
+    (`[r]` `NULL`, no `userData`, no `onFlushed` / `getOutput`; `[py]` `None`,
+    no `output._outputs`, no `on_flushed`)
+    - `[r]` this is **not** what makes `MockShinySession` safe: the mock has
+      `onFlushed`, `getOutput` and `userData`, so discovery installs on it and
+      registers a flush callback. It is inert only because the mock's private
+      `.outputs` is `NULL`, so every diff finds nothing
   - it installs at most once per session (`[r]` latched on
     `userData$.shinyreact_dep_discovery`, `[py]` on a
     `_shinyreact_dep_discovery` session attribute)
