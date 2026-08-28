@@ -259,9 +259,16 @@ export class OutputRegistry {
 }
 
 /**
- * Create and register the React output binding when Shiny is available
+ * Create and register the React output binding when Shiny is available.
+ *
+ * `getOutputs` is injected rather than imported: the page-scoped accessor
+ * lives in react-registry.ts, which imports OutputRegistry from this file, so
+ * importing it back would make a cycle. The caller
+ * (`ensureShinyReactInitialized`) already holds the accessor and passes it in,
+ * which keeps every registry read on the one page-scoped path instead of
+ * reaching into `shiny.reactRegistry` directly.
  */
-export function createReactOutputBinding() {
+export function createReactOutputBinding(getOutputs: () => OutputRegistry) {
   const shiny = getShiny();
   if (!shiny) {
     return;
@@ -275,7 +282,7 @@ export function createReactOutputBinding() {
     }
 
     override renderValue(el: HTMLElement, data: any): void {
-      const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
+      const outputEntry = getOutputs().get(el.id);
       if (!outputEntry) {
         console.error(`Output ${el.id} not found`);
         return;
@@ -285,14 +292,14 @@ export function createReactOutputBinding() {
 
     override renderError(el: HTMLElement, err: ErrorsMessageValue): void {
       console.error(`Error for ${el.id}:`, err);
-      const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
+      const outputEntry = getOutputs().get(el.id);
       if (outputEntry) {
         outputEntry.setError(err);
       }
     }
 
     override showProgress(el: HTMLElement, show: boolean): void {
-      const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
+      const outputEntry = getOutputs().get(el.id);
       if (!outputEntry) {
         console.error(`Output ${el.id} not found`);
         return;
