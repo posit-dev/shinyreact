@@ -4,8 +4,9 @@ import { getShiny } from "./get-shiny";
 
 export type ErrorsMessageValue = {
   message: string;
-  call: string[];
-  type?: string[];
+  // `call` / `type` are R-only extras; py-shiny sends null for both.
+  call: string[] | null;
+  type?: string[] | null;
 };
 
 export type OutputStatus = "pending" | "ready" | "recalculating" | "error";
