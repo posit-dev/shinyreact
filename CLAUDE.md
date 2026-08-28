@@ -300,7 +300,10 @@ One file, not one per package. It is organized **by behavior, not by language** 
 - **unmarked leaf** — holds in every language its subtree applies to. State shared behavior once.
 - **`[py]` / `[r]` / `[js]`** — holds only there. A `[py]` leaf with no `[r]` sibling is either a parity bug or a divergence that needs the marked-leaf treatment below.
 
-Examples are **not** covered yet — deferred to a later pass.
+Examples are covered by **per-example** trees in the same format, one
+`FEATURES.md` per `examples/*/` directory. They add a `(test)` marker, carry
+their own marker legend so each file stands alone, and are described in
+`examples/README.md`.
 
 ### The format
 
