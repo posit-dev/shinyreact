@@ -11,8 +11,7 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 - one output, `display` → `{celsius, fahrenheit, zone}`
 - `fahrenheit` is `round(c * 9 / 5 + 32, 1)` — one decimal, so 20 °C → 68.0
-  `(test)`
-- `zone` thresholds, all inclusive upper bounds `(test)`
+- `zone` thresholds, all inclusive upper bounds
   - `c <= 0` → `"Freezing"`
   - `c <= 15` → `"Cold"`
   - `c <= 30` → `"Comfortable"`
@@ -20,6 +19,9 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 - `input.celsius()` is `None` before the client's first message → returns
   `None`, so the echo line does not render
 - `[py]` only — this example has no R server
+- the logic lives inside `app.py` next to `set_react_page()`, so it is not
+  importable and no unit test covers it — logic in a module beside `app.py`
+  would be testable
 
 ## Client (`www/ui.js`)
 
@@ -36,7 +38,7 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
     the display snaps back to 70 °F `(test)`
 - zone label and color are computed **twice** — client-side in
   `zoneLabel`/`zoneColor` and server-side in `display` — using the same
-  thresholds `(test)`
+  thresholds; only the client half is pinned by a test `(test)`
   - client colors: `#0dcaf0` Freezing, `#0d6efd` Cold, `#198754` Comfortable,
     `#dc3545` Hot
   - a threshold change on one side without the other is a visible divergence

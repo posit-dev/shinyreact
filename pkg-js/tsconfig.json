@@ -11,7 +11,16 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true
+    "strict": true,
+    // So the example tests (outside this directory) resolve devDependencies
+    // from pkg-js/node_modules, the way vitest.config.ts aliases them.
+    "baseUrl": ".",
+    "paths": {
+      "vitest": ["node_modules/vitest"],
+      "@testing-library/react": ["node_modules/@testing-library/react"]
+    }
   },
-  "include": ["src"]
+  // The example apps' own tests (examples/*/tests) and their shared mount
+  // harness are typechecked here too — they import this package's source.
+  "include": ["src", "../examples/testing", "../examples/*/tests"]
 }

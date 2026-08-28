@@ -39,7 +39,9 @@ because it is the one an audit can falsify.
 
 The format is the repo-root [`FEATURES.md`](../FEATURES.md)'s, scoped to one
 app instead of the packages, plus a `(test)` marker for a claim pinned by a
-unit test.
+unit test in that example's own `tests/` directory (`test_*.py`,
+`testthat/test-*.R`, `ui.test.ts`) — see
+[Running an example's tests](#running-an-examples-tests) below.
 
 Two rules keep them worth reading:
 
@@ -51,3 +53,31 @@ Two rules keep them worth reading:
 They also serve as worked examples of the output the
 `shinyreact-convert-app` skill produces when porting an existing Shiny app:
 describe the app in plain English first, then build against the description.
+
+## Running an example's tests
+
+The tests for an example live beside it, in `<example>/tests/`, and run from
+the example — you do not need the shinyreact packages installed to run them:
+
+```bash
+cd examples/01-hello
+
+pytest                                   # the app's Python tests
+Rscript -e 'shiny::runTests()'           # the app's R tests (also shinytest2::test_app())
+npx vitest run --root .. 01-hello        # the app's UI tests
+```
+
+The UI tests need a JS toolchain, which the no-build examples deliberately do
+not carry. `examples/package.json` provides one for the whole examples tree, so
+`npm install` there once covers every example:
+
+```bash
+cd examples && npm install
+npm test                    # every example's UI tests
+npx vitest run 01-hello     # one example's
+```
+
+Each package's own test run also includes these files — pytest's `testpaths`
+covers `examples/`, `pkg-js/vitest.config.ts` includes `../examples/**/tests/`,
+and `pkg-r/tests/testthat/test-examples.R` sources the examples' testthat
+files — so a package change that breaks an example fails the package's suite.

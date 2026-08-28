@@ -57,7 +57,11 @@ tests-e2e = [
 # need the `tests-e2e` extras (browser, shiny[playwright]) and spin up a
 # real Shiny process per app, which is too heavy for the unit test loop.
 # Run the Playwright suite explicitly via `make py-test-e2e`.
-testpaths = ["pkg-py/tests"]
+#
+# The example apps keep their own tests beside the app (examples/*/tests). They
+# run by default: they are fast, need no extra dependencies, and a package
+# change that breaks an example should fail the package's test run.
+testpaths = ["pkg-py/tests", "examples"]
 addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.pyright]
