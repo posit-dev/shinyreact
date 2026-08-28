@@ -42,19 +42,24 @@ test_that("skill frontmatter is a two-key YAML block", {
   }
 })
 
+# The whole directory, not just SKILL.md -- a skill may carry references/, and
+# a reference file that shipped stale would be invisible otherwise.
 test_that("shipped copies match the repo's .claude/skills", {
   repo_skills <- testthat::test_path("..", "..", "..", ".claude", "skills")
   skip_if_not(dir.exists(repo_skills), "not running from the repo")
 
+  tree <- function(root) {
+    files <- sort(list.files(root, recursive = TRUE))
+    stats::setNames(
+      lapply(files, function(f) readLines(file.path(root, f))),
+      files
+    )
+  }
+
   for (name in shipped_skills) {
     expect_equal(
-      readLines(system.file(
-        "skills",
-        name,
-        "SKILL.md",
-        package = "shinyreact"
-      )),
-      readLines(file.path(repo_skills, name, "SKILL.md")),
+      tree(system.file("skills", name, package = "shinyreact")),
+      tree(file.path(repo_skills, name)),
       info = "run `make update-skills`"
     )
   }

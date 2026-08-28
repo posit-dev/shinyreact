@@ -21,10 +21,17 @@ const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../..",
 );
-const SKILL = path.join(
-  REPO_ROOT,
-  ".claude/skills/shinyreact-build-app/SKILL.md",
-);
+const SKILL_DIR = path.join(REPO_ROOT, ".claude/skills/shinyreact-build-app");
+
+// The skill is SKILL.md plus its references/, and a name taught in either
+// counts -- ShinyOutput and ImageOutput live in references/shiny-outputs.md.
+function readSkill(): string {
+  return fs
+    .readdirSync(SKILL_DIR, { recursive: true, encoding: "utf-8" })
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => fs.readFileSync(path.join(SKILL_DIR, f), "utf-8"))
+    .join("\n");
+}
 
 // Names the skill deliberately does not teach, with why. Shrinking this list is
 // an improvement; growing it needs a reason.
@@ -37,7 +44,7 @@ const NOT_TAUGHT: Record<string, string> = {
 describe("shinyreact-build-app skill", () => {
   it("teaches every name on window.shinyreact", () => {
     installGlobal();
-    const source = fs.readFileSync(SKILL, "utf-8");
+    const source = readSkill();
 
     const untaught = Object.keys(window.shinyreact)
       .filter((name) => !(name in NOT_TAUGHT))
