@@ -50,3 +50,19 @@ See [`examples/01-hello/`](https://github.com/posit-dev/shinyreact/tree/main/exa
 
 - **Function reference:** <https://posit-dev.github.io/shinyreact/r>
 - **Examples:** the [examples catalog](https://github.com/posit-dev/shinyreact/blob/main/examples/README.md)
+
+## Agent Skills
+
+The package ships two Agent Skills, so a coding agent can build a shinyreact
+app without you pasting this README into it:
+
+- **`shinyreact-build-app`** — build a `ui.tsx`-pattern app from scratch
+- **`shinyreact-convert-app`** — port an existing Shiny app to the pattern
+
+Agents using [btw](https://posit-dev.github.io/btw/) discover them automatically
+once shinyreact is attached. To copy them into a project for Claude Code and
+other skill-aware tools:
+
+```r
+btw::btw_skill_install_package("shinyreact")
+```

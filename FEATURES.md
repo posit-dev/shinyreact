@@ -1115,6 +1115,53 @@ initial page.
   - `React` / `ReactDOM` are exposed so downstream ESM builds can externalize
     to them and avoid a second React instance
 
+## Agent Skills
+
+- both packages ship the `shinyreact-build-app` and `shinyreact-convert-app`
+  skills, so an installed package is enough — no repo checkout required
+  - `audit-shinyreact-features` is not shipped: it audits this repo
+- skill names are namespaced by package (`shinyreact-`) and by task
+  (`-build-app` / `-convert-app`), not by language: one bilingual skill each,
+  covering R and Python side by side
+  - so the R and Python packages ship byte-identical files under the same
+    names, and installing both into one project is a no-op rather than a clash
+- `[py]` installed at `shinyreact/.agents/skills/<name>/SKILL.md`, the path
+  `library-skills` scans site-packages for (`uvx library-skills --claude`)
+  - hatchling includes it with no packaging config
+- `[r]` installed at `system.file("skills", "<name>", package = "shinyreact")`,
+  where btw looks (`btw::btw_skill_install_package("shinyreact")`)
+- a skill ships as a whole directory, so `<name>/references/*.md` travels with
+  it and a `](references/…)` link from the `SKILL.md` resolves for a user with
+  no checkout
+  - `shinyreact-build-app` keeps its situational material there —
+    `no-build.md`, `shiny-outputs.md`, `modules.md`, `bookmarking.md`,
+    `testing.md`, `debugging.md` — so the body stays a decision guide
+  - `[js]` the `window.shinyreact` coverage test reads the skill directory, not
+    just `SKILL.md`, since `ShinyOutput` / `ImageOutput` are taught in a
+    reference
+- the shipped copies are generated from `.claude/skills/` by
+  `make update-skills`; a stale copy fails both packages' test suites, which
+  compare the whole directory rather than just `SKILL.md`
+  - and the `check-skills` workflow, which regenerates and fails on any
+    resulting `git status` change — the only check that catches a copy edited
+    directly instead of through the source, and the only one that catches a
+    skill added to `SHIPPED_SKILLS` but never copied
+- a `SKILL.md` assumes the reader has no checkout, and a test enforces it
+  - no repo-relative paths: a shipped skill is read from site-packages or an R
+    library, where one resolves to nothing
+  - no pointers to contributor-only documents (`CLAUDE.md`, `FEATURES.md`,
+    `decisions/`, `.claude/`) even as URLs — that material is inlined instead
+  - full `github.com/posit-dev/shinyreact` URLs to `examples/` are allowed:
+    they are runnable apps, not notes to contributors
+- each `SKILL.md` frontmatter is exactly two keys, `name` then a single-line
+  `description` — a description spilling onto a second line is silently skipped
+  by the installers' strict YAML parsers
+  - `name` equals the directory name
+- `[js]` every name on `window.shinyreact` is either taught by
+  `shinyreact-build-app` or listed as a deliberate omission (`MISSING`,
+  `ShinyReactComponentElement`), so a new export fails a test until someone
+  decides which it is
+
 ## Public API surface
 
 - `[py]` `shinyreact.__all__` is exactly: `ReactApp`, `page_bare`,

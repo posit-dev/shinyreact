@@ -62,6 +62,24 @@ js-test:  ## [js] Run JS tests
 update-dist: js-build r-update-dist py-update-dist  ## Update shinyreact web assets in all packages
 
 
+# Skills that ship inside the installed packages, so an app author who only
+# `pip install shinyreact` / `install.packages("shinyreact")` gets them too.
+# `audit-shinyreact-features` is deliberately not in this list — it audits this
+# repo and is meaningless outside it.
+SHIPPED_SKILLS := shinyreact-build-app shinyreact-convert-app
+
+.PHONY: update-skills
+update-skills: ## Copy .claude/skills/ into pkg-py and pkg-r for shipping
+	@echo ""
+	@echo "🔄 Updating shipped skills"
+	rm -rf $(PATH_PKG_PY)/src/shinyreact/.agents/skills $(PATH_PKG_R)/inst/skills
+	mkdir -p $(PATH_PKG_PY)/src/shinyreact/.agents/skills $(PATH_PKG_R)/inst/skills
+	for s in $(SHIPPED_SKILLS); do \
+		cp -R .claude/skills/$$s $(PATH_PKG_PY)/src/shinyreact/.agents/skills/; \
+		cp -R .claude/skills/$$s $(PATH_PKG_R)/inst/skills/; \
+	done
+
+
 .PHONY: r-setup
 r-setup:  ## [r] Install R dependencies
 	@echo "🆙 Updating R dependencies"

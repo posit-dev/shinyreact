@@ -1,0 +1,50 @@
+name: check-skills
+
+# `.claude/skills/` is the source; pkg-py/src/shinyreact/.agents/skills/ and
+# pkg-r/inst/skills/ are generated copies that ship inside the packages. Both
+# packages' test suites compare the copy against the source, but only when the
+# repo is present -- and neither catches a copy edited *directly*, which would
+# leave the source and the shipped file disagreeing with no test to say so.
+# Regenerating and diffing does.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".claude/skills/**"
+      - "pkg-py/src/shinyreact/.agents/**"
+      - "pkg-r/inst/skills/**"
+      - "Makefile"
+      - ".github/workflows/check-skills.yaml"
+  pull_request:
+    paths:
+      - ".claude/skills/**"
+      - "pkg-py/src/shinyreact/.agents/**"
+      - "pkg-r/inst/skills/**"
+      - "Makefile"
+      - ".github/workflows/check-skills.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  check-skills:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: 🔄 Regenerate the shipped skills
+        run: make update-skills
+
+      # `git status --porcelain` rather than `git diff --exit-code`: adding a
+      # skill to SHIPPED_SKILLS without copying it leaves *untracked* files,
+      # which `git diff` reports as clean.
+      - name: 📐 Assert the shipped copies match .claude/skills/
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Shipped skills are out of date. Run \`make update-skills\` and commit the result."
+            git status --short
+            git diff
+            exit 1
+          fi

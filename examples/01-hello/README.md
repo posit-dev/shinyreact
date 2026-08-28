@@ -9,6 +9,12 @@ Edit `ui.js` and reload.
 `page_react()`) are two server-side entries for the same `www/` client;
 `app.R` is the R twin.
 
+> **Three servers over one client is not how you would build an app.** It is a
+> demonstration device: it shows that `www/ui.js` does not know or care which
+> server answers, and it lets the tests assert the *same* golden histogram in
+> Python and in R, which is how a divergence between the two implementations
+> becomes visible. A real app has exactly one server.
+
 ## What it shows
 
 The split that makes the pattern worth using. In traditional Shiny, `01_hello`
