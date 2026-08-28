@@ -20,8 +20,8 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
   `None`, so the echo line does not render
 - `[py]` only — this example has no R server
 - the logic lives inside `app.py` next to `set_react_page()`, so it is not
-  importable and no unit test covers it; `01-hello`'s `faithful.py` shows the
-  factoring that makes server logic testable
+  importable and no unit test covers it — logic in a module beside `app.py`
+  would be testable
 
 ## Client (`www/ui.js`)
 

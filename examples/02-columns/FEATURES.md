@@ -27,8 +27,8 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
   - the item is appended to the end of the destination column, never inserted
 - `[py]` only — this example has no R server
 - the server logic lives inside `app.py` next to `set_react_page()`, so it is
-  not importable and no unit test covers it; `01-hello`'s `faithful.py` shows
-  the factoring that makes server logic testable
+  not importable and no unit test covers it — logic in a module beside `app.py`
+  would be testable
 
 ## Client (`www/ui.js`)
 

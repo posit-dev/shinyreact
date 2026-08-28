@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mountExample, type MountedExample } from "../../testing/mount";
 
 // bins = 9 over the 272 Old Faithful waiting times. Identical in R's hist()
-// and faithful.py's binner; see examples/01-hello/FEATURES.md § Server.
+// and faithful.py's binner; see the Server section of FEATURES.md next door.
 const COUNTS_9 = [16, 37, 30, 16, 14, 57, 67, 29, 6];
 const BREAKS_9 = [43, 48.889, 54.778, 60.667, 66.556, 72.444, 78.333, 84.222, 90.111, 96];
 
