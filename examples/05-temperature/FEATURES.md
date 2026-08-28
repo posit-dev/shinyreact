@@ -3,7 +3,9 @@
 Two linked thermometer sliders (°C and °F) with a server echo. The smallest
 example of a client that computes locally *and* keeps the server in the loop.
 
-Format rules: `../README.md` § "Example behavior trees".
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server (`app.py`, Express)
 

@@ -3,15 +3,27 @@
 Example 02's app rendered with real shadcn/ui components, built by Vite in
 IIFE lib mode.
 
-Format rules: `../README.md` § "Example behavior trees".
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server (`app.py`, Express)
 
-- byte-for-byte the same server logic as `../02-columns/app.py`: module-level
-  `reactive.value` seeded with `{A: [Apple, Apricot], B: [Banana, Blueberry],
-  C: [Cherry, Cranberry]}`, a `move_item` event effect, a `column_data` output
-- see `../02-columns/FEATURES.md` § "Server" for the per-claim detail; a
-  divergence between the two files is a bug in one of the apps
+- three columns, ids `"A"`, `"B"`, `"C"`, seeded with `{A: [Apple, Apricot],
+  B: [Banana, Blueberry], C: [Cherry, Cranberry]}`
+  - held in a module-level `reactive.value`, so the state is shared by every
+    session and survives a reload — it is not per-session
+- output `column_data` → the whole `{col: item[]}` dict
+- input `move_item` → `{item, from, to}`
+  - handled by a `@reactive.effect` + `@reactive.event(input.move_item,
+    ignore_init=True)`, so the initial `null` from mount is ignored
+  - the move is applied to a copy of the dict, then `columns.set(...)` — the
+    reactive value is replaced, not mutated in place
+  - if `item` is not in `data[from]`, nothing changes (no error)
+  - the item is appended to the end of the destination column, never inserted
+- `[py]` only — this example has no R server
+- this server is byte-for-byte the same file as example 02's; a divergence
+  between the two apps is a bug in one of them
 
 ## Build
 

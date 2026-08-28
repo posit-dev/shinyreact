@@ -4,9 +4,9 @@ Old Faithful waiting-time histogram: a bins slider on the client, binning on
 the server, SVG drawing on the client. Three interchangeable servers
 (`app.py`, `app-core.py`, `app.R`) over one `www/` client.
 
-Format rules: `../README.md` § "Example behavior trees". `[py]` / `[r]` /
-`[js]` mark a claim that holds only there; `(test)` marks a claim pinned by a
-unit test; `(verify)` marks a claim not yet checked against the code.
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Data
 
@@ -47,10 +47,9 @@ unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Page
 
-- `[py]` `app.py` — Express, `set_react_page()` with no arguments
-- `[py]` `app-core.py` — Core, `ReactApp(server)`; no `static_assets=` mount
-- `[r]` `app.R` — `page_react()` with no arguments
-- all three discover `www/ui.js` + `www/ui.css`; there is no `index.html`
+- every server serves the same page: `www/ui.js` + `www/ui.css` are discovered
+  next to the app, and there is no `index.html` and no static-asset mount to
+  configure
 - the page contains no mount container — the client appends its own `<div>` to
   `<body>`
 

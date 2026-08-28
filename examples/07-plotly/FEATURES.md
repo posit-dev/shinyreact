@@ -4,8 +4,9 @@ A Plotly widget rendered by the *server* (shinywidgets in Python,
 `plotly::renderPlotly` in R) and mounted inside a React tree via `ShinyOutput`.
 One `www/` client, two servers.
 
-Format rules: `../README.md` § "Example behavior trees". `[py]` / `[r]` /
-`[js]` mark a claim that holds only there.
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server
 
@@ -28,8 +29,7 @@ Format rules: `../README.md` § "Example behavior trees". `[py]` / `[r]` /
   - `[py]` `set_react_page()` inlines the dependency into `<head>`
   - `[r]` `page_react()` cannot inline it (the UI is built before `server()`
     runs), so the deps are pushed after the flush as a `shinyreact-deps`
-    custom message and the bundle re-runs `bindAll` — see the repo
-    `FEATURES.md` § dependency discovery
+    custom message and the bundle re-runs `bindAll`
 
 ## Client (`www/ui.js`)
 

@@ -4,7 +4,9 @@ React Fast Refresh against a running Shiny server: a Vite dev server serves the
 client modules while Shiny serves the page. Editing `App.tsx` hot-swaps the
 component without losing local state or the Shiny connection.
 
-Format rules: `../README.md` § "Example behavior trees".
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server (`app.py`, Express)
 

@@ -3,7 +3,9 @@
 A traditional `@render.data_frame` output living inside a React tree, driven by
 a React slider. Shows that `ShinyOutput` needs no server-side placeholder.
 
-Format rules: `../README.md` § "Example behavior trees".
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server (`app.py`, Express)
 

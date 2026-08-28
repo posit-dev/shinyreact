@@ -4,7 +4,9 @@
 server reads a `datetime`. The smallest demonstration of routing an input
 through a Shiny input handler.
 
-Format rules: `../README.md` § "Example behavior trees".
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Wire
 

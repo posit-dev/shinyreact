@@ -19,9 +19,9 @@ completeness bar, and the in-same-PR update rule.
 `pkg-py/src/shinyreact/`, `[r]` against `pkg-r/R/`, `[js]` against
 `pkg-js/src/`, each with its unit tests plus the Python e2e suite.
 
-**Examples are out of scope for this file.** Each example carries its own tree
-in the same format at `examples/*/FEATURES.md`; see
-`examples/README.md` § "Example behavior trees".
+**Examples are out of scope for this file.** Each example carries its own
+standalone tree in the same format at `examples/*/FEATURES.md`;
+`examples/README.md` describes them.
 
 R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
 

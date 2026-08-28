@@ -4,7 +4,9 @@ A six-card dashboard on shadcn/ui + Tailwind v4 that puts every output style
 side by side: server-rendered matplotlib, data-only Plotly drawn on the client,
 a plain `@render.text`, an event button, and a text round-trip.
 
-Format rules: `../README.md` § "Example behavior trees".
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Data
 

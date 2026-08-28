@@ -27,21 +27,19 @@ see [Example behavior trees](#example-behavior-trees) below.
 ## Example behavior trees
 
 Each example directory has a `FEATURES.md`: a nested bullet list of everything
-that app does, one atomically checkable claim per leaf. It is the same format
-as the repo-root [`FEATURES.md`](../FEATURES.md) — the rules live in the
-"The feature tree" section of [`CLAUDE.md`](../CLAUDE.md) — scoped to one app
-instead of the packages.
+that app does, one atomically checkable claim per leaf. Each one **stands
+alone** — it carries its own marker legend and never asks the reader to go
+somewhere else for the format — so an agent handed a single example directory
+has everything it needs.
 
 The README of an example is prose for a human deciding whether to read it. Its
 `FEATURES.md` is the checkable description: exact ids, defaults, ranges, wire
 shapes, and copy, with no explanation. Where they overlap, `FEATURES.md` wins,
 because it is the one an audit can falsify.
 
-Markers, in addition to the repo-wide `[py]` / `[r]` / `[js]`:
-
-- `(test)` — pinned by a unit test (Python in `examples/tests/`, R in
-  `pkg-r/tests/testthat/`, JS in `pkg-js/src/__tests__/examples/`).
-- `(verify)` — claim not yet checked against the code.
+The format is the repo-root [`FEATURES.md`](../FEATURES.md)'s, scoped to one
+app instead of the packages, plus a `(test)` marker for a claim pinned by a
+unit test.
 
 Two rules keep them worth reading:
 

@@ -3,7 +3,9 @@
 Bookmark and restore React input state through the URL query string. Three
 inputs, a bookmark button, and a server echo.
 
-Format rules: `../README.md` § "Example behavior trees".
+Every leaf below is one checkable claim about this app. `[py]` / `[r]` / `[js]`
+mark a claim that holds only in that language; `(test)` marks a claim pinned by
+a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## App wiring (`app.py`, Core)
 
