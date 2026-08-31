@@ -62,9 +62,10 @@ def test_late_dep_with_a_server_side_holder(
     """
     # `lib/` prefix, not the bare name: the fixture's own explainer paragraph
     # mentions the dependency by name.
-    assert "lib/ipywidget-output-binding" not in page.request.get(
-        dynamic_plotly_app.url
-    ).text()
+    assert (
+        "lib/ipywidget-output-binding"
+        not in page.request.get(dynamic_plotly_app.url).text()
+    )
 
     page.goto(dynamic_plotly_app.url)
 

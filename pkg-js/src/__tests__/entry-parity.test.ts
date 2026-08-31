@@ -30,27 +30,34 @@ function fakeShiny() {
 beforeEach(() => {
   vi.resetModules();
   (window as any).Shiny = fakeShiny();
+  // `installGlobal()` leaves `window.shinyreact` behind, and resetModules()
+  // does not undo DOM writes. Without this, whether a test sees the global
+  // depends on which tests ran before it.
+  delete (window as any).shinyreact;
 });
 
 afterEach(() => {
   delete (window as any).Shiny;
+  delete (window as any).shinyreact;
 });
 
 describe("entry point parity", () => {
   it("the IIFE entry installs dependency discovery", async () => {
     await import("../index");
 
-    expect(
-      (window as any).Shiny.addCustomMessageHandler,
-    ).toHaveBeenCalledWith("shinyreact-deps", expect.any(Function));
+    expect((window as any).Shiny.addCustomMessageHandler).toHaveBeenCalledWith(
+      "shinyreact-deps",
+      expect.any(Function),
+    );
   });
 
   it("the npm entry installs dependency discovery too (#233)", async () => {
     await import("../npm");
 
-    expect(
-      (window as any).Shiny.addCustomMessageHandler,
-    ).toHaveBeenCalledWith("shinyreact-deps", expect.any(Function));
+    expect((window as any).Shiny.addCustomMessageHandler).toHaveBeenCalledWith(
+      "shinyreact-deps",
+      expect.any(Function),
+    );
   });
 
   it("both entries send the .shinyreact_init bootstrap ping", async () => {
@@ -95,12 +102,35 @@ describe("entry point parity", () => {
     // Deliberate divergence, not drift: npm consumers import the hooks
     // directly, and the global exists so no-build pages can read them off
     // `window`. Pinned so flipping it is a decision.
-    delete (window as any).shinyreact;
     await import("../npm");
     expect((window as any).shinyreact).toBeUndefined();
 
     vi.resetModules();
     await import("../index");
     expect((window as any).shinyreact).toBeDefined();
+  });
+
+  it("the npm entry warns when the IIFE bundle is on the page too", async () => {
+    // The double-load case: an npm-tier app whose page left shinyreact_js at
+    // its default of "server". Harmless but wasteful, and silent until now —
+    // the warning is the only thing that says to pass shinyreact_js="client".
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await import("../index"); // the IIFE, as the server would inject it
+    vi.resetModules(); // a *separate* copy of the library, as on a real page
+    await import("../npm");
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0]?.[0]).toMatch(/shinyreact_js="client"/);
+    warn.mockRestore();
+  });
+
+  it("the npm entry is silent when it is the only runtime", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await import("../npm");
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

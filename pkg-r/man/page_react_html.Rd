@@ -4,11 +4,18 @@
 \alias{page_react_html}
 \title{Serve a React \code{index.html} document (the \code{ui.tsx} pattern)}
 \usage{
-page_react_html(path = "www/index.html", extra_deps = NULL)
+page_react_html(
+  path = "www/index.html",
+  ...,
+  extra_deps = NULL,
+  shinyreact_js = "server"
+)
 }
 \arguments{
 \item{path}{Path to the HTML document. Defaults to \code{"www/index.html"},
 relative to the working directory.}
+
+\item{...}{Ignored.}
 
 \item{extra_deps}{A list of additional \link[htmltools:htmlDependency]{htmltools::htmlDependency} objects to
 render at the placeholder. A complete document has no tag tree to attach
@@ -16,6 +23,10 @@ dependencies to, so this is the only way in — the counterpart of
 \code{\link[=page_react]{page_react()}}'s \code{...}. They render \emph{after} Shiny's and shinyreact's, so
 they can rely on \code{window.shinyreact} existing. Mirrors Python's
 \code{page_react_html(extra_deps=)}.}
+
+\item{shinyreact_js}{Who supplies \code{shinyreact.js} / \code{shinyreact.css}:
+\code{"server"} (the default) or \code{"client"} for an npm-tier app whose bundle
+imports \verb{@posit/shinyreact} — see \code{\link[=page_react]{page_react()}}.}
 }
 \value{
 UI suitable for \code{shinyApp(ui = ...)}.

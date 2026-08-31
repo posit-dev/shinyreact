@@ -11,29 +11,35 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 ## Server (`app.py`, Express)
 
 - one output, `doubled` → `input.count() * 2`
-- `set_react_page()` with no arguments — the same discovery as the no-build
-  examples; nothing in the server knows about the dev server
+- `set_react_page(shinyreact_js="client")` — the npm tier: the client bundles
+  shinyreact.js, so the server serves the `#shinyreact-config` tag but **not**
+  shinyreact.js/.css; nothing in the server knows about the dev server
 - `[py]` only — this example has no R server
+
+## npm tier
+
+- the only example that imports `@posit/shinyreact` instead of destructuring
+  `window.shinyreact`; the built `www/ui.js` contains no `window.shinyreact`
+  reference at all
+- until the first npm publish, the dependency is `file:../../pkg-js`, so
+  `pkg-js` must be built (`npm run build`) before this example installs
+- React is bundled by this example in **both** modes — a development React in
+  dev, which is what Fast Refresh requires and what the production-only React
+  inside the IIFE bundle could never provide
+- `resolve.dedupe: ["react", "react-dom"]` keeps `App.tsx` and the hooks on one
+  React copy — the `file:` dep is symlinked and brings its own `node_modules`
+- `server.fs.allow` is widened to the repo root so the symlinked package
+  outside this directory can be served in dev
 
 ## Two modes, one entry
 
-- `vite build` → `www/ui.js` is the real IIFE bundle, React externalized to
-  `window.shinyreact`, `NODE_ENV=production`
+- `vite build` → `www/ui.js` is the real IIFE bundle, `NODE_ENV=production`
 - `vite` (dev) → `www/ui.js` is a **stub** that boots the dev server's modules;
   `NODE_ENV=development`
 - `www/ui.js` is gitignored, so a fresh checkout must run one of the two before
   `shiny run` serves anything
-- the switch is `resolve.alias["shiny-bridge"]`, chosen by Vite's `command`
-  - `serve` → `src/shiny-bridge.dev.ts`, re-exporting the hooks from the
-    repo's vendored `pkg-js/src/shiny-react/` source, bundled with this
-    example's own **development** React (Fast Refresh cannot run against the
-    production React inside `window.shinyreact`)
-  - `build` → `src/shiny-bridge.prod.ts`, reading the hooks off
-    `window.shinyreact`
-  - `resolve.dedupe: ["react", "react-dom"]` keeps `App.tsx` and the vendored
-    hooks on one React copy in dev
-  - `server.fs.allow` is widened to the repo root so the vendored source
-    outside this directory can be served
+- there is no dev/prod hook switch any more: both modes import
+  `@posit/shinyreact`, so no `shiny-bridge` alias and no rollup externals
 
 ## The dev stub (`vite-dev-stub.js`)
 

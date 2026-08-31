@@ -532,9 +532,10 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
   - it attaches the module singleton to `window.Shiny.messageRegistry` on first
     use (`??=`), so the first copy of the library to run owns the page and later
     copies adopt it
-  - two copies can coexist today (the server injects the IIFE even for npm-tier
-    apps until #217), and Shiny has one dispatcher slot per message type — two
-    registries would leave one copy's handlers dead
+  - two copies can still coexist (an npm-tier page that leaves
+    `shinyreact_js` at its default of `"server"` gets it as well), and Shiny has
+    one dispatcher slot per message type — two registries would leave one
+    copy's handlers dead
   - without `window.Shiny` it returns the module singleton and attaches nothing,
     since the client legitimately runs before Shiny loads
   - hooks call the accessor rather than reading `window.Shiny.messageRegistry`,
@@ -590,15 +591,23 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     `{once: true}`, which would consume the event before Shiny existed and
     leave discovery uninstalled
 - it no-ops when there is no `document`
+- `getShiny()` returns `undefined` rather than throwing when there is no
+  `window` at all, not just when Shiny has not loaded
+  - it is reached from debounce timers and event callbacks that can outlive the
+    document — a page unloading, or a jsdom test tearing down between the last
+    input write and its 100 ms debounce — where a bare `window` is a
+    `ReferenceError`, not `undefined`
+  - every caller already treats a missing Shiny as "do nothing", so this
+    degrades the way they expect
 - **both entry points install it** — `src/index.ts` (IIFE) and `src/npm.ts`
   (npm ESM), so both tiers get discovery and both send the bootstrap ping
   - the npm entry omitted it until #233, which left bundler-tier apps with no
     `shinyreact-deps` handler and no ping, so the server never installed
     discovery for the session at all
   - pinned by `entry-parity.test.ts`, which imports each entry and asserts its
-    side effects — including the two *deliberate* tier differences (only the
+    side effects — including the three *deliberate* tier differences (only the
     IIFE installs `window.shinyreact`; only the npm build treats a missing
-    config tag as fatal)
+    config tag as fatal; only the npm build warns about a double load)
 - installing twice is a no-op, so calling it from both entries is safe
   - the latch is **module-scoped**, so this holds per copy of the library, not
     per page: two copies each install a `shinyreact-deps` handler and each send
@@ -671,6 +680,28 @@ Shared across all of them: the server emits no UI components. Each attaches
 the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 `page_bare()`, which attaches neither.
 
+`shinyreact_js=` is shared by `page_react()`, `page_react_html()`, `[py]`
+`set_react_page()`, and `[py]` `ReactApp()` — who supplies `shinyreact.js` and
+`shinyreact.css` to the page:
+
+- it defaults to `"server"` — the package serves both as an `HTMLDependency`
+- `"client"` omits **both files**; the `#shinyreact-config` tag is still
+  emitted, because the npm-tier client hard-errors without it
+- it is for the npm tier: a client importing `@posit/shinyreact` bundles its own
+  copy, so serving them too puts two copies of React and the hooks on the page
+- any other value raises, naming the bad value and both valid ones
+  - `[py]` `ValueError`; `[r]` `cli_abort`
+  - `[py]` `set_react_page()` and `ReactApp()` validate eagerly at call time,
+    not at first page render, so a typo fails at app startup
+- the server never validates the *choice* — it cannot: whether the client
+  bundles a copy is a property of the built `ui.js`, known only once it
+  executes, after the page's script tags are already committed
+  - wrong in one direction (`"server"`, client bundles too) → two copies; the
+    app works, and `[js]` the npm entry `console.warn`s naming `shinyreact_js`
+  - wrong in the other (`"client"`, client bundles nothing) →
+    `window.shinyreact` is `undefined` and the app's first hook call throws; no
+    shinyreact code is on the page to say anything about it
+
 ### `page_bare(*args, title=None, lang="en", **kwargs)`
 
 - the escape hatch: Shiny's own dependencies, nothing of shinyreact's
@@ -689,7 +720,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - `[r]` needs nothing extra — `...` already forwards named arguments to
       `bootstrapPage()`
 
-### `page_react(*args, src_dir=None, js_file="ui.js", css_file="ui.css", title=None, lang="en", **kwargs)`
+### `page_react(*args, src_dir=None, js_file="ui.js", css_file="ui.css", title=None, lang="en", shinyreact_js="server", **kwargs)`
 
 - the zero-config page: no HTML file exists or is needed
   - it emits **no body HTML at all** — the client appends its own mount
@@ -730,7 +761,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - `[py]` needs no fallback: the path resolves against the calling module, so
       it is absolute whether or not it exists
 
-### `page_react_html(path="www/index.html", extra_deps=None)`
+### `page_react_html(path="www/index.html", extra_deps=None, shinyreact_js="server")`
 
 - for apps that own a complete HTML document (what a Vite build emits)
   - the document must contain `<meta name="shiny-dependency-placeholder"
@@ -784,6 +815,15 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     `...`)
     - they render **after** Shiny's and shinyreact's, so they can rely on
       `window.shinyreact` existing
+  - everything after `path` must be passed **by name**
+    - `[py]` a bare `*` in the signature; a second positional argument raises
+      `TypeError` naming positional arguments
+    - `[r]` an empty `...` before `extra_deps`, enforced by
+      `rlang::check_dots_empty()` on entry; anything that reaches it raises
+      `` `...` must be empty `` with class `rlib_error_dots_nonempty`
+      - each offending argument is echoed as `name = expr`, so a misspelled
+        `extra_dep = list()` names itself; unnamed ones show as `..1`
+      - the error is attributed to `page_react_html()`, not to the check
   - `[py]` it returns a `ReactHtmlDocument`
     - a `shiny.ui.PageDocument` subclass that also remembers the document's
       directory, so `ReactApp` can serve the assets the document references
@@ -814,7 +854,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - assets the document references must live in `www/`, which Shiny serves
       statically — there is no `ReactApp`-style auto-mount
 
-### `[py]` `set_react_page(path=None)` — Shiny Express only
+### `[py]` `set_react_page(path=None, *, shinyreact_js="server")` — Shiny Express only
 
 - no R counterpart: R has no Express-style page mechanism
 - it sets the Express page via `page_opts(page_fn=...)`
@@ -846,7 +886,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     `page_opts(title=...)` + `set_react_page()` a startup `TypeError:
     _react_page_fn() got an unexpected keyword argument 'title'`
 
-### `[py]` `ReactApp(server, *, ui=None, static_assets=MISSING, bookmark_store="disable", **kwargs)`
+### `[py]` `ReactApp(server, *, ui=None, static_assets=MISSING, bookmark_store="disable", shinyreact_js="server", **kwargs)`
 
 - a `shiny.App` subclass whose UI is discovered, not passed — the app file is
   just the server
@@ -862,6 +902,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   restore works with no further wiring
   - the mode is re-checked **per request**, so creating or deleting
     `www/index.html` during a dev session switches modes with no restart
+  - `shinyreact_js=` is forwarded into **both** discovered modes; it is
+    ignored when `ui=` is passed, since that UI is already built
 - `bookmark_store=` is an explicit parameter, forwarded to `shiny.App`
   - `ui=page_react_html(...)` plus a non-`"disable"` store raises `TypeError`,
     naming both fixes: drop `ui=`, or pass `ui=lambda request:

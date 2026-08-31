@@ -127,8 +127,9 @@ describe("getMessageRegistry", () => {
 
   it("adopts a registry another copy of the library already attached", async () => {
     // The page-scoped-not-module-scoped property this design exists for. Two
-    // copies of the bundle can coexist today (the server injects the IIFE even
-    // for npm-tier apps until #217), and each has its own module singleton.
+    // copies of the bundle can coexist today (the page entry points serve
+    // shinyreact.js unless an npm-tier app passes `shinyreact_js="client"`,
+    // #217), and each has its own module singleton.
     // Whoever attaches first owns the page; everyone else must adopt it, or
     // there would be two dispatchers competing for Shiny's single slot per
     // message type and one copy's handlers would go dead.

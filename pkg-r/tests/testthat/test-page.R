@@ -156,6 +156,62 @@ test_that("page_react attaches bundle, app dep, and config", {
   expect_match(html, 'id="shinyreact-config"', fixed = TRUE)
 })
 
+test_that("page_react(shinyreact_js = 'client') omits the bundle", {
+  # npm tier: the client bundle ships its own copy, so shinyreact.js must not be
+  # served too -- but the config tag is still required (#217). Mirrors Python's
+  # test_page_react_shinyreact_js_client_omits_bundle.
+  dir <- local_react_app()
+  ui <- page_react(shinyreact_js = "client")
+  names <- vapply(htmltools::findDependencies(ui), function(d) d$name, "")
+  expect_false("shinyreact" %in% names)
+  expect_true(basename(dir) %in% names)
+  html <- dep_tags_html(ui)
+  expect_no_match(html, "shinyreact.js", fixed = TRUE)
+  expect_match(html, 'id="shinyreact-config"', fixed = TRUE)
+})
+
+test_that("page_react_html(shinyreact_js = 'client') omits the bundle", {
+  # Mirrors Python's test_page_react_html_shinyreact_js_client_omits_bundle.
+  tmp <- withr::local_tempfile(fileext = ".html")
+  write_full_doc(tmp)
+  html <- render_document(page_react_html(tmp, shinyreact_js = "client"))
+  expect_no_match(html, "shinyreact.js", fixed = TRUE)
+  expect_match(html, 'id="shinyreact-config"', fixed = TRUE)
+})
+
+test_that("shinyreact_js rejects an unknown value", {
+  # A typo fails loudly, naming the value and the valid ones (#217). Mirrors
+  # Python's test_shinyreact_js_rejects_an_unknown_value.
+  local_react_app()
+  expect_error(page_react(shinyreact_js = "sever"), "sever")
+  expect_error(page_react(shinyreact_js = "sever"), "client")
+
+  tmp <- withr::local_tempfile(fileext = ".html")
+  write_full_doc(tmp)
+  expect_error(page_react_html(tmp, shinyreact_js = "sever"), "sever")
+})
+
+test_that("page_react_html() rejects anything passed to ...", {
+  # The dots exist only to force the later arguments to be named -- R's
+  # counterpart of Python's keyword-only `*`. Mirrors Python's
+  # test_page_react_html_arguments_after_path_are_keyword_only.
+  tmp <- withr::local_tempfile(fileext = ".html")
+  write_full_doc(tmp)
+
+  # Asserted by rlang's condition class rather than its wording, which is
+  # rlang's to change; what is ours is that the check runs at all.
+  expect_error(
+    page_react_html(tmp, list()),
+    class = "rlib_error_dots_nonempty"
+  )
+  # A misspelled name is named back, which is the whole diagnosis.
+  expect_error(page_react_html(tmp, extra_dep = list()), "extra_dep")
+
+  # The named arguments still work.
+  expect_no_error(page_react_html(tmp, extra_deps = NULL))
+  expect_no_error(page_react_html(tmp, shinyreact_js = "client"))
+})
+
 test_that("page_react title defaults to the app folder name", {
   # Mirrors Python's test_page_react_title_defaults_to_app_folder_name.
   dir <- local_react_app()

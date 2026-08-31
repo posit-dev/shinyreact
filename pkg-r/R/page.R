@@ -45,6 +45,14 @@ page_bare <- function(..., title = NULL, lang = "en") {
 #'   that resolves to nothing usable (a missing `src_dir` is not an error —
 #'   the bundle may not be built yet).
 #' @param lang HTML `lang` attribute.
+#' @param shinyreact_js Who supplies `shinyreact.js` (and `shinyreact.css`) to
+#'   the page. `"server"` (the default) serves them from the shinyreact package
+#'   as an [htmltools::htmlDependency] — what a no-build app needs, and what
+#'   makes `window.shinyreact` exist. `"client"` is for an app whose own bundle
+#'   imports `@posit/shinyreact` and therefore ships its own copy; serving them
+#'   too would put two copies of React and the hooks on one page. The
+#'   `#shinyreact-config` tag is emitted either way; the npm-tier client
+#'   hard-errors without it. Mirrors Python's `page_react(shinyreact_js=)`.
 #' @return UI suitable for `shinyApp(ui = ...)`.
 #' @export
 page_react <- function(
@@ -53,7 +61,8 @@ page_react <- function(
   js_file = "ui.js",
   css_file = "ui.css",
   title = NULL,
-  lang = "en"
+  lang = "en",
+  shinyreact_js = "server"
 ) {
   base_dir <-
     if (basename(src_dir) == "www") {
@@ -70,7 +79,7 @@ page_react <- function(
     app_name <- "shinyreact-app"
   }
   page_bare(
-    shinyreact_dep_page(),
+    shinyreact_dep_page(shinyreact_js = shinyreact_js),
     page_react_dep(
       src_dir,
       js_file = js_file,
@@ -134,15 +143,25 @@ page_react <- function(
 #'
 #' @param path Path to the HTML document. Defaults to `"www/index.html"`,
 #'   relative to the working directory.
+#' @param ... Ignored.
 #' @param extra_deps A list of additional [htmltools::htmlDependency] objects to
 #'   render at the placeholder. A complete document has no tag tree to attach
 #'   dependencies to, so this is the only way in — the counterpart of
 #'   [page_react()]'s `...`. They render *after* Shiny's and shinyreact's, so
 #'   they can rely on `window.shinyreact` existing. Mirrors Python's
 #'   `page_react_html(extra_deps=)`.
+#' @param shinyreact_js Who supplies `shinyreact.js` / `shinyreact.css`:
+#'   `"server"` (the default) or `"client"` for an npm-tier app whose bundle
+#'   imports `@posit/shinyreact` — see [page_react()].
 #' @return UI suitable for `shinyApp(ui = ...)`.
 #' @export
-page_react_html <- function(path = "www/index.html", extra_deps = NULL) {
+page_react_html <- function(
+  path = "www/index.html",
+  ...,
+  extra_deps = NULL,
+  shinyreact_js = "server"
+) {
+  rlang::check_dots_empty()
   if (!file.exists(path)) {
     cli::cli_abort(c(
       "HTML file not found: {.path {path}}",
@@ -167,7 +186,11 @@ page_react_html <- function(path = "www/index.html", extra_deps = NULL) {
   ui <- htmltools::htmlTemplate(text_ = html, document_ = TRUE)
   htmltools::attachDependencies(
     ui,
-    c(list(shinyreact_dep(), config_head_dep()), extra_deps),
+    c(
+      if (serves_bundle(shinyreact_js)) list(shinyreact_dep()),
+      list(config_head_dep()),
+      extra_deps
+    ),
     append = TRUE
   )
 }

@@ -10,7 +10,8 @@ page_react(
   js_file = "ui.js",
   css_file = "ui.css",
   title = NULL,
-  lang = "en"
+  lang = "en",
+  shinyreact_js = "server"
 )
 }
 \arguments{
@@ -29,6 +30,15 @@ that resolves to nothing usable (a missing \code{src_dir} is not an error —
 the bundle may not be built yet).}
 
 \item{lang}{HTML \code{lang} attribute.}
+
+\item{shinyreact_js}{Who supplies \code{shinyreact.js} (and \code{shinyreact.css}) to
+the page. \code{"server"} (the default) serves them from the shinyreact package
+as an \link[htmltools:htmlDependency]{htmltools::htmlDependency} — what a no-build app needs, and what
+makes \code{window.shinyreact} exist. \code{"client"} is for an app whose own bundle
+imports \verb{@posit/shinyreact} and therefore ships its own copy; serving them
+too would put two copies of React and the hooks on one page. The
+\verb{#shinyreact-config} tag is emitted either way; the npm-tier client
+hard-errors without it. Mirrors Python's \code{page_react(shinyreact_js=)}.}
 }
 \value{
 UI suitable for \code{shinyApp(ui = ...)}.
