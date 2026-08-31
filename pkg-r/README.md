@@ -51,6 +51,31 @@ See [`examples/01-hello/`](https://github.com/posit-dev/shinyreact/tree/main/exa
 - **Function reference:** <https://posit-dev.github.io/shinyreact/r>
 - **Examples:** the [examples catalog](https://github.com/posit-dev/shinyreact/blob/main/examples/README.md)
 
+## Testing your app's wire payloads
+
+`wire_tap()` (test-only; requires the shinytest2 package) records the JSON
+payloads that cross the Shiny websocket, so you can assert the values your
+server actually delivered and the values your client actually sent:
+
+```r
+test_that("dist_data bins the waiting column", {
+  app <- shinytest2::AppDriver$new(
+    app_dir,
+    options = list(shiny.trace = TRUE)
+  )
+  withr::defer(app$stop())
+
+  tap <- shinyreact::wire_tap(app)
+  tap$expect_input_value("bins", 30L)
+  tap$expect_output_value("dist_data", function(d) d$breaks[[1]] == 43)
+})
+```
+
+`expect_*` matchers are a value (`identical()`) or a function (truthy),
+retrying until a timeout; `all_output_values()` / `all_messages()` /
+`all_input_values()` return each channel's full history. The Python
+counterpart is `shinyreact.playwright.WireTap`.
+
 ## Agent Skills
 
 The package ships two Agent Skills, so a coding agent can build a shinyreact

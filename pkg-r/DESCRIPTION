@@ -21,6 +21,7 @@ Imports:
     shiny (>= 1.13.0),
     utils
 Suggests:
+    shinytest2,
     testthat (>= 3.0.0),
     withr
 Config/roxygen2/version: 8.1.0
