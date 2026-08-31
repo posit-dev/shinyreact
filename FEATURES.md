@@ -531,6 +531,14 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     `{once: true}`, which would consume the event before Shiny existed and
     leave discovery uninstalled
 - it no-ops when there is no `document`
+- `getShiny()` returns `undefined` rather than throwing when there is no
+  `window` at all, not just when Shiny has not loaded
+  - it is reached from debounce timers and event callbacks that can outlive the
+    document — a page unloading, or a jsdom test tearing down between the last
+    input write and its 100 ms debounce — where a bare `window` is a
+    `ReferenceError`, not `undefined`
+  - every caller already treats a missing Shiny as "do nothing", so this
+    degrades the way they expect
 - **both entry points install it** — `src/index.ts` (IIFE) and `src/npm.ts`
   (npm ESM), so both tiers get discovery and both send the bootstrap ping
   - the npm entry omitted it until #233, which left bundler-tier apps with no
