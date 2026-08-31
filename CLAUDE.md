@@ -137,6 +137,7 @@ The deliberate remaining divergences (decided in #184) are recorded in `decision
 
 `pkg-js/dist/` and `pkg-py/src/shinyreact/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
 
+
 ### Shipped Agent Skills
 
 `.claude/skills/shinyreact-build-app/` and `.claude/skills/shinyreact-convert-app/` are the canonical sources; **after editing either, run `make update-skills`** to copy them into `pkg-py/src/shinyreact/.agents/skills/` (the path `library-skills` scans) and `pkg-r/inst/skills/` (where btw looks). Same committed-copy flow as `make update-dist`, and `pkg-py/tests/test_skills.py` / `pkg-r/tests/testthat/test-skills.R` fail on drift. `audit-shinyreact-features` is repo-internal and deliberately not shipped.

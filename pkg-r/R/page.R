@@ -51,8 +51,9 @@ page_bare <- function(..., title = NULL, lang = "en") {
 #'   makes `window.shinyreact` exist. `"client"` is for an app whose own bundle
 #'   imports `@posit/shinyreact` and therefore ships its own copy; serving them
 #'   too would put two copies of React and the hooks on one page. The
-#'   `#shinyreact-config` tag is emitted either way; the npm-tier client
-#'   hard-errors without it. Mirrors Python's `page_react(shinyreact_js=)`.
+#'   `#shinyreact-config` tag is emitted either way — it carries the protocol
+#'   version and any bookmark restore payload. Mirrors Python's
+#'   `page_react(shinyreact_js=)`.
 #' @return UI suitable for `shinyApp(ui = ...)`.
 #' @export
 page_react <- function(

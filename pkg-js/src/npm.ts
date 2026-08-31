@@ -16,7 +16,6 @@
 import "./shinyreact.css";
 
 import { installDepDiscovery } from "./dep-discovery";
-import { requireShinyReactConfigTag } from "./shiny-react/config";
 
 // Two copies on one page: this app bundles `@posit/shinyreact` AND the server
 // served shinyreact.js, because the page entry point left `shinyreact_js` at its
@@ -42,11 +41,6 @@ if (
       "page_react(), page_react_html(), set_react_page(), or ReactApp().",
   );
 }
-
-// An independently-installed client meeting a page without the
-// `#shinyreact-config` tag means the server predates the wire protocol —
-// fail loudly instead of degrading silently (see protocol/README.md §4).
-requireShinyReactConfigTag();
 
 // Automatic renderer dependency discovery, same as the IIFE bundle installs.
 // Without this an npm-tier app gets no `shinyreact-deps` handler AND never

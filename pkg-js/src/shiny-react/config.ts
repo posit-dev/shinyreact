@@ -112,23 +112,3 @@ export function assertProtocolCompatible(serverVersion: string): void {
   }
 }
 
-// Whether a missing `#shinyreact-config` tag is an error. The IIFE bundle
-// ships inside the server package and cannot skew, so it tolerates absence
-// (hand-wired page_bare() pages legitimately lack the tag). The npm build is
-// installed independently, so absence there means the server predates the
-// protocol — its entry point opts into strictness at import time.
-let configTagRequired = false;
-
-/** Opt into treating a missing `#shinyreact-config` tag as a hard error. */
-export function requireShinyReactConfigTag(): void {
-  configTagRequired = true;
-}
-
-export function isShinyReactConfigTagRequired(): boolean {
-  return configTagRequired;
-}
-
-/** Test-only: undo requireShinyReactConfigTag(). */
-export function _resetConfigTagRequirementForTesting(): void {
-  configTagRequired = false;
-}
