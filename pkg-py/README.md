@@ -86,6 +86,28 @@ Runnable apps live in [`examples/`](../examples/) — see the
 
 Shared `React` and `ReactDOM` instances are available at `window.shinyreact.React` / `window.shinyreact.ReactDOM` — externalize to these in your build to avoid duplicate React.
 
+## Testing your app's wire payloads
+
+`shinyreact.playwright.WireTap` (test-only; requires the `playwright`
+package) records the JSON payloads that cross the Shiny websocket in a
+Playwright test, so you can assert the values your server actually delivered
+and the values your client actually sent:
+
+```python
+from shinyreact.playwright import WireTap
+
+def test_dist_data(page, app):
+    tap = WireTap(page)  # construct before page.goto()
+    page.goto(app.url)
+    tap.expect_input_value("bins", 30)
+    tap.expect_output_value("dist_data", lambda d: d["breaks"][0] == 43.0)
+```
+
+`expect_*` matchers are a value (equality) or a function (truthy), retrying
+until a timeout; `all_output_values()` / `all_messages()` /
+`all_input_values()` return each channel's full history. The R counterpart is
+`shinyreact::wire_tap()`.
+
 ## Agent Skills
 
 The package ships two Agent Skills, so a coding agent can build a shinyreact

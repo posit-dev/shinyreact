@@ -309,7 +309,8 @@ test_that("the exported API surface is exactly this", {
       "page_react_dep",
       "page_react_html",
       "reactive_output",
-      "send_message"
+      "send_message",
+      "wire_tap"
     ))
   )
 })
