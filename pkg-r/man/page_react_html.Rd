@@ -6,6 +6,7 @@
 \usage{
 page_react_html(
   path = "www/index.html",
+  ...,
   extra_deps = NULL,
   shinyreact_js = "server"
 )
@@ -13,6 +14,11 @@ page_react_html(
 \arguments{
 \item{path}{Path to the HTML document. Defaults to \code{"www/index.html"},
 relative to the working directory.}
+
+\item{...}{These dots are for future extension and must be empty. They force
+every argument after them to be named, matching Python, where the same
+arguments are keyword-only. Passing anything here is an error naming what
+it received.}
 
 \item{extra_deps}{A list of additional \link[htmltools:htmlDependency]{htmltools::htmlDependency} objects to
 render at the placeholder. A complete document has no tag tree to attach

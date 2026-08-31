@@ -92,6 +92,43 @@ page_react <- function(
   )
 }
 
+# Internal: reject anything that lands in `...`.
+#
+# `page_react_html()`'s dots exist only to force the arguments after them to be
+# named -- R's counterpart of Python's keyword-only `*`, so the same call reads
+# the same in both languages. Anything that reaches `...` is either a positional
+# argument the caller meant to name or a misspelled name; both deserve an error
+# rather than being silently dropped.
+#
+# Reports names for named arguments (the misspelling case, where the name is the
+# whole diagnosis) and `..1`-style positions for unnamed ones. Deliberately does
+# not deparse the values: `...` is never evaluated, so a rejected argument
+# cannot run someone's expensive -- or erroring -- expression on its way to
+# being refused.
+check_dots_empty <- function(...) {
+  n <- ...length()
+  if (n == 0L) {
+    return(invisible(NULL))
+  }
+  nms <- names(match.call(expand.dots = FALSE)[["..."]])
+  labels <- vapply(
+    seq_len(n),
+    function(i) {
+      if (!is.null(nms) && nzchar(nms[[i]])) nms[[i]] else paste0("..", i)
+    },
+    character(1)
+  )
+  cli::cli_abort(
+    c(
+      "{.arg ...} must be empty.",
+      "x" = "Unexpected argument{?s}: {.arg {labels}}.",
+      "i" = "Arguments after {.arg ...} must be named, e.g.
+             {.code extra_deps = } or {.code shinyreact_js = }."
+    ),
+    call = parent.frame()
+  )
+}
+
 #' Serve a React `index.html` document (the `ui.tsx` pattern)
 #'
 #' Reads a complete HTML document — the kind a Vite build emits — and injects
@@ -143,6 +180,10 @@ page_react <- function(
 #'
 #' @param path Path to the HTML document. Defaults to `"www/index.html"`,
 #'   relative to the working directory.
+#' @param ... These dots are for future extension and must be empty. They force
+#'   every argument after them to be named, matching Python, where the same
+#'   arguments are keyword-only. Passing anything here is an error naming what
+#'   it received.
 #' @param extra_deps A list of additional [htmltools::htmlDependency] objects to
 #'   render at the placeholder. A complete document has no tag tree to attach
 #'   dependencies to, so this is the only way in — the counterpart of
@@ -156,9 +197,11 @@ page_react <- function(
 #' @export
 page_react_html <- function(
   path = "www/index.html",
+  ...,
   extra_deps = NULL,
   shinyreact_js = "server"
 ) {
+  check_dots_empty(...)
   if (!file.exists(path)) {
     cli::cli_abort(c(
       "HTML file not found: {.path {path}}",

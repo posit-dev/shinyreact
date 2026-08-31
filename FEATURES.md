@@ -737,6 +737,16 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     `...`)
     - they render **after** Shiny's and shinyreact's, so they can rely on
       `window.shinyreact` existing
+  - everything after `path` must be passed **by name**
+    - `[py]` a bare `*` in the signature; a second positional argument raises
+      `TypeError` naming positional arguments
+    - `[r]` an empty `...` before `extra_deps`, checked on entry; anything that
+      reaches it raises `` `...` must be empty ``
+      - named arguments are reported by name, so a misspelled `extra_dep=` names
+        itself; unnamed ones are reported by position (`..1`)
+      - the dots are never evaluated, so a rejected argument cannot run its own
+        expression on the way to being refused
+      - plural agreement: "Unexpected argument" vs "Unexpected arguments"
   - `[py]` it returns a `ReactHtmlDocument`
     - a `shiny.ui.PageDocument` subclass that also remembers the document's
       directory, so `ReactApp` can serve the assets the document references

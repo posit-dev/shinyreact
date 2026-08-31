@@ -191,6 +191,26 @@ test_that("shinyreact_js rejects an unknown value", {
   expect_error(page_react_html(tmp, shinyreact_js = "sever"), "sever")
 })
 
+test_that("page_react_html() rejects anything passed to ...", {
+  # The dots exist only to force the later arguments to be named -- R's
+  # counterpart of Python's keyword-only `*`. Mirrors Python's
+  # test_page_react_html_arguments_after_path_are_keyword_only.
+  tmp <- withr::local_tempfile(fileext = ".html")
+  write_full_doc(tmp)
+
+  # A positional argument is reported by position...
+  expect_error(page_react_html(tmp, list()), "must be empty")
+  expect_error(page_react_html(tmp, list()), "..1", fixed = TRUE)
+  # ...and a misspelled name by name, which is the whole diagnosis.
+  expect_error(page_react_html(tmp, extra_dep = list()), "extra_dep")
+  # Plural agreement, and both labels present.
+  expect_error(page_react_html(tmp, 1, foo = 2), "Unexpected arguments")
+
+  # The named arguments still work.
+  expect_no_error(page_react_html(tmp, extra_deps = NULL))
+  expect_no_error(page_react_html(tmp, shinyreact_js = "client"))
+})
+
 test_that("page_react title defaults to the app folder name", {
   # Mirrors Python's test_page_react_title_defaults_to_app_folder_name.
   dir <- local_react_app()

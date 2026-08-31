@@ -200,6 +200,19 @@ def test_shinyreact_js_rejects_an_unknown_value(tmp_path):
         page_react(src_dir=app_dir / "www", shinyreact_js="sever")  # type: ignore[arg-type]
 
 
+def test_page_react_html_arguments_after_path_are_keyword_only(tmp_path):
+    """Everything after ``path`` is keyword-only.
+
+    Mirrors R's "page_react_html() rejects anything passed to ...", where a bare
+    ``...`` enforces the same thing. Asserted so the two signatures cannot drift.
+    """
+    index = tmp_path / "index.html"
+    index.write_text(_full_doc())
+
+    with pytest.raises(TypeError, match="positional"):
+        page_react_html(index, [])  # type: ignore[misc]
+
+
 def test_page_react_title_defaults_to_app_folder_name(tmp_path):
     from shinyreact import page_react
 
