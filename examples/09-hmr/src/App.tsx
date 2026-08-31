@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useShinyInitialized, useShinyInput, useShinyOutputValue } from "shiny-bridge";
+import { useShinyInitialized, useShinyInput, useShinyOutputValue } from "@posit/shinyreact";
 
 // Exported component = a Fast Refresh boundary. Editing this file (e.g. the
 // heading text below) hot-swaps the component WITHOUT losing `count`.

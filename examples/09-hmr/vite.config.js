@@ -21,19 +21,15 @@ export default defineConfig(({ command }) => ({
     shinyreactDevStub({ entry: ENTRY, outFile: "www/ui.js" }),
   ],
   resolve: {
-    // One React instance across App.tsx and the bundled shiny-react source.
+    // `@posit/shinyreact` is a `file:` dep, so it is symlinked and brings its
+    // own node_modules. Without dedupe, App.tsx and the hooks would each get a
+    // React copy and every hook call would throw.
     dedupe: ["react", "react-dom"],
-    alias: {
-      "shiny-bridge": path.resolve(
-        __dirname,
-        command === "serve" ? "src/shiny-bridge.dev.ts" : "src/shiny-bridge.prod.ts",
-      ),
-    },
   },
   server: {
     port: 5173,
     strictPort: true, // keep the stub's hard-coded :5173 honest
-    // Allow serving the vendored shiny-react source that lives outside this dir.
+    // `@posit/shinyreact` resolves through a symlink to the repo's pkg-js/.
     fs: { allow: [repoRoot] },
   },
   build: {
@@ -45,15 +41,7 @@ export default defineConfig(({ command }) => ({
       name: "HmrExample",
       fileName: () => "ui.js",
     },
-    rollupOptions: {
-      external: ["react", "react-dom", "react-dom/client"],
-      output: {
-        globals: {
-          react: "window.shinyreact.React",
-          "react-dom": "window.shinyreact.ReactDOM",
-          "react-dom/client": "window.shinyreact.ReactDOM",
-        },
-      },
-    },
+    // No externals: this app bundles its own React, in both modes. That is the
+    // point of the npm tier -- a development React with Fast Refresh in dev.
   },
 }));

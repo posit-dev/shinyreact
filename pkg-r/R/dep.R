@@ -31,11 +31,34 @@ shinyreact_dep <- function() {
 # client finds it by id either way, but the two servers disagreed about where a
 # documented `<head>` tag goes, and `page_react_html()` (via `config_head_dep()`)
 # already put it in the head.
-shinyreact_dep_page <- function() {
+#
+# `shinyreact_js = "client"` omits shinyreact.js / shinyreact.css for npm-tier
+# pages, whose client bundle ships its own copy. The config tag is always
+# emitted: the npm client hard-errors without it.
+shinyreact_dep_page <- function(shinyreact_js = "server") {
   htmltools::tagList(
-    shinyreact_dep(),
+    if (serves_bundle(shinyreact_js)) shinyreact_dep(),
     htmltools::tags$head(config_script_tag())
   )
+}
+
+# Internal: validate `shinyreact_js=` and say whether the page attaches the
+# bundle. The one place the value is checked, so every entry point rejects a
+# typo the same way. Mirrors Python's `_serves_bundle()`.
+serves_bundle <- function(shinyreact_js) {
+  if (
+    !identical(shinyreact_js, "server") && !identical(shinyreact_js, "client")
+  ) {
+    cli::cli_abort(c(
+      "{.arg shinyreact_js} must be {.val server} or {.val client},
+       not {.val {shinyreact_js}}.",
+      "i" = "{.val server} (the default) serves {.file shinyreact.js} from the
+             shinyreact package -- what a no-build app needs.",
+      "i" = "{.val client} is for an app whose own bundle imports
+             {.pkg @posit/shinyreact} and therefore ships its own copy."
+    ))
+  }
+  identical(shinyreact_js, "server")
 }
 
 # Internal: the `#shinyreact-config` tag as an htmlDependency `head` entry, for

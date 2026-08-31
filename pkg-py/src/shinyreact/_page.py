@@ -12,7 +12,7 @@ from shiny.session import get_current_session
 
 from ._app import ReactHtmlDocument
 from ._bookmark import _config_script_tag
-from ._dep import _dep, _dep_page, _file_mtime_int
+from ._dep import ShinyreactJs, _dep, _dep_page, _file_mtime_int, _serves_bundle
 
 if TYPE_CHECKING:
     # Private, but it is the only name for HTMLDependency's stylesheet entry.
@@ -79,6 +79,7 @@ def page_react(
     css_file: str | None = "ui.css",
     title: str | None = None,
     lang: str = "en",
+    shinyreact_js: ShinyreactJs = "server",
     **kwargs: Any,
 ) -> Tag:
     """Create a React page from conventional assets — no HTML file required.
@@ -108,6 +109,18 @@ def page_react(
         title: Page title. Defaults to the app folder's name (``src_dir``'s
             parent when ``src_dir`` is a ``www/`` dir).
         lang: HTML ``lang`` attribute.
+        shinyreact_js: Who supplies ``shinyreact.js`` (and
+            ``shinyreact.css``) to the page.
+
+            - ``"server"`` (default) — the shinyreact package serves them as an
+              :class:`~htmltools.HTMLDependency`. What a no-build app needs,
+              and what makes ``window.shinyreact`` exist.
+            - ``"client"`` — your own bundle imports ``@posit/shinyreact`` and
+              ships its own copy, so the server sends nothing. Serving them too
+              would put two copies of React and the hooks on one page.
+
+            The ``#shinyreact-config`` tag is emitted either way; the npm-tier
+            client hard-errors without it.
         **kwargs: Forwarded to :func:`page_bare`, and on to
             :func:`shiny.ui.page_bootstrap`.
     """
@@ -115,7 +128,7 @@ def page_react(
     caller_dir = Path(caller_file).parent if caller_file else Path.cwd()
     base_dir, app_name = _resolve_react_dirs(src_dir, caller_dir)
     return page_bare(
-        _dep_page(),
+        _dep_page(shinyreact_js),
         page_react_dep(
             src_dir=base_dir,
             js_file=js_file,
@@ -271,7 +284,9 @@ def _read_document_cached(path: Path) -> str:
     return text
 
 
-def set_react_page(path: str | Path | None = None) -> None:
+def set_react_page(
+    path: str | Path | None = None, *, shinyreact_js: ShinyreactJs = "server"
+) -> None:
     """Set the page for this Express app to a React app (the ui.tsx pattern).
 
     With no arguments, serves ``www/index.html`` when it exists; otherwise
@@ -341,7 +356,13 @@ def set_react_page(path: str | Path | None = None) -> None:
             or against ``Path.cwd()`` when there is no caller ``__file__``.
             When ``None`` (the default), uses ``www/index.html`` if it
             exists, else discovers ``www/ui.js`` / ``www/ui.css``.
+        shinyreact_js: Who supplies ``shinyreact.js`` / ``shinyreact.css``:
+            ``"server"`` (default) or ``"client"`` for an npm-tier app whose
+            bundle imports ``@posit/shinyreact`` — see :func:`page_react`.
     """
+    # Validate now rather than at first page render: a typo should fail at
+    # startup, next to the call that made it.
+    _serves_bundle(shinyreact_js)
     caller_file = sys._getframe(1).f_globals.get("__file__")
     # If the caller has no __file__ (REPL or dynamically exec'd code),
     # fall back to the current working directory.
@@ -350,18 +371,21 @@ def set_react_page(path: str | Path | None = None) -> None:
     if path is None:
         index_path = caller_dir / "www" / "index.html"
         if not index_path.exists():
-            page_opts(page_fn=_build_react_page_fn_discovered(caller_dir))
+            page_opts(
+                page_fn=_build_react_page_fn_discovered(caller_dir, shinyreact_js)
+            )
             return
     else:
         path = Path(path)
         index_path = path if path.is_absolute() else caller_dir / path
-    page_opts(page_fn=_build_react_page_fn(index_path))
+    page_opts(page_fn=_build_react_page_fn(index_path, shinyreact_js))
 
 
 def page_react_html(
     path: str | Path = "www/index.html",
     *,
     extra_deps: list[HTMLDependency] | None = None,
+    shinyreact_js: ShinyreactJs = "server",
 ) -> ReactHtmlDocument:
     """Serve a React ``index.html`` document (the ui.tsx pattern, Core API).
 
@@ -405,6 +429,9 @@ def page_react_html(
             counterpart of :func:`page_react`'s positional ``*args``. They
             render *after* Shiny's and shinyreact's, so they can rely on
             ``window.shinyreact`` existing.
+        shinyreact_js: Who supplies ``shinyreact.js`` / ``shinyreact.css``:
+            ``"server"`` (default) or ``"client"`` for an npm-tier app whose
+            bundle imports ``@posit/shinyreact`` — see :func:`page_react`.
     """
     path = Path(path)
     if path.is_absolute():
@@ -424,7 +451,11 @@ def page_react_html(
     return ReactHtmlDocument(
         _read_document_cached(index_path),
         src_dir=index_path.parent,
-        extra_deps=[_dep(), _config_script_tag(), *(extra_deps or [])],
+        extra_deps=[
+            *([_dep()] if _serves_bundle(shinyreact_js) else []),
+            _config_script_tag(),
+            *(extra_deps or []),
+        ],
     )
 
 
@@ -491,7 +522,9 @@ def _react_page_opts(kwargs: dict[str, Any], *, mode: str) -> dict[str, Any]:
     return {k: v for k, v in kwargs.items() if v is not None}
 
 
-def _build_react_page_fn_discovered(app_dir: Path) -> Callable[..., Tag]:
+def _build_react_page_fn_discovered(
+    app_dir: Path, shinyreact_js: ShinyreactJs = "server"
+) -> Callable[..., Tag]:
     """Express page function for the no-HTML-file mode.
 
     Serves a :func:`page_react` page from ``app_dir/www`` with the same
@@ -504,13 +537,16 @@ def _build_react_page_fn_discovered(app_dir: Path) -> Callable[..., Tag]:
         return page_react(
             *_harvest_renderer_deps(args),
             src_dir=app_dir / "www",
+            shinyreact_js=shinyreact_js,
             **opts,
         )
 
     return _react_page_fn
 
 
-def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
+def _build_react_page_fn(
+    index_path: Path, shinyreact_js: ShinyreactJs = "server"
+) -> Callable[..., Tag]:
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
 
@@ -553,6 +589,6 @@ def _build_react_page_fn(index_path: Path) -> Callable[..., Tag]:
         # Shiny de-duplicates dependencies by name+version when hoisting to
         # <head>, so any overlap between the harvest passes is harmless.
         # page_opts types page_fn as -> Tag, but TagList works at runtime
-        return cast(Tag, TagList(_dep_page(), *deps, HTML(index_html)))
+        return cast(Tag, TagList(_dep_page(shinyreact_js), *deps, HTML(index_html)))
 
     return _react_page_fn

@@ -17,6 +17,8 @@ from shiny import App as _ShinyApp
 from shiny import ui as _shiny_ui
 from shiny.types import MISSING, MISSING_TYPE
 
+from ._dep import ShinyreactJs, _serves_bundle
+
 if TYPE_CHECKING:
     from htmltools import HTMLDependency
 
@@ -107,6 +109,11 @@ class ReactApp(_ShinyApp):
         bookmark_store: ``"url"`` / ``"server"`` to enable bookmarking, as for
             :class:`shiny.App`. Requires a callable UI, which discovery
             provides; a static ``ui=page_react_html(...)`` raises.
+        shinyreact_js: Who supplies ``shinyreact.js`` / ``shinyreact.css`` to
+            the discovered UI: ``"server"`` (default) or ``"client"`` for an
+            npm-tier app whose bundle imports ``@posit/shinyreact``. Ignored
+            when ``ui=`` is passed — build that UI with
+            ``shinyreact_js="client"`` yourself.
         **kwargs: Forwarded to :class:`shiny.App` (``debug=``, ``test_mode=``).
 
     Static assets
@@ -152,8 +159,13 @@ class ReactApp(_ShinyApp):
         ui: Any = None,
         static_assets: StaticAssets | None | MISSING_TYPE = MISSING,
         bookmark_store: Literal["url", "server", "disable"] = "disable",
+        shinyreact_js: ShinyreactJs = "server",
         **kwargs: Any,
     ) -> None:
+        # Validate now rather than at first page render: a typo should fail at
+        # startup, next to the call that made it.
+        _serves_bundle(shinyreact_js)
+
         # The directory holding the React bundle, to be mounted at "/".
         react_dir: Path | None = None
 
@@ -175,8 +187,8 @@ class ReactApp(_ShinyApp):
                 # www/index.html during a dev session now switches modes without
                 # a restart. `exists()` is one stat call per page render.
                 if index_path.exists():
-                    return page_react_html(index_path)
-                return page_react(src_dir=src_dir)
+                    return page_react_html(index_path, shinyreact_js=shinyreact_js)
+                return page_react(src_dir=src_dir, shinyreact_js=shinyreact_js)
 
             ui = discovered_ui
 

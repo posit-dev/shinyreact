@@ -32,8 +32,9 @@ export function initializeReactRegistry(): void {
  * The registry pair for this *page*.
  *
  * Page-scoped for the reason spelled out in CLAUDE.md: two copies of this
- * library can be on one page (the server injects the IIFE even for npm-tier
- * apps until #217), and two registries would split one input id's producers
+ * library can be on one page (the page entry points serve shinyreact.js unless
+ * an npm-tier app passes `shinyreact_js="client"`, #217), and two registries
+ * would split one input id's producers
  * from its consumers. `??=` so the first copy to run owns the page and later
  * copies adopt it.
  *

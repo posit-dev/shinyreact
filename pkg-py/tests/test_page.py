@@ -162,6 +162,44 @@ def test_page_react_attaches_bundle_app_dep_and_config(tmp_path):
     assert 'id="shinyreact-config"' in html
 
 
+def test_page_react_shinyreact_js_client_omits_bundle(tmp_path):
+    """npm tier: no IIFE bundle, but the config tag is still required (#217).
+
+    Mirrors R's "page_react(shinyreact_js = 'client') omits the bundle".
+    """
+    from shinyreact import page_react
+
+    app_dir = _make_react_app(tmp_path)
+    ui = page_react(src_dir=app_dir / "www", shinyreact_js="client")
+    names = [d.name for d in ui.get_dependencies()]
+    assert "shinyreact" not in names
+    assert "myapp" in names
+    html = _dep_tags_html(ui)
+    assert "shinyreact.js" not in html
+    assert 'id="shinyreact-config"' in html
+
+
+def test_page_react_html_shinyreact_js_client_omits_bundle(tmp_path):
+    """Mirrors R's "page_react_html(shinyreact_js = 'client') omits the bundle"."""
+    index = tmp_path / "index.html"
+    index.write_text(_full_doc())
+    html = _render_doc(page_react_html(index, shinyreact_js="client"))
+    assert "shinyreact.js" not in html
+    assert 'id="shinyreact-config"' in html
+
+
+def test_shinyreact_js_rejects_an_unknown_value(tmp_path):
+    """A typo fails loudly, naming the value and the valid ones (#217).
+
+    Mirrors R's "shinyreact_js rejects an unknown value".
+    """
+    from shinyreact import page_react
+
+    app_dir = _make_react_app(tmp_path)
+    with pytest.raises(ValueError, match=r"shinyreact_js='sever'.*'server', 'client'"):
+        page_react(src_dir=app_dir / "www", shinyreact_js="sever")  # type: ignore[arg-type]
+
+
 def test_page_react_title_defaults_to_app_folder_name(tmp_path):
     from shinyreact import page_react
 
@@ -320,9 +358,7 @@ def test_page_react_dep_version_is_the_js_mtime(tmp_path: Path) -> None:
 
 def _dep_html(ui) -> str:
     rendered = ui.tagify().render()
-    return "".join(
-        d.as_html_tags().get_html_string() for d in rendered["dependencies"]
-    )
+    return "".join(d.as_html_tags().get_html_string() for d in rendered["dependencies"])
 
 
 def test_page_bare_kwargs_reach_page_bootstrap() -> None:
@@ -337,9 +373,7 @@ def test_page_bare_kwargs_reach_page_bootstrap() -> None:
 
 def test_page_react_kwargs_reach_page_bootstrap(tmp_path: Path) -> None:
     (tmp_path / "ui.js").write_text("// ui")
-    ui = shinyreact.page_react(
-        src_dir=tmp_path, theme="https://cdn.example/custom.css"
-    )
+    ui = shinyreact.page_react(src_dir=tmp_path, theme="https://cdn.example/custom.css")
     assert 'href="https://cdn.example/custom.css"' in _dep_html(ui)
 
 

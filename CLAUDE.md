@@ -92,7 +92,7 @@ The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundle
 
 **Default: module-level state, not globals.** A module singleton is testable, typed, and cannot be clobbered by another script on the page. Reach for it first.
 
-Writing to `window` (including `window.Shiny.*`) is justified in exactly one situation: **state that must be shared per *page*, not per *bundle copy*.** Two copies of this library can be on one page today — the server injects the IIFE bundle even for an npm-tier app, until the opt-out in #217 lands — and each copy has its own module singletons. Anything that must be single per page has to travel through something both copies can see.
+Writing to `window` (including `window.Shiny.*`) is justified in exactly one situation: **state that must be shared per *page*, not per *bundle copy*.** Two copies of this library can be on one page today — the page entry points serve `shinyreact.js` unless an npm-tier app passes `shinyreact_js="client"` (#217) — and each copy has its own module singletons. Anything that must be single per page has to travel through something both copies can see.
 
 The two sanctioned cases, both mediated by a single accessor:
 

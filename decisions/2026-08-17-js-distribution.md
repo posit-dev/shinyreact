@@ -1,7 +1,7 @@
 # Shipping the JS runtime: npm package + HTMLDependency hybrid
 
 **Date:** 2026-08-17
-**Status:** Decided; in progress — config tag + handshake (#198), page modes (#208, #214), protocol doc + dual build + publish workflow (npm-package PR). Remaining: first npm publish, 09-hmr conversion (needs a server-side switch to omit the IIFE bundle for npm-tier pages)
+**Status:** Decided; in progress — config tag + handshake (#198), page modes (#208, #214), protocol doc + dual build + publish workflow (npm-package PR), `shinyreact_js=` switch + 09-hmr conversion (#217). Remaining: first npm publish (until then `examples/09-hmr` depends on `file:../../pkg-js`)
 **Issues:** [#172](https://github.com/posit-dev/shinyreact/issues/172) (spike), [#28](https://github.com/posit-dev/shinyreact/issues/28) (upstream npm publication)
 
 ## Context
@@ -97,7 +97,11 @@ offline.
 *Cons:* disqualifying DX — `file:` deps bake machine-specific absolute paths
 into `package.json`/lockfiles, breaking every collaborator, CI runner, and
 venv/renv rebuild; opaque to Renovate/audit/caching; still needs a separate
-no-build answer. **Investigated and rejected.**
+no-build answer. **Investigated and rejected** — but reopened for
+reconsideration in #261, on the grounds that an *in-project* environment
+(uv's `.venv/`, renv's `renv/library/`) makes the path project-relative and
+therefore portable, which is the property this rejection assumed was
+unavailable.
 
 **D. Server-served ESM + import maps** — server ships an ESM build and injects
 an import map; bundlers mark the runtime external.
@@ -166,12 +170,14 @@ The rule, then:
   distinction and must be installed by both. To stay import-time safe, such an
   installer must no-op without `document` (SSR, node tests), do nothing beyond
   registering a listener until Shiny exists, and tolerate being called twice.
-- **Tier distinctions are deliberate and few.** Only two today: the IIFE
-  installs `window.shinyreact` (npm consumers import the hooks directly), and
-  the npm build treats a missing `#shinyreact-config` tag as fatal (an
+- **Tier distinctions are deliberate and few.** Three today: the IIFE
+  installs `window.shinyreact` (npm consumers import the hooks directly); the
+  npm build treats a missing `#shinyreact-config` tag as fatal (an
   independently installed client meeting a tagless page means the server
   predates the protocol; the IIFE ships *with* the server, so absence is
-  legitimate for a hand-wired `page_bare()` page).
+  legitimate for a hand-wired `page_bare()` page); and the npm build warns when
+  `window.shinyreact` is already present, since only it can observe the
+  double-load — script order guarantees the IIFE ran first (#217).
 - **Both are pinned by tests.** `pkg-js/src/__tests__/entry-parity.test.ts`
   imports each entry for real and asserts its observable side effects, including
   the deliberate differences. Comments do not stop drift; that test does.
@@ -200,7 +206,10 @@ The rule, then:
 3. Package `pkg-js/src/` for dual output (ESM + IIFE); add publish workflow for
    `@posit/shinyreact`.
 4. Convert one Vite example (`09-hmr` is the natural candidate) to import
-   `@posit/shinyreact`; retire its dev/prod bridge alias.
+   `@posit/shinyreact`; retire its dev/prod bridge alias. Done in #217, which
+   also added the `shinyreact_js="client"` page-entry-point switch the
+   conversion needs — an npm-tier page must not *also* be served the IIFE
+   bundle.
 5. Longer term, if the zero-build tier is ever deprecated, the global dies
    with it — completing #172's original goal.
 

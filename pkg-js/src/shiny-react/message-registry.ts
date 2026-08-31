@@ -118,8 +118,9 @@ const messageRegistry = new ShinyMessageRegistry();
  *
  * Deliberately page-scoped rather than module-scoped, and the one place that
  * attaches it to `window.Shiny`. Two copies of this library can be on a page
- * today — the server injects the IIFE bundle even for an npm-tier app, until
- * the opt-out in #217 lands — and each copy has its own module singleton. Two
+ * today — the page entry points serve shinyreact.js unless an npm-tier app
+ * passes `shinyreact_js="client"` (#217) — and each copy has its own module
+ * singleton. Two
  * registries would mean two `addCustomMessageHandler("shinyReactMessage")`
  * calls, and Shiny gives us one dispatcher slot per message type: whichever
  * behaviour it has (silently replacing the first, or throwing), one copy's

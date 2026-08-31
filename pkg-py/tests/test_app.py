@@ -121,6 +121,23 @@ def test_app_discovers_ui_js(tmp_path: Path, monkeypatch) -> None:
     assert f"<title>{tmp_path.name}</title>" in html
 
 
+def test_app_shinyreact_js_client_omits_bundle(tmp_path: Path, monkeypatch) -> None:
+    """ReactApp(shinyreact_js="client") reaches both discovered modes (#217)."""
+    _write_react_assets(tmp_path)
+    app = _make_app_from_cwd(tmp_path, monkeypatch, shinyreact_js="client")
+    html = TestClient(app).get("/").text
+    assert "shinyreact.js" not in html
+    assert 'id="shinyreact-config"' in html
+
+    # ...and again once www/index.html appears (mode is re-checked per request).
+    (tmp_path / "www" / "index.html").write_text(
+        f"<!DOCTYPE html><html><head><title>T</title>{DEPS}</head><body></body></html>"
+    )
+    html = TestClient(app).get("/").text
+    assert "shinyreact.js" not in html
+    assert 'id="shinyreact-config"' in html
+
+
 def test_app_discovered_ui_supports_bookmarking(tmp_path: Path, monkeypatch) -> None:
     # The discovered UI is a function of the request, so a bookmark query
     # string renders the restore payload with zero extra wiring.

@@ -28,6 +28,27 @@ def test_build_page_fn_injects_shinyreact_dep(tmp_path: Path) -> None:
     assert "shinyreact" in dep_names
 
 
+def test_build_page_fn_shinyreact_js_client_omits_bundle(tmp_path: Path) -> None:
+    """npm tier: no IIFE bundle, config tag still emitted (#217).
+
+    Both `set_react_page()` modes: the HTML-file page_fn and the discovered one.
+    """
+    index = tmp_path / "index.html"
+    index.write_text("<div id='root'></div>")
+    (tmp_path / "www").mkdir()
+    (tmp_path / "www" / "ui.js").write_text("// ui entry")
+
+    for page_fn in (
+        _build_react_page_fn(index, "client"),
+        _build_react_page_fn_discovered(tmp_path, "client"),
+    ):
+        rendered = _render(page_fn)
+        deps = rendered["dependencies"]
+        assert "shinyreact" not in [d.name for d in deps]
+        head = "".join(d.as_html_tags().get_html_string() for d in deps)
+        assert 'id="shinyreact-config"' in head
+
+
 def test_build_page_fn_discovers_renderer_deps(tmp_path: Path) -> None:
     """Deps from traditional Shiny renderers are auto-discovered."""
     index = tmp_path / "index.html"
