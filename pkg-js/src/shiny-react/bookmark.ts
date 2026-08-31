@@ -2,9 +2,7 @@
 import { type InputRegistry } from "./input-registry";
 import {
   assertProtocolCompatible,
-  isShinyReactConfigTagRequired,
   readShinyReactConfig,
-  throwVisibly,
 } from "./config";
 
 /**
@@ -40,31 +38,21 @@ export function applyRestoredValues(registry: InputRegistry): void {
   // pre-set/forged `_restore` sentinel — must not be able to skip it. Doing the
   // early return first turned that sentinel into a silent kill switch for
   // version checking.
+  // A missing tag is not an error in either build: a hand-wired
+  // `page_bare(page_react_dep())` page legitimately has none, and there is
+  // nothing to check when the server serves no client (#261).
   const config = readShinyReactConfig();
-  if (config == null && isShinyReactConfigTagRequired()) {
-    throwVisibly(
-      "shinyreact: no `#shinyreact-config` tag found in this page. The " +
-        "`@posit/shinyreact` client requires a shinyreact server recent " +
-        "enough to emit it — upgrade the shinyreact Python/R package.",
-    );
-  }
   if (config?.protocolVersion) {
     assertProtocolCompatible(config.protocolVersion);
   } else if (config != null) {
     // A config tag with no `protocolVersion` is not a page we emit: both
     // servers always include it. Previously this silently skipped version
     // checking altogether, which is the one thing the tag exists to prevent.
-    const message =
-      "shinyreact: the `#shinyreact-config` tag carries no `protocolVersion`, so " +
-      "the client cannot verify it speaks the same protocol as the server. " +
-      "Upgrade the shinyreact Python/R package.";
-    if (isShinyReactConfigTagRequired()) {
-      // The npm client is installed independently of the server, so it cannot
-      // assume compatibility — same reasoning as a missing tag being fatal.
-      throwVisibly(message);
-    }
-    // Backticks mark literals for the on-page banner; a console has no chips.
-    console.error(message.replace(/`/g, ""));
+    console.error(
+      "shinyreact: the #shinyreact-config tag carries no protocolVersion, so " +
+        "the client cannot verify it speaks the same protocol as the server. " +
+        "Upgrade the shinyreact Python/R package.",
+    );
   }
 
   // Already applied — preserve the existing snapshot.

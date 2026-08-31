@@ -119,8 +119,8 @@ def page_react(
               ships its own copy, so the server sends nothing. Serving them too
               would put two copies of React and the hooks on one page.
 
-            The ``#shinyreact-config`` tag is emitted either way; the npm-tier
-            client hard-errors without it.
+            The ``#shinyreact-config`` tag is emitted either way — it carries
+            the protocol version and any bookmark restore payload.
         **kwargs: Forwarded to :func:`page_bare`, and on to
             :func:`shiny.ui.page_bootstrap`.
     """

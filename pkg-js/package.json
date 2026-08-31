@@ -26,8 +26,8 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "19.x",
+    "react-dom": "19.x"
   },
   "devDependencies": {
     "@posit/shiny": "^1.11.1",

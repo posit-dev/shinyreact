@@ -1,0 +1,2 @@
+# Keeps www/ in the repo: app.py mounts it as an HTMLDependency source dir, so
+# it must exist before `npm run build` writes ui.js/ui.css into it.

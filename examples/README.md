@@ -5,9 +5,9 @@ reactive computation, and the UI is defined in a client-side React codebase
 whose entry is conventionally `ui.tsx` (simpler variants like `www/ui.js`
 for no-build or `src/ui.jsx` for Vite + JSX fill the same role).
 
-Examples are Python unless noted; [01-hello](01-hello/) and
-[07-plotly](07-plotly/) also ship an `app.R` showing the same app on the R
-package.
+Examples are Python unless noted; [01-hello](01-hello/),
+[07-plotly](07-plotly/) and [11-npm-local](11-npm-local/) also ship an `app.R`
+showing the same app on the R package.
 
 **Shipping several servers over one `www/` client is a device of these
 examples, not a pattern to copy.** A real app has one server. It exists here
@@ -31,6 +31,7 @@ see [Example behavior trees](#example-behavior-trees) below.
 | [08-input-handler](08-input-handler/) | `useShinyInput` with `type="shiny.datetime"` — client sends unix seconds; server `input.when()` is a `datetime.datetime` via Shiny's built-in handler |
 | [09-hmr](09-hmr/) | React Fast Refresh in dev (Vite dev server alongside Shiny). The npm tier: imports `@posit/shinyreact` and bundles its own React, with `set_react_page(shinyreact_js="client")` so the server doesn't also serve shinyreact.js |
 | [10-bookmarking](10-bookmarking/) | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via the `#shinyreact-config` tag emitted by `page_react()` |
+| [11-npm-local](11-npm-local/) | The npm tier with nothing else on the page: the client imports `@posit/shinyreact` (repo-relative `file:../../pkg-js`, as 09-hmr does) and the server is `page_bare(page_react_dep(...))` — no shinyreact JS, no `#shinyreact-config` tag, no protocol handshake. `app.py` + `app.R` |
 
 ## Example behavior trees
 

@@ -34,7 +34,7 @@ shinyreact_dep <- function() {
 #
 # `shinyreact_js = "client"` omits shinyreact.js / shinyreact.css for npm-tier
 # pages, whose client bundle ships its own copy. The config tag is always
-# emitted: the npm client hard-errors without it.
+# emitted: it carries the protocol version and any bookmark restore payload.
 shinyreact_dep_page <- function(shinyreact_js = "server") {
   htmltools::tagList(
     if (serves_bundle(shinyreact_js)) shinyreact_dep(),

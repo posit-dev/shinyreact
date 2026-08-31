@@ -64,7 +64,8 @@ def _dep_page(shinyreact_js: ShinyreactJs = "server") -> TagChild:
 
     ``shinyreact_js="client"`` omits ``shinyreact.js`` / ``shinyreact.css`` for
     npm-tier pages, whose client bundle ships its own copy. The config tag is
-    always emitted: the npm client hard-errors without it.
+    always emitted: it carries the protocol version and any bookmark restore
+    payload.
     """
     bundle = _dep() if _serves_bundle(shinyreact_js) else None
     return TagList(bundle, _config_script_tag())

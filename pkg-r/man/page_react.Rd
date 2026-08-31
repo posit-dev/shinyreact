@@ -37,8 +37,9 @@ as an \link[htmltools:htmlDependency]{htmltools::htmlDependency} — what a no-b
 makes \code{window.shinyreact} exist. \code{"client"} is for an app whose own bundle
 imports \verb{@posit/shinyreact} and therefore ships its own copy; serving them
 too would put two copies of React and the hooks on one page. The
-\verb{#shinyreact-config} tag is emitted either way; the npm-tier client
-hard-errors without it. Mirrors Python's \code{page_react(shinyreact_js=)}.}
+\verb{#shinyreact-config} tag is emitted either way — it carries the protocol
+version and any bookmark restore payload. Mirrors Python's
+\code{page_react(shinyreact_js=)}.}
 }
 \value{
 UI suitable for \code{shinyApp(ui = ...)}.

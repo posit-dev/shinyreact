@@ -1,0 +1,27 @@
+main {
+  max-width: 44rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+input[type="range"] {
+  display: block;
+  width: 100%;
+}
+
+svg {
+  width: 100%;
+  height: auto;
+}
+
+.recalculating {
+  opacity: 0.6;
+  transition: opacity 200ms;
+}
+
+.placeholder {
+  color: #666;
+  padding: 4rem 0;
+  text-align: center;
+}
