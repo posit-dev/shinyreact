@@ -15,9 +15,7 @@ page_react_html(
 \item{path}{Path to the HTML document. Defaults to \code{"www/index.html"},
 relative to the working directory.}
 
-\item{...}{These dots are for future extensions and must be empty. They also
-force every argument after them to be named, matching Python, where the
-same arguments are keyword-only.}
+\item{...}{Ignored.}
 
 \item{extra_deps}{A list of additional \link[htmltools:htmlDependency]{htmltools::htmlDependency} objects to
 render at the placeholder. A complete document has no tag tree to attach
