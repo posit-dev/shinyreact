@@ -740,13 +740,12 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - everything after `path` must be passed **by name**
     - `[py]` a bare `*` in the signature; a second positional argument raises
       `TypeError` naming positional arguments
-    - `[r]` an empty `...` before `extra_deps`, checked on entry; anything that
-      reaches it raises `` `...` must be empty ``
-      - named arguments are reported by name, so a misspelled `extra_dep=` names
-        itself; unnamed ones are reported by position (`..1`)
-      - the dots are never evaluated, so a rejected argument cannot run its own
-        expression on the way to being refused
-      - plural agreement: "Unexpected argument" vs "Unexpected arguments"
+    - `[r]` an empty `...` before `extra_deps`, enforced by
+      `rlang::check_dots_empty()` on entry; anything that reaches it raises
+      `` `...` must be empty `` with class `rlib_error_dots_nonempty`
+      - each offending argument is echoed as `name = expr`, so a misspelled
+        `extra_dep = list()` names itself; unnamed ones show as `..1`
+      - the error is attributed to `page_react_html()`, not to the check
   - `[py]` it returns a `ReactHtmlDocument`
     - a `shiny.ui.PageDocument` subclass that also remembers the document's
       directory, so `ReactApp` can serve the assets the document references

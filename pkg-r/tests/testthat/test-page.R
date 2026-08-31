@@ -198,13 +198,14 @@ test_that("page_react_html() rejects anything passed to ...", {
   tmp <- withr::local_tempfile(fileext = ".html")
   write_full_doc(tmp)
 
-  # A positional argument is reported by position...
-  expect_error(page_react_html(tmp, list()), "must be empty")
-  expect_error(page_react_html(tmp, list()), "..1", fixed = TRUE)
-  # ...and a misspelled name by name, which is the whole diagnosis.
+  # Asserted by rlang's condition class rather than its wording, which is
+  # rlang's to change; what is ours is that the check runs at all.
+  expect_error(
+    page_react_html(tmp, list()),
+    class = "rlib_error_dots_nonempty"
+  )
+  # A misspelled name is named back, which is the whole diagnosis.
   expect_error(page_react_html(tmp, extra_dep = list()), "extra_dep")
-  # Plural agreement, and both labels present.
-  expect_error(page_react_html(tmp, 1, foo = 2), "Unexpected arguments")
 
   # The named arguments still work.
   expect_no_error(page_react_html(tmp, extra_deps = NULL))
