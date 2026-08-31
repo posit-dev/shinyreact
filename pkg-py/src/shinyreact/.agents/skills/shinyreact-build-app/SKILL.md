@@ -244,6 +244,7 @@ an npm-tier build).
 | **Input** | `useShinyInput(id, default)` → `[value, setValue]` | `useShinyInputValue(id)` | `useSetShinyInput(id, default)` |
 | **Output** | — | `useShinyOutputValue(id, default?)` | — |
 | **Status** | | `useShinyOutputStatus(id)` → `"pending" \| "ready" \| "recalculating" \| "error"` | |
+| **Error** | | `useShinyOutputError(id)` → `{message, call, type} \| null` | |
 
 Plus `useShinyInitialized()`, `useShinyBusy()`, `useShinyMessageHandler()`, and
 the components `ImageOutput`, `ShinyOutput`, `ShinyModuleProvider`.
@@ -303,6 +304,20 @@ return <Chart className={status === "recalculating" ? "recalculating" : ""} data
 with `.recalculating { opacity: .6; transition: opacity 200ms }`.
 `"pending"` is the only state where you have no data yet; `"recalculating"`
 means the previous result is still valid, so show it.
+
+**Showing the server's error text** — `useShinyOutputError(id)` returns the
+same (sanitized) condition/exception message vanilla Shiny would paint into the
+output element, or `null` when the output is fine:
+
+```jsx
+const error = useShinyOutputError("foo");
+if (error) return <div className="shiny-output-error">{error.message}</div>;
+```
+
+`req()` / `validate()` with no message are silent — they never produce an
+error here, matching Shiny. With `shiny.sanitize.errors` / `sanitize_errors`
+on, the server sends its generic message, so the client never has to decide
+what is safe to show.
 
 **Gate the first paint** on `useShinyInitialized()` (`if (!initialized) return
 null`) so the UI does not flash empty defaults during connection setup.

@@ -8,3 +8,5 @@ reference:
     contents: [reactive_output]
   - title: Messaging
     contents: [send_message]
+  - title: Testing
+    contents: [wire_tap]

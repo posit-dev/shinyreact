@@ -82,7 +82,7 @@ Run `make help` to see all targets.
 The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`, and installs the public API at `window.shinyreact`.
 
 **Global API exposed at `window.shinyreact`:**
-- `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy` — re-exported shiny-react hooks
+- `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy` — re-exported shiny-react hooks
 - `ImageOutput`, `ShinyModuleProvider`, `ShinyReactComponentElement`, `ShinyOutput`, `MISSING` — components/utilities
 - `React`, `ReactDOM` — shared instances (downstream ESM builds should externalize to these to avoid duplicate React)
 
@@ -131,7 +131,7 @@ The R package (`pkg-r/`) mirrors the Python API in R idioms; exports are `reacti
 - `page_react_dep(src_dir, js_file, css_file, name)` takes `src_dir` as a required first argument; Python's is keyword-only and infers `src_dir`/`name` from the caller's `__file__` when omitted (R has no equivalent). Pass `src_dir=` explicitly in Python too if you wrap the call in a helper — the inference reads the *immediate* calling frame.
 - The internal `output_ui(render_fn, id)` (not exported yet) builds the UI a render function's matching `*Output()` would produce (R counterpart of Python's `Renderer.auto_output_ui()`). It powers R's automatic renderer-dependency discovery (`pkg-r/R/dep-discovery.R`): because R renders the UI before `server()` runs, dependencies can't be inlined into `<head>` like Python's `set_react_page()` — instead, after every flush the session's registered outputs are diffed and new outputs' deps are pushed as a `shinyreact-deps` custom message; the JS bundle loads them and re-runs `bindAll`. The hook is a `.shinyreact_init` client ping (`pkg-js/src/dep-discovery.ts`) handled by the dedicated `shinyreact.init` input handler, so it works with zero configuration, including for module servers mounted after startup.
 
-The deliberate remaining divergences (decided in #184) are recorded in `decisions/2026-08-13-r-python-parity.md`: relative-path resolution, `set_react_page()`'s renderer-dependency discovery, and scalar-array flattening in the default input handler.
+The deliberate remaining divergences (decided in #184) are recorded in `decisions/2026-08-13-r-python-parity.md`: relative-path resolution and scalar-array flattening in the default input handler. That record's "Renderer `HTMLDependency` discovery" entry is **superseded**: it says R has no analogue and Python Core is dependency-blind, both true when written and both false since #221 (R) and #249 (Python Core). `reactive_output`'s decorator-vs-function call shape is a deliberate divergence that record never covered.
 
 ### Built assets
 
@@ -204,6 +204,7 @@ The hook surface follows the Jotai/Recoil cadence — each hook has one responsi
 | **Input** | `useShinyInput(id, default)` → `[value, setValue]` | `useShinyInputValue(id)` → `value` | `useSetShinyInput(id, default)` → `setValue` |
 | **Output** | — (no compound) | `useShinyOutputValue(id, default?)` → `value` | — |
 | **Output status** | | `useShinyOutputStatus(id)` → `"pending" \| "ready" \| "recalculating" \| "error"` | |
+| **Output error** | | `useShinyOutputError(id)` → `{message, call, type} \| null` | |
 
 Pick the narrowest hook that fits the call site. A button that pushes events but never reads its own state should use `useSetShinyInput`, not `useShinyInput` with a discarded `[value]`. A display card that just reads should use `useShinyInputValue` / `useShinyOutputValue`. Narrow hooks make data-flow direction visible at the call site, prevent accidental writes from read-only components, and avoid spurious re-renders from subscribing to channels you don't observe.
 

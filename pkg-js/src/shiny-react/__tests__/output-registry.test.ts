@@ -5,7 +5,9 @@ vi.mock("../get-shiny", () => ({
   getShiny: vi.fn(() => undefined),
 }));
 
+import { getShiny } from "../get-shiny";
 import {
+  createReactOutputBinding,
   OutputRegistry,
   OutputRegistryEntry,
   type OutputStatus,
@@ -307,6 +309,27 @@ describe("OutputRegistryEntry status lifecycle", () => {
     expect(entry.getLastError()).toBeNull();
   });
 
+  it("an empty-message error is a silent error, delivered as a null value", () => {
+    // #257. `req()` in R arrives as an error with message "" (vanilla Shiny
+    // blanks the output); py-shiny sends a null value for the same `req()`.
+    // Both servers must look the same to the React component.
+    const entry = new OutputRegistryEntry("test");
+    entry.setValue("first");
+    const setStatus = vi.fn();
+    const setError = vi.fn();
+    const setValue = vi.fn();
+    entry.addUseStateSetStatusFn(setStatus);
+    entry.addUseStateSetErrorFn(setError);
+    entry.addUseStateSetValueFn(setValue);
+
+    entry.setError({ message: "", call: [], type: ["shiny.silent.error"] });
+
+    expect(entry.getStatus()).toBe("ready");
+    expect(entry.getLastError()).toBeNull();
+    expect(setError).not.toHaveBeenCalled();
+    expect(setValue).toHaveBeenCalledWith(null);
+  });
+
   it("isEmpty considers status and error subscribers", () => {
     const entry = new OutputRegistryEntry("test");
     expect(entry.isEmpty()).toBe(true);
@@ -315,6 +338,109 @@ describe("OutputRegistryEntry status lifecycle", () => {
     expect(entry.isEmpty()).toBe(false);
     entry.removeUseStateSetStatusFn(fn);
     expect(entry.isEmpty()).toBe(true);
+  });
+});
+
+describe("ReactOutputBinding", () => {
+  // Nothing constructed this binding before: getShiny() is mocked to undefined
+  // above, so createReactOutputBinding() returned early and the three methods
+  // Shiny actually calls were unreachable from the suite.
+  function setup() {
+    const registered: any[] = [];
+    vi.mocked(getShiny).mockReturnValue({
+      OutputBinding: class {},
+      outputBindings: { register: (b: unknown) => registered.push(b) },
+    } as any);
+
+    const registry = new OutputRegistry();
+    // Injected as a thunk, so the binding resolves the registry per call
+    // rather than closing over whichever one existed at creation time.
+    createReactOutputBinding(() => registry);
+    return { binding: registered[0], registry };
+  }
+
+  afterEach(() => {
+    vi.mocked(getShiny).mockReturnValue(undefined);
+    document
+      .querySelectorAll(".shiny-react-output-container")
+      .forEach((el) => el.remove());
+  });
+
+  it("registers itself under the name Shiny binds by", () => {
+    const registered: Array<[unknown, string]> = [];
+    vi.mocked(getShiny).mockReturnValue({
+      OutputBinding: class {},
+      outputBindings: {
+        register: (b: unknown, name: string) => registered.push([b, name]),
+      },
+    } as any);
+    createReactOutputBinding(() => new OutputRegistry());
+    expect(registered[0][1]).toBe("shiny.reactOutput");
+  });
+
+  it("routes renderValue and showProgress to the injected registry", () => {
+    const { binding, registry } = setup();
+    const el = document.createElement("div");
+    el.id = "out";
+    const entry = registry.add("out", vi.fn(), vi.fn(), vi.fn());
+    void entry;
+
+    binding.renderValue(el, { rows: 1 });
+    expect(registry.get("out")!.getLastValue()).toEqual({ rows: 1 });
+
+    binding.showProgress(el, true);
+    expect(registry.get("out")!.getStatus()).toBe("recalculating");
+  });
+
+  it("routes renderError to the injected registry", () => {
+    const { binding, registry } = setup();
+    const el = document.createElement("div");
+    el.id = "out";
+    registry.add("out", vi.fn(), vi.fn(), vi.fn());
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const err: ErrorsMessageValue = { message: "boom", call: [] };
+    binding.renderError(el, err);
+
+    expect(registry.get("out")!.getStatus()).toBe("error");
+    expect(registry.get("out")!.getLastError()).toEqual(err);
+    spy.mockRestore();
+  });
+
+  it("logs and returns for an id the registry does not hold", () => {
+    const { binding } = setup();
+    const el = document.createElement("div");
+    el.id = "ghost";
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    binding.renderValue(el, 1);
+    binding.showProgress(el, true);
+
+    expect(spy).toHaveBeenCalledWith("Output ghost not found");
+    expect(spy).toHaveBeenCalledTimes(2);
+    spy.mockRestore();
+  });
+
+  it("resolves the registry per call, so a later-attached one is used", () => {
+    // The point of injecting an accessor instead of reading
+    // `shiny.reactRegistry` once: the binding must not pin whichever registry
+    // happened to exist when it was constructed.
+    let registry = new OutputRegistry();
+    const registered: any[] = [];
+    vi.mocked(getShiny).mockReturnValue({
+      OutputBinding: class {},
+      outputBindings: { register: (b: unknown) => registered.push(b) },
+    } as any);
+    createReactOutputBinding(() => registry);
+
+    const swapped = new OutputRegistry();
+    registry = swapped;
+    const el = document.createElement("div");
+    el.id = "out";
+    swapped.add("out", vi.fn(), vi.fn(), vi.fn());
+
+    registered[0].renderValue(el, "late");
+    expect(swapped.get("out")!.getLastValue()).toBe("late");
   });
 });
 

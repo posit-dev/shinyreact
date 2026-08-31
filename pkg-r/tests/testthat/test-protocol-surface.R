@@ -71,6 +71,9 @@ test_that("custom message types match the manifest", {
   ))
   found <- unique(sub('.*"([^"]+)"$', "\\1", found))
 
+  # Non-vacuity: a broken regex would otherwise leave `found` empty and pass.
+  # Mirrors Python's test_custom_message_types_match_the_manifest.
+  expect_gt(length(found), 0L)
   expect_length(setdiff(found, expected), 0L)
 })
 

@@ -1,0 +1,16 @@
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 2rem;
+    line-height: 1.4;
+  }
+</style>
+<p>
+  Type a number. <code>1</code> renders <code>ok: 1</code>; <code>0</code>
+  renders the server's error text
+  <code>invalid number of 'breaks'</code> with status <code>error</code>; a
+  negative number is a silent <code>req()</code> — no error text, and the
+  value goes blank.
+</p>
+<div id="root"></div>
+<script src="app.js" defer></script>

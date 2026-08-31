@@ -6,6 +6,7 @@ import {
   PROTOCOL_VERSION,
   assertProtocolCompatible,
   readShinyReactConfig,
+  throwVisibly,
 } from "../config";
 
 function setConfigTag(text: string): void {
@@ -18,8 +19,13 @@ function setConfigTag(text: string): void {
 
 afterEach(() => {
   document.getElementById("shinyreact-config")?.remove();
+  document.getElementById("shinyreact-fatal-error")?.remove();
   vi.restoreAllMocks();
 });
+
+function bannerText(): string | undefined {
+  return document.getElementById("shinyreact-fatal-error")?.textContent ?? undefined;
+}
 
 describe("readShinyReactConfig", () => {
   it("returns null when the tag is absent", () => {
@@ -57,6 +63,59 @@ describe("assertProtocolCompatible", () => {
     expect(() => assertProtocolCompatible("999.0")).toThrowError(
       new RegExp(`999\\.0[\\s\\S]*${PROTOCOL_VERSION.replace(".", "\\.")}`),
     );
+  });
+});
+
+describe("handshake failures are visible on the page", () => {
+  it("shows a banner when the server major is newer", () => {
+    expect(() => assertProtocolCompatible("999.0")).toThrow();
+    expect(bannerText()).toContain("999.0");
+    expect(bannerText()).toContain(PROTOCOL_VERSION);
+  });
+
+  it("shows a banner when the server major is older", () => {
+    expect(() => assertProtocolCompatible("0.9")).toThrow();
+    expect(bannerText()).toContain("0.9");
+    expect(bannerText()).toContain(PROTOCOL_VERSION);
+  });
+
+  it("reuses one banner element across repeated failures", () => {
+    expect(() => assertProtocolCompatible("999.0")).toThrow();
+    expect(() => assertProtocolCompatible("998.0")).toThrow();
+    expect(document.querySelectorAll("#shinyreact-fatal-error")).toHaveLength(1);
+    expect(bannerText()).toContain("998.0");
+  });
+
+  it("renders backticked literals as <code> chips", () => {
+    expect(() => assertProtocolCompatible("999.0")).toThrow();
+    const chips = Array.from(
+      document.querySelectorAll("#shinyreact-fatal-error code"),
+    ).map((el) => el.textContent);
+    expect(chips).toEqual(["999.0", PROTOCOL_VERSION]);
+  });
+
+  it("does not interpret the message as HTML", () => {
+    expect(() => assertProtocolCompatible("<img src=x onerror=alert(1)>")).toThrow();
+    const banner = document.getElementById("shinyreact-fatal-error");
+    expect(banner?.querySelector("img")).toBeNull();
+    expect(banner?.textContent).toContain("<img src=x onerror=alert(1)>");
+  });
+
+  it("strips the backticks from the thrown message", () => {
+    expect(() => assertProtocolCompatible("999.0")).toThrowError(
+      /server speaks protocol 999\.0 but/,
+    );
+  });
+
+  it("still throws the same message it displays", () => {
+    let thrown: Error | undefined;
+    try {
+      throwVisibly("boom");
+    } catch (err) {
+      thrown = err as Error;
+    }
+    expect(thrown?.message).toBe("boom");
+    expect(bannerText()).toBe("boom");
   });
 });
 

@@ -80,6 +80,24 @@ describe("entry point parity", () => {
     );
   });
 
+  it("only the npm entry treats a missing config tag as fatal", async () => {
+    // The other deliberate tier difference. Asserted at the *entry* level:
+    // use-shiny-restore.test.tsx pins the strict behavior by calling
+    // requireShinyReactConfigTag() directly, which would still pass if
+    // npm.ts stopped opting in.
+    await import("../npm");
+    const { isShinyReactConfigTagRequired } = await import(
+      "../shiny-react/config"
+    );
+    expect(isShinyReactConfigTagRequired()).toBe(true);
+
+    vi.resetModules();
+    (window as any).Shiny = fakeShiny();
+    await import("../index");
+    const iife = await import("../shiny-react/config");
+    expect(iife.isShinyReactConfigTagRequired()).toBe(false);
+  });
+
   it("only the IIFE entry installs the window.shinyreact global", async () => {
     // Deliberate divergence, not drift: npm consumers import the hooks
     // directly, and the global exists so no-build pages can read them off

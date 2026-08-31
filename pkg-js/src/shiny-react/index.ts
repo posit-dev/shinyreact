@@ -15,6 +15,7 @@ export {
   useShinyInput,
   useShinyInputValue,
   useShinyMessageHandler,
+  useShinyOutputError,
   useShinyOutputStatus,
   useShinyOutputValue,
 } from "./use-shiny";

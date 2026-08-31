@@ -4,8 +4,9 @@ import { getShiny } from "./get-shiny";
 
 export type ErrorsMessageValue = {
   message: string;
-  call: string[];
-  type?: string[];
+  // `call` / `type` are R-only extras; py-shiny sends null for both.
+  call: string[] | null;
+  type?: string[] | null;
 };
 
 export type OutputStatus = "pending" | "ready" | "recalculating" | "error";
@@ -124,6 +125,15 @@ export class OutputRegistryEntry<T> {
   }
 
   setError(err: ErrorsMessageValue) {
+    // An empty message is how Shiny signals a *silent* error (`req()`): vanilla
+    // Shiny blanks the output element rather than showing error text. Only R
+    // takes this path — py-shiny sends a `null` value for `req()` — so mapping
+    // it to a `null` value keeps the two servers saying the same thing to the
+    // same React component.
+    if (err.message === "") {
+      this.setValue(null as T);
+      return;
+    }
     this.lastError = err;
     this.useStateSetErrorFns.forEach((fn) => fn(err));
     this.setStatus("error");
@@ -259,9 +269,16 @@ export class OutputRegistry {
 }
 
 /**
- * Create and register the React output binding when Shiny is available
+ * Create and register the React output binding when Shiny is available.
+ *
+ * `getOutputs` is injected rather than imported: the page-scoped accessor
+ * lives in react-registry.ts, which imports OutputRegistry from this file, so
+ * importing it back would make a cycle. The caller
+ * (`ensureShinyReactInitialized`) already holds the accessor and passes it in,
+ * which keeps every registry read on the one page-scoped path instead of
+ * reaching into `shiny.reactRegistry` directly.
  */
-export function createReactOutputBinding() {
+export function createReactOutputBinding(getOutputs: () => OutputRegistry) {
   const shiny = getShiny();
   if (!shiny) {
     return;
@@ -275,7 +292,7 @@ export function createReactOutputBinding() {
     }
 
     override renderValue(el: HTMLElement, data: any): void {
-      const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
+      const outputEntry = getOutputs().get(el.id);
       if (!outputEntry) {
         console.error(`Output ${el.id} not found`);
         return;
@@ -285,14 +302,14 @@ export function createReactOutputBinding() {
 
     override renderError(el: HTMLElement, err: ErrorsMessageValue): void {
       console.error(`Error for ${el.id}:`, err);
-      const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
+      const outputEntry = getOutputs().get(el.id);
       if (outputEntry) {
         outputEntry.setError(err);
       }
     }
 
     override showProgress(el: HTMLElement, show: boolean): void {
-      const outputEntry = shiny!.reactRegistry?.outputs.get(el.id);
+      const outputEntry = getOutputs().get(el.id);
       if (!outputEntry) {
         console.error(`Output ${el.id} not found`);
         return;
