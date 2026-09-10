@@ -408,6 +408,39 @@ test_that("page_bare() passes ... through to bootstrapPage()", {
   expect_match(html, 'href="https://cdn.example/custom.css"', fixed = TRUE)
 })
 
+test_that("page_bare() attaches no Bootstrap without a theme", {
+  # #285: shiny's `theme = NULL` default attaches Bootstrap 3 plus its
+  # accessibility plugin, which a ui.tsx page never asked for -- the client owns
+  # styling. jQuery stays (shiny adds its own JS/CSS at page render). The
+  # suppressed dependency is still *named* bootstrap (an empty one at version
+  # 9999, which is how suppressDependencies() works), so assert on the rendered
+  # tags. Mirrors Python's test_page_bare_without_theme_omits_bootstrap.
+  html <- dep_tags_html(page_bare("hi", title = "t"))
+  expect_no_match(html, "bootstrap", fixed = TRUE)
+  expect_match(html, "jquery", fixed = TRUE)
+  expect_match(
+    html,
+    '<meta name="viewport" content="width=device-width, initial-scale=1"/>',
+    fixed = TRUE
+  )
+})
+
+test_that("page_react() attaches no Bootstrap without a theme", {
+  # Mirrors Python's test_page_react_without_theme_omits_bootstrap.
+  local_react_app()
+  html <- dep_tags_html(page_react(src_dir = "www"))
+  expect_no_match(html, "bootstrap", fixed = TRUE)
+  expect_match(html, "shinyreact.js", fixed = TRUE)
+})
+
+test_that("page_bare() keeps Bootstrap when themed", {
+  # The other half of #285: the suppression must not leak into the themed path,
+  # since a bslib Bootstrap 5 uses the same dependency name. Mirrors Python's
+  # test_page_bare_with_theme_keeps_bootstrap.
+  html <- dep_tags_html(page_bare(theme = "https://cdn.example/custom.css"))
+  expect_match(html, "bootstrap", fixed = TRUE)
+})
+
 test_that("page_react() passes ... through to bootstrapPage()", {
   # Mirrors Python's test_page_react_kwargs_reach_page_bootstrap.
   dir <- withr::local_tempdir()
