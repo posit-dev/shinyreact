@@ -1,0 +1,12 @@
+/* TypeDoc has no logo option, so prepend the hex to the header title link.
+   The path is relative to the emitted assets/custom.css, i.e. it resolves to
+   the deploy root's logo.svg that the Quarto site publishes. */
+a.title::before {
+  content: "";
+  display: inline-block;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-right: 0.5rem;
+  vertical-align: -0.45rem;
+  background: url("../../logo.svg") no-repeat center / contain;
+}
