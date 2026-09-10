@@ -99,12 +99,27 @@ tools:</p>
 <code>system.file("skills", package = "shinyreact")</code>.</p>
 </div>
 <div class="section level2">
+<h2 id="starter-prompt">Starter prompt<a class="anchor" aria-label="anchor" href="#starter-prompt"></a>
+</h2>
+<p>The skill doubles as the starter template: it knows the Vite setup,
+the file layout, and the hooks, so you do not need to read about build
+tools before your first app. With the shinyreact skills installed, paste
+this into your agent:</p>
+<pre><code>Using the `/shinyreact-build-app` skill, scaffold a new shinyreact app in this
+directory with an R server. Set up the Vite build (src/ui.tsx compiled to
+www/ui.js) and a hello-world UI: a text input whose value the server greets by
+name. Run the build and start the app.</code></pre>
+<p>To port an existing app instead, point the agent at it: “Using the
+<code>/shinyreact-convert-app</code> skill, convert the Shiny app in
+<code>./app.R</code> to the shinyreact <code>ui.tsx</code> pattern.”</p>
+</div>
+<div class="section level2">
 <h2 id="python">Python<a class="anchor" aria-label="anchor" href="#python"></a>
 </h2>
 <p>The Python package ships the same two skills. Install them into a
 project with <a href="https://github.com/tiangolo/library-skills" class="external-link"><code>library-skills</code></a>:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">uvx</span> library-skills <span class="at">--claude</span>   <span class="co"># Claude Code (.claude/skills)</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="ex">uvx</span> library-skills            <span class="co"># standard location (.agents/skills)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="ex">uvx</span> library-skills <span class="at">--claude</span>   <span class="co"># Claude Code (.claude/skills)</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="ex">uvx</span> library-skills            <span class="co"># standard location (.agents/skills)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

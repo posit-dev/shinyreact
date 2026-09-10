@@ -25,6 +25,22 @@ btw::btw_skill_install_package("shinyreact")
 The installed files live at
 `system.file("skills", package = "shinyreact")`.
 
+## Starter prompt
+
+The skill doubles as the starter template: it knows the Vite setup, the
+file layout, and the hooks, so you do not need to read about build tools
+before your first app. With the shinyreact skills installed, paste this
+into your agent:
+
+    Using the `/shinyreact-build-app` skill, scaffold a new shinyreact app in this
+    directory with an R server. Set up the Vite build (src/ui.tsx compiled to
+    www/ui.js) and a hello-world UI: a text input whose value the server greets by
+    name. Run the build and start the app.
+
+To port an existing app instead, point the agent at it: “Using the
+`/shinyreact-convert-app` skill, convert the Shiny app in `./app.R` to
+the shinyreact `ui.tsx` pattern.”
+
 ## Python
 
 The Python package ships the same two skills. Install them into a
