@@ -29,6 +29,8 @@ website:
       [![](https://posit.co/wp-content/uploads/2024/06/Posit-Logos-2024_horiz-full-color.svg){fig-alt="Posit" width=65px}](https://posit.co)
 
   navbar:
+    logo: logo.svg
+    logo-alt: "shinyreact hex logo"
     left:
       - text: Get Started
         href: index.qmd
@@ -38,8 +40,6 @@ website:
         href: https://posit-dev.github.io/shinyreact/r/
       - text: JS
         href: https://posit-dev.github.io/shinyreact/js/
-      - text: Examples
-        href: https://github.com/posit-dev/shinyreact/tree/main/examples
     tools:
       - icon: github
         menu:

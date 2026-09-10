@@ -5,6 +5,7 @@
   "tsconfig": "tsconfig.npm.json",
   "out": "../pkg-py/docs/_site/js",
   "readme": "none",
+  "customCss": "typedoc.css",
   "excludeInternal": true,
   "excludePrivate": true,
   "navigationLinks": {
