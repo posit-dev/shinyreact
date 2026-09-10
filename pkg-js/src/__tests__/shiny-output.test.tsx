@@ -224,7 +224,16 @@ describe("ShinyOutput", () => {
     expect(() => unmount()).not.toThrow();
   });
 
-  it("binds each ShinyOutput independently when multiple are rendered", () => {
+  it("dedupes bindAll when several ShinyOutputs share one parent, calling it once", () => {
+    // bindAll's own find() is descendants-only, so every ShinyOutput under
+    // one parent passes that same parent as scope (see the binding-scope
+    // note on the component). React fires all three mount effects in the
+    // same commit; since Shiny's own bindOutputs() is async and marks an
+    // element bound only after an await, three independent, overlapping
+    // calls here used to make Shiny log a "Duplicate output IDs" warning
+    // for every one of them, even though there is really only one DOM
+    // element per id. Deduping concurrent calls to the same scope element
+    // means only the first one actually runs; the other two reuse it.
     render(
       <div>
         <ShinyOutput id="a" />
@@ -232,7 +241,7 @@ describe("ShinyOutput", () => {
         <ShinyOutput id="c" />
       </div>,
     );
-    expect(mockBindAll).toHaveBeenCalledTimes(3);
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
   });
 
   it("unmounting one ShinyOutput unbinds only that element, not its siblings", () => {
@@ -250,7 +259,9 @@ describe("ShinyOutput", () => {
 
     const { container, rerender } = render(<App showA={true} />);
     const elA = container.querySelector("#a");
-    expect(mockBindAll).toHaveBeenCalledTimes(3);
+    // One shared parent, three ShinyOutputs mounting together: deduped to
+    // one bindAll call, see the test above.
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
 
     mockUnbindAll.mockClear();
     rerender(<App showA={false} />);
@@ -329,12 +340,14 @@ describe("ShinyOutput", () => {
       });
     });
 
-    it("isolates a failing bindAll to one sibling — others still render and bind", () => {
-      mockBindAll.mockImplementationOnce(() => {}); // a
-      mockBindAll.mockImplementationOnce(() => {
-        throw new Error("only b fails");
-      });
-      mockBindAll.mockImplementationOnce(() => {}); // c
+    it("keeps every sibling mounted, and each logs its own error, when their shared bindAll call rejects", async () => {
+      // Three ShinyOutputs sharing one parent share one bindAll() call (see
+      // "dedupes bindAll..." above). If that one call fails, none of the
+      // three should be torn down, and each of them still gets its own
+      // error logged (they each attached their own .catch() to that same
+      // shared, rejected promise), tagged with its own id, not just one.
+      const boom = new Error("shared bindAll fails");
+      mockBindAll.mockReturnValueOnce(Promise.reject(boom));
 
       const { container } = render(
         <div>
@@ -347,12 +360,15 @@ describe("ShinyOutput", () => {
       expect(container.querySelector("#a")).not.toBeNull();
       expect(container.querySelector("#b")).not.toBeNull();
       expect(container.querySelector("#c")).not.toBeNull();
-      expect(mockBindAll).toHaveBeenCalledTimes(3);
-      expect(errorSpy).toHaveBeenCalledTimes(1);
-      expect(errorSpy.mock.calls[0][1]).toMatchObject({
-        id: "b",
-        phase: "bindAll",
-      });
+      expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledTimes(3));
+
+      const loggedIds = errorSpy.mock.calls.map((call) => call[1].id).sort();
+      expect(loggedIds).toEqual(["a", "b", "c"]);
+      for (const call of errorSpy.mock.calls) {
+        expect(call[1]).toMatchObject({ phase: "bindAll", error: boom });
+      }
     });
 
     it("logs the new id when re-binding after id change throws", () => {
