@@ -4,7 +4,7 @@ Because shinyreact's client/server contract is plain JSON on the websocket,
 an app author can pin the *semantics* of an output (which column, which
 units) against the actual bytes the server sent — an oracle independent of
 both the React code and the server code that produced them. The unit-level
-counterpart (fake page, no browser) is pkg-py/tests/test_wire_tap.py; the R
+counterpart (fake page, no browser) is test_wire_tap.py, beside this file; the R
 counterpart of this file is pkg-r/tests/testthat/test-wire-tap.R plus the
 shinytest2 walkthrough in spikes/201-wire-verification/.
 

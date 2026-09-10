@@ -1,9 +1,17 @@
 """Unit tests for shinyreact.playwright.WireTap (fake page, no browser).
 
+These use a FakePage and never launch a browser, but they live in the
+Playwright suite anyway: they import ``shinyreact.playwright``, which imports
+``playwright.sync_api``, so they need the ``tests-e2e`` dependency group like
+everything else in this directory. In ``pkg-py/tests/`` they broke *collection*
+of the whole unit suite in an environment without it — a hard failure in the
+one test run that is supposed to need no extras. Run them with
+``make py-test-e2e``.
+
 Mirrors pkg-r/tests/testthat/test-wire-tap.R — the two taps present the same
 methods and semantics, so their unit suites assert the same behaviors on the
-same frames. The real-browser coverage is
-pkg-py/tests/playwright/test_wire_frames.py.
+same frames. The real-browser coverage is test_wire_frames.py, next to this
+file.
 """
 
 from __future__ import annotations

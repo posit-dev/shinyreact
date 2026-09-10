@@ -59,10 +59,16 @@ tests-e2e = [
 ]
 
 [tool.pytest.ini_options]
-# Default test runs exclude the Playwright integration suite — those tests
-# need the `tests-e2e` extras (browser, shiny[playwright]) and spin up a
-# real Shiny process per app, which is too heavy for the unit test loop.
-# Run the Playwright suite explicitly via `make py-test-e2e`.
+# Default test runs exclude `pkg-py/tests/playwright` — everything in there
+# needs the `tests-e2e` extras (browser, shiny[playwright]), and most of it
+# spins up a real Shiny process per app, which is too heavy for the unit test
+# loop. Run it explicitly via `make py-test-e2e`.
+#
+# "Needs the extras" is the membership rule, not "drives a browser":
+# test_wire_tap.py uses a fake page and no browser, but importing
+# `shinyreact.playwright` pulls in `playwright.sync_api`. Left in
+# `pkg-py/tests/` it broke *collection* of the whole unit suite whenever the
+# extras were absent — precisely the run that is supposed to need none.
 #
 # The example apps keep their own tests beside the app (examples/*/tests). They
 # run by default: they are fast, need no extra dependencies, and a package

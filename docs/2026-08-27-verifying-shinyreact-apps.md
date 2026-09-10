@@ -5,7 +5,7 @@ FEATURES.md description layer, per-example tests, and the jsdom mount
 harness — see `.claude/references/verifying-ui-code.md`). This doc keeps the
 parts #252 did not cover. The wire layer is now **shipped API**:
 `shinyreact.playwright.WireTap` (Python) and `shinyreact::wire_tap()` (R),
-unit-tested in `pkg-py/tests/test_wire_tap.py` /
+unit-tested in `pkg-py/tests/playwright/test_wire_tap.py` /
 `pkg-r/tests/testthat/test-wire-tap.R`, exercised against a real app in
 `pkg-py/tests/playwright/test_wire_frames.py` and the shinytest2 e2e test
 in `pkg-r/tests/testthat/test-wire-tap.R`, which runs against
