@@ -1,4 +1,4 @@
-# shinyreact: Shiny UI Infrastructure for JSON-Driven React Rendering
+# shinyreact: Shiny UI Infrastructure for Client-Side React Rendering
 
 Server-side plumbing for the 'ui.tsx' pattern in Shiny: the UI is
 defined in a client React bundle, and the Shiny server contains only
@@ -7,6 +7,8 @@ reactive computation. Ships no UI components.
 ## See also
 
 Useful links:
+
+- <https://posit-dev.github.io/shinyreact/r>
 
 - <https://github.com/posit-dev/shinyreact>
 
