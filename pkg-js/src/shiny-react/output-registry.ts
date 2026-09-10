@@ -2,6 +2,7 @@
 
 import { getShiny } from "./get-shiny";
 
+/** @group Outputs */
 export type ErrorsMessageValue = {
   message: string;
   // `call` / `type` are R-only extras; py-shiny sends null for both.
@@ -9,6 +10,7 @@ export type ErrorsMessageValue = {
   type?: string[] | null;
 };
 
+/** @group Outputs */
 export type OutputStatus = "pending" | "ready" | "recalculating" | "error";
 
 export class OutputRegistryEntry<T> {

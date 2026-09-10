@@ -39,6 +39,7 @@ import { ShinyModuleProvider } from "./ShinyModuleContext";
  *   protected clearContent() {} // no-op
  * }
  * ```
+ * @group Components
  */
 export class ShinyReactComponentElement extends HTMLElement {
   protected root: Root | null = null;

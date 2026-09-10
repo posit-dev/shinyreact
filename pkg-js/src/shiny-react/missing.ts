@@ -10,6 +10,7 @@
  *
  * Typical use: `ImageOutput` dimension inputs that should not fire
  * `renderImage()` until the element has been measured by `ResizeObserver`.
+ * @group Utilities
  */
 export const MISSING: unique symbol = Symbol("MISSING");
 export type MISSING = typeof MISSING;

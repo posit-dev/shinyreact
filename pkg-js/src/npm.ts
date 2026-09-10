@@ -6,6 +6,20 @@
  * a development React with Fast Refresh). Built from the same source as the
  * IIFE bundle the server packages ship, so both speak the same protocol
  * version. See decisions/2026-08-17-js-distribution.md.
+ *
+ * @groupDescription Inputs
+ * Send values to `input$<id>` / `input.<id>()`. Pick the narrowest one that
+ * fits the call site.
+ * @groupDescription Outputs
+ * Read values published by `reactive_output`, plus their lifecycle status.
+ * @groupDescription Messaging
+ * Receive `send_message()` payloads from the server.
+ * @groupDescription Session
+ * Observe the Shiny session itself — connected yet, busy right now.
+ * @groupDescription Components
+ * Render traditional Shiny outputs and custom elements inside a React tree.
+ * @groupDescription Utilities
+ * Sentinels and constants.
  */
 
 // Side-effect import so the lib build emits the stylesheet as an asset. Vite

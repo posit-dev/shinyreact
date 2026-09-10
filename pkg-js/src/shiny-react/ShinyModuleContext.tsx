@@ -2,6 +2,7 @@ import { createContext, useContext, type ReactNode } from "react";
 
 const ShinyModuleContext = createContext<string | null>(null);
 
+/** @group Components */
 export interface ShinyModuleProviderProps {
   /** The complete namespace string to apply to child hooks. */
   namespace: string;
@@ -26,6 +27,7 @@ export interface ShinyModuleProviderProps {
  *   <MyComponent />
  * </ShinyModuleProvider>
  * ```
+ * @group Components
  */
 export function ShinyModuleProvider({
   namespace,
