@@ -5,9 +5,9 @@
 [![check-js](https://github.com/posit-dev/shinyreact/actions/workflows/check-js.yaml/badge.svg)](https://github.com/posit-dev/shinyreact/actions/workflows/check-js.yaml)
 <!-- badges: end -->
 
-React UI infrastructure for [Shiny for Python](https://shiny.posit.co/py/). The Shiny server contains only reactive computation; the UI is a React client you own. `shinyreact` provides the bridge — it ships zero UI components itself.
+[React](https://react.dev/) UI infrastructure for [Shiny for Python](https://shiny.posit.co/py/). The Shiny server contains only reactive computation; the UI is a React client you own. `shinyreact` ([full site](https://posit-dev.github.io/shinyreact/)) provides the bridge — it ships zero UI components itself. The same [JavaScript bundle](https://posit-dev.github.io/shinyreact/js/) backs both the Python and [R](https://posit-dev.github.io/shinyreact/r/) packages.
 
-This is the Python package. See the [repo root](https://github.com/posit-dev/shinyreact) for the language-agnostic overview and the R package.
+This is the [Python package](https://posit-dev.github.io/shinyreact/py/). See the [repo root](https://github.com/posit-dev/shinyreact) for the language-agnostic overview and the [R package](https://posit-dev.github.io/shinyreact/r/).
 
 ## Installation
 

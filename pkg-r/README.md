@@ -1,4 +1,4 @@
-# shinyreact (R)
+# shinyreact <a href="https://posit-dev.github.io/shinyreact/r/"><img src="man/figures/logo.svg" align="right" height="139" alt="shinyreact hex logo" /></a>
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
@@ -6,7 +6,7 @@
 [![check-js](https://github.com/posit-dev/shinyreact/actions/workflows/check-js.yaml/badge.svg)](https://github.com/posit-dev/shinyreact/actions/workflows/check-js.yaml)
 <!-- badges: end -->
 
-React UI infrastructure for [Shiny](https://shiny.posit.co/). The Shiny server contains only reactive computation; the UI is a React client you own. shinyreact provides the bridge — it ships zero UI components itself. The same JavaScript bundle backs both the R and [Python](https://github.com/posit-dev/shinyreact/tree/main/pkg-py) packages.
+[React](https://react.dev/) UI infrastructure for [Shiny](https://shiny.posit.co/). The Shiny server contains only reactive computation; the UI is a React client you own. shinyreact ([full site](https://posit-dev.github.io/shinyreact/)) provides the bridge — it ships zero UI components itself. The same [JavaScript bundle](https://posit-dev.github.io/shinyreact/js/) backs both the R and [Python](https://posit-dev.github.io/shinyreact/py/) packages.
 
 ## Overview
 

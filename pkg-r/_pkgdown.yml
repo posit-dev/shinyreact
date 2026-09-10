@@ -3,7 +3,15 @@ url: https://posit-dev.github.io/shinyreact/r
 # deploy folder holds the whole site.
 destination: ../pkg-py/docs/_site/r
 template:
+  package: tidytemplate
   bootstrap: 5
+
+  bslib:
+    # Darkened React cyan (#00d8ff) from the hex logo, for text contrast.
+    primary: "#006D80"
+    # https://mdigi.tools/lighten-color/#00d8ff @ 92%
+    navbar-background: "#ebfcff"
+  trailing_slash_redirect: true
 reference:
   - title: Pages
     contents: [page_bare, page_react, page_react_html, page_react_dep]
