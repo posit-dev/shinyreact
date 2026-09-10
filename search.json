@@ -1,5 +1,68 @@
 [
   {
+    "objectID": "articles/tsx-and-build-tools.html",
+    "href": "articles/tsx-and-build-tools.html",
+    "title": "TSX files and JavaScript build tools",
+    "section": "",
+    "text": "shinyreact calls its pattern ui.tsx after the file the React client conventionally starts from. If you write R or Python for a living, that extension and the tooling around it can be the most unfamiliar part of the whole approach. This article explains the pieces from the bottom up. Nothing here is specific to shinyreact until the last section."
+  },
+  {
+    "objectID": "articles/tsx-and-build-tools.html#four-file-extensions",
+    "href": "articles/tsx-and-build-tools.html#four-file-extensions",
+    "title": "TSX files and JavaScript build tools",
+    "section": "Four file extensions",
+    "text": "Four file extensions\nA browser runs exactly one language: JavaScript, in files that end in .js. The other three extensions are JavaScript plus something the browser does not understand, and each one has to be translated back to plain .js before it can run.\n\n\n\nExtension\nWhat it adds\nWho understands it\n\n\n\n\n.js\nnothing\nthe browser\n\n\n.jsx\nJSX, the x\na build tool\n\n\n.ts\nTypeScript types\na build tool\n\n\n.tsx\nboth\na build tool\n\n\n\n\nThe x is JSX\nReact builds UI by calling React.createElement(type, props, ...children). That works, but it is hard to read once elements nest:\n// plain .js\nfunction Greeting({ name }) {\n  return React.createElement(\n    \"div\",\n    { className: \"card\" },\n    React.createElement(\"h2\", null, \"Hello, \", name),\n    React.createElement(\"p\", null, \"Welcome back.\")\n  );\n}\nJSX is a syntax extension that lets you write the same tree as HTML-like tags inside JavaScript. It is not a template language and not a string. Each tag is rewritten, one for one, into the createElement call above:\n// .jsx\nfunction Greeting({ name }) {\n  return (\n    &lt;div className=\"card\"&gt;\n      &lt;h2&gt;Hello, {name}&lt;/h2&gt;\n      &lt;p&gt;Welcome back.&lt;/p&gt;\n    &lt;/div&gt;\n  );\n}\nCurly braces switch back to JavaScript, so {name} is a variable, {items.map(...)} is a loop, and {cond ? &lt;A/&gt; : &lt;B/&gt;} is a conditional. Attributes use JavaScript names (className, onClick), not HTML ones (class, onclick).\nThe x in .jsx and .tsx means “this file contains JSX”. A tool has to remove it before the browser sees the file.\n\n\nTypeScript is JavaScript with type annotations\nTypeScript is a superset of JavaScript. Every .js file is already valid TypeScript. What it adds is a way to declare what shape your values have, so an editor or a checker can catch mistakes before the code runs:\n// .ts\ntype Histogram = { breaks: number[]; counts: number[] };\n\nfunction total(h: Histogram): number {\n  return h.counts.reduce((a, b) =&gt; a + b, 0);\n}\n\ntotal({ breaks: [1, 2], counts: [\"3\"] }); // error: string is not a number\nIf you have used type hints in Python (def total(h: Histogram) -&gt; int), this is the same idea with a stricter checker. R has no direct equivalent; think of it as stopifnot(is.numeric(x)) written once in the signature and enforced by your editor as you type.\nTypes exist only at development time. The build step deletes every annotation, and what runs in the browser is ordinary JavaScript. A .tsx file is therefore TypeScript that also contains JSX, and both have to be stripped out."
+  },
+  {
+    "objectID": "articles/tsx-and-build-tools.html#why-a-build-step-exists",
+    "href": "articles/tsx-and-build-tools.html#why-a-build-step-exists",
+    "title": "TSX files and JavaScript build tools",
+    "section": "Why a build step exists",
+    "text": "Why a build step exists\nR knits .Rmd to .html and Python compiles .py to bytecode. Web development has the same shape: a source format that is good to write in, and a target format the runtime accepts. A build tool is the program that does the translation, and it typically does four things in one pass:\n\nResolve imports. import { Button } from \"lucide-react\" refers to a package installed in node_modules/. The tool finds the file that line points to, and the files that one imports, recursively.\nTransform. Strip TypeScript types, rewrite JSX to createElement calls, and process CSS (Tailwind, Sass, CSS modules) into plain CSS.\nBundle. Concatenate every module the entry file reaches into one output file, in the right order, with a single scope so nothing leaks onto window by accident. One &lt;script&gt; tag instead of hundreds of requests.\nMinify. Rename local variables to single letters and drop whitespace. The output is unreadable, which is fine, because you never edit it.\n\nThe result is a plain .js file (and often a .css file) that any browser can load.\n\nThe vocabulary\n\nNode.js is JavaScript running outside a browser. Build tools are written in it and run in it. You need it installed, the way you need R to run knitr.\nnpm is Node’s package manager and registry, the equivalent of CRAN or PyPI with install.packages() or pip built in. npm install reads package.json and downloads what it lists into node_modules/.\npackage.json is the project manifest: name, dependencies, and named scripts such as npm run build. It is the DESCRIPTION or pyproject.toml of a JavaScript project.\nnode_modules/ is the local package library. It is large, regenerable, and always gitignored.\nVite is the build tool the shinyreact examples use. It bundles for production with Rollup and, in development, serves modules individually with hot reloading so a save updates the page without a rebuild. Alternatives you will see named include esbuild, webpack, and Parcel.\nA dev server is a build tool running continuously, watching your source, and re-serving output as you type. Vite’s is what makes edits appear in under a second.\ntsconfig.json configures the TypeScript checker. It affects checking and editor tooling, not the build output, because Vite strips types without checking them.\n\n\n\nTwo shapes of output\nA bundle can be emitted in two formats, and the difference matters for shinyreact.\nAn IIFE (immediately invoked function expression) is a classic script. It runs as soon as a &lt;script src&gt; tag loads it and can reach anything already on window. An ES module uses import and export and is loaded with &lt;script type=\"module\"&gt;. Both are fine; the shinyreact page entry points load www/ui.js as a classic script, so the examples build IIFEs."
+  },
+  {
+    "objectID": "articles/tsx-and-build-tools.html#how-shinyreact-uses-this",
+    "href": "articles/tsx-and-build-tools.html#how-shinyreact-uses-this",
+    "title": "TSX files and JavaScript build tools",
+    "section": "How shinyreact uses this",
+    "text": "How shinyreact uses this\nThe server-side page function (set_react_page(), page_react()) serves two things: shinyreact.js, which contains React and the hooks and installs them at window.shinyreact, and your www/ui.js. How www/ui.js comes to exist is up to you. There are three tiers.\n\nNo build\nWrite www/ui.js by hand and commit it. There is no JSX, so components call React.createElement (usually aliased to h), and everything comes from the global the server already loaded:\nconst { React, ReactDOM, useShinyInput, useShinyOutputValue } = window.shinyreact;\nconst h = React.createElement;\nYou need Node for nothing. The examples 01-hello and 02-columns work this way, and it is the right starting point.\n\n\nVite, sharing the server’s React\nWhen you want JSX, TypeScript, or npm packages, add a package.json and a vite.config.js, put your source in src/, and have Vite write www/ui.js. The one shinyreact-specific requirement is that your bundle must not contain a second copy of React. The hooks live inside the React that shinyreact.js loaded, and React refuses to run hooks across two copies. So react and react-dom are declared external and mapped to the shared instance on window.shinyreact:\n// vite.config.js\nimport path from \"node:path\";\nimport react from \"@vitejs/plugin-react\";\nimport { defineConfig } from \"vite\";\n\nexport default defineConfig({\n  define: { \"process.env.NODE_ENV\": JSON.stringify(\"production\") },\n  plugins: [react()],\n  build: {\n    outDir: \"www\",\n    emptyOutDir: false,\n    lib: {\n      entry: path.resolve(__dirname, \"src/ui.tsx\"),\n      formats: [\"iife\"],\n      name: \"MyApp\",\n      fileName: () =&gt; \"ui.js\",\n    },\n    rollupOptions: {\n      external: [\"react\", \"react-dom\", \"react-dom/client\"],\n      output: {\n        assetFileNames: \"ui.[ext]\",\n        globals: {\n          react: \"window.shinyreact.React\",\n          \"react-dom\": \"window.shinyreact.ReactDOM\",\n          \"react-dom/client\": \"window.shinyreact.ReactDOM\",\n        },\n      },\n    },\n  },\n});\nThen your source can import React from \"react\" like any React project, and the built file reads it from window.shinyreact.React instead. lib mode with formats: [\"iife\"] produces the classic-script shape the page expects, and emptyOutDir: false keeps Vite from deleting anything else you keep in www/.\nThe workflow is:\nnpm install          # once, and after editing package.json\nnpm run build        # vite build: writes www/ui.js and www/ui.css\nnpm run dev          # vite build --watch: rebuild on every save\nCommit src/, package.json, package-lock.json, and vite.config.js. Gitignore node_modules/ and, if you like, the generated www/ui.js (the examples do, so a fresh clone needs npm run build before shiny run). 03-columns-shadcn and 04-shadcn are this tier.\n\n\nnpm tier, bundling your own React\nFor hot reloading with React Fast Refresh you need a development build of React, and the one inside shinyreact.js is production-only. The 09-hmr example therefore installs @posit/shinyreact from npm, imports the hooks from it, and bundles its own React with no externals. Because the client now ships React itself, the server must stop serving shinyreact.js, or the page would have two copies again. That is what shinyreact_js=\"client\" on the page entry point does."
+  },
+  {
+    "objectID": "articles/tsx-and-build-tools.html#type-checking-is-a-separate-step",
+    "href": "articles/tsx-and-build-tools.html#type-checking-is-a-separate-step",
+    "title": "TSX files and JavaScript build tools",
+    "section": "Type checking is a separate step",
+    "text": "Type checking is a separate step\nVite strips types; it does not check them. A .tsx file with a type error builds fine. Checking happens in your editor (VS Code and Positron do it automatically for any project with a tsconfig.json) or on the command line:\nnpx tsc --noEmit\n@posit/shinyreact ships type declarations, so useShinyOutputValue&lt;Histogram&gt;(\"dist_data\") tells the checker what shape to expect and catches a misspelled field before the browser does. If you are not using TypeScript, skip all of this and name your files .jsx."
+  },
+  {
+    "objectID": "articles/tsx-and-build-tools.html#where-to-go-next",
+    "href": "articles/tsx-and-build-tools.html#where-to-go-next",
+    "title": "TSX files and JavaScript build tools",
+    "section": "Where to go next",
+    "text": "Where to go next\n\nGet started shows the server side of the same app.\nClient hooks lists what window.shinyreact provides.\nThe Vite guide and the TypeScript handbook go deeper on the tools themselves."
+  },
+  {
+    "objectID": "articles/testing.html",
+    "href": "articles/testing.html",
+    "title": "Testing wire payloads",
+    "section": "",
+    "text": "In a shinyreact app the contract between server and client is the JSON that crosses the Shiny websocket: the values reactive_output delivers, the payloads send_message() pushes, and the values useShinyInput() sends back. A wire tap records those payloads in a browser test so you can assert on them directly, without inspecting the rendered DOM."
+  },
+  {
+    "objectID": "articles/testing.html#matchers",
+    "href": "articles/testing.html#matchers",
+    "title": "Testing wire payloads",
+    "section": "Matchers",
+    "text": "Matchers\nEach expect_* method takes a matcher and retries until it matches or a timeout (10 seconds by default) elapses:\n\nA function is satisfied by a truthy return value. A function that errors on a payload’s shape counts as a non-match, not a test failure.\nAny other object is compared for equality (identical() in R, so compare against 30L, not 30).\n\nThere is one expect_* per channel:\n\n\n\n\n\n\n\nMethod\nChannel\n\n\n\n\nexpect_output_value(id, matcher)\nvalues delivered for output id\n\n\nexpect_message(id, matcher)\nsend_message() payloads of type id\n\n\nexpect_input_value(id, matcher)\nvalues the client sent for input id\n\n\n\nSuccessive expectations on one channel assert an ordered subsequence: each scans from just past the previous match, so a value that arrives between two checks is never missed."
+  },
+  {
+    "objectID": "articles/testing.html#full-histories",
+    "href": "articles/testing.html#full-histories",
+    "title": "Testing wire payloads",
+    "section": "Full histories",
+    "text": "Full histories\nall_output_values(id), all_messages(id), and all_input_values(id) return everything that crossed a channel, in order. Input ids match the bare id or any id:type wire id, so use the id you wrote in useShinyInput().\nOne divergence between the two languages: jsonlite::fromJSON() maps a JSON null output value to NULL, indistinguishable from an absent key, so early null frames are dropped in R where Python records None."
+  },
+  {
     "objectID": "py/set_react_page.html",
     "href": "py/set_react_page.html",
     "title": "set_react_page",
@@ -237,5 +300,40 @@
       "Pages",
       "page_bare"
     ]
+  },
+  {
+    "objectID": "articles/hooks.html",
+    "href": "articles/hooks.html",
+    "title": "Client hooks",
+    "section": "",
+    "text": "The page entry points serve shinyreact.js, which bundles React 19 and installs the client API at window.shinyreact. Apps with a bundler can instead npm install @posit/shinyreact and pass shinyreact_js=\"client\" to the page entry point."
+  },
+  {
+    "objectID": "articles/hooks.html#hooks",
+    "href": "articles/hooks.html#hooks",
+    "title": "Client hooks",
+    "section": "Hooks",
+    "text": "Hooks\n\n\n\n\n\n\n\nHook\nPurpose\n\n\n\n\nuseShinyInput(id, default, opts)\nRead/write a Shiny input: [value, setValue]\n\n\nuseShinyInputValue(id)\nRead-only consumer for an input another component produces\n\n\nuseSetShinyInput(id, default, opts)\nWrite-only producer: registers an input and returns just the setter\n\n\nuseShinyOutputValue(id, default?)\nConsume the value reactive_output publishes\n\n\nuseShinyOutputStatus(id)\n\"pending\" \\| \"ready\" \\| \"recalculating\" \\| \"error\"\n\n\nuseShinyOutputError(id)\nThe server’s sanitized error for an output, or null\n\n\nuseShinyMessageHandler(id, fn)\nHandle send_message() pushes\n\n\nuseShinyInitialized()\nWhether Shiny is connected\n\n\nuseShinyBusy()\nWhether the server is processing a request\n\n\n\nPick the narrowest hook that fits. A button that pushes events but never reads its own state should use useSetShinyInput; a card that only displays should use useShinyInputValue or useShinyOutputValue.\n\nInput options\nuseShinyInput and useSetShinyInput accept an opts object:\n\ndebounceMs (default 100): pass 0 so every action-button click is delivered.\npriority: \"event\" marks an event input, matching Shiny’s action buttons.\ntype: route the value through a server-side input handler, such as \"shiny.datetime\" or \"shinyreact.asis\" for the parsed JSON untouched.\n\n\n\nOutput status\nDo not collapse the four statuses into one boolean. Show a placeholder only when no value has arrived, and keep the previous value mounted while \"recalculating\":\nconst data = useShinyOutputValue(\"dist\");\nconst status = useShinyOutputStatus(\"dist\");\nif (!data) return &lt;Skeleton /&gt;;\nreturn &lt;Chart className={status === \"recalculating\" ? \"recalculating\" : \"\"} data={data} /&gt;;"
+  },
+  {
+    "objectID": "articles/hooks.html#components",
+    "href": "articles/hooks.html#components",
+    "title": "Client hooks",
+    "section": "Components",
+    "text": "Components\n\n\n\n\n\n\n\nComponent\nPurpose\n\n\n\n\nShinyOutput\nRender a traditional Shiny output (a plotly widget, shiny-data-frame) inside a React tree; no *Output() placeholder needed\n\n\nImageOutput\nRender a server-side plot (@render.plot)\n\n\nShinyModuleProvider\nNamespace the ids of every hook beneath it, for Shiny modules"
+  },
+  {
+    "objectID": "articles/hooks.html#shared-react",
+    "href": "articles/hooks.html#shared-react",
+    "title": "Client hooks",
+    "section": "Shared React",
+    "text": "Shared React\nwindow.shinyreact.React and window.shinyreact.ReactDOM are the bundle’s instances. Builds that bundle their own client should externalize react and react-dom to these to avoid two copies of React on one page.\nThe full API is documented in the JS reference."
+  },
+  {
+    "objectID": "articles/agent-skills.html",
+    "href": "articles/agent-skills.html",
+    "title": "Agent Skills",
+    "section": "",
+    "text": "shinyreact ships two Agent Skills so a coding agent can build a shinyreact app without you pasting documentation into it:\n\nshinyreact-build-app builds a ui.tsx-pattern app from scratch.\nshinyreact-convert-app ports an existing Shiny app to the pattern. It inspects the source, drives the running app in a browser, describes it in plain English, then rewrites it against that description.\n\nBoth packages ship the same two skills.\n\nPythonR\n\n\nInstall them into a project with library-skills, which symlinks them so they stay current when you upgrade the package:\nuvx library-skills --claude   # Claude Code (.claude/skills)\nuvx library-skills            # standard location (.agents/skills)\n\n\nAgents using btw discover the skills automatically once shinyreact is attached. To copy them into a project for Claude Code and other skill-aware tools:\nbtw::btw_skill_install_package(\"shinyreact\")"
   }
 ]
