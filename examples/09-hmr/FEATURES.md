@@ -14,6 +14,18 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 - `set_react_page(shinyreact_js="client")` — the npm tier: the client bundles
   shinyreact.js, so the server serves the `#shinyreact-config` tag but **not**
   shinyreact.js/.css; nothing in the server knows about the dev server
+- when `www/ui.js` is absent (the bundle is gitignored, so it is absent in a
+  fresh clone), the app prints `www/ui.js not found -- building the client
+  bundle...` to stderr and builds before `set_react_page()`
+  - builds `pkg-js` first (`npm install` + `npm run build` there) when
+    `pkg-js/dist-npm` is missing — the `file:../../pkg-js` dep's `exports`
+    point into `dist-npm/`, which is not committed, so this app's own build
+    cannot resolve `@posit/shinyreact` until it exists
+  - then `npm install` + `npm run build` in the app directory
+  - without it, Shiny raises `RuntimeError: Directory '.../www' does not exist`
+    at startup — `www/` itself does not exist until a build creates it
+  - the check is skipped entirely once `www/ui.js` exists, so `npm run dev`'s
+    stub is never overwritten by a production build
 - `[py]` only — this example has no R server
 
 ## npm tier

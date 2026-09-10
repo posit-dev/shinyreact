@@ -18,6 +18,14 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 - `matplotlib.use("Agg")` is set before `set_react_page()`, so plotting works
   headless
+- when `www/ui.js` is absent (the bundle is gitignored, so it is absent in a
+  fresh clone), the app prints `www/ui.js not found -- building the client
+  bundle...` to stderr and runs `npm install` then `npm run build` in the app
+  directory before `set_react_page()`
+  - without it, Shiny raises `RuntimeError: Directory '.../www' does not exist`
+    at startup — `www/` itself does not exist until the build creates it
+  - the check is skipped entirely once `www/ui.js` exists; it never rebuilds a
+    stale bundle
 - output `scatter_data` (`reactive_output`) → `{"age": [...], "score": [...]}`,
   column-oriented, `id` dropped
   - not reactive on any input — it recomputes only on session start
