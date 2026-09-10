@@ -364,7 +364,9 @@ describe("ShinyOutput", () => {
 
       await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledTimes(3));
 
-      const loggedIds = errorSpy.mock.calls.map((call) => call[1].id).sort();
+      const loggedIds = errorSpy.mock.calls
+        .map((call) => (call[1] as { id: string }).id)
+        .sort();
       expect(loggedIds).toEqual(["a", "b", "c"]);
       for (const call of errorSpy.mock.calls) {
         expect(call[1]).toMatchObject({ phase: "bindAll", error: boom });
