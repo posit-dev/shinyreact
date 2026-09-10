@@ -1,0 +1,81 @@
+# Testing wire payloads
+
+In a shinyreact app the contract between server and client is the JSON
+that crosses the Shiny websocket: the values
+[`reactive_output()`](https://posit-dev.github.io/shinyreact/r/reference/reactive_output.md)
+delivers, the payloads
+[`send_message()`](https://posit-dev.github.io/shinyreact/r/reference/send_message.md)
+pushes, and the values `useShinyInput()` sends back.
+[`wire_tap()`](https://posit-dev.github.io/shinyreact/r/reference/wire_tap.md)
+records those payloads in a
+[shinytest2](https://rstudio.github.io/shinytest2/) test so you can
+assert on them directly, without inspecting the rendered DOM.
+
+## Setup
+
+[`wire_tap()`](https://posit-dev.github.io/shinyreact/r/reference/wire_tap.md)
+needs the shinytest2 package. Start the `AppDriver` with
+`shiny.trace = TRUE` so every websocket frame is recorded in the app’s
+logs:
+
+``` r
+
+test_that("dist_data bins the waiting column", {
+  app <- shinytest2::AppDriver$new(
+    app_dir,
+    options = list(shiny.trace = TRUE)
+  )
+  withr::defer(app$stop())
+
+  tap <- shinyreact::wire_tap(app)
+  tap$expect_input_value("bins", 30L)
+  tap$expect_output_value("dist_data", function(d) d$breaks[[1]] == 43)
+})
+```
+
+## Matchers
+
+Each `expect_*` function takes a matcher and retries until it matches or
+a timeout (10 seconds by default) elapses:
+
+- A **function** is satisfied by a truthy return value. A function that
+  errors on a payload’s shape counts as a non-match, not a test failure.
+- Any **other object** is compared with
+  [`identical()`](https://rdrr.io/r/base/identical.html). JSON numbers
+  parse to integer when they have no fraction, so compare against `30L`,
+  not `30`.
+
+There is one `expect_*` per channel:
+
+| Function | Channel |
+|----|----|
+| `expect_output_value(id, matcher)` | values delivered for `output$id` |
+| `expect_message(id, matcher)` | `send_message(session, id, ...)` payloads |
+| `expect_input_value(id, matcher)` | values the client sent for `input$id` |
+
+Successive expectations on one channel assert an ordered subsequence:
+each scans from just past the previous match, so a value that arrives
+between two checks is never missed.
+
+## Full histories
+
+To inspect everything that crossed a channel, use the `all_*` functions:
+
+``` r
+
+tap$all_output_values("dist_data")
+tap$all_messages("notify")
+tap$all_input_values("bins")
+```
+
+Input ids match the bare id or any `id:type` wire id, so use the id you
+wrote in `useShinyInput()`.
+
+## Python counterpart
+
+`shinyreact.playwright.WireTap` in the Python package has the same
+methods and semantics for Playwright tests. One divergence:
+[`jsonlite::fromJSON()`](https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html)
+maps a JSON `null` output value to `NULL`, indistinguishable from an
+absent key, so early `null` frames are dropped in R where Python records
+`None`.

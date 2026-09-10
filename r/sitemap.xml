@@ -1,6 +1,10 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://posit-dev.github.io/shinyreact/r/404.html</loc></url>
 <url><loc>https://posit-dev.github.io/shinyreact/r/LICENSE-text.html</loc></url>
+<url><loc>https://posit-dev.github.io/shinyreact/r/articles/agent-skills.html</loc></url>
+<url><loc>https://posit-dev.github.io/shinyreact/r/articles/index.html</loc></url>
+<url><loc>https://posit-dev.github.io/shinyreact/r/articles/shinyreact.html</loc></url>
+<url><loc>https://posit-dev.github.io/shinyreact/r/articles/testing.html</loc></url>
 <url><loc>https://posit-dev.github.io/shinyreact/r/authors.html</loc></url>
 <url><loc>https://posit-dev.github.io/shinyreact/r/index.html</loc></url>
 <url><loc>https://posit-dev.github.io/shinyreact/r/reference/asis_input_handler.html</loc></url>
