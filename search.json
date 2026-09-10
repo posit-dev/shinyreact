@@ -1,0 +1,241 @@
+[
+  {
+    "objectID": "py/set_react_page.html",
+    "href": "py/set_react_page.html",
+    "title": "set_react_page",
+    "section": "",
+    "text": "set_react_page(path=None, *, shinyreact_js='server')\nSet the page for this Express app to a React app (the ui.tsx pattern).\nWith no arguments, serves www/index.html when it exists; otherwise falls back to :func:page_react-style discovery of www/ui.js / www/ui.css, emitting no body HTML at all (your JS appends its own mount container to &lt;body&gt;). Passing path explicitly requires the file to exist.\nWhen an HTML file is used, it is read once (cached at call time) and used as the page body. In both modes, dependencies from traditional Shiny renderers (e.g. @render.data_frame) are discovered automatically and injected into the page head.\nRenderers defined inside @module.server are discovered too: every renderer mounted while the app body runs is found via the session’s registered outputs, so module components load their JS/CSS with no extra configuration. Renderers mounted dynamically after page load (e.g. a module server called inside a @reactive.effect) are not in the initial page; when their UI is delivered through Shiny’s dynamic-UI path (@render.ui), Shiny injects their dependencies on render.\n.. note::\nEdits to index.html require restarting the Shiny server — see the comment in :func:_build_react_page_fn for the upstream Shiny Express constraint that prevents per-request re-reads.\n\n\npath resolution depends on whether it is absolute or relative:\n\nAbsolute path: used verbatim, regardless of caller or CWD::\n# /tmp/standalone-app.py\nfrom shinyreact import set_react_page\nset_react_page(\"/srv/myapp/www/index.html\")\n# → reads /srv/myapp/www/index.html\nRelative path from a module (typical): resolved against the caller’s module directory (read from the calling frame’s __file__)::\n# /path/to/my-app/app.py\nfrom shinyreact import set_react_page\nset_react_page()                    # → /path/to/my-app/www/index.html\nset_react_page(\"static/index.html\") # → /path/to/my-app/static/index.html\nThis is the expected usage for shiny run app.py.\nRelative path with no caller __file__ (REPL / exec’d code): falls back to :func:pathlib.Path.cwd — the current working directory of the process. Same convention CLI tools use for relative paths::\n&gt;&gt;&gt; import os, shinyreact\n&gt;&gt;&gt; os.chdir(\"/path/to/my-app\")\n&gt;&gt;&gt; shinyreact.set_react_page()        # → /path/to/my-app/www/index.html\n&gt;&gt;&gt; shinyreact.set_react_page(\"a.html\") # → /path/to/my-app/a.html\nThe fallback is deliberate — call from any working directory and you get a predictable result. If you need a specific path regardless of CWD, pass an absolute path (case 1).\n\nArgs: path: Path to the HTML file. Absolute paths are used verbatim; relative paths resolve against the caller module’s directory, or against Path.cwd() when there is no caller __file__. When None (the default), uses www/index.html if it exists, else discovers www/ui.js / www/ui.css. shinyreact_js: Who supplies shinyreact.js / shinyreact.css: \"server\" (default) or \"client\" for an npm-tier app whose bundle imports @posit/shinyreact — see :func:page_react.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "set_react_page"
+    ]
+  },
+  {
+    "objectID": "py/set_react_page.html#path-resolution",
+    "href": "py/set_react_page.html#path-resolution",
+    "title": "set_react_page",
+    "section": "",
+    "text": "path resolution depends on whether it is absolute or relative:\n\nAbsolute path: used verbatim, regardless of caller or CWD::\n# /tmp/standalone-app.py\nfrom shinyreact import set_react_page\nset_react_page(\"/srv/myapp/www/index.html\")\n# → reads /srv/myapp/www/index.html\nRelative path from a module (typical): resolved against the caller’s module directory (read from the calling frame’s __file__)::\n# /path/to/my-app/app.py\nfrom shinyreact import set_react_page\nset_react_page()                    # → /path/to/my-app/www/index.html\nset_react_page(\"static/index.html\") # → /path/to/my-app/static/index.html\nThis is the expected usage for shiny run app.py.\nRelative path with no caller __file__ (REPL / exec’d code): falls back to :func:pathlib.Path.cwd — the current working directory of the process. Same convention CLI tools use for relative paths::\n&gt;&gt;&gt; import os, shinyreact\n&gt;&gt;&gt; os.chdir(\"/path/to/my-app\")\n&gt;&gt;&gt; shinyreact.set_react_page()        # → /path/to/my-app/www/index.html\n&gt;&gt;&gt; shinyreact.set_react_page(\"a.html\") # → /path/to/my-app/a.html\nThe fallback is deliberate — call from any working directory and you get a predictable result. If you need a specific path regardless of CWD, pass an absolute path (case 1).\n\nArgs: path: Path to the HTML file. Absolute paths are used verbatim; relative paths resolve against the caller module’s directory, or against Path.cwd() when there is no caller __file__. When None (the default), uses www/index.html if it exists, else discovers www/ui.js / www/ui.css. shinyreact_js: Who supplies shinyreact.js / shinyreact.css: \"server\" (default) or \"client\" for an npm-tier app whose bundle imports @posit/shinyreact — see :func:page_react.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "set_react_page"
+    ]
+  },
+  {
+    "objectID": "py/playwright.WireTap.html",
+    "href": "py/playwright.WireTap.html",
+    "title": "playwright.WireTap",
+    "section": "",
+    "text": "playwright.WireTap(page)\nPassive tap on the Shiny websocket, with retrying expectations.\nConstruct it before page.goto() — history is complete from construction onward::\ntap = WireTap(page)\npage.goto(app.url)\ntap.expect_input_value(\"bins\", 30)\ntap.expect_output_value(\"dist_data\", lambda d: d[\"breaks\"][0] == 43.0)\nCross-channel frame order (which output lands first, how outputs batch into a single values frame, busy/progress interleaving) is reactive-scheduling coincidence, not contract — so the tap deliberately does not expose a global frame stream. Within one channel (one output id, one message type, one input id) wire order is guaranteed, and the expect_* methods consume it through a cursor: each expectation scans the recorded history from just past the previous match, so values that arrive between checks are never missed — capture is lossless; polling only decides when to re-scan. Successive expectations on one channel therefore assert an ordered subsequence.\n\n\n\n\n\nName\nDescription\n\n\n\n\nall_input_values\nEvery value the client sent for input_id, in order.\n\n\nall_messages\nEvery send_message() payload of message_id, in order.\n\n\nall_output_values\nEvery value the server delivered for output_id, in order.\n\n\nexpect_input_value\nAs :meth:expect_output_value, for client-sent input values.\n\n\nexpect_message\nAs :meth:expect_output_value, for send_message() payloads.\n\n\nexpect_output_value\nRetrying expectation against the values delivered for output_id.\n\n\n\n\n\nplaywright.WireTap.all_input_values(input_id)\nEvery value the client sent for input_id, in order.\nMatches the bare id or any id:type wire id (e.g. the implicit :shinyreact.default suffix), so use the id you wrote in useShinyInput().\n\n\n\nplaywright.WireTap.all_messages(message_id)\nEvery send_message() payload of message_id, in order.\n\n\n\nplaywright.WireTap.all_output_values(output_id)\nEvery value the server delivered for output_id, in order.\n\n\n\nplaywright.WireTap.expect_input_value(input_id, matcher, timeout_s=10)\nAs :meth:expect_output_value, for client-sent input values.\n\n\n\nplaywright.WireTap.expect_message(message_id, matcher, timeout_s=10)\nAs :meth:expect_output_value, for send_message() payloads.\n\n\n\nplaywright.WireTap.expect_output_value(output_id, matcher, timeout_s=10)\nRetrying expectation against the values delivered for output_id.\nA callable matcher is satisfied by a truthy return; any other object is compared for equality. Returns the matched value, or raises AssertionError at timeout_s. A matcher that raises on a value’s shape counts as a non-match.",
+    "crumbs": [
+      "Python",
+      "Testing",
+      "playwright.WireTap"
+    ]
+  },
+  {
+    "objectID": "py/playwright.WireTap.html#methods",
+    "href": "py/playwright.WireTap.html#methods",
+    "title": "playwright.WireTap",
+    "section": "",
+    "text": "Name\nDescription\n\n\n\n\nall_input_values\nEvery value the client sent for input_id, in order.\n\n\nall_messages\nEvery send_message() payload of message_id, in order.\n\n\nall_output_values\nEvery value the server delivered for output_id, in order.\n\n\nexpect_input_value\nAs :meth:expect_output_value, for client-sent input values.\n\n\nexpect_message\nAs :meth:expect_output_value, for send_message() payloads.\n\n\nexpect_output_value\nRetrying expectation against the values delivered for output_id.\n\n\n\n\n\nplaywright.WireTap.all_input_values(input_id)\nEvery value the client sent for input_id, in order.\nMatches the bare id or any id:type wire id (e.g. the implicit :shinyreact.default suffix), so use the id you wrote in useShinyInput().\n\n\n\nplaywright.WireTap.all_messages(message_id)\nEvery send_message() payload of message_id, in order.\n\n\n\nplaywright.WireTap.all_output_values(output_id)\nEvery value the server delivered for output_id, in order.\n\n\n\nplaywright.WireTap.expect_input_value(input_id, matcher, timeout_s=10)\nAs :meth:expect_output_value, for client-sent input values.\n\n\n\nplaywright.WireTap.expect_message(message_id, matcher, timeout_s=10)\nAs :meth:expect_output_value, for send_message() payloads.\n\n\n\nplaywright.WireTap.expect_output_value(output_id, matcher, timeout_s=10)\nRetrying expectation against the values delivered for output_id.\nA callable matcher is satisfied by a truthy return; any other object is compared for equality. Returns the matched value, or raises AssertionError at timeout_s. A matcher that raises on a value’s shape counts as a non-match.",
+    "crumbs": [
+      "Python",
+      "Testing",
+      "playwright.WireTap"
+    ]
+  },
+  {
+    "objectID": "py/send_message.html",
+    "href": "py/send_message.html",
+    "title": "send_message",
+    "section": "",
+    "text": "send_message\nsend_message(session, id, data)\nSend a custom message from server to client React components.\nMessages are consumed by useShinyMessageHandler(id, handler) on the React side via the @posit/shiny-react hooks bundled in shinyreact.\nArgs: session: The Shiny session to send the message through. id: The message id, module-resolved like input/output ids. Must match the id argument passed to useShinyMessageHandler() in the React component. data: Any JSON-serializable data to include in the message.\nExample::\n@reactive.effect\nasync def notify():\n    await shinyreact.send_message(\n        session, \"notification\", {\"text\": \"Hello!\", \"level\": \"info\"}\n    )",
+    "crumbs": [
+      "Python",
+      "Messaging",
+      "send_message"
+    ]
+  },
+  {
+    "objectID": "py/page_react_dep.html",
+    "href": "py/page_react_dep.html",
+    "title": "page_react_dep",
+    "section": "",
+    "text": "page_react_dep(src_dir=None, js_file='ui.js', css_file='ui.css', name=None)\nBuild an HTMLDependency for a React app’s JS and CSS entry points.\nThe JS file’s mtime is the dependency version, so the /lib/&lt;name&gt;-&lt;version&gt;/ URL changes on every rebuild and the browser re-fetches. That is what you want while developing, and the wrong thing for a published package — an mtime is whatever the install happened to write, so it is neither stable across machines nor meaningful to a reader. There is no version= here on purpose: a package shipping a fixed version should build its own :class:~htmltools.HTMLDependency (the same advice as for a classic, non-module bundle), which is five lines and leaves nothing about the dependency implicit.\nBoth the script and the stylesheet are attached only when the file exists inside the resolved src_dir, so a bundle that ships no CSS — or that has not been built yet — does not emit a tag pointing at a 404. Pass css_file=None to never attach a stylesheet. A missing js_file warns, since it is the entry point and an empty dependency would otherwise fail silently.\n\n\nThe base directory is src_dir when given. Passing it explicitly is recommended for library authors — the inference below reads the immediate calling frame, so wrapping this function in a helper resolves against the wrapper’s directory rather than the app’s.\nWhen src_dir is omitted it is inferred:\n\nModule call (typical): when the caller is a regular Python module (__file__ set), paths resolve against the module’s directory. This is the expected usage::\n# /path/to/my-app/app.py\nfrom shinyreact import page_react_dep\n\ndep = page_react_dep(js_file=\"bundle.js\")\n# dep.source[\"subdir\"] == \"/path/to/my-app\"\n# dep.name == \"my-app\"\n# version == mtime of /path/to/my-app/bundle.js\nREPL / exec’d code (no __file__): falls back to :func:pathlib.Path.cwd — the current working directory of the process. This matches the convention CLI tools use when resolving relative paths::\n&gt;&gt;&gt; import os, shinyreact\n&gt;&gt;&gt; os.chdir(\"/path/to/my-app\")\n&gt;&gt;&gt; shinyreact.page_react_dep(js_file=\"bundle.js\")\n# source[\"subdir\"] == \"/path/to/my-app\"\n# name == \"my-app\"\nThe fallback is deliberate — call from any working directory and you get a predictable result. If you need a specific directory regardless of CWD, pass src_dir.\n\nArgs: src_dir: Directory containing the JS/CSS. Inferred from the calling frame when omitted (see above). js_file: Filename of the JS entry point, relative to src_dir (default \"ui.js\"). Attached only if the file exists. css_file: Filename of the CSS file, relative to src_dir (default \"ui.css\"). Attached only if the file exists; None to skip. name: Dependency name. Defaults to src_dir’s basename.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "page_react_dep"
+    ]
+  },
+  {
+    "objectID": "py/page_react_dep.html#path-resolution",
+    "href": "py/page_react_dep.html#path-resolution",
+    "title": "page_react_dep",
+    "section": "",
+    "text": "The base directory is src_dir when given. Passing it explicitly is recommended for library authors — the inference below reads the immediate calling frame, so wrapping this function in a helper resolves against the wrapper’s directory rather than the app’s.\nWhen src_dir is omitted it is inferred:\n\nModule call (typical): when the caller is a regular Python module (__file__ set), paths resolve against the module’s directory. This is the expected usage::\n# /path/to/my-app/app.py\nfrom shinyreact import page_react_dep\n\ndep = page_react_dep(js_file=\"bundle.js\")\n# dep.source[\"subdir\"] == \"/path/to/my-app\"\n# dep.name == \"my-app\"\n# version == mtime of /path/to/my-app/bundle.js\nREPL / exec’d code (no __file__): falls back to :func:pathlib.Path.cwd — the current working directory of the process. This matches the convention CLI tools use when resolving relative paths::\n&gt;&gt;&gt; import os, shinyreact\n&gt;&gt;&gt; os.chdir(\"/path/to/my-app\")\n&gt;&gt;&gt; shinyreact.page_react_dep(js_file=\"bundle.js\")\n# source[\"subdir\"] == \"/path/to/my-app\"\n# name == \"my-app\"\nThe fallback is deliberate — call from any working directory and you get a predictable result. If you need a specific directory regardless of CWD, pass src_dir.\n\nArgs: src_dir: Directory containing the JS/CSS. Inferred from the calling frame when omitted (see above). js_file: Filename of the JS entry point, relative to src_dir (default \"ui.js\"). Attached only if the file exists. css_file: Filename of the CSS file, relative to src_dir (default \"ui.css\"). Attached only if the file exists; None to skip. name: Dependency name. Defaults to src_dir’s basename.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "page_react_dep"
+    ]
+  },
+  {
+    "objectID": "py/ReactApp.html",
+    "href": "py/ReactApp.html",
+    "title": "ReactApp",
+    "section": "",
+    "text": "ReactApp(\n    server,\n    *,\n    ui=None,\n    static_assets=MISSING,\n    bookmark_store='disable',\n    shinyreact_js='server',\n    **kwargs,\n)\n:class:shiny.App for the ui.tsx pattern — the UI is discovered.\nThe app file is just the server::\nfrom shinyreact import ReactApp\n\napp = ReactApp(server, bookmark_store=\"url\")\nWith no ui=, the UI is discovered next to the calling module the same way :func:set_react_page discovers it: www/index.html present → :func:page_react_html; otherwise → :func:page_react (www/ui.js / www/ui.css, served by the dependency itself). The discovered UI is a function of the request, so it re-renders per request — which is what makes bookmark_store= work with no further wiring, and what lets the mode switch mid-session when you create or delete www/index.html.\nui= overrides discovery and behaves exactly like shiny.App’s ui argument, except that a document from :func:page_react_html still gets its directory mounted. Note the discovery reads the immediate calling frame (like :func:page_react_dep), so a helper that wraps ReactApp(...) must pass ui= explicitly.\nArgs: server: The server function, as for :class:shiny.App. ui: Overrides UI discovery. Anything shiny.App accepts. static_assets: Extra static mounts. Added to the React asset directory rather than replacing it — see below. Defaults to :data:shiny.types.MISSING, not None, so that passing None explicitly can mean “no static assets at all”. bookmark_store: \"url\" / \"server\" to enable bookmarking, as for :class:shiny.App. Requires a callable UI, which discovery provides; a static ui=page_react_html(...) raises. shinyreact_js: Who supplies shinyreact.js / shinyreact.css to the discovered UI: \"server\" (default) or \"client\" for an npm-tier app whose bundle imports @posit/shinyreact. Ignored when ui= is passed — build that UI with shinyreact_js=\"client\" yourself. **kwargs: Forwarded to :class:shiny.App (debug=, test_mode=).\n\n\nA full HTML document references its bundle with a plain relative URL (&lt;script src=\"ui.js\"&gt;), so something has to serve the directory the document lives in. ReactApp mounts it at / for you:\n\ndiscovery mode — www/ next to the app file, mounted whenever the directory exists. It is mounted even in page_react() mode, where the dependency serves the assets itself and the mount is unused: the mode is decided per request while static_assets is a constructor argument, so an unused mount is the only way to keep both modes working. An unused mount is harmless; a missing one is a 404 per asset.\nui=page_react_html(...) — the document’s own directory, which :func:page_react_html tagged onto the document it returned.\n\nYour static_assets is merged with that mount, not substituted for it, so adding an unrelated mount doesn’t take the bundle down with it::\nReactApp(server, static_assets={\"/data\": DATA_DIR})\n# serves /data from DATA_DIR *and* / from www/\nYou win wherever you actually collide with it, and there are three ways to::\nReactApp(server, static_assets={\"/\": DIST_DIR})  # explicit \"/\" key\nReactApp(server, static_assets=DIST_DIR)         # a bare path *is* \"/\"\nReactApp(server, static_assets=None)             # nothing mounted\nThe last one is why the default is :data:shiny.types.MISSING rather than None: with None as the default there would be no way to say “mount nothing”, since not passing the argument and passing None would look identical from in here.\nShiny requires every mount path to be absolute, and sorts mount points by descending length, so a nested mount is matched before /.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "ReactApp"
+    ]
+  },
+  {
+    "objectID": "py/ReactApp.html#static-assets",
+    "href": "py/ReactApp.html#static-assets",
+    "title": "ReactApp",
+    "section": "",
+    "text": "A full HTML document references its bundle with a plain relative URL (&lt;script src=\"ui.js\"&gt;), so something has to serve the directory the document lives in. ReactApp mounts it at / for you:\n\ndiscovery mode — www/ next to the app file, mounted whenever the directory exists. It is mounted even in page_react() mode, where the dependency serves the assets itself and the mount is unused: the mode is decided per request while static_assets is a constructor argument, so an unused mount is the only way to keep both modes working. An unused mount is harmless; a missing one is a 404 per asset.\nui=page_react_html(...) — the document’s own directory, which :func:page_react_html tagged onto the document it returned.\n\nYour static_assets is merged with that mount, not substituted for it, so adding an unrelated mount doesn’t take the bundle down with it::\nReactApp(server, static_assets={\"/data\": DATA_DIR})\n# serves /data from DATA_DIR *and* / from www/\nYou win wherever you actually collide with it, and there are three ways to::\nReactApp(server, static_assets={\"/\": DIST_DIR})  # explicit \"/\" key\nReactApp(server, static_assets=DIST_DIR)         # a bare path *is* \"/\"\nReactApp(server, static_assets=None)             # nothing mounted\nThe last one is why the default is :data:shiny.types.MISSING rather than None: with None as the default there would be no way to say “mount nothing”, since not passing the argument and passing None would look identical from in here.\nShiny requires every mount path to be absolute, and sorts mount points by descending length, so a nested mount is matched before /.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "ReactApp"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "shinyreact",
+    "section": "",
+    "text": "With shinyreact, the Shiny server (Python or R) contains only reactive computation, and the UI is a React client you own. shinyreact is the bridge between the two; it ships zero UI components itself.\nOne JavaScript bundle backs both languages, so the same React client works identically against an app.py or an app.R server."
+  },
+  {
+    "objectID": "index.html#the-ui.tsx-pattern",
+    "href": "index.html#the-ui.tsx-pattern",
+    "title": "shinyreact",
+    "section": "The ui.tsx pattern",
+    "text": "The ui.tsx pattern\n\nThe app file bootstraps a static page — set_react_page() (Python Express) or page_react() (Python Core, R).\nYour React client, conventionally ui.tsx (compiled to www/ui.js, discovered automatically), renders the UI.\nClient and server talk through hooks: useShinyInput sends values to the server, useShinyOutputValue receives what reactive_output publishes, and useShinyMessageHandler receives send_message() pushes.\n\n\nPythonRJavaScript (www/ui.js)\n\n\nfrom shiny.express import input\nfrom shinyreact import reactive_output, set_react_page\n\nset_react_page()\n\n\n@reactive_output\ndef greeting():\n    return {\"message\": f\"Hello, {input.name()}\"}\n\n\nlibrary(shiny)\nlibrary(shinyreact)\n\nserver &lt;- function(input, output, session) {\n  output$greeting &lt;- reactive_output({\n    list(message = paste0(\"Hello, \", input$name))\n  })\n}\n\nshinyApp(page_react(), server)\n\n\nconst { React, ReactDOM, useShinyInput, useShinyOutputValue } = window.shinyreact;\n\nfunction App() {\n  const [name, setName] = useShinyInput(\"name\", \"world\");\n  const greeting = useShinyOutputValue(\"greeting\");\n  return (\n    &lt;&gt;\n      &lt;input value={name} onChange={(e) =&gt; setName(e.target.value)} /&gt;\n      &lt;p&gt;{greeting?.message}&lt;/p&gt;\n    &lt;/&gt;\n  );\n}\n\nReactDOM.createRoot(document.getElementById(\"root\")).render(&lt;App /&gt;);"
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "shinyreact",
+    "section": "Installation",
+    "text": "Installation\nshinyreact is pre-release. Install from GitHub:\n\nPythonR\n\n\npip install \"git+https://github.com/posit-dev/shinyreact.git\"\n\n\npak::pak(\"posit-dev/shinyreact/pkg-r\")\n\n\n\nThe JS hooks come with the server package — set_react_page() / page_react() serve shinyreact.js, which installs them at window.shinyreact. Apps with a bundler can instead npm install @posit/shinyreact and pass shinyreact_js=\"client\" to the page entry point."
+  },
+  {
+    "objectID": "index.html#reference",
+    "href": "index.html#reference",
+    "title": "shinyreact",
+    "section": "Reference",
+    "text": "Reference\n\n\n\nPython\nset_react_page(), page_react(), ReactApp, reactive_output, send_message(), …\n\n\nR\npage_react(), reactive_output(), send_message(), …\n\n\nJS\nuseShinyInput, useShinyOutputValue, useShinyMessageHandler, ShinyOutput, …\n\n\nExamples\nRunnable apps, from no-build www/ui.js to Vite + HMR\n\n\nDesign\nWhy the pattern looks the way it does"
+  },
+  {
+    "objectID": "py/index.html",
+    "href": "py/index.html",
+    "title": "shinyreact Python Reference",
+    "section": "",
+    "text": "Bootstrap a React client from the app file.\n\n\n\nset_react_page\nSet the page for this Express app to a React app (the ui.tsx pattern).\n\n\npage_react\nCreate a React page from conventional assets — no HTML file required.\n\n\npage_react_html\nServe a React index.html document (the ui.tsx pattern, Core API).\n\n\nReactApp\n:class:shiny.App for the ui.tsx pattern — the UI is discovered.\n\n\npage_bare\nCreate a bare HTML page with only Shiny dependencies.\n\n\npage_react_dep\nBuild an HTMLDependency for a React app’s JS and CSS entry points.\n\n\n\n\n\n\nPublish JSON to useShinyOutputValue() hooks.\n\n\n\nreactive_output\nPublish a reactive JSON value to the client (the ui.tsx pattern).\n\n\n\n\n\n\nPush messages to useShinyMessageHandler() hooks.\n\n\n\nsend_message\nSend a custom message from server to client React components.\n\n\n\n\n\n\nRecord the wire payloads a Playwright test observes.\n\n\n\nplaywright.WireTap\nPassive tap on the Shiny websocket, with retrying expectations.",
+    "crumbs": [
+      "Python",
+      "shinyreact Python Reference"
+    ]
+  },
+  {
+    "objectID": "py/index.html#pages",
+    "href": "py/index.html#pages",
+    "title": "shinyreact Python Reference",
+    "section": "",
+    "text": "Bootstrap a React client from the app file.\n\n\n\nset_react_page\nSet the page for this Express app to a React app (the ui.tsx pattern).\n\n\npage_react\nCreate a React page from conventional assets — no HTML file required.\n\n\npage_react_html\nServe a React index.html document (the ui.tsx pattern, Core API).\n\n\nReactApp\n:class:shiny.App for the ui.tsx pattern — the UI is discovered.\n\n\npage_bare\nCreate a bare HTML page with only Shiny dependencies.\n\n\npage_react_dep\nBuild an HTMLDependency for a React app’s JS and CSS entry points.",
+    "crumbs": [
+      "Python",
+      "shinyreact Python Reference"
+    ]
+  },
+  {
+    "objectID": "py/index.html#outputs",
+    "href": "py/index.html#outputs",
+    "title": "shinyreact Python Reference",
+    "section": "",
+    "text": "Publish JSON to useShinyOutputValue() hooks.\n\n\n\nreactive_output\nPublish a reactive JSON value to the client (the ui.tsx pattern).",
+    "crumbs": [
+      "Python",
+      "shinyreact Python Reference"
+    ]
+  },
+  {
+    "objectID": "py/index.html#messaging",
+    "href": "py/index.html#messaging",
+    "title": "shinyreact Python Reference",
+    "section": "",
+    "text": "Push messages to useShinyMessageHandler() hooks.\n\n\n\nsend_message\nSend a custom message from server to client React components.",
+    "crumbs": [
+      "Python",
+      "shinyreact Python Reference"
+    ]
+  },
+  {
+    "objectID": "py/index.html#testing",
+    "href": "py/index.html#testing",
+    "title": "shinyreact Python Reference",
+    "section": "",
+    "text": "Record the wire payloads a Playwright test observes.\n\n\n\nplaywright.WireTap\nPassive tap on the Shiny websocket, with retrying expectations.",
+    "crumbs": [
+      "Python",
+      "shinyreact Python Reference"
+    ]
+  },
+  {
+    "objectID": "py/reactive_output.html",
+    "href": "py/reactive_output.html",
+    "title": "reactive_output",
+    "section": "",
+    "text": "reactive_output\nreactive_output()\nPublish a reactive JSON value to the client (the ui.tsx pattern).\nAssign to output[id] where a React client reads the value with useShinyOutputValue(). There is no UI placeholder: auto_output_ui() inherits the base implementation, which returns None.\nAccepts any JSON-serializable value (dict, list, str, int, float, bool, None), passed through unchanged.",
+    "crumbs": [
+      "Python",
+      "Outputs",
+      "reactive_output"
+    ]
+  },
+  {
+    "objectID": "py/page_react.html",
+    "href": "py/page_react.html",
+    "title": "page_react",
+    "section": "",
+    "text": "page_react\npage_react(\n    *args,\n    src_dir=None,\n    js_file='ui.js',\n    css_file='ui.css',\n    title=None,\n    lang='en',\n    shinyreact_js='server',\n    **kwargs,\n)\nCreate a React page from conventional assets — no HTML file required.\nThe zero-configuration page for the ui.tsx pattern: the server emits no body HTML at all. It attaches the shinyreact bundle plus your app’s entry assets, discovered at www/ui.js and www/ui.css (relative to the calling module). Your JS owns the DOM — create and append your own mount container::\nconst root = ReactDOM.createRoot(\n  document.body.appendChild(document.createElement(\"div\")),\n);\nui.js is required (a missing file warns, pointing at the resolved path); ui.css is attached only when it exists. Both are served as an :class:~htmltools.HTMLDependency versioned by ui.js’s mtime, so the browser re-fetches after every edit — unlike raw &lt;script src=...&gt; tags in a hand-written HTML file, which the browser caches.\nArgs: *args: Extra children or :class:~htmltools.HTMLDependency objects. src_dir: Directory containing the assets. Defaults to www/ next to the calling module; relative paths resolve against the caller. js_file: JS entry filename within src_dir (default \"ui.js\"). css_file: CSS filename within src_dir (default \"ui.css\"). title: Page title. Defaults to the app folder’s name (src_dir’s parent when src_dir is a www/ dir). lang: HTML lang attribute. shinyreact_js: Who supplies shinyreact.js (and shinyreact.css) to the page.\n    - ``\"server\"`` (default) — the shinyreact package serves them as an\n      :class:`~htmltools.HTMLDependency`. What a no-build app needs,\n      and what makes ``window.shinyreact`` exist.\n    - ``\"client\"`` — your own bundle imports ``@posit/shinyreact`` and\n      ships its own copy, so the server sends nothing. Serving them too\n      would put two copies of React and the hooks on one page.\n\n    The ``#shinyreact-config`` tag is emitted either way; the npm-tier\n    client hard-errors without it.\n**kwargs: Forwarded to :func:`page_bare`, and on to\n    :func:`shiny.ui.page_bootstrap`.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "page_react"
+    ]
+  },
+  {
+    "objectID": "py/page_react_html.html",
+    "href": "py/page_react_html.html",
+    "title": "page_react_html",
+    "section": "",
+    "text": "page_react_html\npage_react_html(\n    path='www/index.html',\n    *,\n    extra_deps=None,\n    shinyreact_js='server',\n)\nServe a React index.html document (the ui.tsx pattern, Core API).\nReads a complete HTML document — the kind a Vite build emits — and injects Shiny’s and shinyreact’s dependencies into it. The document must contain Shiny’s dependency placeholder in &lt;head&gt;::\n&lt;meta name=\"shiny-dependency-placeholder\" content=\"\"&gt;\nThe script/link tags render in its place; the same literal is py-shiny’s own DEPS_PLACEHOLDER. It is an ordinary &lt;meta&gt; tag rather than template syntax, so the document stays valid HTML that a bundler’s dev server can serve unchanged. Matches R’s page_react_html().\nYou rarely need to call this yourself — :class:shinyreact.ReactApp discovers www/index.html and calls it for you::\nfrom shinyreact import ReactApp\n\napp = ReactApp(server)\nCall it directly to pass a non-default path (ReactApp(server, ui=page_react_html(\"client/index.html\"))). shiny.App works too (via ui.page_html(), py-shiny#2475), but only ReactApp mounts the document’s directory at /, so the assets the document references (your bundle’s JS/CSS) are served when they live next to it (conventionally www/).\nFor apps that don’t need to own the HTML document, prefer :func:page_react — it requires no HTML file at all and works with plain shiny.App.\nArgs: path: Path to the HTML document. Absolute paths are used verbatim; relative paths resolve against the caller module’s directory, or against :func:pathlib.Path.cwd when there is no caller __file__. Defaults to \"www/index.html\". extra_deps: Additional :class:~htmltools.HTMLDependency objects to render at the placeholder. A full document has no tag tree to attach dependencies to, so this is the only way in — the counterpart of :func:page_react’s positional *args. They render after Shiny’s and shinyreact’s, so they can rely on window.shinyreact existing. shinyreact_js: Who supplies shinyreact.js / shinyreact.css: \"server\" (default) or \"client\" for an npm-tier app whose bundle imports @posit/shinyreact — see :func:page_react.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "page_react_html"
+    ]
+  },
+  {
+    "objectID": "py/page_bare.html",
+    "href": "py/page_bare.html",
+    "title": "page_bare",
+    "section": "",
+    "text": "page_bare\npage_bare(*args, title=None, lang='en', **kwargs)\nCreate a bare HTML page with only Shiny dependencies.\nThis is the escape hatch for fully custom setups that don’t need the shinyreact JS/CSS. It wraps shiny.ui.page_bootstrap() with minimal defaults.\nPass :class:~htmltools.HTMLDependency objects as positional arguments to include them in the page — Shiny automatically hoists them to &lt;head&gt;.\nArgs: *args: Child tags or HTMLDependency objects to include in the page. title: Page title. lang: HTML lang attribute. **kwargs: Forwarded to :func:shiny.ui.page_bootstrap — its own theme=, or tag attributes for the page. Deliberately not surfaced as named parameters: in the ui.tsx pattern the client owns styling, so Bootstrap theming is a passthrough, not part of this API.",
+    "crumbs": [
+      "Python",
+      "Pages",
+      "page_bare"
+    ]
+  }
+]
