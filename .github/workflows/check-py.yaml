@@ -9,6 +9,11 @@ on:
       - ".github/workflows/check-py.yaml"
       - ".github/shinyreact/setup-playwright-remote/**"
   pull_request:
+    # `ready_for_review` is not a default type, and `py-test-e2e` below is
+    # gated on `draft != true`. Without it, a PR opened as a draft never runs
+    # the e2e suite before merge: the `opened` event skips the job, and
+    # clicking "Ready for review" delivers an event this workflow ignores.
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "pkg-py/**/*"
       - "pyproject.toml"
@@ -38,6 +43,9 @@ jobs:
         run: make py-check-tox
 
   py-test-e2e:
+    # Skipped while a PR is a draft (browsers are slow); the workflow listens
+    # for `ready_for_review` so undrafting runs it. On `push` there is no
+    # pull_request payload, so the expression is `null != true` — it runs.
     if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     # `packages: write` lets GITHUB_TOKEN push the Playwright image to GHCR
