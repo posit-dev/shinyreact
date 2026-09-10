@@ -124,23 +124,55 @@ describe("ShinyOutput", () => {
     expect(mockUnbindAll).toHaveBeenCalledWith(el, true);
   });
 
-  it("re-binds when id changes", () => {
+  it("re-binds when id changes", async () => {
     const { rerender } = render(<ShinyOutput id="first" />);
     expect(mockBindAll).toHaveBeenCalledTimes(1);
     expect(mockUnbindAll).toHaveBeenCalledTimes(0);
 
     rerender(<ShinyOutput id="second" />);
     expect(mockUnbindAll).toHaveBeenCalledTimes(1);
-    expect(mockBindAll).toHaveBeenCalledTimes(2);
+    // Queued behind the first call rather than started right away (see the
+    // dedupedBindAll/refreshBindAll comment), so this is not synchronous.
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(2));
   });
 
-  it("re-binds when tagName changes", () => {
+  it("re-binds when tagName changes", async () => {
     const { rerender } = render(<ShinyOutput id="my_plot" tagName="div" />);
     expect(mockBindAll).toHaveBeenCalledTimes(1);
 
     rerender(<ShinyOutput id="my_plot" tagName="shiny-data-frame" />);
     expect(mockUnbindAll).toHaveBeenCalledTimes(1);
-    expect(mockBindAll).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(2));
+  });
+
+  it("does not start a second, overlapping bindAll under React StrictMode's synthetic mount-cleanup-mount, even for one ShinyOutput with no siblings", () => {
+    // React StrictMode (development only) synchronously runs a just-mounted
+    // effect's own cleanup and then the same effect again, on the same DOM
+    // node, to help surface effects that clean up incorrectly. This is the
+    // simplest possible case for the regression an earlier version of this
+    // fix had: refreshBindAll(scope), called from that synthetic cleanup,
+    // must not let the synthetic re-mount start a second, real bindAll()
+    // call while the very first one is still unsettled. That would be a
+    // second, genuinely concurrent scan of the same scope, the exact
+    // overlap this fix exists to prevent, with no siblings needed at all.
+    let resolveFirstCall: () => void = () => {};
+    const firstCall = new Promise<void>((resolve) => {
+      resolveFirstCall = resolve;
+    });
+    mockBindAll.mockReturnValueOnce(firstCall);
+
+    render(
+      <React.StrictMode>
+        <ShinyOutput id="x" />
+      </React.StrictMode>,
+    );
+
+    // The first call has not settled yet (resolveFirstCall was not called),
+    // so a second call here could only be an overlapping one, not a
+    // legitimately queued follow-up.
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    resolveFirstCall();
   });
 
   it("does not re-bind when only unrelated props change", () => {
@@ -159,7 +191,7 @@ describe("ShinyOutput", () => {
     expect(mockUnbindAll).toHaveBeenCalledTimes(0);
   });
 
-  it("calls unbindAll before bindAll when id changes", () => {
+  it("calls unbindAll before bindAll when id changes", async () => {
     const calls: string[] = [];
     mockBindAll.mockImplementation(() => calls.push("bind"));
     mockUnbindAll.mockImplementation(() => calls.push("unbind"));
@@ -167,8 +199,9 @@ describe("ShinyOutput", () => {
     const { rerender } = render(<ShinyOutput id="first" />);
     rerender(<ShinyOutput id="second" />);
 
-    // Mount, then on rerender: cleanup (unbind) then effect (bind).
-    expect(calls).toEqual(["bind", "unbind", "bind"]);
+    // Mount, then on rerender: cleanup (unbind) then, once the first bind
+    // settles, the queued re-bind.
+    await vi.waitFor(() => expect(calls).toEqual(["bind", "unbind", "bind"]));
   });
 
   it("unbinds the element that was previously bound when id changes", () => {
@@ -373,7 +406,7 @@ describe("ShinyOutput", () => {
       }
     });
 
-    it("logs the new id when re-binding after id change throws", () => {
+    it("logs the new id when re-binding after id change throws", async () => {
       const { rerender, container } = render(<ShinyOutput id="first" />);
       expect(errorSpy).not.toHaveBeenCalled();
 
@@ -384,7 +417,10 @@ describe("ShinyOutput", () => {
 
       rerender(<ShinyOutput id="second" />);
 
-      expect(errorSpy).toHaveBeenCalledTimes(1);
+      // The re-bind is queued behind the first call (see
+      // dedupedBindAll/refreshBindAll), so the throw surfaces once that
+      // queue runs, not synchronously.
+      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledTimes(1));
       expect(errorSpy.mock.calls[0][0]).toBe(
         '[shinyreact] ShinyOutput "second" bindAll failed:',
       );
@@ -450,7 +486,7 @@ describe("ShinyOutput", () => {
       expect(container.querySelector("#ctx-ctx-scatter")).toBeNull();
     });
 
-    it("re-binds when the resolved namespaced id changes", () => {
+    it("re-binds when the resolved namespaced id changes", async () => {
       function App({ ns }: { ns: string }) {
         return (
           <ShinyModuleProvider namespace={ns}>
@@ -463,7 +499,7 @@ describe("ShinyOutput", () => {
 
       rerender(<App ns="b" />);
       expect(mockUnbindAll).toHaveBeenCalledTimes(1);
-      expect(mockBindAll).toHaveBeenCalledTimes(2);
+      await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(2));
     });
 
     it("logs the namespaced id when bindAll fails inside a provider", () => {

@@ -13,17 +13,25 @@ import { useNamespacedId } from "./shiny-react/ShinyModuleContext";
  * permanently, one entry per call, even though there is really only one
  * DOM element per id.
  *
- * The fix: track one in-flight `bindAll()` call per scope element. A
- * second `ShinyOutput` sibling whose effect runs while the first one's
- * call for the same element is still pending reuses that same call
- * instead of starting a second, overlapping scan, so there is never more
- * than one scan of a given scope in flight at once.
+ * The fix: track one call per scope element, and never let a second one
+ * start while it is still in flight. A `ShinyOutput` sibling whose effect
+ * runs while another one's call for the same element is still pending
+ * reuses that same call. An unbind under that scope (an id or tagName
+ * change, an unmount, or React StrictMode's synthetic mount-cleanup-mount
+ * double invoke) queues a fresh scan for *after* the current one settles,
+ * rather than starting one right away: starting one immediately, while an
+ * earlier real call for the same scope is still unsettled, is exactly the
+ * overlap this exists to prevent, whichever `ShinyOutput` happens to
+ * trigger it. A first version of this fix deleted the cached call
+ * outright on every unbind, which let a later caller start a second,
+ * genuinely concurrent scan while the first was still running: safe for
+ * an unbind after the earlier call had already settled, but not for one
+ * mid-flight, and StrictMode's double invoke reaches that mid-flight
+ * window every time, even for one `ShinyOutput` with no siblings at all.
  */
 const pendingBindAll = new WeakMap<HTMLElement, Promise<unknown>>();
 
-function dedupedBindAll(scope: HTMLElement): Promise<unknown> {
-  const inFlight = pendingBindAll.get(scope);
-  if (inFlight) return inFlight;
+function runBindAll(scope: HTMLElement): Promise<unknown> {
   const promise = Promise.resolve(window.Shiny!.bindAll!(scope)).finally(() => {
     if (pendingBindAll.get(scope) === promise) {
       pendingBindAll.delete(scope);
@@ -33,19 +41,20 @@ function dedupedBindAll(scope: HTMLElement): Promise<unknown> {
   return promise;
 }
 
-/**
- * An in-flight `bindAll(scope)` call only stands in for a *later* one that
- * would see the exact same, unchanged DOM. `Shiny.unbindAll(el, true)` is
- * synchronous and runs as one `ShinyOutput`'s cleanup, immediately before
- * the *next* mount effect that reuses the same `scope` (an id or tagName
- * change: React runs the old effect's cleanup and the new effect back to
- * back). That next effect's own scan needs to see the just-unbound element
- * as unbound again, not reuse a promise for a scan that ran before the
- * unbind happened. So an unbind under `scope` drops any cached promise for
- * it, forcing the next `dedupedBindAll(scope)` call to run a fresh scan.
- */
-function invalidateBindAll(scope: HTMLElement): void {
-  pendingBindAll.delete(scope);
+function dedupedBindAll(scope: HTMLElement): Promise<unknown> {
+  return pendingBindAll.get(scope) ?? runBindAll(scope);
+}
+
+function refreshBindAll(scope: HTMLElement): void {
+  const current = pendingBindAll.get(scope);
+  if (!current) return;
+  // Queue behind the in-flight call rather than deleting it: deleting
+  // would let whichever ShinyOutput asks next start a second, overlapping
+  // scan while this one is still running.
+  pendingBindAll.set(
+    scope,
+    current.catch(() => {}).then(() => runBindAll(scope)),
+  );
 }
 
 /** @group Components */
@@ -119,7 +128,7 @@ export function ShinyOutput({
     }
 
     return () => {
-      invalidateBindAll(scope);
+      refreshBindAll(scope);
       try {
         window.Shiny?.unbindAll?.(el, true);
       } catch (err) {
