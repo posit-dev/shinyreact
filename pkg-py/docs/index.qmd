@@ -96,7 +96,7 @@ Apps with a bundler can instead `npm install @posit/shinyreact` and pass `shinyr
 | | |
 |---|---|
 | [Python](py/index.qmd) | `set_react_page()`, `page_react()`, `ReactApp`, `reactive_output`, `send_message()`, … |
-| [R](https://posit-dev.github.io/shinyreact/r/) | `page_react()`, `reactive_output()`, `send_message()`, … |
+| [R](https://posit-dev.github.io/shinyreact/r/reference/) | `page_react()`, `reactive_output()`, `send_message()`, … |
 | [JS](https://posit-dev.github.io/shinyreact/js/) | `useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`, `ShinyOutput`, … |
 | [Examples](https://github.com/posit-dev/shinyreact/tree/main/examples) | Runnable apps, from no-build `www/ui.js` to Vite + HMR |
 | [Design](https://github.com/posit-dev/shinyreact/blob/main/DESIGN.md) | Why the pattern looks the way it does |

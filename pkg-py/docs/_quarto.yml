@@ -34,10 +34,16 @@ website:
     left:
       - text: Get Started
         href: index.qmd
+      - text: Articles
+        menu:
+          - articles/tsx-and-build-tools.qmd
+          - articles/hooks.qmd
+          - articles/testing.qmd
+          - articles/agent-skills.qmd
       - text: Python
         href: py/index.qmd
       - text: R
-        href: https://posit-dev.github.io/shinyreact/r/
+        href: https://posit-dev.github.io/shinyreact/r/reference/
       - text: JS
         href: https://posit-dev.github.io/shinyreact/js/
     tools:

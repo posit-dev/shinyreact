@@ -1,0 +1,32 @@
+---
+title: "Agent Skills"
+---
+
+shinyreact ships two [Agent Skills](https://agentskills.io/) so a coding agent can build a shinyreact app without you pasting documentation into it:
+
+- **`shinyreact-build-app`** builds a `ui.tsx`-pattern app from scratch.
+- **`shinyreact-convert-app`** ports an existing Shiny app to the pattern. It inspects the source, drives the running app in a browser, describes it in plain English, then rewrites it against that description.
+
+Both packages ship the same two skills.
+
+::: {.panel-tabset}
+
+## Python
+
+Install them into a project with [`library-skills`](https://github.com/tiangolo/library-skills), which symlinks them so they stay current when you upgrade the package:
+
+```bash
+uvx library-skills --claude   # Claude Code (.claude/skills)
+uvx library-skills            # standard location (.agents/skills)
+```
+
+## R
+
+Agents using [btw](https://posit-dev.github.io/btw/) discover the skills automatically once shinyreact is attached.
+To copy them into a project for Claude Code and other skill-aware tools:
+
+```r
+btw::btw_skill_install_package("shinyreact")
+```
+
+:::
