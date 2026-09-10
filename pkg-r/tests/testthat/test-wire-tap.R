@@ -138,6 +138,25 @@ test_that("non-JSON payloads are ignored", {
   expect_identical(tap$all_output_values("a"), list())
 })
 
+test_that("expect_* pumps the event loop while polling", {
+  # chromote delivers websocket frames through later callbacks, so a frame
+  # that lands after the test's last app$ call is only ever seen if the poll
+  # loop runs later::run_now() rather than Sys.sleep(). Simulate that: the
+  # frame appears only once a scheduled callback fires.
+  skip_if_not_installed("shinytest2")
+  skip_if_not_installed("later")
+  messages <- character()
+  app <- list(
+    get_logs = function() fake_app(messages)$get_logs()
+  )
+  later::later(
+    function() messages <<- frame("send", list(data = list(bins = 5))),
+    delay = 0.3
+  )
+  tap <- wire_tap(app)
+  expect_identical(tap$expect_input_value("bins", 5L, timeout = 3), 5L)
+})
+
 test_that("wire_tap works end-to-end against the 01-hello example", {
   # The one real-browser test: inst/examples-shiny/01-hello is a copy of
   # examples/01-hello (app.R + www/) so it ships with the installed package.

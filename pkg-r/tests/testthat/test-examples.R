@@ -77,7 +77,9 @@ if (dir.exists(examples_dir)) {
   example_tests <- example_tests[
     basename(dirname(example_tests)) == "testthat"
   ]
+  # Source from the app's own tests/testthat/, as shinytest2::test_app() would,
+  # so test_path("../../") -- AppDriver$new()'s default app_dir -- is the app.
   for (file in example_tests) {
-    source(file, local = TRUE)
+    withr::with_dir(dirname(file), source(basename(file), local = TRUE))
   }
 }

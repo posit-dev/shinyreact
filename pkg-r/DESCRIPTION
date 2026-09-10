@@ -24,6 +24,7 @@ Imports:
     utils
 Suggests:
     knitr,
+    later,
     rmarkdown,
     shinytest2,
     testthat (>= 3.0.0),

@@ -18,7 +18,6 @@ describe("installGlobal", () => {
       "ReactDOM",
       "ShinyModuleProvider",
       "ShinyOutput",
-      "ShinyReactComponentElement",
       "useSetShinyInput",
       "useShinyBusy",
       "useShinyInitialized",

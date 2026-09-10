@@ -180,7 +180,11 @@ wire_tap <- function(app) {
           }
         ))
       }
-      Sys.sleep(0.25)
+      # Not Sys.sleep(): chromote only receives websocket frames while the
+      # later event loop runs, so a plain sleep would poll a log that never
+      # grows. Frames that arrive after the test's last app$ call (e.g. a
+      # debounced input send) show up only because this pumps the loop.
+      later::run_now(0.25)
     }
   }
 

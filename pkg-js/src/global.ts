@@ -21,7 +21,8 @@ import {
   ImageOutput,
   MISSING,
   ShinyModuleProvider,
-  ShinyReactComponentElement,
+  // ShinyReactComponentElement — re-add when partial React app support lands;
+  // see the note in shiny-react/index.ts.
 } from "./shiny-react";
 
 // Extend window with shinyreact's public global API
@@ -40,7 +41,7 @@ declare global {
       ImageOutput: typeof ImageOutput;
       MISSING: typeof MISSING;
       ShinyModuleProvider: typeof ShinyModuleProvider;
-      ShinyReactComponentElement: typeof ShinyReactComponentElement;
+      // ShinyReactComponentElement: typeof ShinyReactComponentElement;
       ShinyOutput: typeof ShinyOutput;
       React: typeof React;
       ReactDOM: typeof ReactDOM;
@@ -68,7 +69,7 @@ export function installGlobal(): void {
     ImageOutput,
     MISSING,
     ShinyModuleProvider,
-    ShinyReactComponentElement,
+    // ShinyReactComponentElement,
     ShinyOutput,
     React,
     ReactDOM,

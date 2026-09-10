@@ -17,7 +17,7 @@
  * @groupDescription Session
  * Observe the Shiny session itself — connected yet, busy right now.
  * @groupDescription Components
- * Render traditional Shiny outputs and custom elements inside a React tree.
+ * Render traditional Shiny outputs inside a React tree.
  * @groupDescription Utilities
  * Sentinels and constants.
  */
@@ -86,7 +86,8 @@ export {
   ImageOutput,
   MISSING,
   ShinyModuleProvider,
-  ShinyReactComponentElement,
+  // ShinyReactComponentElement — re-add when partial React app support lands;
+  // see the note in shiny-react/index.ts.
 } from "./shiny-react";
 export type { OutputStatus, ErrorsMessageValue } from "./shiny-react";
 export type { ShinyModuleProviderProps } from "./shiny-react/ShinyModuleContext";

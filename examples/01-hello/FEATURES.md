@@ -48,6 +48,20 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 - the server never renders an image: no plotting library, no `plotOutput`
   placeholder
 
+## Wire (`app.R`, real browser)
+
+- the first `bins` value the client sends is the hook default, `30` `(test)`
+- `dist_data` for 30 bins arrives with `breaks[1] == 43`, `breaks[31] == 96`,
+  and the same 30 counts `test-histogram.R` computes `(test)`
+- `dist_caption` arrives as `"272 eruptions in 30 bins"` `(test)`
+- moving the slider to 1 sends `bins = 1` and produces `counts == [272]`,
+  `breaks == [43, 96]`, and the singular caption `"272 eruptions in 1 bin"`
+  `(test)`
+  - `counts` is a JSON array, not a scalar: `I()` in `app.R` `(test)`
+- no `send_message()` traffic at all `(test)`
+- driving the React-owned range input from a test needs the native value
+  setter plus an `input` event; a raw `change` event is ignored
+
 ## Page
 
 - every server serves the same page: `www/ui.js` + `www/ui.css` are discovered
