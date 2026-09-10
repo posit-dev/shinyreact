@@ -6,11 +6,14 @@
 \alias{shinyreact-package}
 \title{shinyreact: Shiny UI Infrastructure for JSON-Driven React Rendering}
 \description{
+\if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
+
 Server-side plumbing for the 'ui.tsx' pattern in Shiny: the UI is defined in a client React bundle, and the Shiny server contains only reactive computation. Ships no UI components.
 }
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://posit-dev.github.io/shinyreact/r}
   \item \url{https://github.com/posit-dev/shinyreact}
   \item Report bugs at \url{https://github.com/posit-dev/shinyreact/issues}
 }
