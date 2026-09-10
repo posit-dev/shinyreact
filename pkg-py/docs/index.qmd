@@ -46,9 +46,9 @@ server <- function(input, output, session) {
 shinyApp(page_react(), server)
 ```
 
-## JavaScript (`www/ui.js`)
+## JavaScript (`ui.tsx`)
 
-```js
+```jsx
 const { React, ReactDOM, useShinyInput, useShinyOutputValue } = window.shinyreact;
 
 function App() {
@@ -62,7 +62,8 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+// No mount div in the generated page — append one to <body>.
+ReactDOM.createRoot(document.body.appendChild(document.createElement("div"))).render(<App />);
 ```
 
 :::
@@ -90,6 +91,19 @@ pak::pak("posit-dev/shinyreact/pkg-r")
 
 The JS hooks come with the server package — `set_react_page()` / `page_react()` serve `shinyreact.js`, which installs them at `window.shinyreact`.
 Apps with a bundler can instead `npm install @posit/shinyreact` and pass `shinyreact_js="client"` to the page entry point.
+
+## Agent Skills
+
+Both packages ship two [Agent Skills](articles/agent-skills.qmd) so a coding agent can build a shinyreact app without you pasting documentation into it: `shinyreact-build-app` builds a `ui.tsx`-pattern app from scratch, and `shinyreact-convert-app` ports an existing Shiny app to the pattern.
+
+The fastest starter template is the skill itself. With the shinyreact skills installed, paste this into your agent (swap in `R` if that is your server):
+
+```
+Using the `/shinyreact-build-app` skill, scaffold a new shinyreact app in this
+directory with a Python server. Set up the Vite build (src/ui.tsx compiled to
+www/ui.js) and a hello-world UI: a text input whose value the server greets by
+name. Run the build and start the app.
+```
 
 ## Reference
 
