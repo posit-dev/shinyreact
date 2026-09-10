@@ -6,6 +6,8 @@
 \alias{shinyreact-package}
 \title{shinyreact: Shiny UI Infrastructure for Client-Side React Rendering}
 \description{
+\if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
+
 Server-side plumbing for the 'ui.tsx' pattern in Shiny: the UI is defined in a client React bundle, and the Shiny server contains only reactive computation. Ships no UI components.
 }
 \seealso{
