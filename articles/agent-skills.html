@@ -205,8 +205,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#starter-prompt" id="toc-starter-prompt" class="nav-link active" data-scroll-target="#starter-prompt">Starter prompt</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/posit-dev/shinyreact/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li><li><a href="https://github.com/posit-dev/shinyreact/edit/main/pkg-py/docs/articles/agent-skills.qmd" class="toc-action"><i class="bi empty"></i>Edit this page</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content" tabindex="-1">
@@ -250,8 +256,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+<section id="starter-prompt" class="level2">
+<h2 class="anchored" data-anchor-id="starter-prompt">Starter prompt</h2>
+<p>The skill doubles as the starter template: it knows the Vite setup, the file layout, and the hooks, so you do not need to read about build tools before your first app. With the shinyreact skills installed, paste this into your agent (swap in <code>R</code> if that is your server):</p>
+<pre><code>Using the `/shinyreact-build-app` skill, scaffold a new shinyreact app in this
+directory with a Python server. Set up the Vite build (src/ui.tsx compiled to
+www/ui.js) and a hello-world UI: a text input whose value the server greets by
+name. Run the build and start the app.</code></pre>
+<p>To port an existing app instead, point the agent at it: “Using the <code>/shinyreact-convert-app</code> skill, convert the Shiny app in <code>./app.py</code> to the shinyreact <code>ui.tsx</code> pattern.”</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -662,7 +677,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>   
     <div class="nav-footer-center">
       &nbsp;
-    <div class="toc-actions"><ul><li><a href="https://github.com/posit-dev/shinyreact/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li><li><a href="https://github.com/posit-dev/shinyreact/edit/main/pkg-py/docs/articles/agent-skills.qmd" class="toc-action"><i class="bi empty"></i>Edit this page</a></li></ul></div></div>
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/posit-dev/shinyreact/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li><li><a href="https://github.com/posit-dev/shinyreact/edit/main/pkg-py/docs/articles/agent-skills.qmd" class="toc-action"><i class="bi empty"></i>Edit this page</a></li></ul></div></div>
     <div class="nav-footer-right">
       &nbsp;
     </div>

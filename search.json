@@ -182,7 +182,7 @@
     "href": "index.html#the-ui.tsx-pattern",
     "title": "shinyreact",
     "section": "The ui.tsx pattern",
-    "text": "The ui.tsx pattern\n\nThe app file bootstraps a static page — set_react_page() (Python Express) or page_react() (Python Core, R).\nYour React client, conventionally ui.tsx (compiled to www/ui.js, discovered automatically), renders the UI.\nClient and server talk through hooks: useShinyInput sends values to the server, useShinyOutputValue receives what reactive_output publishes, and useShinyMessageHandler receives send_message() pushes.\n\n\nPythonRJavaScript (www/ui.js)\n\n\nfrom shiny.express import input\nfrom shinyreact import reactive_output, set_react_page\n\nset_react_page()\n\n\n@reactive_output\ndef greeting():\n    return {\"message\": f\"Hello, {input.name()}\"}\n\n\nlibrary(shiny)\nlibrary(shinyreact)\n\nserver &lt;- function(input, output, session) {\n  output$greeting &lt;- reactive_output({\n    list(message = paste0(\"Hello, \", input$name))\n  })\n}\n\nshinyApp(page_react(), server)\n\n\nconst { React, ReactDOM, useShinyInput, useShinyOutputValue } = window.shinyreact;\n\nfunction App() {\n  const [name, setName] = useShinyInput(\"name\", \"world\");\n  const greeting = useShinyOutputValue(\"greeting\");\n  return (\n    &lt;&gt;\n      &lt;input value={name} onChange={(e) =&gt; setName(e.target.value)} /&gt;\n      &lt;p&gt;{greeting?.message}&lt;/p&gt;\n    &lt;/&gt;\n  );\n}\n\nReactDOM.createRoot(document.getElementById(\"root\")).render(&lt;App /&gt;);"
+    "text": "The ui.tsx pattern\n\nThe app file bootstraps a static page — set_react_page() (Python Express) or page_react() (Python Core, R).\nYour React client, conventionally ui.tsx (compiled to www/ui.js, discovered automatically), renders the UI.\nClient and server talk through hooks: useShinyInput sends values to the server, useShinyOutputValue receives what reactive_output publishes, and useShinyMessageHandler receives send_message() pushes.\n\n\nPythonRJavaScript (ui.tsx)\n\n\nfrom shiny.express import input\nfrom shinyreact import reactive_output, set_react_page\n\nset_react_page()\n\n\n@reactive_output\ndef greeting():\n    return {\"message\": f\"Hello, {input.name()}\"}\n\n\nlibrary(shiny)\nlibrary(shinyreact)\n\nserver &lt;- function(input, output, session) {\n  output$greeting &lt;- reactive_output({\n    list(message = paste0(\"Hello, \", input$name))\n  })\n}\n\nshinyApp(page_react(), server)\n\n\nconst { React, ReactDOM, useShinyInput, useShinyOutputValue } = window.shinyreact;\n\nfunction App() {\n  const [name, setName] = useShinyInput(\"name\", \"world\");\n  const greeting = useShinyOutputValue(\"greeting\");\n  return (\n    &lt;&gt;\n      &lt;input value={name} onChange={(e) =&gt; setName(e.target.value)} /&gt;\n      &lt;p&gt;{greeting?.message}&lt;/p&gt;\n    &lt;/&gt;\n  );\n}\n\n// No mount div in the generated page — append one to &lt;body&gt;.\nReactDOM.createRoot(document.body.appendChild(document.createElement(\"div\"))).render(&lt;App /&gt;);"
   },
   {
     "objectID": "index.html#installation",
@@ -190,6 +190,13 @@
     "title": "shinyreact",
     "section": "Installation",
     "text": "Installation\nshinyreact is pre-release. Install from GitHub:\n\nPythonR\n\n\npip install \"git+https://github.com/posit-dev/shinyreact.git\"\n\n\npak::pak(\"posit-dev/shinyreact/pkg-r\")\n\n\n\nThe JS hooks come with the server package — set_react_page() / page_react() serve shinyreact.js, which installs them at window.shinyreact. Apps with a bundler can instead npm install @posit/shinyreact and pass shinyreact_js=\"client\" to the page entry point."
+  },
+  {
+    "objectID": "index.html#agent-skills",
+    "href": "index.html#agent-skills",
+    "title": "shinyreact",
+    "section": "Agent Skills",
+    "text": "Agent Skills\nBoth packages ship two Agent Skills so a coding agent can build a shinyreact app without you pasting documentation into it: shinyreact-build-app builds a ui.tsx-pattern app from scratch, and shinyreact-convert-app ports an existing Shiny app to the pattern.\nThe fastest starter template is the skill itself. With the shinyreact skills installed, paste this into your agent (swap in R if that is your server):\nUsing the `/shinyreact-build-app` skill, scaffold a new shinyreact app in this\ndirectory with a Python server. Set up the Vite build (src/ui.tsx compiled to\nwww/ui.js) and a hello-world UI: a text input whose value the server greets by\nname. Run the build and start the app."
   },
   {
     "objectID": "index.html#reference",
@@ -334,6 +341,13 @@
     "href": "articles/agent-skills.html",
     "title": "Agent Skills",
     "section": "",
-    "text": "shinyreact ships two Agent Skills so a coding agent can build a shinyreact app without you pasting documentation into it:\n\nshinyreact-build-app builds a ui.tsx-pattern app from scratch.\nshinyreact-convert-app ports an existing Shiny app to the pattern. It inspects the source, drives the running app in a browser, describes it in plain English, then rewrites it against that description.\n\nBoth packages ship the same two skills.\n\nPythonR\n\n\nInstall them into a project with library-skills, which symlinks them so they stay current when you upgrade the package:\nuvx library-skills --claude   # Claude Code (.claude/skills)\nuvx library-skills            # standard location (.agents/skills)\n\n\nAgents using btw discover the skills automatically once shinyreact is attached. To copy them into a project for Claude Code and other skill-aware tools:\nbtw::btw_skill_install_package(\"shinyreact\")"
+    "text": "shinyreact ships two Agent Skills so a coding agent can build a shinyreact app without you pasting documentation into it:\nBoth packages ship the same two skills."
+  },
+  {
+    "objectID": "articles/agent-skills.html#starter-prompt",
+    "href": "articles/agent-skills.html#starter-prompt",
+    "title": "Agent Skills",
+    "section": "Starter prompt",
+    "text": "Starter prompt\nThe skill doubles as the starter template: it knows the Vite setup, the file layout, and the hooks, so you do not need to read about build tools before your first app. With the shinyreact skills installed, paste this into your agent (swap in R if that is your server):\nUsing the `/shinyreact-build-app` skill, scaffold a new shinyreact app in this\ndirectory with a Python server. Set up the Vite build (src/ui.tsx compiled to\nwww/ui.js) and a hello-world UI: a text input whose value the server greets by\nname. Run the build and start the app.\nTo port an existing app instead, point the agent at it: “Using the /shinyreact-convert-app skill, convert the Shiny app in ./app.py to the shinyreact ui.tsx pattern.”"
   }
 ]
