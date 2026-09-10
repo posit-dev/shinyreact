@@ -1,5 +1,5 @@
 Package: shinyreact
-Title: Shiny UI Infrastructure for JSON-Driven React Rendering
+Title: Shiny UI Infrastructure for Client-Side React Rendering
 Version: 0.0.0.9000
 Authors@R: c(
     person("Barret", "Schloerke", , "barret@posit.co", role = c("cre", "aut"),
