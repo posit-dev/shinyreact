@@ -164,6 +164,30 @@ Every leaf you assert gets a `(test)` marker in `PORT.md`. Finish by
 re-driving the ported app in the browser against the checklists — including the
 initial state screenshot from Phase 2, side by side.
 
+### Two cheap side-by-side checks
+
+With both apps running, evaluate this on each page and diff the two results.
+It catches the two failure modes a checklist walk-through misses — a widget
+whose CSS/JS the port never loads, and a JS exception that stops Shiny
+connecting at all (so *nothing* works and every box looks equally broken):
+
+```js
+JSON.stringify({
+  connected: !!window.Shiny?.shinyapp?.isConnected?.(),
+  inputs: document.querySelectorAll(".shiny-bound-input").length,
+  outputs: document.querySelectorAll(".shiny-bound-output").length,
+  errors: [...document.querySelectorAll(".shiny-output-error")].map((e) => e.id),
+  assets: [...document.querySelectorAll("link[rel=stylesheet],script[src]")]
+    .map((e) => (e.href || e.src).replace(location.origin, "").replace(/\?.*/, "")),
+});
+```
+
+Read `assets` by library, not by exact path — a theme-compiled Bootstrap and
+the stock file are the same library, and `ui.js` / `ui.css` / `shinyreact-*`
+are expected on the port only. Also check the browser console for exceptions
+before trusting any other result, and re-check after clicking into each tab:
+the port's dependencies arrive when an output first renders, not at load.
+
 ## Translation table
 
 | Original | shinyreact |
