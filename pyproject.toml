@@ -44,6 +44,12 @@ dev = [
     "tox-uv>=1.0.0",
     "pre-commit>=4.0.0",
 ]
+docs = [
+    "quartodoc>=0.11.0",
+    # quartodoc 0.11 passes docstring-parser options griffe 2.x dropped
+    # (`allow_section_blank_line`), so `quartodoc build` crashes against 2.x.
+    "griffe<2",
+]
 tests-e2e = [
     "pytest-playwright>=0.5.0",
     "shiny[playwright] @ git+https://github.com/posit-dev/py-shiny.git@main",

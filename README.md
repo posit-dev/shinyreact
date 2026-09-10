@@ -4,6 +4,8 @@ React UI infrastructure for [Shiny](https://shiny.posit.co/). With `shinyreact`,
 
 One JavaScript bundle backs both languages, so the same React client works identically against an `app.py` or `app.R` server.
 
+**Website:** <https://posit-dev.github.io/shinyreact/> — landing page, [Python API](https://posit-dev.github.io/shinyreact/py/), [R API](https://posit-dev.github.io/shinyreact/r/), [JS API](https://posit-dev.github.io/shinyreact/js/).
+
 This repo ships per-language packages:
 
 | Language | Source | Landing page |

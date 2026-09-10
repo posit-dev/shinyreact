@@ -1,0 +1,102 @@
+---
+title: "shinyreact"
+subtitle: "React UI infrastructure for Shiny — Python and R"
+toc: false
+---
+
+With `shinyreact`, the Shiny server (**Python or R**) contains only reactive computation, and the UI is a React client you own.
+`shinyreact` is the bridge between the two; it ships zero UI components itself.
+
+One JavaScript bundle backs both languages, so the same React client works identically against an `app.py` or an `app.R` server.
+
+## The `ui.tsx` pattern
+
+1. The app file bootstraps a static page — `set_react_page()` (Python Express) or `page_react()` (Python Core, R).
+2. Your React client, conventionally `ui.tsx` (compiled to `www/ui.js`, discovered automatically), renders the UI.
+3. Client and server talk through hooks: `useShinyInput` sends values to the server, `useShinyOutputValue` receives what `reactive_output` publishes, and `useShinyMessageHandler` receives `send_message()` pushes.
+
+::: {.panel-tabset}
+
+## Python
+
+```python
+from shiny.express import input
+from shinyreact import reactive_output, set_react_page
+
+set_react_page()
+
+
+@reactive_output
+def greeting():
+    return {"message": f"Hello, {input.name()}"}
+```
+
+## R
+
+```r
+library(shiny)
+library(shinyreact)
+
+server <- function(input, output, session) {
+  output$greeting <- reactive_output({
+    list(message = paste0("Hello, ", input$name))
+  })
+}
+
+shinyApp(page_react(), server)
+```
+
+## JavaScript (`www/ui.js`)
+
+```js
+const { React, ReactDOM, useShinyInput, useShinyOutputValue } = window.shinyreact;
+
+function App() {
+  const [name, setName] = useShinyInput("name", "world");
+  const greeting = useShinyOutputValue("greeting");
+  return (
+    <>
+      <input value={name} onChange={(e) => setName(e.target.value)} />
+      <p>{greeting?.message}</p>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+```
+
+:::
+
+## Installation
+
+`shinyreact` is pre-release.
+Install from GitHub:
+
+::: {.panel-tabset}
+
+## Python
+
+```bash
+pip install "git+https://github.com/posit-dev/shinyreact.git"
+```
+
+## R
+
+```r
+pak::pak("posit-dev/shinyreact/pkg-r")
+```
+
+:::
+
+The JS hooks come with the server package — `set_react_page()` / `page_react()` serve `shinyreact.js`, which installs them at `window.shinyreact`.
+Apps with a bundler can instead `npm install @posit/shinyreact` and pass `shinyreact_js="client"` to the page entry point.
+
+## Reference
+
+| | |
+|---|---|
+| [Python](py/index.qmd) | `set_react_page()`, `page_react()`, `ReactApp`, `reactive_output`, `send_message()`, … |
+| [R](https://posit-dev.github.io/shinyreact/r/) | `page_react()`, `reactive_output()`, `send_message()`, … |
+| [JS](https://posit-dev.github.io/shinyreact/js/) | `useShinyInput`, `useShinyOutputValue`, `useShinyMessageHandler`, `ShinyOutput`, … |
+| [Examples](https://github.com/posit-dev/shinyreact/tree/main/examples) | Runnable apps, from no-build `www/ui.js` to Vite + HMR |
+| [Design](https://github.com/posit-dev/shinyreact/blob/main/DESIGN.md) | Why the pattern looks the way it does |

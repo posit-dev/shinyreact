@@ -3,7 +3,9 @@ import { createContext, useContext, type ReactNode } from "react";
 const ShinyModuleContext = createContext<string | null>(null);
 
 export interface ShinyModuleProviderProps {
+  /** The complete namespace string to apply to child hooks. */
   namespace: string;
+  /** React children that will receive the namespace context. */
   children: ReactNode;
 }
 
@@ -17,9 +19,6 @@ export interface ShinyModuleProviderProps {
  * Note: Nesting providers is supported — an inner provider overrides the
  * outer one (it does not concatenate namespaces). If you need a combined
  * namespace, pass the full string (e.g., "outer-inner") directly.
- *
- * @param namespace The complete namespace string to apply to child hooks.
- * @param children React children that will receive the namespace context.
  *
  * @example
  * ```tsx

@@ -1,4 +1,7 @@
 url: https://posit-dev.github.io/shinyreact/r
+# Inside the Quarto site's output (landing + py/), beside TypeDoc (js/), so one
+# deploy folder holds the whole site.
+destination: ../pkg-py/docs/_site/r
 template:
   bootstrap: 5
 reference:
