@@ -11,7 +11,7 @@ Description: Server-side plumbing for the 'ui.tsx' pattern in Shiny: the
     UI is defined in a client React bundle, and the Shiny server contains
     only reactive computation. Ships no UI components.
 License: MIT + file LICENSE
-URL: https://github.com/posit-dev/shinyreact
+URL: https://posit-dev.github.io/shinyreact/r, https://github.com/posit-dev/shinyreact
 BugReports: https://github.com/posit-dev/shinyreact/issues
 Imports:
     brio,
