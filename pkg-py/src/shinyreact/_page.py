@@ -35,6 +35,13 @@ def page_bare(
     Pass :class:`~htmltools.HTMLDependency` objects as positional arguments to
     include them in the page — Shiny automatically hoists them to ``<head>``.
 
+    With no ``theme=``, the page carries **no Bootstrap**: only jQuery, Shiny's
+    own JS/CSS, and a ``width=device-width`` viewport meta tag. Shiny's own
+    default would attach Bootstrap, and in the ui.tsx pattern the client owns
+    styling. Pass a ``theme=`` — e.g. ``shiny.ui.Theme()`` — to get Bootstrap
+    back; then everything is a plain passthrough to
+    :func:`shiny.ui.page_bootstrap`.
+
     Args:
         *args: Child tags or HTMLDependency objects to include in the page.
         title: Page title.
@@ -45,13 +52,35 @@ def page_bare(
             styling, so Bootstrap theming is a passthrough, not part of this
             API.
     """
-    from shiny.ui import page_bootstrap
+    from shiny.ui import head_content, page_bootstrap, tags
 
-    return page_bootstrap(
-        *args,
-        title=title,
+    if kwargs.get("theme") is not None:
+        return page_bootstrap(*args, title=title, lang=lang, **kwargs)
+
+    # No theme: build the page ourselves rather than let page_bootstrap()
+    # attach Bootstrap (#285). It excludes Shiny's own CSS on the assumption
+    # that the Bootstrap CSS bundles it, so ask for it explicitly here.
+    from shiny.html_dependencies import jquery_deps, shiny_deps
+
+    kwargs.pop("theme", None)
+    return tags.html(
+        tags.head(tags.title(title) if title else None),
+        tags.body(
+            jquery_deps(),
+            *shiny_deps(),
+            # The one thing worth keeping from the Bootstrap dependency:
+            # without it a phone renders the page at 980px wide. Via
+            # head_content() so it reaches the *document's* <head> -- Shiny
+            # nests this page tag inside the document it builds.
+            head_content(
+                tags.meta(
+                    name="viewport", content="width=device-width, initial-scale=1"
+                )
+            ),
+            *args,
+            **kwargs,
+        ),
         lang=lang,
-        **kwargs,
     )
 
 

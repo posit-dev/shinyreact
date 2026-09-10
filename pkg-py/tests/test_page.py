@@ -391,6 +391,42 @@ def test_page_react_kwargs_reach_page_bootstrap(tmp_path: Path) -> None:
     assert 'href="https://cdn.example/custom.css"' in _dep_html(ui)
 
 
+def _dep_names(ui) -> list[str]:
+    return [d.name for d in ui.tagify().render()["dependencies"]]
+
+
+def test_page_bare_without_theme_omits_bootstrap() -> None:
+    # #285: Shiny's `theme=None` default attaches Bootstrap, which a ui.tsx page
+    # never asked for -- the client owns styling. jQuery and Shiny's own JS/CSS
+    # stay. Mirrors R's "page_bare() attaches no Bootstrap without a theme".
+    ui = page_bare("hi", title="t")
+    names = _dep_names(ui)
+    assert "bootstrap" not in names
+    assert "jquery" in names
+    # page_bootstrap() drops Shiny's CSS because the Bootstrap CSS bundles it,
+    # so without Bootstrap it has to come back on its own.
+    assert "shiny.min.css" in _dep_html(ui)
+    # Via head_content(), so it renders with the dependencies: Shiny nests this
+    # page tag inside the document it builds, and a <meta> in <body> is not the
+    # viewport tag anyone means.
+    viewport = '<meta name="viewport" content="width=device-width, initial-scale=1"/>'
+    assert viewport in _dep_html(ui)
+
+
+def test_page_react_without_theme_omits_bootstrap(tmp_path: Path) -> None:
+    # Mirrors R's "page_react() attaches no Bootstrap without a theme".
+    (tmp_path / "ui.js").write_text("// ui")
+    names = _dep_names(shinyreact.page_react(src_dir=tmp_path))
+    assert "bootstrap" not in names
+    assert "shinyreact" in names
+
+
+def test_page_bare_with_theme_keeps_bootstrap() -> None:
+    # The other half of #285: suppressing Bootstrap must not leak into the
+    # themed path. Mirrors R's "page_bare() keeps Bootstrap when themed".
+    assert "bootstrap" in _dep_names(page_bare(theme="https://cdn.example/custom.css"))
+
+
 def test_page_react_html_extra_deps_render_after_ours(tmp_path: Path) -> None:
     # A full document has no tag tree to attach dependencies to, so extra_deps
     # is the only way in. Ours must come first, so the author's bundle can rely

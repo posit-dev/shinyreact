@@ -184,9 +184,14 @@ JSON.stringify({
 
 Read `assets` by library, not by exact path — a theme-compiled Bootstrap and
 the stock file are the same library, and `ui.js` / `ui.css` / `shinyreact-*`
-are expected on the port only. Also check the browser console for exceptions
-before trusting any other result, and re-check after clicking into each tab:
-the port's dependencies arrive when an output first renders, not at load.
+are expected on the port only. **Bootstrap on the original and nothing on the
+port is also expected**: a themeless `page_react()` attaches none (#285), since
+the client owns styling. Read it as a to-do rather than a defect — every
+Bootstrap class the original's markup leaned on (`btn`, `form-control`,
+`container`, the grid) is unstyled in the port until your components supply it.
+Also check the browser console for exceptions before trusting any other result,
+and re-check after clicking into each tab: the port's dependencies arrive when
+an output first renders, not at load.
 
 ## Translation table
 

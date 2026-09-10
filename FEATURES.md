@@ -708,8 +708,25 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 ### `page_bare(*args, title=None, lang="en", **kwargs)`
 
 - the escape hatch: Shiny's own dependencies, nothing of shinyreact's
-  - `[py]` wraps `shiny.ui.page_bootstrap()`, so the page carries Bootstrap
-  - `[r]` wraps `shiny::bootstrapPage()`, same effect
+  - with no `theme`, the page carries **no Bootstrap** — jQuery, Shiny's own
+    JS/CSS, and nothing else (#285)
+    - plus `<meta name="viewport" content="width=device-width, initial-scale=1">`
+      in `<head>`, the one thing worth keeping from Bootstrap's dependency
+    - `theme=None` is the same as omitting it — there is no way to ask for
+      Shiny's classic Bootstrap default through `theme`; pass a real theme
+      (`bslib::bs_theme(version = 3)`) or call `bootstrapPage()` /
+      `page_bootstrap()` directly
+    - `[r]` implemented as `htmltools::suppressDependencies("bootstrap")`, so a
+      dependency **named** `bootstrap` (empty, version `9999`) is still in the
+      resolved list — it renders no tags
+    - `[py]` implemented by not calling `page_bootstrap()` at all: the page tag
+      is built directly with `jquery_deps()` + `shiny_deps()`, the latter
+      *including* Shiny's CSS (`page_bootstrap()` omits it, assuming the
+      Bootstrap CSS bundles it)
+  - with a `theme`, everything is a passthrough and Bootstrap is attached as
+    Shiny would
+    - `[py]` wraps `shiny.ui.page_bootstrap()`
+    - `[r]` wraps `shiny::bootstrapPage()`, same effect
   - attaches no shinyreact JS or CSS, and no `#shinyreact-config` tag
   - `title` is emitted exactly **once** (#186 was a duplicate-`<title>` bug)
   - `HTMLDependency` positional args are hoisted to `<head>` by Shiny

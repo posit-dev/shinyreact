@@ -7,6 +7,14 @@ deps_placeholder <- '<meta name="shiny-dependency-placeholder" content="">'
 #'
 #' Escape hatch for custom setups. Wraps [shiny::bootstrapPage()].
 #'
+#' With no `theme`, the page carries **no Bootstrap**: only jQuery, Shiny's own
+#' JS/CSS, and a `width=device-width` viewport meta tag. Shiny's own default
+#' would attach Bootstrap 3 (plus its accessibility plugin, which errors
+#' against a newer jQuery), and in the `ui.tsx` pattern the client owns
+#' styling. Pass a `theme` — e.g. `theme = bslib::bs_theme()`, or
+#' `bslib::bs_theme(version = 3)` for the classic stack — to get Bootstrap
+#' back; then `...` is a plain passthrough to [shiny::bootstrapPage()].
+#'
 #' @param ... Child tags or [htmltools::htmlDependency] objects. Named
 #'   arguments pass through to [shiny::bootstrapPage()] — including its own
 #'   `theme`. Deliberately not surfaced as named parameters: in the `ui.tsx`
@@ -17,7 +25,35 @@ deps_placeholder <- '<meta name="shiny-dependency-placeholder" content="">'
 #' @return A `shiny.tag` page.
 #' @export
 page_bare <- function(..., title = NULL, lang = "en") {
-  shiny::bootstrapPage(..., title = title, lang = lang)
+  # `[[` (not `$`) -- `$` on a list partial-matches, so a `themeish = ` argument
+  # would read as a theme.
+  no_theme <- is.null(list(...)[["theme"]])
+  shiny::bootstrapPage(
+    if (no_theme) no_bootstrap(),
+    ...,
+    title = title,
+    lang = lang
+  )
+}
+
+# Internal: undo Shiny's `theme = NULL` Bootstrap 3 default (#285).
+#
+# `suppressDependencies()` attaches an empty dependency at a higher version, and
+# htmltools keeps only the highest version per name -- so this must be used ONLY
+# when there is no theme, or it would strip a real bslib Bootstrap 5 too (same
+# dependency name, different version). jQuery and Shiny's own JS/CSS are
+# separate dependencies and are untouched. The viewport meta tag is the one
+# thing worth keeping from the Bootstrap dependency -- without it a phone
+# renders the page at 980px wide. Mirrors Python's no-theme branch in
+# `page_bare()`.
+no_bootstrap <- function() {
+  htmltools::tagList(
+    htmltools::suppressDependencies("bootstrap"),
+    htmltools::tags$head(htmltools::tags$meta(
+      name = "viewport",
+      content = "width=device-width, initial-scale=1"
+    ))
+  )
 }
 
 #' Create a React page from conventional assets — no HTML file required

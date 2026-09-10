@@ -23,3 +23,12 @@ A \code{shiny.tag} page.
 \description{
 Escape hatch for custom setups. Wraps \code{\link[shiny:bootstrapPage]{shiny::bootstrapPage()}}.
 }
+\details{
+With no \code{theme}, the page carries \strong{no Bootstrap}: only jQuery, Shiny's own
+JS/CSS, and a \code{width=device-width} viewport meta tag. Shiny's own default
+would attach Bootstrap 3 (plus its accessibility plugin, which errors
+against a newer jQuery), and in the \code{ui.tsx} pattern the client owns
+styling. Pass a \code{theme} — e.g. \code{theme = bslib::bs_theme()}, or
+\code{bslib::bs_theme(version = 3)} for the classic stack — to get Bootstrap
+back; then \code{...} is a plain passthrough to \code{\link[shiny:bootstrapPage]{shiny::bootstrapPage()}}.
+}
