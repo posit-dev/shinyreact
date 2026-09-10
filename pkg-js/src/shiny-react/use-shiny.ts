@@ -71,6 +71,7 @@ import { useNamespacedId } from "./ShinyModuleContext";
  * across every `useShinyInput` / `useSetShinyInput` call for the same id.
  * @returns A tuple containing the current value and a function to set the
  * value: `[value, setValue]`.
+ * @group Inputs
  */
 export function useShinyInput<T>(
   id: string,
@@ -208,6 +209,7 @@ const NOOP_SETTER = () => {};
  * @param options.namespace Module namespace to apply (or `null` to suppress
  * the surrounding `ShinyModuleProvider` namespace).
  * @returns The current output value.
+ * @group Outputs
  */
 export function useShinyOutputValue<T>(
   outputId: string,
@@ -272,6 +274,7 @@ export function useShinyOutputValue<T>(
  * @param options.namespace Module namespace to apply (or `null` to suppress
  * the surrounding `ShinyModuleProvider` namespace).
  * @returns The current output status.
+ * @group Outputs
  */
 export function useShinyOutputStatus(
   outputId: string,
@@ -324,6 +327,7 @@ export function useShinyOutputStatus(
  * @param options.namespace Module namespace to apply (or `null` to suppress
  * the surrounding `ShinyModuleProvider` namespace).
  * @returns The current output error, or `null`.
+ * @group Outputs
  */
 export function useShinyOutputError(
   outputId: string,
@@ -380,6 +384,7 @@ export function useShinyOutputError(
  * the surrounding `ShinyModuleProvider` namespace).
  * @returns The current input value, or `undefined` if no producer has
  * registered the ID yet.
+ * @group Inputs
  */
 export function useShinyInputValue<T>(
   id: string,
@@ -447,6 +452,7 @@ export function useShinyInputValue<T>(
  * throws — the handler name is a server-side semantic and must be consistent
  * across every `useShinyInput` / `useSetShinyInput` call for the same id.
  * @returns A function that writes the input value.
+ * @group Inputs
  */
 export function useSetShinyInput<T>(
   id: string,
@@ -540,6 +546,7 @@ export function useSetShinyInput<T>(
  * functions are safe to pass — the handler is stored in a ref internally,
  * so a new function reference on each render won't cause the message
  * handler to be deregistered and re-registered.
+ * @group Messaging
  */
 export function useShinyMessageHandler<T = any>(
   id: string,
@@ -595,6 +602,7 @@ export function useShinyMessageHandler<T = any>(
  * mounting its own listener.
  *
  * @returns A boolean indicating whether Shiny has been initialized.
+ * @group Session
  */
 export function useShinyInitialized(): boolean {
   return useSyncExternalStore(
@@ -613,6 +621,7 @@ export function useShinyInitialized(): boolean {
  * is in flight, and back to `false` when the server goes idle.
  *
  * @returns A boolean indicating whether the Shiny server is currently busy.
+ * @group Session
  */
 export function useShinyBusy(): boolean {
   return useSyncExternalStore(

@@ -8,6 +8,17 @@
   "customCss": "typedoc.css",
   "excludeInternal": true,
   "excludePrivate": true,
+  // Task-shaped groups (`@group` tags on the declarations) instead of TypeDoc's
+  // default by-kind ones, matching the R and Python reference indexes.
+  "groupOrder": [
+    "Inputs",
+    "Outputs",
+    "Messaging",
+    "Session",
+    "Components",
+    "Utilities",
+    "*"
+  ],
   "navigationLinks": {
     "shinyreact": "https://posit-dev.github.io/shinyreact/",
     "GitHub": "https://github.com/posit-dev/shinyreact"

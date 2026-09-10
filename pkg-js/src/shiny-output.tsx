@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useNamespacedId } from "./shiny-react/ShinyModuleContext";
 
+/** @group Components */
 export interface ShinyOutputProps
   extends React.HTMLAttributes<HTMLElement> {
   id: string;
@@ -39,6 +40,7 @@ export interface ShinyOutputProps
  *   • `Shiny.unbindAll(scope)` would unbind every Shiny output under
  *     `scope`, which would clobber siblings. Instead we pass our own element
  *     with `includeSelf=true`, so only this output is unbound.
+ * @group Components
  */
 export function ShinyOutput({
   id,

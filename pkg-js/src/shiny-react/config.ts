@@ -9,6 +9,7 @@
  * misinterpret bump this version — additive shapes do not (see
  * protocol/README.md) — so client and server package releases do not need to
  * be in lockstep. Decided in decisions/2026-08-17-js-distribution.md.
+ * @group Utilities
  */
 export const PROTOCOL_VERSION = "1.0";
 

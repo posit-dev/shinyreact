@@ -137,6 +137,7 @@ export type ImageData = {
  *   min-height: 300px;
  * }
  * ```
+ * @group Components
  */
 export function ImageOutput({
   id,

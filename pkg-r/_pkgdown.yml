@@ -12,12 +12,23 @@ template:
     # https://mdigi.tools/lighten-color/#00d8ff @ 92%
     navbar-background: "#ebfcff"
   trailing_slash_redirect: true
+# Sections mirror the Python reference (pkg-py/docs/_quarto.yml), so the same
+# vocabulary reads the same on both sites.
 reference:
   - title: Pages
-    contents: [page_bare, page_react, page_react_html, page_react_dep]
+    desc: >
+      Bootstrap a React client from the app file. Start with `page_react()`;
+      reach for the others only when your app owns its own HTML document or
+      you are assembling a page by hand.
+    contents: [page_react, page_react_html, page_bare, page_react_dep]
   - title: Outputs
+    desc: Publish JSON to `useShinyOutputValue()` hooks.
     contents: [reactive_output]
   - title: Messaging
+    desc: Push messages to `useShinyMessageHandler()` hooks.
     contents: [send_message]
   - title: Testing
+    desc: Record the wire payloads a browser test observes.
     contents: [wire_tap]
+  - title: Package
+    contents: [shinyreact-package]
