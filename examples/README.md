@@ -62,8 +62,10 @@ shiny run examples/01-hello/app.py
 
 The three examples with a build step — [03-columns-shadcn](03-columns-shadcn/),
 [04-shadcn](04-shadcn/), [09-hmr](09-hmr/) — do **not** commit their bundle
-(`www/ui.js` is gitignored), so they need `npm install && npm run build` in the
-example directory before `shiny run`. Their READMEs cover it.
+(`www/ui.js` is gitignored). [04-shadcn](04-shadcn/) and [09-hmr](09-hmr/)
+build it themselves on first run when it is missing, so `shiny run` just works;
+[03-columns-shadcn](03-columns-shadcn/) still needs `npm install && npm run
+build` in the example directory first. Their READMEs cover it.
 
 ## Example behavior trees
 

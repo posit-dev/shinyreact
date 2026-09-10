@@ -24,7 +24,7 @@ export default defineConfig({
     lib: {
       entry: path.resolve(__dirname, "src/ui.jsx"),
       formats: ["iife"],
-      name: "ColumnsShadcn",
+      name: "ShadcnCards",
       fileName: () => "ui.js",
     },
     rollupOptions: {
