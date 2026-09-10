@@ -411,7 +411,7 @@ When fixing a bug, add or update unit tests to cover the fix whenever possible. 
   before writing a UI test** — it covers the harness, the three layers, and the
   traps (React ignores raw `change` events, debounce coalescing, gitignored
   bundles).
-- **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
+- **Playwright e2e tests:** `pkg-py/tests/playwright/` — run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`. **What belongs here is anything needing the `tests-e2e` group, not just browser tests** — `test_wire_tap.py` drives a fake page and no browser, but it imports `shinyreact.playwright` (hence `playwright.sync_api`), and in `pkg-py/tests/` that broke collection of the entire unit suite whenever the extras were absent. A test that imports an optional dependency goes in this subtree. **Adding a new e2e test:** see [`.claude/references/playwright-e2e-tests.md`](.claude/references/playwright-e2e-tests.md) for the fixture-app layout, the four traps that bit us while writing the suite, and the canonical assertion patterns.
 
 ### Cover both R and Python
 

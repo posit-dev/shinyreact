@@ -1,6 +1,6 @@
-# Mirrors pkg-py/tests/test_wire_tap.py — the two taps present the same
-# methods and semantics, so their unit suites assert the same behaviors on the
-# same frames. The real-browser walkthrough is
+# Mirrors pkg-py/tests/playwright/test_wire_tap.py — the two taps present the
+# same methods and semantics, so their unit suites assert the same behaviors on
+# the same frames. The real-browser walkthrough is
 # spikes/201-wire-verification/shinytest2-ws-frames.R; Python's is
 # pkg-py/tests/playwright/test_wire_frames.py.
 

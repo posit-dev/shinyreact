@@ -4,6 +4,8 @@ Reference for adding browser e2e tests to shinyreact. Linked from `CLAUDE.md`'s 
 
 Tests live at `pkg-py/tests/playwright/`. They use `pytest-playwright` + py-shiny's `create_app_fixture` — each test gets its own spartan Shiny app booted as a subprocess. Run with `make py-test-e2e`. The `[tool.pytest.ini_options]` block in `pyproject.toml` ignores this subtree by default so `make py-check-tests` stays fast; `py-test-e2e` clears that with `-o addopts=`.
 
+**Membership rule: needs the `tests-e2e` group — not "drives a browser".** `test_wire_tap.py` unit-tests `WireTap` against a fake page and never launches anything, but it imports `shinyreact.playwright`, which imports `playwright.sync_api`. Sitting in `pkg-py/tests/`, it broke *collection* of the whole unit suite in any environment without the extras — the one run that is supposed to need none. If a test imports an optional dependency, it belongs here, browser or no browser.
+
 ## 1. Spartan fixture app under `pkg-py/tests/playwright/apps/<name>/`
 
 Each fixture is the smallest Shiny app that exercises one assertion target. Three files.
