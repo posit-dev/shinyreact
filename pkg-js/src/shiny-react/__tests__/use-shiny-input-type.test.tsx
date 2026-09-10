@@ -109,7 +109,9 @@ function ProducerSet({
     debounceMs: 0,
     ...(type !== undefined ? { type } : {}),
   });
-  return <button data-testid={`set-${id}`} onClick={() => setValue(initial + 1)} />;
+  return (
+    <button data-testid={`set-${id}`} onClick={() => setValue(initial + 1)} />
+  );
 }
 
 describe("useShinyInput / useSetShinyInput — `type` option", () => {
@@ -118,11 +120,15 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     await flushAll();
 
     act(() => {
-      document.querySelector<HTMLButtonElement>("[data-testid=btn-foo]")!.click();
+      document
+        .querySelector<HTMLButtonElement>("[data-testid=btn-foo]")!
+        .click();
     });
     await flushAll();
 
-    const calls = mockSetInputValue.mock.calls.filter((c) => c[0].startsWith("foo"));
+    const calls = mockSetInputValue.mock.calls.filter((c) =>
+      c[0].startsWith("foo"),
+    );
     expect(calls.length).toBeGreaterThan(0);
     for (const call of calls) {
       expect(call[0]).toBe("foo:shiny.datetime");
@@ -134,11 +140,15 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     await flushAll();
 
     act(() => {
-      document.querySelector<HTMLButtonElement>("[data-testid=btn-foo]")!.click();
+      document
+        .querySelector<HTMLButtonElement>("[data-testid=btn-foo]")!
+        .click();
     });
     await flushAll();
 
-    const calls = mockSetInputValue.mock.calls.filter((c) => c[0].startsWith("foo"));
+    const calls = mockSetInputValue.mock.calls.filter((c) =>
+      c[0].startsWith("foo"),
+    );
     expect(calls.length).toBeGreaterThan(0);
     for (const call of calls) {
       expect(call[0]).toBe("foo:shinyreact.default");
@@ -152,9 +162,9 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
   ])("throws synchronously on invalid type=%j", (badType, pattern) => {
     // Suppress React's error logging for the expected throw.
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(() =>
-      render(<ProducerFull id="bad" type={badType} />),
-    ).toThrow(pattern as RegExp);
+    expect(() => render(<ProducerFull id="bad" type={badType} />)).toThrow(
+      pattern as RegExp,
+    );
     errorSpy.mockRestore();
   });
 
@@ -180,18 +190,20 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     // appear somewhere).
     const sawConflict =
       (caught && /already registered with type="X"/.test(caught.message)) ||
-      (errorSpy.mock.calls.flat().some((arg) =>
-        typeof arg === "string"
-          ? /already registered with type="X"/.test(arg)
-          : arg instanceof Error
-            ? /already registered with type="X"/.test(arg.message)
-            : false,
-      ));
+      errorSpy.mock.calls
+        .flat()
+        .some((arg) =>
+          typeof arg === "string"
+            ? /already registered with type="X"/.test(arg)
+            : arg instanceof Error
+              ? /already registered with type="X"/.test(arg.message)
+              : false,
+        );
     expect(sawConflict).toBe(true);
 
     // First mount's wire calls remained "conf:X".
-    const calls = mockSetInputValue.mock.calls.filter((c) =>
-      typeof c[0] === "string" && c[0].startsWith("conf"),
+    const calls = mockSetInputValue.mock.calls.filter(
+      (c) => typeof c[0] === "string" && c[0].startsWith("conf"),
     );
     for (const call of calls) {
       expect(call[0]).toBe("conf:X");
@@ -224,14 +236,17 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     errorSpy.mockRestore();
 
     const sawConflict =
-      (caught && /already registered with type=undefined/.test(caught.message)) ||
-      (errorSpy.mock.calls.flat().some((arg) =>
-        typeof arg === "string"
-          ? /already registered with type=undefined/.test(arg)
-          : arg instanceof Error
-            ? /already registered with type=undefined/.test(arg.message)
-            : false,
-      ));
+      (caught &&
+        /already registered with type=undefined/.test(caught.message)) ||
+      errorSpy.mock.calls
+        .flat()
+        .some((arg) =>
+          typeof arg === "string"
+            ? /already registered with type=undefined/.test(arg)
+            : arg instanceof Error
+              ? /already registered with type=undefined/.test(arg.message)
+              : false,
+        );
     expect(sawConflict).toBe(true);
   });
 
@@ -244,7 +259,9 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     await flushAll();
 
     act(() => {
-      document.querySelector<HTMLButtonElement>("[data-testid=btn-foo]")!.click();
+      document
+        .querySelector<HTMLButtonElement>("[data-testid=btn-foo]")!
+        .click();
     });
     await flushAll();
 
@@ -262,7 +279,9 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     await flushAll();
 
     act(() => {
-      document.querySelector<HTMLButtonElement>("[data-testid=set-setfoo]")!.click();
+      document
+        .querySelector<HTMLButtonElement>("[data-testid=set-setfoo]")!
+        .click();
     });
     await flushAll();
 
@@ -275,4 +294,3 @@ describe("useShinyInput / useSetShinyInput — `type` option", () => {
     }
   });
 });
-

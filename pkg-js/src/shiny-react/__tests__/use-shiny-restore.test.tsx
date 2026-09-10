@@ -14,7 +14,10 @@ import {
 } from "../config";
 import * as React from "react";
 import { act, cleanup, render } from "@testing-library/react";
-import { _resetShinyReactInitializedForTesting, useShinyInput } from "../use-shiny";
+import {
+  _resetShinyReactInitializedForTesting,
+  useShinyInput,
+} from "../use-shiny";
 import { getReactRegistry } from "../react-registry";
 
 function freshWindow(): void {
@@ -40,7 +43,10 @@ describe("applyRestoredValues", () => {
   });
 
   it("seeds registry entries from the #shinyreact-config tag", () => {
-    setConfigTag({ protocolVersion: "1.0", restore: { foo: "hello", num: 42 } });
+    setConfigTag({
+      protocolVersion: "1.0",
+      restore: { foo: "hello", num: 42 },
+    });
     const registry = new InputRegistry();
 
     applyRestoredValues(registry);
@@ -231,7 +237,9 @@ describe("applyRestoredValues", () => {
     // Null prototype: Object.getPrototypeOf returns null.
     expect(Object.getPrototypeOf(values)).toBeNull();
     // The "__proto__" key landed as a real own property, did not become the prototype.
-    expect(Object.prototype.hasOwnProperty.call(values, "__proto__")).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(values, "__proto__")).toBe(
+      true,
+    );
     expect(values["__proto__"]).toBe("evil");
     expect(values["constructor"]).toBe("x");
     expect(values["foo"]).toBe("ok");
@@ -265,10 +273,10 @@ describe("useShinyInput + restore", () => {
     // Reset the module-level shinyReactInitialized flag so each test re-runs
     // ensureShinyReactInitialized (and therefore applyRestoredValues).
     // Also drop the module-local registries: initializeReactRegistry() is
-  // idempotent now, so deleting the window property alone no longer gives a
-  // fresh InputRegistry.
-  _resetReactRegistryForTesting();
-  _resetShinyReactInitializedForTesting();
+    // idempotent now, so deleting the window property alone no longer gives a
+    // fresh InputRegistry.
+    _resetReactRegistryForTesting();
+    _resetShinyReactInitializedForTesting();
     // Reset the singleton react registry between tests.
     // Guard against the first run where the registry may not yet be initialized.
     try {

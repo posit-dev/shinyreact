@@ -53,10 +53,7 @@ export function useShinyModuleNamespace(): string | null {
  * If namespace is a non-empty string, returns `${namespace}-${id}`.
  * If namespace is null, undefined, or empty string, returns the original id.
  */
-export function applyNamespace(
-  id: string,
-  namespace: string | null,
-): string {
+export function applyNamespace(id: string, namespace: string | null): string {
   if (namespace) {
     return `${namespace}-${id}`;
   }

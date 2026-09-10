@@ -315,7 +315,9 @@ describe("InputRegistryEntry", () => {
     const entry = new InputRegistryEntry("foo", 0);
     entry.updateType("X");
 
-    expect(() => entry.updateType("Y")).toThrow(/already registered with type="X"/);
+    expect(() => entry.updateType("Y")).toThrow(
+      /already registered with type="X"/,
+    );
 
     entry.setValue(1);
     vi.advanceTimersByTime(200);
@@ -333,7 +335,9 @@ describe("InputRegistryEntry", () => {
     const entry = new InputRegistryEntry("foo", 0);
     entry.updateType(undefined);
 
-    expect(() => entry.updateType("X")).toThrow(/already registered with type=undefined/);
+    expect(() => entry.updateType("X")).toThrow(
+      /already registered with type=undefined/,
+    );
 
     entry.setValue(1);
     vi.advanceTimersByTime(200);
@@ -364,7 +368,9 @@ describe("InputRegistry", () => {
   it("add throws if entry already exists", () => {
     const registry = new InputRegistry();
     registry.add("count", 0);
-    expect(() => registry.add("count", 1)).toThrow("Input count already exists");
+    expect(() => registry.add("count", 1)).toThrow(
+      "Input count already exists",
+    );
   });
 
   it("getOrCreate returns existing entry", () => {

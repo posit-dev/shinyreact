@@ -144,14 +144,16 @@ describe("ShinyOutput", () => {
   });
 
   it("does not re-bind when only unrelated props change", () => {
-    const { rerender } = render(
-      <ShinyOutput id="my_plot" className="a" />,
-    );
+    const { rerender } = render(<ShinyOutput id="my_plot" className="a" />);
     expect(mockBindAll).toHaveBeenCalledTimes(1);
 
     rerender(<ShinyOutput id="my_plot" className="b" />);
-    rerender(<ShinyOutput id="my_plot" className="b" style={{ color: "red" }} />);
-    rerender(<ShinyOutput id="my_plot" className="b" style={{ color: "red" }} />);
+    rerender(
+      <ShinyOutput id="my_plot" className="b" style={{ color: "red" }} />,
+    );
+    rerender(
+      <ShinyOutput id="my_plot" className="b" style={{ color: "red" }} />,
+    );
 
     expect(mockBindAll).toHaveBeenCalledTimes(1);
     expect(mockUnbindAll).toHaveBeenCalledTimes(0);
@@ -447,9 +449,7 @@ describe("ShinyOutput", () => {
     });
 
     it("logs the namespaced id when bindAll fails inside a provider", () => {
-      const errorSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       mockBindAll.mockImplementationOnce(() => {
         throw new Error("boom");
       });

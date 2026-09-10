@@ -56,11 +56,12 @@ import { getReactRegistry } from "../react-registry";
 beforeAll(() => {
   // ImageOutput attaches a ResizeObserver. jsdom doesn't ship one — stub it
   // so the component can mount without throwing.
-  (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  };
+  (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
 });
 
 beforeEach(() => {

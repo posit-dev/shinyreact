@@ -50,7 +50,6 @@ function sourceFiles(): string[] {
   return out;
 }
 
-
 const sources = sourceFiles().map((f) => readFileSync(f, "utf8"));
 const allSource = sources.join("\n");
 

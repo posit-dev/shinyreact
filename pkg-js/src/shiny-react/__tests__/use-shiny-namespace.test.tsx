@@ -102,9 +102,7 @@ describe("useShinyInput namespace", () => {
   });
 
   it("uses explicit namespace option", async () => {
-    renderHook(() =>
-      useShinyInput("count", 0, { namespace: "mod1" }),
-    );
+    renderHook(() => useShinyInput("count", 0, { namespace: "mod1" }));
     await flushPromises();
     const registry = getReactRegistry();
     expect(registry.inputs.getOrCreate).toHaveBeenCalledWith("mod1-count", 0);
@@ -318,10 +316,9 @@ describe("useShinyInputValue namespace", () => {
     const wrapper = ({ children }: { children: ReactNode }) => (
       <ShinyModuleProvider namespace="ctxMod">{children}</ShinyModuleProvider>
     );
-    renderHook(
-      () => useShinyInputValue("hover", { namespace: "explicit" }),
-      { wrapper },
-    );
+    renderHook(() => useShinyInputValue("hover", { namespace: "explicit" }), {
+      wrapper,
+    });
     await flushPromises();
     const registry = getReactRegistry();
     expect(registry.inputs.subscribe).toHaveBeenCalledWith(

@@ -132,7 +132,8 @@ export class InputRegistryEntry<T> {
 
 export class InputRegistry {
   private inputs: Map<string, InputRegistryEntry<any>> = new Map();
-  private pendingSubscribers: Map<string, Set<(value: any) => void>> = new Map();
+  private pendingSubscribers: Map<string, Set<(value: any) => void>> =
+    new Map();
 
   /**
    * Get an input registry entry by ID
