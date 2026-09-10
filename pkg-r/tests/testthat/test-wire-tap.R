@@ -144,6 +144,7 @@ test_that("expect_* pumps the event loop while polling", {
   # loop runs later::run_now() rather than Sys.sleep(). Simulate that: the
   # frame appears only once a scheduled callback fires.
   skip_if_not_installed("shinytest2")
+  skip_if_not_installed("later")
   messages <- character()
   app <- list(
     get_logs = function() fake_app(messages)$get_logs()

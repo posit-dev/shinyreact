@@ -19,12 +19,12 @@ Imports:
     cli,
     htmltools,
     jsonlite,
-    later,
     rlang,
     shiny (>= 1.13.0),
     utils
 Suggests:
     knitr,
+    later,
     rmarkdown,
     shinytest2,
     testthat (>= 3.0.0),

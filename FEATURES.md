@@ -1312,7 +1312,8 @@ initial page.
     internal — there is no exported way to attach the bundle without a page
     function
   - it depends on `shiny (>= 1.13.0)`, and imports `brio`, `cli`, `htmltools`,
-    `jsonlite`, `later`, `rlang`, and `utils` (#225 added the missing `utils`)
+    `jsonlite`, `rlang`, and `utils` (#225 added the missing `utils`); `later` is
+    a Suggests, needed only by `wire_tap()`
 - wire tap: `[r]` `wire_tap(app)` / `[py]` `shinyreact.playwright.WireTap(page)`
   read the JSON frames that crossed the websocket, per channel
   - `all_output_values(id)`, `all_messages(id)`, `all_input_values(id)` return

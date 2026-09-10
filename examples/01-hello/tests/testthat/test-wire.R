@@ -11,16 +11,9 @@
 #   Rscript -e 'shinytest2::test_app()'
 #
 # The shinyreact package's own suite also runs it, via
-# pkg-r/tests/testthat/test-examples.R. Both routes resolve the app directory
-# below: the app's own tests/testthat/ sits two levels under app.R; from the
-# package suite the installed copy in inst/examples-shiny/ is used instead.
-
-hello_app_dir <- function() {
-  if (file.exists(file.path("..", "..", "app.R"))) {
-    return(normalizePath(file.path("..", "..")))
-  }
-  system.file("examples-shiny", "01-hello", package = "shinyreact")
-}
+# pkg-r/tests/testthat/test-examples.R, which sources it from this directory so
+# AppDriver's default app_dir (test_path("../../")) resolves to the app either
+# way.
 
 # Drive the React-owned <input type="range">. shinytest2's set_inputs() needs a
 # Shiny input binding, and useShinyInput() registers none, so set the value
@@ -43,11 +36,7 @@ test_that("the wire carries the histogram contract", {
   skip_if_not_installed("chromote")
   skip_on_cran()
 
-  app_dir <- hello_app_dir()
-  skip_if(!nzchar(app_dir), "01-hello app directory not found")
-
   app <- shinytest2::AppDriver$new(
-    app_dir,
     options = list(shiny.trace = TRUE)
   )
   withr::defer(app$stop())
