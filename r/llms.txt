@@ -1,0 +1,161 @@
+# shinyreact (R)
+
+React UI infrastructure for [Shiny](https://shiny.posit.co/). The Shiny
+server contains only reactive computation; the UI is a React client you
+own. shinyreact provides the bridge — it ships zero UI components
+itself. The same JavaScript bundle backs both the R and
+[Python](https://github.com/posit-dev/shinyreact/tree/main/pkg-py)
+packages.
+
+## Overview
+
+shinyreact implements the **`ui.tsx` pattern**: write the UI in a client
+React codebase and bootstrap it from R with
+[`page_react_html()`](https://posit-dev.github.io/shinyreact/r/reference/page_react_html.md).
+The server publishes data with
+[`reactive_output()`](https://posit-dev.github.io/shinyreact/r/reference/reactive_output.md),
+pushes messages with
+[`send_message()`](https://posit-dev.github.io/shinyreact/r/reference/send_message.md),
+and reads inputs sent by the client’s `useShinyInput` hooks.
+
+## Installation
+
+shinyreact is pre-release and not yet on CRAN. Install the development
+version from GitHub (the package lives in the `pkg-r/` subdirectory of
+the monorepo):
+
+``` r
+
+# install.packages("pak")
+pak::pak("posit-dev/shinyreact/pkg-r")
+```
+
+## Usage
+
+A minimal `app.R`. The UI lives in `www/` (`ui.js`, plus `ui.css` if you
+want styles — discovered automatically); the server owns only reactive
+computation:
+
+``` r
+
+library(shiny)
+library(shinyreact)
+
+ui <- page_react() # discovers www/ui.js + www/ui.css
+
+server <- function(input, output, session) {
+  output$greeting <- reactive_output({
+    paste0("Hello, ", input$name, "!")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+[`reactive_output()`](https://posit-dev.github.io/shinyreact/r/reference/reactive_output.md)
+sends any JSON-serializable value through unchanged; the client reads it
+with `useShinyOutputValue("greeting")`. Push data to the client with
+[`send_message()`](https://posit-dev.github.io/shinyreact/r/reference/send_message.md).
+
+Traditional Shiny renderers (e.g. `plotly::renderPlotly()`) work too,
+rendered client-side with the `ShinyOutput` React component — their
+binding JS/CSS is discovered from the render function and delivered to
+the client automatically, no `*Output()` placeholder needed.
+
+See
+[`examples/01-hello/`](https://github.com/posit-dev/shinyreact/tree/main/examples/01-hello)
+for the complete runnable app (`app.R` alongside the equivalent
+`app.py`, sharing one `www/` client). Run it without cloning:
+
+``` r
+
+shiny::runGitHub("posit-dev/shinyreact", subdir = "examples/01-hello")
+```
+
+## Get started
+
+- **Function reference:** <https://posit-dev.github.io/shinyreact/r>
+- **Examples:** the [examples
+  catalog](https://github.com/posit-dev/shinyreact/blob/main/examples/README.md)
+
+## Testing your app’s wire payloads
+
+[`wire_tap()`](https://posit-dev.github.io/shinyreact/r/reference/wire_tap.md)
+(test-only; requires the shinytest2 package) records the JSON payloads
+that cross the Shiny websocket, so you can assert the values your server
+actually delivered and the values your client actually sent:
+
+``` r
+
+test_that("dist_data bins the waiting column", {
+  app <- shinytest2::AppDriver$new(
+    app_dir,
+    options = list(shiny.trace = TRUE)
+  )
+  withr::defer(app$stop())
+
+  tap <- shinyreact::wire_tap(app)
+  tap$expect_input_value("bins", 30L)
+  tap$expect_output_value("dist_data", function(d) d$breaks[[1]] == 43)
+})
+```
+
+`expect_*` matchers are a value
+([`identical()`](https://rdrr.io/r/base/identical.html)) or a function
+(truthy), retrying until a timeout; `all_output_values()` /
+`all_messages()` / `all_input_values()` return each channel’s full
+history. The Python counterpart is `shinyreact.playwright.WireTap`.
+
+## Agent Skills
+
+The package ships two Agent Skills, so a coding agent can build a
+shinyreact app without you pasting this README into it:
+
+- **`shinyreact-build-app`** — build a `ui.tsx`-pattern app from scratch
+- **`shinyreact-convert-app`** — port an existing Shiny app to the
+  pattern
+
+Agents using [btw](https://posit-dev.github.io/btw/) discover them
+automatically once shinyreact is attached. To copy them into a project
+for Claude Code and other skill-aware tools:
+
+``` r
+
+btw::btw_skill_install_package("shinyreact")
+```
+
+# Package index
+
+## Pages
+
+- [`page_bare()`](https://posit-dev.github.io/shinyreact/r/reference/page_bare.md)
+  : Bare HTML page with Shiny dependencies
+
+- [`page_react()`](https://posit-dev.github.io/shinyreact/r/reference/page_react.md)
+  : Create a React page from conventional assets — no HTML file required
+
+- [`page_react_html()`](https://posit-dev.github.io/shinyreact/r/reference/page_react_html.md)
+  :
+
+  Serve a React `index.html` document (the `ui.tsx` pattern)
+
+- [`page_react_dep()`](https://posit-dev.github.io/shinyreact/r/reference/page_react_dep.md)
+  : HTML dependency for a downstream package's own JS/CSS bundle
+
+## Outputs
+
+- [`reactive_output()`](https://posit-dev.github.io/shinyreact/r/reference/reactive_output.md)
+  :
+
+  Publish a reactive value to a shinyreact client (the `ui.tsx` pattern)
+
+## Messaging
+
+- [`send_message()`](https://posit-dev.github.io/shinyreact/r/reference/send_message.md)
+  : Send a custom message to client React components
+
+## Testing
+
+- [`wire_tap()`](https://posit-dev.github.io/shinyreact/r/reference/wire_tap.md)
+  : Tap the websocket wire of a shinytest2 app
+
