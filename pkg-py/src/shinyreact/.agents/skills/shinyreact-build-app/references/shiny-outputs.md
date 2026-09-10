@@ -42,3 +42,33 @@ it — you get a real React component instead of a server-rendered PNG. Use thes
 two when the server genuinely must draw (matplotlib/ggplot specifics) or when a
 widget already exists and re-implementing it is not the job.
 
+## Hosting a real Shiny *input* widget
+
+Sometimes you need the genuine article — a real ionRangeSlider, a real
+selectize — because the port has to look widget-for-widget identical to the
+original app. `ShinyOutput` alone will not do it: it calls only
+`Shiny.bindAll()`, and an input binding also needs its `initialize()` pass plus
+the widget's own JS/CSS dependency (ion-rangeslider, selectize) on the page.
+
+Shiny's dynamic-UI output does all three. Render the widget server-side and
+host the holder in the client:
+
+```python
+@render.ui                        # [r] output$widgets <- renderUI({ ... })
+def widgets():
+    return ui.input_slider("bins", "Bins", min=1, max=50, value=9)
+```
+
+```jsx
+<ShinyOutput id="widgets" className="shiny-html-output" />
+```
+
+Shiny's html-output binding calls `renderContent()`, which loads the
+dependencies and then runs `initializeInputs()` *and* `bindAll()`. So
+`input.bins()` / `input$bins` arrives exactly as in a classic app, and
+`update_slider()` / `updateSliderInput()` keeps working against the id.
+
+This is a deliberate exception, not the default — React-owned state through
+`useShinyInput` / `useSetShinyInput` is still how you build inputs. Use the
+holder when pixel-identical widgets matter more than owning the state.
+

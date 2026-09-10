@@ -986,6 +986,26 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     missing `bindAll` or `unbindAll`
   - `Shiny` appearing on `window` *after* mount is ignored — there is no retry
 
+### Traditional Shiny *input* widgets inside a React tree (#286)
+
+- there is no `ShinyInput` component, and none is needed: a
+  `[py]` `@render.ui` / `[r]` `renderUI()` holder hosted by
+  `<ShinyOutput className="shiny-html-output">` gives a real widget
+  - Shiny's html-output binding calls `renderContent()`, which loads the
+    widget's dependency and then runs `initializeInputs()` *and* `bindAll()` —
+    `ShinyOutput`'s own pass is `bindAll()` only, which an input binding's
+    `initialize()` step needs on top of
+  - `[py]` `input_slider` becomes a real ionRangeSlider (`.irs--shiny` present,
+    `#bins` gains `shiny-bound-input`) and `input_selectize` a real selectize
+    control `(e2e)`
+  - the values reach the server as a classic app's would — `input.bins()` is
+    `9`, `input.letter()` is `"a"` `(e2e)`
+  - dragging the hosted slider to its max pushes `50` to the server `(e2e)`
+  - `ui.update_slider()` / `ui.update_selectize()` still target the hosted
+    widgets by id, and the new values flow back through `input` `(e2e)`
+- React-owned input state remains the documented default; the holder is the
+  documented exception for ports that must look widget-for-widget identical
+
 ### Renderer dependency discovery
 
 Both languages deliver traditional renderers' `HTMLDependency` objects

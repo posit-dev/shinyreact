@@ -234,6 +234,12 @@ part you cannot guess: how to spell the element each binding looks for.
 Reach for `reactive_output` plus your own chart whenever the client *could*
 draw it — you get a real React component instead of a server-rendered PNG.
 
+A real Shiny *input* widget can be hosted the same way, through a
+`[py]` `@render.ui` / `[r]` `renderUI()` holder inside
+`<ShinyOutput className="shiny-html-output">` — the recipe and its caveats are
+in the same reference. Reserve it for ports that must look widget-for-widget
+identical; React-owned state is still the default for inputs.
+
 ## Step 4 — the client reads and writes named channels
 
 Everything is on `window.shinyreact` (or imported from `@posit/shinyreact` in
