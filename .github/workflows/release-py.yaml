@@ -1,30 +1,33 @@
-# TODO: Enable when PyPI project is created.
-# Uncomment the on: block below and remove the workflow_dispatch-only trigger.
-# Set up trusted publishing at: https://pypi.org/manage/project/shinyreact/settings/publishing/
-#
-# on:
-#   release:
-#     types: [published]
-
 name: release-py
 
+# Publishes shinyreact to PyPI. Tag a release with `py/v<version>` (the `py/`
+# prefix distinguishes it from the R and npm release tags) and push the tag:
+#
+#   git tag py/v0.1.0 && git push origin py/v0.1.0
+#
+# The tag version must match `version` in the root pyproject.toml.
+#
+# Uses PyPI trusted publishing (no token). Set it up once at:
+# https://pypi.org/manage/project/shinyreact/settings/publishing/
+# with workflow `release-py.yaml` and environment `pypi`.
+
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "py/v*"
 
 jobs:
   py-release:
     name: Build and release Python package
     runs-on: ubuntu-latest
 
-    # Python release tags start with "py/v*"
-    if: startsWith(github.ref, 'refs/tags/py/v')
-
     environment:
       name: pypi
       url: https://pypi.org/project/shinyreact/
 
     permissions:
-      id-token: write
+      id-token: write # trusted publishing
+      contents: write # create the GitHub release
 
     steps:
       - uses: actions/checkout@v6
@@ -32,8 +35,26 @@ jobs:
       - name: 🚀 Install uv
         uses: astral-sh/setup-uv@v8.1.0
 
+      - name: 🔍 Check tag matches package version
+        run: |
+          tag_version="${GITHUB_REF_NAME#py/v}"
+          pkg_version="$(uv version --short)"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "Tag $GITHUB_REF_NAME implies version $tag_version, but pyproject.toml says $pkg_version" >&2
+            exit 1
+          fi
+
       - name: 🧳 Build package
         run: uv build
 
       - name: 🚢 Publish release on PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: 📝 Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          --title "Python ${GITHUB_REF_NAME#py/}"
+          --generate-notes
+          dist/*
