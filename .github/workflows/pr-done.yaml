@@ -1,0 +1,31 @@
+# One stable check for branch protection / auto-merge.
+#
+# The real checks live in path-filtered workflows (check-py, check-r, check-js,
+# check-skills, website, website-r, ...) that only run when their files change,
+# so no fixed `needs:` list can name them — a required "check-r" would block a
+# Python-only PR forever (GitHub treats a never-triggered required check as
+# pending, not passed). This job runs on every PR, waits for every other check
+# run on the head commit, and passes iff all of them passed. A workflow the
+# path filter skipped creates no check run, so it does not count.
+#
+# Make `pr-done` the only required status check in the `main` ruleset.
+name: pr-done
+
+on:
+  pull_request:
+
+permissions:
+  checks: read
+
+jobs:
+  pr-done:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: poseidon/wait-for-status-checks@v0.7.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Sibling workflows are triggered by the same event, but their check
+          # runs can register a few seconds after this one starts.
+          delay: 30s
+          interval: 30s
+          timeout: 3600s
