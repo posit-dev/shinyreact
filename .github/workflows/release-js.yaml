@@ -1,6 +1,6 @@
 name: release-js
 
-# Publishes @posit/shinyreact to npm. Trigger manually (workflow_dispatch) or
+# Publishes @posit-dev/shinyreact to npm. Trigger manually (workflow_dispatch) or
 # by pushing a tag like js/v0.0.1 (the `js/` prefix distinguishes it from the
 # Python and R release tags). Requires the NPM_TOKEN repository secret.
 on:
@@ -56,7 +56,7 @@ jobs:
         working-directory: pkg-js
         run: npm run build
 
-      - name: 🚀 Publish @posit/shinyreact
+      - name: 🚀 Publish @posit-dev/shinyreact
         working-directory: pkg-js
         run: npm publish --access public --provenance
         env:

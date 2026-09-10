@@ -90,7 +90,7 @@ pak::pak("posit-dev/shinyreact/pkg-r")
 :::
 
 The JS hooks come with the server package — `set_react_page()` / `page_react()` serve `shinyreact.js`, which installs them at `window.shinyreact`.
-Apps with a bundler can instead `npm install @posit/shinyreact` and pass `shinyreact_js="client"` to the page entry point.
+Apps with a bundler can instead `npm install @posit-dev/shinyreact` and pass `shinyreact_js="client"` to the page entry point.
 
 ## Agent Skills
 

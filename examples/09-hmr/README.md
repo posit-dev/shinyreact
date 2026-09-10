@@ -5,7 +5,7 @@ serves the page: edit a component and it hot-swaps in place, keeping component
 state — no full page reload, no `vite build` wait.
 
 This is the **npm-tier** example: the client imports the hooks from
-`@posit/shinyreact` and bundles its own React, in both modes. That is what
+`@posit-dev/shinyreact` and bundles its own React, in both modes. That is what
 makes Fast Refresh possible — Fast Refresh needs a *development* React build,
 and the React inside the server-shipped IIFE bundle is production-only.
 
@@ -14,10 +14,10 @@ Because the client ships the runtime itself, the server must not serve
 `set_react_page(shinyreact_js="client")` in `app.py`. The `#shinyreact-config`
 tag is still emitted, and the npm client requires it.
 
-Until `@posit/shinyreact` is published, `package.json` depends on it as
+Until `@posit-dev/shinyreact` is published, `package.json` depends on it as
 `file:../../pkg-js` — repo-relative, so it only resolves inside a checkout of
 this repo. Copy this example elsewhere and that line becomes
-`"@posit/shinyreact": "^<version>"` from npm. In the meantime the package has
+`"@posit-dev/shinyreact": "^<version>"` from npm. In the meantime the package has
 to be built before this example can build against it:
 
 ```bash

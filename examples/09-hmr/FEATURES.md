@@ -20,7 +20,7 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
   - builds `pkg-js` first (`npm install` + `npm run build` there) when
     `pkg-js/dist-npm` is missing — the `file:../../pkg-js` dep's `exports`
     point into `dist-npm/`, which is not committed, so this app's own build
-    cannot resolve `@posit/shinyreact` until it exists
+    cannot resolve `@posit-dev/shinyreact` until it exists
   - then `npm install` + `npm run build` in the app directory
   - without it, Shiny raises `RuntimeError: Directory '.../www' does not exist`
     at startup — `www/` itself does not exist until a build creates it
@@ -30,7 +30,7 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## npm tier
 
-- the only example that imports `@posit/shinyreact` instead of destructuring
+- the only example that imports `@posit-dev/shinyreact` instead of destructuring
   `window.shinyreact`; the built `www/ui.js` contains no `window.shinyreact`
   reference at all
 - until the first npm publish, the dependency is `file:../../pkg-js`, so
@@ -51,7 +51,7 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 - `www/ui.js` is gitignored, so a fresh checkout must run one of the two before
   `shiny run` serves anything
 - there is no dev/prod hook switch any more: both modes import
-  `@posit/shinyreact`, so no `shiny-bridge` alias and no rollup externals
+  `@posit-dev/shinyreact`, so no `shiny-bridge` alias and no rollup externals
 
 ## The dev stub (`vite-dev-stub.js`)
 

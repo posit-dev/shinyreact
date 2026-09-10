@@ -192,7 +192,7 @@ Gitignore `node_modules/` and, if you like, the generated `www/ui.js` (the examp
 ### npm tier, bundling your own React
 
 For hot reloading with React Fast Refresh you need a *development* build of React, and the one inside `shinyreact.js` is production-only.
-The [09-hmr](https://github.com/posit-dev/shinyreact/tree/main/examples/09-hmr) example therefore installs `@posit/shinyreact` from npm, imports the hooks from it, and bundles its own React with no externals.
+The [09-hmr](https://github.com/posit-dev/shinyreact/tree/main/examples/09-hmr) example therefore installs `@posit-dev/shinyreact` from npm, imports the hooks from it, and bundles its own React with no externals.
 Because the client now ships React itself, the server must stop serving `shinyreact.js`, or the page would have two copies again.
 That is what `shinyreact_js="client"` on the page entry point does.
 
@@ -206,7 +206,7 @@ Checking happens in your editor (VS Code and Positron do it automatically for an
 npx tsc --noEmit
 ```
 
-`@posit/shinyreact` ships type declarations, so `useShinyOutputValue<Histogram>("dist_data")` tells the checker what shape to expect and catches a misspelled field before the browser does.
+`@posit-dev/shinyreact` ships type declarations, so `useShinyOutputValue<Histogram>("dist_data")` tells the checker what shape to expect and catches a misspelled field before the browser does.
 If you are not using TypeScript, skip all of this and name your files `.jsx`.
 
 ## Where to go next

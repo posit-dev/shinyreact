@@ -21,7 +21,7 @@ export default defineConfig(({ command }) => ({
     shinyreactDevStub({ entry: ENTRY, outFile: "www/ui.js" }),
   ],
   resolve: {
-    // `@posit/shinyreact` is a `file:` dep, so it is symlinked and brings its
+    // `@posit-dev/shinyreact` is a `file:` dep, so it is symlinked and brings its
     // own node_modules. Without dedupe, App.tsx and the hooks would each get a
     // React copy and every hook call would throw.
     dedupe: ["react", "react-dom"],
@@ -29,7 +29,7 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 5173,
     strictPort: true, // keep the stub's hard-coded :5173 honest
-    // `@posit/shinyreact` resolves through a symlink to the repo's pkg-js/.
+    // `@posit-dev/shinyreact` resolves through a symlink to the repo's pkg-js/.
     fs: { allow: [repoRoot] },
   },
   build: {

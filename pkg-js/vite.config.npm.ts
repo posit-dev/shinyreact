@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// The @posit/shinyreact npm build: ESM, React externalized as a peer
+// The @posit-dev/shinyreact npm build: ESM, React externalized as a peer
 // dependency (so app bundlers resolve a single React — a dev build in dev
 // mode). The IIFE build (vite.config.ts) inlines React instead; both are
 // built from the same source. Type declarations come from tsconfig.npm.json.

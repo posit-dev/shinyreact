@@ -12,7 +12,7 @@ from shinyreact import reactive_output, set_react_page
 _app_dir = Path(__file__).parent
 if not (_app_dir / "www" / "ui.js").exists():
     print("www/ui.js not found -- building the client bundle...", file=sys.stderr)
-    # `@posit/shinyreact` is a `file:../../pkg-js` dep whose exports point at
+    # `@posit-dev/shinyreact` is a `file:../../pkg-js` dep whose exports point at
     # `dist-npm/`, which is not committed -- so the package has to be built
     # before this app's own build can resolve it.
     _pkg_js = _app_dir.parent.parent / "pkg-js"
@@ -22,7 +22,7 @@ if not (_app_dir / "www" / "ui.js").exists():
     subprocess.run(["npm", "install"], cwd=_app_dir, check=True)
     subprocess.run(["npm", "run", "build"], cwd=_app_dir, check=True)
 
-# npm tier: the client imports `@posit/shinyreact` and bundles shinyreact.js
+# npm tier: the client imports `@posit-dev/shinyreact` and bundles shinyreact.js
 # itself, so the server must not serve it too -- two copies on one page. The
 # `#shinyreact-config` tag is still emitted, and the npm client requires it.
 set_react_page(shinyreact_js="client")

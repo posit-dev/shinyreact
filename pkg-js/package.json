@@ -1,5 +1,5 @@
 {
-  "name": "@posit/shinyreact",
+  "name": "@posit-dev/shinyreact",
   "version": "0.0.1",
   "description": "React hooks and components for Shiny (shinyreact) — the ui.tsx pattern's client runtime",
   "license": "MIT",

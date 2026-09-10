@@ -46,7 +46,7 @@ export function applyRestoredValues(registry: InputRegistry): void {
   if (config == null && isShinyReactConfigTagRequired()) {
     throwVisibly(
       "shinyreact: no `#shinyreact-config` tag found in this page. The " +
-        "`@posit/shinyreact` client requires a shinyreact server recent " +
+        "`@posit-dev/shinyreact` client requires a shinyreact server recent " +
         "enough to emit it — upgrade the shinyreact Python/R package.",
     );
   }

@@ -11,7 +11,7 @@ does **not** oblige releasing the others.
 | Package | Version lives in | Tag | Automation |
 |---|---|---|---|
 | `shinyreact` (PyPI) | `pyproject.toml` (repo root) `version` | `py/v1.2.3` | `.github/workflows/release-py.yaml` |
-| `@posit/shinyreact` (npm) | `pkg-js/package.json` `version` | `js/v1.2.3` | `.github/workflows/release-js.yaml` |
+| `@posit-dev/shinyreact` (npm) | `pkg-js/package.json` `version` | `js/v1.2.3` | `.github/workflows/release-js.yaml` |
 | `shinyreact` (R) | `pkg-r/DESCRIPTION` `Version` | `r/v1.2.3` | none — CRAN is a manual submission |
 
 The `<lang>/v` prefix is what keeps the three apart; nothing else distinguishes
@@ -93,5 +93,5 @@ produces the same tidyverse checklist.
 ## After any release
 
 Nothing is automated post-release. Check the artifact actually landed
-(`pip index versions shinyreact`, `npm view @posit/shinyreact version`) and
+(`pip index versions shinyreact`, `npm view @posit-dev/shinyreact version`) and
 say so — a green workflow with a skipped publish step is the usual failure.
