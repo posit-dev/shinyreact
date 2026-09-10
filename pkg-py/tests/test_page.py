@@ -4,12 +4,13 @@ from pathlib import Path
 import pytest
 import shinyreact
 from htmltools import HTMLDependency, Tag
-from shiny.ui import PageDocument
+
+# Where a full document's dependencies are inserted. Owned by py-shiny, not
+# us — `ui.page_html()`'s default `deps_replace_pattern=`, which py-shiny
+# does not (yet) export publicly.
+from shiny.ui._page import DEPS_PLACEHOLDER as DEPS
 from shinyreact import page_react_html
 from shinyreact._page import page_bare
-
-# Where a full document's dependencies are inserted. Owned by py-shiny, not us.
-DEPS = PageDocument.DEPS_PLACEHOLDER
 
 
 def test_page_bare_returns_tag():
@@ -93,7 +94,7 @@ def test_page_react_html_preserves_document_body(tmp_path):
 def test_page_react_html_missing_placeholder_errors_at_render(tmp_path):
     # R's counterpart ("page_react_html errors on a document without the
     # placeholder") errors in page_react_html() itself; Python defers to
-    # ui.PageDocument, which raises when the page is rendered. Deliberate: the
+    # ui.page_html(), which raises when the page is rendered. Deliberate: the
     # placeholder is py-shiny's contract, so py-shiny gets to enforce it.
     from shiny import App
 

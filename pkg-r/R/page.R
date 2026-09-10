@@ -1,6 +1,6 @@
 # Internal: the marker a page_react_html() document must contain, where the
 # rendered dependencies are inserted. Same literal as Python's
-# shiny.ui.PageDocument.DEPS_PLACEHOLDER, so one document works on both servers.
+# py-shiny's ui.page_html() placeholder, so one document works on both servers.
 deps_placeholder <- '<meta name="shiny-dependency-placeholder" content="">'
 
 #' Bare HTML page with Shiny dependencies

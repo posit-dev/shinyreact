@@ -40,7 +40,7 @@ page is *your* document — Shiny does not build one. Two things make that work:
 - **`<meta name="shiny-dependency-placeholder" content="">`** in `<head>` marks
   where Shiny's and shinyreact's `<script>`/`<link>` tags go. It is an ordinary
   `<meta>` tag, not template syntax, so the file is valid HTML that any tool can
-  parse (`shiny.ui.PageDocument.DEPS_PLACEHOLDER` is the same literal).
+  parse (py-shiny’s `ui.page_html()` looks for the same literal).
 - **`ReactApp` mounts `www/` at `/`**, so the document's relative `ui.js` /
   `ui.css` are served.
 

@@ -6,15 +6,16 @@ import pytest
 from htmltools import HTMLDependency, TagList
 from shiny.bookmark._restore_state import RestoreContext, RestoreInputSet
 from shiny.bookmark._restore_state import restore_context as restore_context_cm
-from shiny.ui import PageDocument
+
+# Where a full document's dependencies are inserted. Owned by py-shiny, not
+# us — `ui.page_html()`'s default `deps_replace_pattern=`, which py-shiny
+# does not (yet) export publicly.
+from shiny.ui._page import DEPS_PLACEHOLDER as DEPS
 from shinyreact import page_react_html
 from shinyreact._bookmark import _config_script_tag, _read_restore_input_values
 from shinyreact._dep import _dep, _dep_page
 from shinyreact._page import _build_react_page_fn
 from shinyreact._protocol import PROTOCOL_VERSION
-
-# Where a full document's dependencies are inserted. Owned by py-shiny, not us.
-DEPS = PageDocument.DEPS_PLACEHOLDER
 
 
 def _render_dep_to_head(dep: HTMLDependency) -> str:
