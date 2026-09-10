@@ -96,6 +96,7 @@ and the values your client actually sent:
 ```python
 from shinyreact.playwright import WireTap
 
+
 def test_dist_data(page, app):
     tap = WireTap(page)  # construct before page.goto()
     page.goto(app.url)

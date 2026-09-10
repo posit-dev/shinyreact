@@ -7,7 +7,10 @@ for no-build or `src/ui.jsx` for Vite + JSX fill the same role).
 
 Examples are Python unless noted; [01-hello](01-hello/) and
 [07-plotly](07-plotly/) also ship an `app.R` showing the same app on the R
-package.
+package. Those two are the canonical source for a copy in
+`pkg-r/inst/examples-shiny/` that ships with the installed R package — **after
+editing their `app.R` or `www/`, run `make update-examples`** (a testthat
+drift guard fails otherwise).
 
 **Shipping several servers over one `www/` client is a device of these
 examples, not a pattern to copy.** A real app has one server. It exists here
@@ -31,6 +34,36 @@ see [Example behavior trees](#example-behavior-trees) below.
 | [08-input-handler](08-input-handler/) | `useShinyInput` with `type="shiny.datetime"` — client sends unix seconds; server `input.when()` is a `datetime.datetime` via Shiny's built-in handler |
 | [09-hmr](09-hmr/) | React Fast Refresh in dev (Vite dev server alongside Shiny). The npm tier: imports `@posit/shinyreact` and bundles its own React, with `set_react_page(shinyreact_js="client")` so the server doesn't also serve shinyreact.js |
 | [10-bookmarking](10-bookmarking/) | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via the `#shinyreact-config` tag emitted by `page_react()` |
+
+## Running an example
+
+The R examples run straight from GitHub, no clone:
+
+```r
+# install.packages("pak")
+pak::pak("posit-dev/shinyreact")
+
+shiny::runGitHub("posit-dev/shinyreact", subdir = "examples/01-hello")
+shiny::runGitHub("posit-dev/shinyreact", subdir = "examples/07-plotly")
+```
+
+Note the capital H — `shiny::runGithub` does not exist. It downloads the
+repo's default branch and runs the app in `subdir`; pass `ref = "some-branch"`
+for anything else. `01-hello` and `07-plotly` are the only examples that ship
+an `app.R`, so they are the two this launches; the rest are Python.
+
+Python has no `runGitHub` equivalent, so clone and run:
+
+```bash
+git clone https://github.com/posit-dev/shinyreact
+cd shinyreact
+shiny run examples/01-hello/app.py
+```
+
+The three examples with a build step — [03-columns-shadcn](03-columns-shadcn/),
+[04-shadcn](04-shadcn/), [09-hmr](09-hmr/) — do **not** commit their bundle
+(`www/ui.js` is gitignored), so they need `npm install && npm run build` in the
+example directory before `shiny run`. Their READMEs cover it.
 
 ## Example behavior trees
 

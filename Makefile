@@ -85,6 +85,25 @@ update-skills: ## Copy .claude/skills/ into pkg-py and pkg-r for shipping
 	done
 
 
+# Examples that ship an app.R. They are copied into the R package so an
+# installed shinyreact can reach them via
+# system.file("examples-shiny", <name>, package = "shinyreact") -- what the
+# shinytest2 tests need, since R CMD check runs against the installed package
+# and can't see examples/ at all.
+R_EXAMPLES := 01-hello 07-plotly
+
+.PHONY: update-examples
+update-examples: ## Copy examples/*/app.R + www/ into pkg-r for shipping
+	@echo ""
+	@echo "🔄 Updating shipped R example apps"
+	rm -rf $(PATH_PKG_R)/inst/examples-shiny
+	for e in $(R_EXAMPLES); do \
+		mkdir -p $(PATH_PKG_R)/inst/examples-shiny/$$e; \
+		cp examples/$$e/app.R $(PATH_PKG_R)/inst/examples-shiny/$$e/; \
+		cp -R examples/$$e/www $(PATH_PKG_R)/inst/examples-shiny/$$e/; \
+	done
+
+
 .PHONY: r-setup
 r-setup:  ## [r] Install R dependencies
 	@echo "🆙 Updating R dependencies"

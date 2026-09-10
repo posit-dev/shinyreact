@@ -5,12 +5,13 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList
+from htmltools import HTML, HTMLDependency, HTMLTextDocument, Tag, TagChild, TagList
 from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 from shiny.session import get_current_session
+from shiny.ui import page_html
 
-from ._app import ReactHtmlDocument
+from ._app import SRC_DIR_ATTR
 from ._bookmark import _config_script_tag
 from ._dep import ShinyreactJs, _dep, _dep_page, _file_mtime_int, _serves_bundle
 
@@ -386,7 +387,7 @@ def page_react_html(
     *,
     extra_deps: list[HTMLDependency] | None = None,
     shinyreact_js: ShinyreactJs = "server",
-) -> ReactHtmlDocument:
+) -> HTMLTextDocument:
     """Serve a React ``index.html`` document (the ui.tsx pattern, Core API).
 
     Reads a complete HTML document — the kind a Vite build emits — and injects
@@ -396,7 +397,7 @@ def page_react_html(
         <meta name="shiny-dependency-placeholder" content="">
 
     The script/link tags render in its place; the same literal is
-    :attr:`shiny.ui.PageDocument.DEPS_PLACEHOLDER`. It is an ordinary ``<meta>``
+    py-shiny's own ``DEPS_PLACEHOLDER``. It is an ordinary ``<meta>``
     tag rather than template syntax, so the document stays valid HTML that a
     bundler's dev server can serve unchanged. Matches R's ``page_react_html()``.
 
@@ -409,7 +410,7 @@ def page_react_html(
 
     Call it directly to pass a non-default path (``ReactApp(server,
     ui=page_react_html("client/index.html"))``). ``shiny.App`` works too (via
-    ``ui.PageDocument``, py-shiny#2475), but only ``ReactApp`` mounts the
+    ``ui.page_html()``, py-shiny#2475), but only ``ReactApp`` mounts the
     document's directory at ``/``, so the assets the document references
     (your bundle's JS/CSS) are served when they live next to it
     (conventionally ``www/``).
@@ -444,19 +445,22 @@ def page_react_html(
         index_path = caller_dir / path
     if not index_path.exists():
         raise FileNotFoundError(f"HTML file not found: {index_path}")
-    # ui.PageDocument (py-shiny#2475) owns the placeholder: it prefixes Shiny's
+    # ui.page_html() (py-shiny#2475) owns the placeholder: it prefixes Shiny's
     # own dependencies and raises at render time when the document has no
     # placeholder to insert them at. We only add shinyreact's bundle and the
     # #shinyreact-config tag.
-    return ReactHtmlDocument(
+    doc = page_html(
         _read_document_cached(index_path),
-        src_dir=index_path.parent,
         extra_deps=[
             *([_dep()] if _serves_bundle(shinyreact_js) else []),
             _config_script_tag(),
             *(extra_deps or []),
         ],
     )
+    # Tagged, not subclassed: py-shiny exports page_html() but not its class.
+    # ReactApp reads this to mount the document's directory at "/".
+    setattr(doc, SRC_DIR_ATTR, index_path.parent)
+    return doc
 
 
 def _collect_renderer_deps(renderer: Renderer, deps: list[HTMLDependency]) -> None:

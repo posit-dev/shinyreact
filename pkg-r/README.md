@@ -44,7 +44,11 @@ shinyApp(ui, server)
 
 Traditional Shiny renderers (e.g. `plotly::renderPlotly()`) work too, rendered client-side with the `ShinyOutput` React component — their binding JS/CSS is discovered from the render function and delivered to the client automatically, no `*Output()` placeholder needed.
 
-See [`examples/01-hello/`](https://github.com/posit-dev/shinyreact/tree/main/examples/01-hello) for the complete runnable app (`app.R` alongside the equivalent `app.py`, sharing one `www/` client).
+See [`examples/01-hello/`](https://github.com/posit-dev/shinyreact/tree/main/examples/01-hello) for the complete runnable app (`app.R` alongside the equivalent `app.py`, sharing one `www/` client). Run it without cloning:
+
+```r
+shiny::runGitHub("posit-dev/shinyreact", subdir = "examples/01-hello")
+```
 
 ## Get started
 

@@ -767,7 +767,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - the document must contain `<meta name="shiny-dependency-placeholder"
     content="">`; Shiny's and shinyreact's tags render **in its place**, not
     appended to `<head>`
-    - it is py-shiny's marker, `shiny.ui.PageDocument.DEPS_PLACEHOLDER`; both
+    - it is py-shiny's marker, the `ui.page_html()` default
+      `deps_replace_pattern=`; both
       languages use the same literal, so one document works on either server
     - an ordinary `<meta>` tag, not template syntax, so the document stays valid
       HTML a bundler's dev server can serve unchanged
@@ -787,7 +788,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - a document without the placeholder raises
     - `[r]` in `page_react_html()` itself; the message names the file, the
       placeholder, and `page_react()` as the alternative
-    - `[py]` at page render, from `ui.PageDocument` — the placeholder is
+    - `[py]` at page render, from `ui.page_html()` — the placeholder is
       py-shiny's contract, so py-shiny enforces it; the message names
       `deps_replace_pattern=` and the default placeholder
   - a missing file raises, naming the path it looked for
@@ -824,18 +825,18 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
       - each offending argument is echoed as `name = expr`, so a misspelled
         `extra_dep = list()` names itself; unnamed ones show as `..1`
       - the error is attributed to `page_react_html()`, not to the check
-  - `[py]` it returns a `ReactHtmlDocument`
-    - a `shiny.ui.PageDocument` subclass that also remembers the document's
-      directory, so `ReactApp` can serve the assets the document references
-    - `PageDocument` prefixes Shiny's own dependencies; shinyreact adds only
+  - `[py]` it returns the `shiny.ui.page_html()` document, tagged with the
+    document's directory (attribute `_shinyreact_src_dir`, not a subclass), so
+    `ReactApp` can serve the assets the document references
+    - `page_html()` prefixes Shiny's own dependencies; shinyreact adds only
       its bundle and the config tag
     - an absolute `path` is verbatim; a relative one resolves against the
       calling module's directory; no caller `__file__` → `Path.cwd()`
     - it works as `shiny.App(ui=...)`, but only `ReactApp` mounts the
       document's directory — under plain `shiny.App` the sibling `ui.js` is
       not served
-    - `shiny.ui.PageDocument` arrives with py-shiny#2475, consumed as a git
-      dependency until it releases
+    - `shiny.ui.page_html()` arrives with py-shiny#2475, consumed as a git
+      dependency on py-shiny `main` until it releases
   - `[r]` used directly as `shinyApp(ui = page_react_html())`, implemented by
     rewriting the placeholder to `{{ headContent() }}` in memory and calling
     `htmltools::htmlTemplate(text_ = ..., document_ = TRUE)`
@@ -922,8 +923,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - the existence check runs at construction, so unlike the mode it is
       latched: creating `www/` mid-session switches the mode but serves no
       assets until a restart
-  - `ui=page_react_html(...)` → the document's own dir, from
-    `ReactHtmlDocument.src_dir`
+  - `ui=page_react_html(...)` → the document's own dir, from the
+    `_shinyreact_src_dir` attribute `page_react_html()` tagged onto it
   - a passed `static_assets` **mapping is merged with** that mount, not
     substituted for it — `{"/data": D}` serves `/data` *and* `/`
   - the author wins on collision, three ways
