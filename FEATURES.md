@@ -647,8 +647,11 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
 - two `ImageOutput`s sharing an id both receive the same image, sized for only
   one of them
 
-### `ShinyReactComponentElement`
+### `ShinyReactComponentElement` (not exported)
 
+- not reachable from `window.shinyreact`, `@posit/shinyreact`, or
+  `shiny-react/index.ts`; the class and its unit test stay in the tree until
+  partial React app support brings it back
 - a base class for custom elements that mount a React component with Shiny
   wiring, so server-rendered HTML can host React islands
 - `connectedCallback` captures slots, clears content, creates a root, and
@@ -1239,8 +1242,11 @@ initial page.
   `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`,
   `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`,
   `useShinyBusy`,
-  `ImageOutput`, `MISSING`, `ShinyModuleProvider`,
-  `ShinyReactComponentElement`, `ShinyOutput`, `React`, `ReactDOM`
+  `ImageOutput`, `MISSING`, `ShinyModuleProvider`, `ShinyOutput`, `React`,
+  `ReactDOM`
+  - `ShinyReactComponentElement` is deliberately absent: not exported from the
+    IIFE global, the npm entry, or `shiny-react/index.ts`, pending partial
+    React app support (React islands in server-rendered HTML)
   - `React` / `ReactDOM` are exposed so downstream ESM builds can externalize
     to them and avoid a second React instance
 
@@ -1287,9 +1293,8 @@ initial page.
   by the installers' strict YAML parsers
   - `name` equals the directory name
 - `[js]` every name on `window.shinyreact` is either taught by
-  `shinyreact-build-app` or listed as a deliberate omission (`MISSING`,
-  `ShinyReactComponentElement`), so a new export fails a test until someone
-  decides which it is
+  `shinyreact-build-app` or listed as a deliberate omission (`MISSING`), so a
+  new export fails a test until someone decides which it is
 
 ## Public API surface
 
@@ -1301,12 +1306,33 @@ initial page.
     - the `shiny` dependency is a **git** reference until py-shiny#2475
       releases (issue #216)
 - `[r]` `NAMESPACE` exports are exactly: `page_bare`, `page_react`,
-  `page_react_dep`, `page_react_html`, `reactive_output`, `send_message`
+  `page_react_dep`, `page_react_html`, `reactive_output`, `send_message`,
+  `wire_tap`
   - the input handlers, the bundle dependency, and the config tag are all
     internal — there is no exported way to attach the bundle without a page
     function
   - it depends on `shiny (>= 1.13.0)`, and imports `brio`, `cli`, `htmltools`,
-    `jsonlite`, and `utils` (#225 added the missing `utils`)
+    `jsonlite`, `later`, `rlang`, and `utils` (#225 added the missing `utils`)
+- wire tap: `[r]` `wire_tap(app)` / `[py]` `shinyreact.playwright.WireTap(page)`
+  read the JSON frames that crossed the websocket, per channel
+  - `all_output_values(id)`, `all_messages(id)`, `all_input_values(id)` return
+    every value in wire order; `all_input_values` matches the bare id or any
+    `id:type` wire id
+  - `expect_output_value` / `expect_message` / `expect_input_value(id,
+    matcher, timeout = 10)` retry until a value past the channel's cursor
+    matches, then advance the cursor to it (ordered-subsequence semantics)
+    - a function matcher is satisfied by a truthy return; anything else is
+      compared with `identical()` / `==`
+    - a matcher that errors counts as a non-match; the timeout error reports the
+      last matcher error
+    - `[r]` polling runs `later::run_now()`, not `Sys.sleep()`, so frames chromote
+      receives *after* the test's last `app$` call (a debounced input send) are
+      seen `(test)`
+  - `[r]` requires `shinytest2`; `app` must have `$get_logs()` returning a data
+    frame with `location`, `level`, `message` columns, else an error naming
+    `shiny.trace = TRUE`
+  - `[r]` a JSON `null` output value is `NULL` in R and is dropped; `[py]` sees
+    `None`
 - the R surface is Python's minus two: no `set_react_page()` (Express has no R
   counterpart) and no `ReactApp` (no `shiny.App` class to subclass)
   - renderer-dependency discovery exists in **both**, by different mechanisms

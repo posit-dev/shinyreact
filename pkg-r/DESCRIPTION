@@ -19,6 +19,7 @@ Imports:
     cli,
     htmltools,
     jsonlite,
+    later,
     rlang,
     shiny (>= 1.13.0),
     utils
