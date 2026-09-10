@@ -29,7 +29,7 @@ docs-preview:  ## [docs] Preview the documentation site
 	@npx --yes http-server pkg-py/docs/_site -p $(PORT)
 
 .PHONY: js-docs
-js-docs:  ## [js] Build JS API docs with TypeDoc
+js-docs: js-setup  ## [js] Build JS API docs with TypeDoc
 	@echo "📖 Rendering JS docs with TypeDoc"
 	cd $(PATH_PKG_JS) && npm run docs
 
@@ -257,14 +257,14 @@ py-docs-preview:  ## [py] Preview python docs
 py-docs-api:  ## [py] Update python API docs
 	@echo "📖 Generating python docs with quartodoc"
 	@$(eval export IN_QUARTODOC=true)
-	cd pkg-py/docs && uv run quartodoc build
-	cd pkg-py/docs && uv run quartodoc interlinks
+	cd pkg-py/docs && uv run --group docs quartodoc build
+	cd pkg-py/docs && uv run --group docs quartodoc interlinks
 
 .PHONY: py-docs-api-watch
 py-docs-api-watch:  ## [py] Update python docs
 	@echo "📖 Generating python docs with quartodoc"
 	@$(eval export IN_QUARTODOC=true)
-	uv run quartodoc build --config pkg-py/docs/_quarto.yml --watch
+	uv run --group docs quartodoc build --config pkg-py/docs/_quarto.yml --watch
 
 .PHONY: py-docs-clean
 py-docs-clean:   ## [py] Clean python docs

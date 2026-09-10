@@ -1,31 +1,22 @@
-# shinyreact (Python)
+# shinyreact <a href="https://posit-dev.github.io/shinyreact/"><img src="docs/logo.svg" align="right" height="138" alt="shinyreact website" /></a>
 
 <!-- badges: start -->
 [![check-py](https://github.com/posit-dev/shinyreact/actions/workflows/check-py.yaml/badge.svg)](https://github.com/posit-dev/shinyreact/actions/workflows/check-py.yaml)
-[![check-js](https://github.com/posit-dev/shinyreact/actions/workflows/check-js.yaml/badge.svg)](https://github.com/posit-dev/shinyreact/actions/workflows/check-js.yaml)
 <!-- badges: end -->
 
-[React](https://react.dev/) UI infrastructure for [Shiny for Python](https://shiny.posit.co/py/). The Shiny server contains only reactive computation; the UI is a React client you own. `shinyreact` ([full site](https://posit-dev.github.io/shinyreact/)) provides the bridge — it ships zero UI components itself. The same [JavaScript bundle](https://posit-dev.github.io/shinyreact/js/) backs both the Python and [R](https://posit-dev.github.io/shinyreact/r/) packages.
-
-This is the [Python package](https://posit-dev.github.io/shinyreact/py/). See the [repo root](https://github.com/posit-dev/shinyreact) for the language-agnostic overview and the [R package](https://posit-dev.github.io/shinyreact/r/).
+shinyreact lets you write the UI of a [Shiny for Python](https://shiny.posit.co/py/) app as a [React](https://react.dev/) client you own, while the Python server contains only reactive computation. It provides the bridge between the two and ships zero UI components itself. The same [JavaScript bundle](https://posit-dev.github.io/shinyreact/js/) backs the [R package](https://posit-dev.github.io/shinyreact/r/), so one React client works against an `app.py` or an `app.R` server. The [full site](https://posit-dev.github.io/shinyreact/) covers all three.
 
 ## Installation
 
-`shinyreact` is pre-release and not yet on PyPI. Install from GitHub:
+shinyreact is not yet on PyPI. Install the development version from GitHub:
 
 ```bash
 pip install "git+https://github.com/posit-dev/shinyreact.git"
 ```
 
-## How it works
-
-`shinyreact` implements the **`ui.tsx` pattern** — UI defined in a client codebase whose entry conventionally lives in `ui.tsx` (or `ui.jsx`, or `ui.js` for no-build):
-
-1. The Python server contains only reactive computation; it calls `set_react_page()` (Express) or uses `page_react_html()` as the `ui` argument (Core)
-2. A static `www/index.html` + client bundle serve as the React app
-3. Client and server communicate via `useShinyInput` / `useShinyOutputValue` / `useShinyMessageHandler` hooks
-
 ## Usage
+
+`set_react_page()` discovers `www/ui.js` (and `www/ui.css`, if present) next to the app file and serves them as the page. `@reactive_output` publishes any JSON-serializable value to the client's `useShinyOutputValue()` hook:
 
 ```python
 from shiny.express import input
@@ -36,91 +27,57 @@ set_react_page()
 
 @reactive_output
 def greeting():
-    return {"message": f"Hello, {input.name()}"}
+    return f"Hello, {input.name()}!"
 ```
 
-Pair with client assets at `www/ui.js` / `www/ui.css` (written by hand for no-build, or built from `src/ui.tsx`). See the [examples catalog](../examples/README.md) for file layouts and dev workflows, from no-build to Vite + HMR.
-
-In Core mode, use `page_react()` — it serves the discovered assets itself
-(an mtime-versioned dependency), so no `static_assets=` mount is needed:
+In Core mode, `page_react()` is the `ui` argument instead:
 
 ```python
 from shiny import App
-import shinyreact
+from shinyreact import page_react, reactive_output
 
-app = App(shinyreact.page_react(), server)
+
+def server(input, output, session):
+    @reactive_output
+    def greeting():
+        return f"Hello, {input.name()}!"
+
+
+app = App(page_react(), server)
 ```
 
-### Sending messages to React components
+The matching `www/ui.js`:
 
-Use `send_message` to push data from the server to client-side React hooks:
+```js
+const { React, ReactDOM, useShinyInput, useShinyOutputValue } = window.shinyreact;
+const h = React.createElement;
 
-```python
-@reactive.effect
-async def notify():
-    await shinyreact.send_message(
-        session, "notification", {"text": "Done!", "level": "info"}
-    )
+function App() {
+  const [name, setName] = useShinyInput("name", "world");
+  const greeting = useShinyOutputValue("greeting");
+  return h(
+    "div",
+    null,
+    h("input", { value: name, onChange: (e) => setName(e.target.value) }),
+    h("p", null, greeting)
+  );
+}
+
+ReactDOM.createRoot(document.body.appendChild(document.createElement("div"))).render(h(App));
 ```
 
-On the JS side, consume with `useShinyMessageHandler("notification", handler)`.
-
-## Examples
-
-Runnable apps live in [`examples/`](../examples/) — see the
-[examples catalog](../examples/README.md) for the full list.
-
-## JS hooks available via `window.shinyreact`
-
-| Hook | Purpose |
-|------|---------|
-| `useShinyInput(id, default, opts)` | Read/write a Shiny input — full `[value, setValue]` |
-| `useShinyInputValue(id)` | Read-only consumer for an input that another component produces |
-| `useSetShinyInput(id, default, opts)` | Write-only producer — registers an input and returns just the setter |
-| `useShinyOutputValue(id, default?)` | Consume arbitrary data sent by `@shinyreact.reactive_output` |
-| `useShinyOutputStatus(id)` | Output lifecycle status — `"pending" \| "ready" \| "recalculating" \| "error"` |
-| `useShinyOutputError(id)` | The server's sanitized error message for an output, or `null` |
-| `useShinyMessageHandler(id, fn)` | Handle server-to-client custom messages |
-| `useShinyInitialized()` | Check whether Shiny is connected |
-| `useShinyBusy()` | Whether the Shiny server is currently processing a request |
-
-Shared `React` and `ReactDOM` instances are available at `window.shinyreact.React` / `window.shinyreact.ReactDOM` — externalize to these in your build to avoid duplicate React.
-
-## Testing your app's wire payloads
-
-`shinyreact.playwright.WireTap` (test-only; requires the `playwright`
-package) records the JSON payloads that cross the Shiny websocket in a
-Playwright test, so you can assert the values your server actually delivered
-and the values your client actually sent:
-
-```python
-from shinyreact.playwright import WireTap
-
-
-def test_dist_data(page, app):
-    tap = WireTap(page)  # construct before page.goto()
-    page.goto(app.url)
-    tap.expect_input_value("bins", 30)
-    tap.expect_output_value("dist_data", lambda d: d["breaks"][0] == 43.0)
-```
-
-`expect_*` matchers are a value (equality) or a function (truthy), retrying
-until a timeout; `all_output_values()` / `all_messages()` /
-`all_input_values()` return each channel's full history. The R counterpart is
-`shinyreact::wire_tap()`.
-
-## Agent Skills
-
-The package ships two Agent Skills, so a coding agent can build a shinyreact
-app without you pasting this README into it:
-
-- **`shinyreact-build-app`** — build a `ui.tsx`-pattern app from scratch
-- **`shinyreact-convert-app`** — port an existing Shiny app to the pattern
-
-Install them into a project with [`library-skills`](https://github.com/tiangolo/library-skills),
-which symlinks them so they stay current when you upgrade the package:
+Try a complete app:
 
 ```bash
-uvx library-skills --claude   # Claude Code (.claude/skills)
-uvx library-skills            # standard location (.agents/skills)
+git clone https://github.com/posit-dev/shinyreact
+shiny run shinyreact/examples/01-hello/app.py
 ```
+
+## Learn more
+
+- [Get started](https://posit-dev.github.io/shinyreact/) walks through the `ui.tsx` pattern: inputs, outputs, messages, and embedding traditional Shiny renderers.
+- [TSX files and JavaScript build tools](https://posit-dev.github.io/shinyreact/articles/tsx-and-build-tools.html) explains `.tsx`, JSX, TypeScript, and what `npm run build` does.
+- [Client hooks](https://posit-dev.github.io/shinyreact/articles/hooks.html) lists everything at `window.shinyreact`.
+- [Testing wire payloads](https://posit-dev.github.io/shinyreact/articles/testing.html) covers `WireTap` for Playwright tests.
+- [Agent Skills](https://posit-dev.github.io/shinyreact/articles/agent-skills.html) explains the skills that ship with the package for coding agents.
+- The [examples catalog](https://github.com/posit-dev/shinyreact/blob/main/examples/README.md) lists runnable apps from no-build to Vite + HMR.

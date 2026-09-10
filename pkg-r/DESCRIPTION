@@ -23,10 +23,13 @@ Imports:
     shiny (>= 1.13.0),
     utils
 Suggests:
+    knitr,
+    rmarkdown,
     shinytest2,
     testthat (>= 3.0.0),
     withr
 Config/Needs/website: pkgdown, tidyverse/tidytemplate
+VignetteBuilder: knitr
 Config/roxygen2/version: 8.1.0
 Config/testthat/edition: 3
 Encoding: UTF-8

@@ -1,0 +1,58 @@
+---
+title: "Client hooks"
+---
+
+The page entry points serve `shinyreact.js`, which bundles React 19 and installs the client API at `window.shinyreact`.
+Apps with a bundler can instead `npm install @posit/shinyreact` and pass `shinyreact_js="client"` to the page entry point.
+
+## Hooks
+
+| Hook | Purpose |
+|------|---------|
+| `useShinyInput(id, default, opts)` | Read/write a Shiny input: `[value, setValue]` |
+| `useShinyInputValue(id)` | Read-only consumer for an input another component produces |
+| `useSetShinyInput(id, default, opts)` | Write-only producer: registers an input and returns just the setter |
+| `useShinyOutputValue(id, default?)` | Consume the value `reactive_output` publishes |
+| `useShinyOutputStatus(id)` | `"pending" \| "ready" \| "recalculating" \| "error"` |
+| `useShinyOutputError(id)` | The server's sanitized error for an output, or `null` |
+| `useShinyMessageHandler(id, fn)` | Handle `send_message()` pushes |
+| `useShinyInitialized()` | Whether Shiny is connected |
+| `useShinyBusy()` | Whether the server is processing a request |
+
+Pick the narrowest hook that fits.
+A button that pushes events but never reads its own state should use `useSetShinyInput`; a card that only displays should use `useShinyInputValue` or `useShinyOutputValue`.
+
+### Input options
+
+`useShinyInput` and `useSetShinyInput` accept an `opts` object:
+
+- `debounceMs` (default 100): pass `0` so every action-button click is delivered.
+- `priority`: `"event"` marks an event input, matching Shiny's action buttons.
+- `type`: route the value through a server-side input handler, such as `"shiny.datetime"` or `"shinyreact.asis"` for the parsed JSON untouched.
+
+### Output status
+
+Do not collapse the four statuses into one boolean.
+Show a placeholder only when no value has arrived, and keep the previous value mounted while `"recalculating"`:
+
+```jsx
+const data = useShinyOutputValue("dist");
+const status = useShinyOutputStatus("dist");
+if (!data) return <Skeleton />;
+return <Chart className={status === "recalculating" ? "recalculating" : ""} data={data} />;
+```
+
+## Components
+
+| Component | Purpose |
+|---|---|
+| `ShinyOutput` | Render a traditional Shiny output (a plotly widget, `shiny-data-frame`) inside a React tree; no `*Output()` placeholder needed |
+| `ImageOutput` | Render a server-side plot (`@render.plot`) |
+| `ShinyModuleProvider` | Namespace the ids of every hook beneath it, for Shiny modules |
+
+## Shared React
+
+`window.shinyreact.React` and `window.shinyreact.ReactDOM` are the bundle's instances.
+Builds that bundle their own client should externalize `react` and `react-dom` to these to avoid two copies of React on one page.
+
+The full API is documented in the [JS reference](https://posit-dev.github.io/shinyreact/js/).

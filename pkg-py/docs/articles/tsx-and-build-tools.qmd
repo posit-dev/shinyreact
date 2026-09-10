@@ -1,0 +1,216 @@
+---
+title: "TSX files and JavaScript build tools"
+subtitle: "What `.tsx` means, why a browser can't run it, and what a build step actually does"
+---
+
+shinyreact calls its pattern `ui.tsx` after the file the React client conventionally starts from.
+If you write R or Python for a living, that extension and the tooling around it can be the most unfamiliar part of the whole approach.
+This article explains the pieces from the bottom up.
+Nothing here is specific to shinyreact until the [last section](#how-shinyreact-uses-this).
+
+## Four file extensions
+
+A browser runs exactly one language: JavaScript, in files that end in `.js`.
+The other three extensions are JavaScript plus something the browser does not understand, and each one has to be translated back to plain `.js` before it can run.
+
+| Extension | What it adds | Who understands it |
+|---|---|---|
+| `.js` | nothing | the browser |
+| `.jsx` | JSX, the `x` | a build tool |
+| `.ts` | TypeScript types | a build tool |
+| `.tsx` | both | a build tool |
+
+### The `x` is JSX
+
+React builds UI by calling `React.createElement(type, props, ...children)`.
+That works, but it is hard to read once elements nest:
+
+```js
+// plain .js
+function Greeting({ name }) {
+  return React.createElement(
+    "div",
+    { className: "card" },
+    React.createElement("h2", null, "Hello, ", name),
+    React.createElement("p", null, "Welcome back.")
+  );
+}
+```
+
+JSX is a syntax extension that lets you write the same tree as HTML-like tags inside JavaScript.
+It is not a template language and not a string.
+Each tag is rewritten, one for one, into the `createElement` call above:
+
+```jsx
+// .jsx
+function Greeting({ name }) {
+  return (
+    <div className="card">
+      <h2>Hello, {name}</h2>
+      <p>Welcome back.</p>
+    </div>
+  );
+}
+```
+
+Curly braces switch back to JavaScript, so `{name}` is a variable, `{items.map(...)}` is a loop, and `{cond ? <A/> : <B/>}` is a conditional.
+Attributes use JavaScript names (`className`, `onClick`), not HTML ones (`class`, `onclick`).
+
+The `x` in `.jsx` and `.tsx` means "this file contains JSX".
+A tool has to remove it before the browser sees the file.
+
+### TypeScript is JavaScript with type annotations
+
+TypeScript is a superset of JavaScript.
+Every `.js` file is already valid TypeScript.
+What it adds is a way to declare what shape your values have, so an editor or a checker can catch mistakes before the code runs:
+
+```ts
+// .ts
+type Histogram = { breaks: number[]; counts: number[] };
+
+function total(h: Histogram): number {
+  return h.counts.reduce((a, b) => a + b, 0);
+}
+
+total({ breaks: [1, 2], counts: ["3"] }); // error: string is not a number
+```
+
+If you have used type hints in Python (`def total(h: Histogram) -> int`), this is the same idea with a stricter checker.
+R has no direct equivalent; think of it as `stopifnot(is.numeric(x))` written once in the signature and enforced by your editor as you type.
+
+Types exist only at development time.
+The build step deletes every annotation, and what runs in the browser is ordinary JavaScript.
+A `.tsx` file is therefore TypeScript that also contains JSX, and both have to be stripped out.
+
+## Why a build step exists
+
+R knits `.Rmd` to `.html` and Python compiles `.py` to bytecode.
+Web development has the same shape: a source format that is good to write in, and a target format the runtime accepts.
+A **build tool** is the program that does the translation, and it typically does four things in one pass:
+
+1. **Resolve imports.** `import { Button } from "lucide-react"` refers to a package installed in `node_modules/`. The tool finds the file that line points to, and the files that one imports, recursively.
+2. **Transform.** Strip TypeScript types, rewrite JSX to `createElement` calls, and process CSS (Tailwind, Sass, CSS modules) into plain CSS.
+3. **Bundle.** Concatenate every module the entry file reaches into one output file, in the right order, with a single scope so nothing leaks onto `window` by accident. One `<script>` tag instead of hundreds of requests.
+4. **Minify.** Rename local variables to single letters and drop whitespace. The output is unreadable, which is fine, because you never edit it.
+
+The result is a plain `.js` file (and often a `.css` file) that any browser can load.
+
+### The vocabulary
+
+- **Node.js** is JavaScript running outside a browser. Build tools are written in it and run in it. You need it installed, the way you need R to run `knitr`.
+- **npm** is Node's package manager and registry, the equivalent of CRAN or PyPI with `install.packages()` or `pip` built in. `npm install` reads `package.json` and downloads what it lists into `node_modules/`.
+- **`package.json`** is the project manifest: name, dependencies, and named scripts such as `npm run build`. It is the `DESCRIPTION` or `pyproject.toml` of a JavaScript project.
+- **`node_modules/`** is the local package library. It is large, regenerable, and always gitignored.
+- **Vite** is the build tool the shinyreact examples use. It bundles for production with Rollup and, in development, serves modules individually with hot reloading so a save updates the page without a rebuild. Alternatives you will see named include esbuild, webpack, and Parcel.
+- **A dev server** is a build tool running continuously, watching your source, and re-serving output as you type. Vite's is what makes edits appear in under a second.
+- **`tsconfig.json`** configures the TypeScript checker. It affects checking and editor tooling, not the build output, because Vite strips types without checking them.
+
+### Two shapes of output
+
+A bundle can be emitted in two formats, and the difference matters for shinyreact.
+
+An **IIFE** (immediately invoked function expression) is a classic script.
+It runs as soon as a `<script src>` tag loads it and can reach anything already on `window`.
+An **ES module** uses `import` and `export` and is loaded with `<script type="module">`.
+Both are fine; the shinyreact page entry points load `www/ui.js` as a classic script, so the examples build IIFEs.
+
+## How shinyreact uses this
+
+The server-side page function (`set_react_page()`, `page_react()`) serves two things: `shinyreact.js`, which contains React and the hooks and installs them at `window.shinyreact`, and your `www/ui.js`.
+How `www/ui.js` comes to exist is up to you.
+There are three tiers.
+
+### No build
+
+Write `www/ui.js` by hand and commit it.
+There is no JSX, so components call `React.createElement` (usually aliased to `h`), and everything comes from the global the server already loaded:
+
+```js
+const { React, ReactDOM, useShinyInput, useShinyOutputValue } = window.shinyreact;
+const h = React.createElement;
+```
+
+You need Node for nothing.
+The examples [01-hello](https://github.com/posit-dev/shinyreact/tree/main/examples/01-hello) and [02-columns](https://github.com/posit-dev/shinyreact/tree/main/examples/02-columns) work this way, and it is the right starting point.
+
+### Vite, sharing the server's React
+
+When you want JSX, TypeScript, or npm packages, add a `package.json` and a `vite.config.js`, put your source in `src/`, and have Vite write `www/ui.js`.
+The one shinyreact-specific requirement is that your bundle must **not** contain a second copy of React.
+The hooks live inside the React that `shinyreact.js` loaded, and React refuses to run hooks across two copies.
+So `react` and `react-dom` are declared **external** and mapped to the shared instance on `window.shinyreact`:
+
+```js
+// vite.config.js
+import path from "node:path";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  define: { "process.env.NODE_ENV": JSON.stringify("production") },
+  plugins: [react()],
+  build: {
+    outDir: "www",
+    emptyOutDir: false,
+    lib: {
+      entry: path.resolve(__dirname, "src/ui.tsx"),
+      formats: ["iife"],
+      name: "MyApp",
+      fileName: () => "ui.js",
+    },
+    rollupOptions: {
+      external: ["react", "react-dom", "react-dom/client"],
+      output: {
+        assetFileNames: "ui.[ext]",
+        globals: {
+          react: "window.shinyreact.React",
+          "react-dom": "window.shinyreact.ReactDOM",
+          "react-dom/client": "window.shinyreact.ReactDOM",
+        },
+      },
+    },
+  },
+});
+```
+
+Then your source can `import React from "react"` like any React project, and the built file reads it from `window.shinyreact.React` instead.
+`lib` mode with `formats: ["iife"]` produces the classic-script shape the page expects, and `emptyOutDir: false` keeps Vite from deleting anything else you keep in `www/`.
+
+The workflow is:
+
+```bash
+npm install          # once, and after editing package.json
+npm run build        # vite build: writes www/ui.js and www/ui.css
+npm run dev          # vite build --watch: rebuild on every save
+```
+
+Commit `src/`, `package.json`, `package-lock.json`, and `vite.config.js`.
+Gitignore `node_modules/` and, if you like, the generated `www/ui.js` (the examples do, so a fresh clone needs `npm run build` before `shiny run`).
+[03-columns-shadcn](https://github.com/posit-dev/shinyreact/tree/main/examples/03-columns-shadcn) and [04-shadcn](https://github.com/posit-dev/shinyreact/tree/main/examples/04-shadcn) are this tier.
+
+### npm tier, bundling your own React
+
+For hot reloading with React Fast Refresh you need a *development* build of React, and the one inside `shinyreact.js` is production-only.
+The [09-hmr](https://github.com/posit-dev/shinyreact/tree/main/examples/09-hmr) example therefore installs `@posit/shinyreact` from npm, imports the hooks from it, and bundles its own React with no externals.
+Because the client now ships React itself, the server must stop serving `shinyreact.js`, or the page would have two copies again.
+That is what `shinyreact_js="client"` on the page entry point does.
+
+## Type checking is a separate step
+
+Vite strips types; it does not check them.
+A `.tsx` file with a type error builds fine.
+Checking happens in your editor (VS Code and Positron do it automatically for any project with a `tsconfig.json`) or on the command line:
+
+```bash
+npx tsc --noEmit
+```
+
+`@posit/shinyreact` ships type declarations, so `useShinyOutputValue<Histogram>("dist_data")` tells the checker what shape to expect and catches a misspelled field before the browser does.
+If you are not using TypeScript, skip all of this and name your files `.jsx`.
+
+## Where to go next
+
+- [Get started](../index.qmd) shows the server side of the same app.
+- [Client hooks](hooks.qmd) lists what `window.shinyreact` provides.
+- The [Vite guide](https://vite.dev/guide/) and the [TypeScript handbook](https://www.typescriptlang.org/docs/handbook/) go deeper on the tools themselves.

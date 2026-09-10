@@ -3,3 +3,4 @@
 ^pkgdown$
 ^\.air\.toml$
 ^LICENSE\.md$
+^vignettes/articles$
