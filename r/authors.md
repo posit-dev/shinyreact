@@ -2,7 +2,7 @@
 
 ## Authors
 
-- **Barret Schloerke**. Maintainer, author.
+- **[Barret Schloerke](http://schloerke.com)**. Maintainer, author.
   [](https://orcid.org/0000-0001-9986-114X)
 
 - **Posit Software, PBC**. Copyright holder, funder.

@@ -1,11 +1,12 @@
-# shinyreact (R)
+# shinyreact
 
-React UI infrastructure for [Shiny](https://shiny.posit.co/). The Shiny
-server contains only reactive computation; the UI is a React client you
-own. shinyreact provides the bridge — it ships zero UI components
-itself. The same JavaScript bundle backs both the R and
-[Python](https://github.com/posit-dev/shinyreact/tree/main/pkg-py)
-packages.
+[React](https://react.dev/) UI infrastructure for
+[Shiny](https://shiny.posit.co/). The Shiny server contains only
+reactive computation; the UI is a React client you own. shinyreact
+([full site](https://posit-dev.github.io/shinyreact/)) provides the
+bridge — it ships zero UI components itself. The same [JavaScript
+bundle](https://posit-dev.github.io/shinyreact/js/) backs both the R and
+[Python](https://posit-dev.github.io/shinyreact/py/) packages.
 
 ## Overview
 

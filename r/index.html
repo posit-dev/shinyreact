@@ -13,18 +13,26 @@
 <link rel="manifest" href="site.webmanifest">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Shiny UI Infrastructure for Client-Side React Rendering">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<meta property="og:title" content="Shiny UI Infrastructure for Client-Side React Rendering">
 <meta name="description" content="Server-side plumbing for the ui.tsx pattern in Shiny: the UI is defined in a client React bundle, and the Shiny server contains only reactive computation. Ships no UI components.">
 <meta property="og:description" content="Server-side plumbing for the ui.tsx pattern in Shiny: the UI is defined in a client React bundle, and the Shiny server contains only reactive computation. Ships no UI components.">
 <meta property="og:image" content="https://posit-dev.github.io/shinyreact/r/logo.svg">
+<!-- See https://stackoverflow.com/questions/1865837/whats-the-difference-between-window-location-and-window-location-replace — we use .replace() because we don't want the old url to appear in the browser history. --><script>
+  if (!/(\/|html?)$/.test(window.location.href)){
+    window.location.replace(window.location.href + '/');
+  }
+</script>
 </head>
 <body>
-    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+    <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-none" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="index.html">shinyreact</a>
 
@@ -49,16 +57,17 @@
 
 
   </div>
-</nav><div class="container template-home">
+</nav><div class="container template-home" id="container">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header">
-<img src="logo.svg" class="logo" alt=""><h1 id="shinyreact-r">shinyreact (R)<a class="anchor" aria-label="anchor" href="#shinyreact-r"></a>
+<img src="logo.svg" class="logo" alt=""><h1 id="shinyreact-">shinyreact 
+<a class="anchor" aria-label="anchor" href="#shinyreact-"></a>
 </h1>
 </div>
 <!-- badges: start -->
 
-<p>React UI infrastructure for <a href="https://shiny.posit.co/" class="external-link">Shiny</a>. The Shiny server contains only reactive computation; the UI is a React client you own. shinyreact provides the bridge — it ships zero UI components itself. The same JavaScript bundle backs both the R and <a href="https://github.com/posit-dev/shinyreact/tree/main/pkg-py" class="external-link">Python</a> packages.</p>
+<p><a href="https://react.dev/" class="external-link">React</a> UI infrastructure for <a href="https://shiny.posit.co/" class="external-link">Shiny</a>. The Shiny server contains only reactive computation; the UI is a React client you own. shinyreact (<a href="https://posit-dev.github.io/shinyreact/" class="external-link">full site</a>) provides the bridge — it ships zero UI components itself. The same <a href="https://posit-dev.github.io/shinyreact/js/" class="external-link">JavaScript bundle</a> backs both the R and <a href="https://posit-dev.github.io/shinyreact/py/" class="external-link">Python</a> packages.</p>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
@@ -168,7 +177,8 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Barret Schloerke <br><small class="roles"> Maintainer, author </small> <a href="https://orcid.org/0000-0001-9986-114X" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
+<li>
+<a href="http://schloerke.com" class="external-link">Barret Schloerke</a> <br><small class="roles"> Maintainer, author </small> <a href="https://orcid.org/0000-0001-9986-114X" target="orcid.widget" aria-label="ORCID" class="external-link"><span class="fab fa-orcid orcid" aria-hidden="true"></span></a>  </li>
 <li> Posit Software, PBC <br><small class="roles"> Copyright holder, funder </small>  <a href="https://ror.org/03wc8by49" class="external-link"><img src="https://raw.githubusercontent.com/ror-community/ror-logos/main/ror-icon-rgb.svg" class="ror" alt="ROR"></a> </li>
 </ul>
 </div>
@@ -186,20 +196,16 @@
 </div>
 
 
-    <footer><div class="pkgdown-footer-left">
-  <p>Developed by Barret Schloerke, Posit Software, PBC.</p>
+   </div>
+  <footer><div class="container">
+  <div class="pkgdown-footer-left">
+  <p>Developed by <a href="http://schloerke.com" class="external-link">Barret Schloerke</a>, Posit Software, PBC.</p>
 </div>
 
 <div class="pkgdown-footer-right">
   <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
-    </footer>
-</div>
-
-
-
-
-
-  </body>
+  </div></footer>
+</body>
 </html>
