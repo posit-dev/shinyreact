@@ -88,9 +88,10 @@ export interface ShinyOutputProps extends React.HTMLAttributes<HTMLElement> {
  *   • `Shiny.bindAll(scope)` is descendants-only — output bindings call
  *     `$(scope).find(selector)`, which excludes `scope` itself. So we pass
  *     the *parent* element as scope, guaranteeing our element is found.
- *     This is safe to call repeatedly: Shiny skips elements already marked
- *     `.shiny-bound-output` / `.shiny-bound-input`, so re-binding the parent
- *     does not re-bind sibling outputs.
+ *     Once a call has settled this is safe to repeat: Shiny skips elements
+ *     already marked `.shiny-bound-output` / `.shiny-bound-input`, so
+ *     re-binding the parent does not re-bind sibling outputs. Calls that
+ *     would overlap are coalesced by `dedupedBindAll` above (#298).
  *
  *   • `Shiny.unbindAll(scope)` would unbind every Shiny output under
  *     `scope`, which would clobber siblings. Instead we pass our own element
