@@ -334,7 +334,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Create a bare HTML page with only Shiny dependencies.</p>
 <p>This is the escape hatch for fully custom setups that don’t need the shinyreact JS/CSS. It wraps <code>shiny.ui.page_bootstrap()</code> with minimal defaults.</p>
 <p>Pass :class:<code>~htmltools.HTMLDependency</code> objects as positional arguments to include them in the page — Shiny automatically hoists them to <code>&lt;head&gt;</code>.</p>
-<p>With no <code>theme=</code>, the page carries <strong>no Bootstrap</strong>: only jQuery, Shiny’s own JS/CSS, and a <code>width=device-width</code> viewport meta tag. Shiny’s own default would attach Bootstrap, and in the ui.tsx pattern the client owns styling. Pass a <code>theme=</code> — e.g.&nbsp;<code>shiny.ui.Theme()</code> — to get Bootstrap back; then everything is a plain passthrough to :func:<code>shiny.ui.page_bootstrap</code>.</p>
 <p>Args: *args: Child tags or HTMLDependency objects to include in the page. title: Page title. lang: HTML <code>lang</code> attribute. **kwargs: Forwarded to :func:<code>shiny.ui.page_bootstrap</code> — its own <code>theme=</code>, or tag attributes for the page. Deliberately not surfaced as named parameters: in the ui.tsx pattern the client owns styling, so Bootstrap theming is a passthrough, not part of this API.</p>
 
 
