@@ -7,7 +7,10 @@ for no-build or `src/ui.jsx` for Vite + JSX fill the same role).
 
 Examples are Python unless noted; [01-hello](01-hello/) and
 [07-plotly](07-plotly/) also ship an `app.R` showing the same app on the R
-package.
+package. Those two are the canonical source for a copy in
+`pkg-r/inst/examples-shiny/` that ships with the installed R package — **after
+editing their `app.R` or `www/`, run `make update-examples`** (a testthat
+drift guard fails otherwise).
 
 **Shipping several servers over one `www/` client is a device of these
 examples, not a pattern to copy.** A real app has one server. It exists here

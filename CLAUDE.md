@@ -50,6 +50,7 @@ pre-commit install                   # Pre-commit hooks
 # Build
 make js-build                        # Build JS bundle (pkg-js/dist/)
 make update-dist                     # Build JS + copy to pkg-py/www/ and pkg-r/inst/lib/shiny/
+make update-examples                 # Copy examples/*/app.R + www/ to pkg-r/inst/examples-shiny/
 
 # Python checks (run all before committing)
 make py-check                        # format check + type check + tests
@@ -136,6 +137,10 @@ The deliberate remaining divergences (decided in #184) are recorded in `decision
 ### Built assets
 
 `pkg-js/dist/` and `pkg-py/src/shinyreact/www/` are both committed to the repo. After changing JS source, run `make update-dist` to rebuild and copy. `pkg-r/inst/lib/shiny/` is the R counterpart (same flow).
+
+### Shipped R example apps
+
+The examples that ship an `app.R` (`01-hello`, `07-plotly` — the `R_EXAMPLES` list in the `Makefile`) are copied, `app.R` + `www/` only, into `pkg-r/inst/examples-shiny/<name>/`, so an *installed* shinyreact can reach them via `system.file("examples-shiny", name, package = "shinyreact")`. R CMD check runs against the installed package and cannot see `examples/` at all, so this is the only way an R browser test (`wire_tap()` today, the shinytest2 suite of #194 next) can drive a real example app. **After editing an example's `app.R` or `www/`, run `make update-examples`**; `pkg-r/tests/testthat/test-examples.R` fails on drift. Same committed-copy flow as `make update-dist` / `make update-skills`. Python examples are reached in-repo (pytest `testpaths`) and are not copied — see #265 for the larger relocation.
 
 ### Shipped Agent Skills
 

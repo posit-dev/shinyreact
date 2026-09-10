@@ -24,6 +24,47 @@ test_that("the example apps' own tests are reachable", {
   expect_true(dir.exists(examples_dir))
 })
 
+# The examples that ship an app.R, copied into inst/examples-shiny/ by
+# `make update-examples` so the installed package can reach them via
+# system.file() (see test-wire-tap.R). This is the drift guard on those copies;
+# mirrors test-skills.R's guard on the shipped skills.
+shipped_r_examples <- c("01-hello", "07-plotly")
+
+test_that("R example apps are installed at examples-shiny/<name>", {
+  for (name in shipped_r_examples) {
+    expect_true(nzchar(system.file(
+      "examples-shiny",
+      name,
+      "app.R",
+      package = "shinyreact"
+    )))
+  }
+})
+
+test_that("shipped R example apps match examples/", {
+  skip_if_not(dir.exists(examples_dir), "not running from the repo")
+
+  tree <- function(root) {
+    files <- sort(list.files(root, recursive = TRUE))
+    stats::setNames(
+      lapply(files, function(f) readLines(file.path(root, f))),
+      files
+    )
+  }
+
+  for (name in shipped_r_examples) {
+    # Only app.R + www/ are copied; the example's README/FEATURES/tests and its
+    # Python siblings stay in examples/.
+    src <- tree(file.path(examples_dir, name))
+    src <- src[grepl("^(app\\.R|www/)", names(src))]
+    expect_equal(
+      tree(system.file("examples-shiny", name, package = "shinyreact")),
+      src,
+      info = "run `make update-examples`"
+    )
+  }
+})
+
 if (dir.exists(examples_dir)) {
   example_tests <- list.files(
     examples_dir,
