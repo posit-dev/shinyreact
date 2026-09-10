@@ -4,13 +4,14 @@
 \name{shinyreact-package}
 \alias{shinyreact}
 \alias{shinyreact-package}
-\title{shinyreact: Shiny UI Infrastructure for JSON-Driven React Rendering}
+\title{shinyreact: Shiny UI Infrastructure for Client-Side React Rendering}
 \description{
 Server-side plumbing for the 'ui.tsx' pattern in Shiny: the UI is defined in a client React bundle, and the Shiny server contains only reactive computation. Ships no UI components.
 }
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://posit-dev.github.io/shinyreact/r}
   \item \url{https://github.com/posit-dev/shinyreact}
   \item Report bugs at \url{https://github.com/posit-dev/shinyreact/issues}
 }
