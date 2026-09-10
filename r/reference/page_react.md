@@ -47,8 +47,7 @@ page_react(
 
   Page title. Defaults to the app folder's name (`src_dir`'s parent when
   `src_dir` is a `www` directory), or `"shinyreact-app"` when that
-  resolves to nothing usable (a missing `src_dir` is not an error — the
-  bundle may not be built yet).
+  resolves to nothing usable.
 
 - lang:
 

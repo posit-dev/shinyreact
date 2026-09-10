@@ -64,3 +64,10 @@ been built yet — does not emit a tag pointing at a 404. Pass
 `css_file = NULL` to never attach a stylesheet. A missing `js_file`
 warns, since it is the entry point and an empty dependency would
 otherwise fail silently.
+
+A missing `src_dir` **errors**, where a missing `js_file` only warns.
+Shiny serves the directory's files, so a directory that does not exist
+can only produce 404s for every asset the page references — a bug every
+time, and one that is far cheaper to see at page-build time than in the
+browser's network tab. Matches Python's `page_react_dep()`, which raises
+`NotADirectoryError`.

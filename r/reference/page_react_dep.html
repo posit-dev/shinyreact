@@ -115,6 +115,11 @@ inside <code>src_dir</code>, so a bundle that ships no CSS — or that has not b
 yet — does not emit a tag pointing at a 404. Pass <code>css_file = NULL</code> to never
 attach a stylesheet. A missing <code>js_file</code> warns, since it is the entry point
 and an empty dependency would otherwise fail silently.</p>
+<p>A missing <code>src_dir</code> <strong>errors</strong>, where a missing <code>js_file</code> only warns. Shiny
+serves the directory's files, so a directory that does not exist can only
+produce 404s for every asset the page references — a bug every time, and one
+that is far cheaper to see at page-build time than in the browser's network
+tab. Matches Python's <code>page_react_dep()</code>, which raises <code>NotADirectoryError</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
