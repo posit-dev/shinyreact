@@ -409,14 +409,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="npm-tier-bundling-your-own-react" class="level3">
 <h3 class="anchored" data-anchor-id="npm-tier-bundling-your-own-react">npm tier, bundling your own React</h3>
-<p>For hot reloading with React Fast Refresh you need a <em>development</em> build of React, and the one inside <code>shinyreact.js</code> is production-only. The <a href="https://github.com/posit-dev/shinyreact/tree/main/examples/09-hmr">09-hmr</a> example therefore installs <code>@posit/shinyreact</code> from npm, imports the hooks from it, and bundles its own React with no externals. Because the client now ships React itself, the server must stop serving <code>shinyreact.js</code>, or the page would have two copies again. That is what <code>shinyreact_js="client"</code> on the page entry point does.</p>
+<p>For hot reloading with React Fast Refresh you need a <em>development</em> build of React, and the one inside <code>shinyreact.js</code> is production-only. The <a href="https://github.com/posit-dev/shinyreact/tree/main/examples/09-hmr">09-hmr</a> example therefore installs <code>@posit-dev/shinyreact</code> from npm, imports the hooks from it, and bundles its own React with no externals. Because the client now ships React itself, the server must stop serving <code>shinyreact.js</code>, or the page would have two copies again. That is what <code>shinyreact_js="client"</code> on the page entry point does.</p>
 </section>
 </section>
 <section id="type-checking-is-a-separate-step" class="level2">
 <h2 class="anchored" data-anchor-id="type-checking-is-a-separate-step">Type checking is a separate step</h2>
 <p>Vite strips types; it does not check them. A <code>.tsx</code> file with a type error builds fine. Checking happens in your editor (VS Code and Positron do it automatically for any project with a <code>tsconfig.json</code>) or on the command line:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npx</span> tsc <span class="at">--noEmit</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>@posit/shinyreact</code> ships type declarations, so <code>useShinyOutputValue&lt;Histogram&gt;("dist_data")</code> tells the checker what shape to expect and catches a misspelled field before the browser does. If you are not using TypeScript, skip all of this and name your files <code>.jsx</code>.</p>
+<p><code>@posit-dev/shinyreact</code> ships type declarations, so <code>useShinyOutputValue&lt;Histogram&gt;("dist_data")</code> tells the checker what shape to expect and catches a misspelled field before the browser does. If you are not using TypeScript, skip all of this and name your files <code>.jsx</code>.</p>
 </section>
 <section id="where-to-go-next" class="level2">
 <h2 class="anchored" data-anchor-id="where-to-go-next">Where to go next</h2>

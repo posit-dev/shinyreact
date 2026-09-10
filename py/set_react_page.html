@@ -363,7 +363,7 @@ set_react_page("static/index.html") # → /path/to/my-app/static/index.html</cod
 &gt;&gt;&gt; shinyreact.set_react_page("a.html") # → /path/to/my-app/a.html</code></pre>
 <p>The fallback is deliberate — call from any working directory and you get a predictable result. If you need a specific path regardless of CWD, pass an absolute path (case 1).</p></li>
 </ol>
-<p>Args: path: Path to the HTML file. Absolute paths are used verbatim; relative paths resolve against the caller module’s directory, or against <code>Path.cwd()</code> when there is no caller <code>__file__</code>. When <code>None</code> (the default), uses <code>www/index.html</code> if it exists, else discovers <code>www/ui.js</code> / <code>www/ui.css</code>. shinyreact_js: Who supplies <code>shinyreact.js</code> / <code>shinyreact.css</code>: <code>"server"</code> (default) or <code>"client"</code> for an npm-tier app whose bundle imports <code>@posit/shinyreact</code> — see :func:<code>page_react</code>.</p>
+<p>Args: path: Path to the HTML file. Absolute paths are used verbatim; relative paths resolve against the caller module’s directory, or against <code>Path.cwd()</code> when there is no caller <code>__file__</code>. When <code>None</code> (the default), uses <code>www/index.html</code> if it exists, else discovers <code>www/ui.js</code> / <code>www/ui.css</code>. shinyreact_js: Who supplies <code>shinyreact.js</code> / <code>shinyreact.css</code>: <code>"server"</code> (default) or <code>"client"</code> for an npm-tier app whose bundle imports <code>@posit-dev/shinyreact</code> — see :func:<code>page_react</code>.</p>
 
 
 </section>
