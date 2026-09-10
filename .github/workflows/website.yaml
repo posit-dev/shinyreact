@@ -1,19 +1,19 @@
-# TODO: Enable when quartodoc is configured in pkg-py/docs/.
-# Uncomment the on: block below and remove the workflow_dispatch-only trigger.
-#
-# on:
-#   push:
-#     branches:
-#       - main
-#     paths:
-#       - "docs/**/*"
-#       - "pkg-py/**/*"
-#       - ".github/workflows/website-py.yaml"
-#   workflow_dispatch:
-
-name: website-py
+# Landing page + Python API (Quarto/quartodoc) + JS API (TypeDoc).
+# The R API (r/) is built by website-r.yaml into the same gh-pages branch.
+name: website
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "pkg-py/**/*"
+      - "pkg-js/**/*"
+      - ".github/workflows/website.yaml"
+  pull_request:
+    paths:
+      - "pkg-py/docs/**/*"
+      - "pkg-js/typedoc.json"
+      - ".github/workflows/website.yaml"
   workflow_dispatch:
 
 permissions:
@@ -53,15 +53,28 @@ jobs:
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
           echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
 
-      - name: 🏭 Update Python docs
+      - name: 🟢 Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: pkg-js/.nvmrc
+          cache: npm
+          cache-dependency-path: pkg-js/package-lock.json
+
+      - name: 🏭 Build landing page + Python API docs
         run: |
           make py-docs-api
           quarto render pkg-py/docs
 
+      - name: 🏭 Build JS API docs
+        run: |
+          make js-setup-ci
+          make js-docs
+
+      # clean: false so r/ (deployed by website-r.yaml) survives.
       - name: 🚢 Deploy to GitHub pages
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4.5.0
         with:
           clean: false
-          folder: docs
+          folder: docs/_build
           branch: gh-pages

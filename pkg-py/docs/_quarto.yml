@@ -1,0 +1,106 @@
+project:
+  type: website
+  preview:
+    port: 4243
+  resources:
+    - objects.txt
+  # The Quarto site IS the landing page: it renders to the repo-root deploy
+  # folder, with the Python API under py/. pkgdown (r/) and TypeDoc (js/)
+  # render into sibling folders of the same deploy root.
+  output-dir: ../../docs/_build
+
+website:
+  title: "shinyreact"
+  site-url: https://posit-dev.github.io/shinyreact/
+  description: React UI infrastructure for Shiny (Python and R)
+
+  bread-crumbs: true
+  open-graph: true
+  twitter-card: true
+
+  repo-url: https://github.com/posit-dev/shinyreact/
+  repo-actions: [issue, edit]
+  repo-subdir: pkg-py/docs
+
+  page-footer:
+    left: |
+      Proudly supported by
+      [![](https://posit.co/wp-content/uploads/2024/06/Posit-Logos-2024_horiz-full-color.svg){fig-alt="Posit" width=65px}](https://posit.co)
+
+  navbar:
+    left:
+      - text: Get Started
+        href: index.qmd
+      - text: Python API
+        href: py/index.qmd
+      - text: R API
+        href: https://posit-dev.github.io/shinyreact/r/
+      - text: JS API
+        href: https://posit-dev.github.io/shinyreact/js/
+      - text: Examples
+        href: https://github.com/posit-dev/shinyreact/tree/main/examples
+    tools:
+      - icon: github
+        menu:
+          - text: Source code
+            href: https://github.com/posit-dev/shinyreact
+          - text: Report a bug
+            href: https://github.com/posit-dev/shinyreact/issues/new
+
+format:
+  html:
+    theme: cosmo
+    highlight-style: github
+    toc: true
+
+metadata-files:
+  - _sidebar-python.yml
+
+quartodoc:
+  package: shinyreact
+  dir: py
+  sidebar: _sidebar-python.yml
+  title: shinyreact Python Reference
+  out_index: index.qmd
+  rewrite_all_pages: true
+  options:
+    signature_name: relative
+    include_imports: false
+    include_inherited: false
+    include_attributes: true
+    include_classes: true
+    include_functions: true
+  sections:
+    - title: Pages
+      desc: Bootstrap a React client from the app file.
+      contents:
+        - set_react_page
+        - page_react
+        - page_react_html
+        - ReactApp
+        - page_bare
+        - page_react_dep
+    - title: Outputs
+      desc: Publish JSON to `useShinyOutputValue()` hooks.
+      contents:
+        - reactive_output
+    - title: Messaging
+      desc: Push messages to `useShinyMessageHandler()` hooks.
+      contents:
+        - send_message
+    - title: Testing
+      desc: Record the wire payloads a Playwright test observes.
+      contents:
+        - playwright.WireTap
+
+interlinks:
+  fast: true
+  sources:
+    python:
+      url: https://docs.python.org/3/
+
+editor:
+  render-on-save: true
+  markdown:
+    canonical: true
+    wrap: sentence

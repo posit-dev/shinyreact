@@ -1,27 +1,17 @@
-# TODO: Enable when R pkgdown is configured.
-# Uncomment the on: block below and remove the workflow_dispatch-only trigger.
-#
-# on:
-#   push:
-#     branches: [main]
-#     paths:
-#       - "pkg-r/man/**/*"
-#       - "pkg-r/vignettes/**/*"
-#       - "pkg-r/pkgdown/**/*"
-#       - ".github/workflows/website-r.yaml"
-#   pull_request:
-#     paths:
-#       - "pkg-r/man/**/*"
-#       - "pkg-r/vignettes/**/*"
-#       - "pkg-r/pkgdown/**/*"
-#       - ".github/workflows/website-r.yaml"
-#   release:
-#     types: [published]
-#   workflow_dispatch:
-
 name: website-r
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "pkg-r/**/*"
+      - ".github/workflows/website-r.yaml"
+  pull_request:
+    paths:
+      - "pkg-r/**/*"
+      - ".github/workflows/website-r.yaml"
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -60,10 +50,12 @@ jobs:
         shell: Rscript {0}
         run: pkgdown::build_site()
 
+      # The Quarto job (website.yaml) owns the site root; this job only owns r/.
       - name: Deploy to GitHub pages 🚀
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4.5.0
         with:
           clean: false
           branch: gh-pages
-          folder: docs
+          folder: docs/_build/r
+          target-folder: r

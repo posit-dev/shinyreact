@@ -9,7 +9,9 @@
     "directory": "pkg-js"
   },
   "type": "module",
-  "files": ["dist-npm"],
+  "files": [
+    "dist-npm"
+  ],
   "exports": {
     ".": {
       "types": "./dist-npm/types/npm.d.ts",
@@ -23,6 +25,7 @@
     "build:npm": "vite build --config vite.config.npm.ts && tsc -p tsconfig.npm.json",
     "watch": "vite build --watch",
     "lint": "tsc --noEmit",
+    "docs": "typedoc",
     "test": "vitest run"
   },
   "peerDependencies": {
@@ -39,6 +42,7 @@
     "jsdom": "^26.1.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "typedoc": "^0.28.20",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
     "vitest": "^3.2.1"

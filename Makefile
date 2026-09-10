@@ -15,16 +15,21 @@ install-quarto:
 	qvm install v${QUARTO_VERSION}
 	@echo "🔹 Updating .vscode/settings.json"
 	@awk -v path="${QUARTO_PATH}" '/"quarto.path":/ {gsub(/"quarto.path": ".*"/, "\"quarto.path\": \"" path "\"")} 1' .vscode/settings.json > .vscode/settings.json.tmp && mv .vscode/settings.json.tmp .vscode/settings.json
-	@echo "🔹 Updating .github/workflows/website-py.yaml"
-	@awk -v ver="${QUARTO_VERSION}" '/QUARTO_VERSION:/ {gsub(/QUARTO_VERSION: .*/, "QUARTO_VERSION: " ver)} 1' .github/workflows/website-py.yaml > .github/workflows/website-py.yaml.tmp && mv .github/workflows/website-py.yaml.tmp .github/workflows/website-py.yaml
+	@echo "🔹 Updating .github/workflows/website.yaml"
+	@awk -v ver="${QUARTO_VERSION}" '/QUARTO_VERSION:/ {gsub(/QUARTO_VERSION: .*/, "QUARTO_VERSION: " ver)} 1' .github/workflows/website.yaml > .github/workflows/website.yaml.tmp && mv .github/workflows/website.yaml.tmp .github/workflows/website.yaml
 
 
 .PHONY: docs
-docs: r-docs-render py-docs-render ## [docs] Build the documentation
+docs: py-docs r-docs-render js-docs ## [docs] Build the documentation site into docs/_build/
 
 .PHONY: docs-preview
-docs-preview:  ## [docs] Preview the documentation
-	@npx http-server docs -p 8080
+docs-preview:  ## [docs] Preview the documentation site
+	@npx http-server docs/_build -p 8080
+
+.PHONY: js-docs
+js-docs:  ## [js] Build JS API docs with TypeDoc
+	@echo "📖 Rendering JS docs with TypeDoc"
+	cd $(PATH_PKG_JS) && npm run docs
 
 
 .PHONY: js-setup

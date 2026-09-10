@@ -64,6 +64,7 @@ export {
   useShinyBusy,
   useShinyInput,
   useShinyInputValue,
+  useShinyOutputError,
   useShinyOutputStatus,
   useShinyOutputValue,
   useShinyMessageHandler,
@@ -73,5 +74,7 @@ export {
   ShinyModuleProvider,
   ShinyReactComponentElement,
 } from "./shiny-react";
-export { ShinyOutput } from "./shiny-output";
+export type { OutputStatus, ErrorsMessageValue } from "./shiny-react";
+export type { ShinyModuleProviderProps } from "./shiny-react/ShinyModuleContext";
+export { ShinyOutput, type ShinyOutputProps } from "./shiny-output";
 export { PROTOCOL_VERSION } from "./shiny-react/config";

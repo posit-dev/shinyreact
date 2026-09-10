@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Shiny UI infrastructure for React-based component rendering"
 requires-python = ">=3.10"
 dependencies = [
-    "shiny @ git+https://github.com/posit-dev/py-shiny.git@schloerke/issue-2462",  # TODO: release pin once py-shiny#2475 ships in a release
+    "shiny @ git+https://github.com/posit-dev/py-shiny.git@82666878c205d80d0661ab9789bd5dc721e149c5",  # last py-shiny#2475 commit with ui.PageDocument (branch deleted on merge; the merged API is ui.page_html() — #216)
     "htmltools>=0.7.0",
 ]
 
@@ -44,9 +44,15 @@ dev = [
     "tox-uv>=1.0.0",
     "pre-commit>=4.0.0",
 ]
+docs = [
+    "quartodoc>=0.11.0",
+    # quartodoc 0.11 passes docstring-parser options griffe 2.x dropped
+    # (`allow_section_blank_line`), so `quartodoc build` crashes against 2.x.
+    "griffe<2",
+]
 tests-e2e = [
     "pytest-playwright>=0.5.0",
-    "shiny[playwright] @ git+https://github.com/posit-dev/py-shiny.git@schloerke/issue-2462",
+    "shiny[playwright] @ git+https://github.com/posit-dev/py-shiny.git@82666878c205d80d0661ab9789bd5dc721e149c5",
     "shinywidgets>=0.8.0",
     "plotly>=6.7.0",
     "pandas>=2.1.0",

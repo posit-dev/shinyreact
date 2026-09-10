@@ -1222,6 +1222,10 @@ initial page.
   - React and ReactDOM are **peer** dependencies resolved by the app's bundler,
     so dev builds get a development React with Fast Refresh
   - hooks are imported directly rather than read off `window.shinyreact`
+    - it exports every hook and component `window.shinyreact` does (the
+      `useShinyOutputError` export was missing until #86's docs pass caught it)
+    - plus the types `OutputStatus`, `ErrorsMessageValue`, `ShinyOutputProps`,
+      `ShinyModuleProviderProps`
   - it exports `PROTOCOL_VERSION`
   - it does **not** re-export React / ReactDOM
   - the stylesheet ships as `dist-npm/style.css`, reachable as

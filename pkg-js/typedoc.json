@@ -1,0 +1,14 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "@posit/shinyreact",
+  "entryPoints": ["src/npm.ts"],
+  "tsconfig": "tsconfig.npm.json",
+  "out": "../docs/_build/js",
+  "readme": "none",
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "navigationLinks": {
+    "shinyreact": "https://posit-dev.github.io/shinyreact/",
+    "GitHub": "https://github.com/posit-dev/shinyreact"
+  }
+}

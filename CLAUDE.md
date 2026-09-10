@@ -71,6 +71,11 @@ uv run pytest pkg-py/tests/test_page.py::test_name
 
 # Update test snapshots
 make py-update-snaps
+
+# Documentation site (renders into gitignored docs/_build/: Quarto landing page +
+# quartodoc Python API at py/, pkgdown at r/, TypeDoc at js/)
+make docs                            # py-docs + r-docs-render + js-docs
+make docs-preview                    # serve docs/_build on :8080
 ```
 
 Run `make help` to see all targets.

@@ -42,6 +42,23 @@ afterEach(() => {
 });
 
 describe("entry point parity", () => {
+  it("the npm entry exports every hook and component the global exposes", async () => {
+    // `useShinyOutputError` was missing from npm.ts for a release, so a
+    // bundler-tier app simply could not import it. Nothing compared the two
+    // surfaces. React/ReactDOM are peer deps on the npm side, and
+    // PROTOCOL_VERSION is npm-only, by design.
+    const npm = await import("../npm");
+    await import("../index");
+
+    const fromGlobal = Object.keys((window as any).shinyreact)
+      .filter((k) => k !== "React" && k !== "ReactDOM")
+      .sort();
+    const fromNpm = Object.keys(npm)
+      .filter((k) => k !== "PROTOCOL_VERSION")
+      .sort();
+    expect(fromNpm).toEqual(fromGlobal);
+  });
+
   it("the IIFE entry installs dependency discovery", async () => {
     await import("../index");
 
