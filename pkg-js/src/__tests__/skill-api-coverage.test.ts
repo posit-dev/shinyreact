@@ -37,8 +37,6 @@ function readSkill(): string {
 // an improvement; growing it needs a reason.
 const NOT_TAUGHT: Record<string, string> = {
   MISSING: "an output-registry sentinel app authors never construct",
-  ShinyReactComponentElement:
-    "the custom-element base class, for component authors rather than app authors",
 };
 
 describe("shinyreact-build-app skill", () => {

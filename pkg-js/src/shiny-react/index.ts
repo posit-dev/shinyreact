@@ -7,7 +7,13 @@ export { ImageOutput } from "./ImageOutput";
 export { MISSING } from "./missing";
 export type { MISSING as MISSINGType } from "./missing";
 export type { OutputStatus, ErrorsMessageValue } from "./output-registry";
-export { ShinyReactComponentElement } from "./ShinyReactComponentElement";
+// ShinyReactComponentElement is not exported today. It is the base class for
+// custom elements that mount a React island inside server-rendered HTML — the
+// inverse of the ui.tsx pattern, where the server emits no UI. Nothing in the
+// repo subclasses it. Re-enable this export (and the ones in global.ts and
+// npm.ts) when partial React app support lands, i.e. when a traditional Shiny
+// page can host React components.
+// export { ShinyReactComponentElement } from "./ShinyReactComponentElement";
 export {
   useSetShinyInput,
   useShinyBusy,
