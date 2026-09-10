@@ -9,6 +9,11 @@ on:
       - ".github/workflows/check-py.yaml"
       - ".github/shinyreact/setup-playwright-remote/**"
   pull_request:
+    # `ready_for_review` is not a default type, and `py-test-e2e` below is
+    # gated on `draft != true`. Without it, a PR opened as a draft never runs
+    # the e2e suite before merge: the `opened` event skips the job, and
+    # clicking "Ready for review" delivers an event this workflow ignores.
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "pkg-py/**/*"
       - "pyproject.toml"

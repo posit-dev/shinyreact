@@ -13,6 +13,11 @@ name: pr-done
 
 on:
   pull_request:
+    # `ready_for_review` is not a default type. check-py re-runs on it (that is
+    # how its draft-gated `py-test-e2e` job gets to run at all), so this gate
+    # has to re-run too -- otherwise undrafting starts a job that no required
+    # check is waiting on, and a red e2e run sits behind a green `pr-done`.
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   checks: read
