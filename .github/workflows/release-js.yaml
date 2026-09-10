@@ -1,12 +1,13 @@
 name: release-js
 
 # Publishes @posit/shinyreact to npm. Trigger manually (workflow_dispatch) or
-# by pushing a tag like js-v0.0.1. Requires the NPM_TOKEN repository secret.
+# by pushing a tag like js/v0.0.1 (the `js/` prefix distinguishes it from the
+# Python and R release tags). Requires the NPM_TOKEN repository secret.
 on:
   workflow_dispatch:
   push:
     tags:
-      - "js-v*"
+      - "js/v*"
 
 permissions:
   contents: read
@@ -29,6 +30,17 @@ jobs:
         with:
           node-version: "${{ steps.nvm.outputs.version }}"
           registry-url: "https://registry.npmjs.org"
+
+      - name: 🔍 Check tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: pkg-js
+        run: |
+          tag_version="${GITHUB_REF_NAME#js/v}"
+          pkg_version="$(npm pkg get version | tr -d '"')"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "Tag $GITHUB_REF_NAME implies version $tag_version, but package.json says $pkg_version" >&2
+            exit 1
+          fi
 
       - name: 🆙 Install dependencies
         run: make js-setup-ci

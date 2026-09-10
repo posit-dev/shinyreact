@@ -11,6 +11,7 @@ version number**, and a stale one ships to users.
 | `shinyreact-build-app` | build a `ui.tsx`-pattern app from scratch | yes |
 | `shinyreact-convert-app` | port an existing Shiny app to the pattern | yes |
 | `audit-shinyreact-features` | walk `FEATURES.md` against the code | no — audits this repo |
+| `release-shinyreact` | cut a PyPI / npm / CRAN release | no — releases this repo |
 
 ## Where they live, and the copy flow
 
