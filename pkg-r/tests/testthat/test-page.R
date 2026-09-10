@@ -82,7 +82,7 @@ test_that("page_react_html preserves the document body", {
 test_that("page_react_html errors on a document without the placeholder", {
   # Python's counterpart is
   # test_page_react_html_missing_placeholder_errors_at_render: it defers the
-  # check to ui.PageDocument, so it raises at page render rather than here.
+  # check to ui.page_html(), so it raises at page render rather than here.
   tmp <- withr::local_tempfile(fileext = ".html")
   writeLines(
     "<!DOCTYPE html><html><head></head><body>hi</body></html>",
@@ -342,7 +342,7 @@ test_that("page_react_html() rejects a placeholder spelled differently", {
 
 test_that("page_react_html() no longer accepts a bare headContent() marker", {
   # The document is not a template as far as the *placeholder* goes -- it is a
-  # <meta> tag now, matching py-shiny's ui.PageDocument.DEPS_PLACEHOLDER.
+  # <meta> tag now, matching py-shiny's ui.page_html() placeholder.
   dir <- withr::local_tempdir()
   dir.create(file.path(dir, "www"))
   writeLines(

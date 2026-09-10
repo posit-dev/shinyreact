@@ -1,16 +1,17 @@
-"""shinyreact.ReactApp: discovered UI + full documents via ui.PageDocument."""
+"""shinyreact.ReactApp: discovered UI + full documents via ui.page_html()."""
 
 import re
 from pathlib import Path
 
 import pytest
 from htmltools import TagList, div
-from shiny.ui import PageDocument
+
+# Where a full document's dependencies are inserted. Owned by py-shiny, not
+# us — `ui.page_html()`'s default `deps_replace_pattern=`, which py-shiny
+# does not (yet) export publicly.
+from shiny.ui._page import DEPS_PLACEHOLDER as DEPS
 from shinyreact import ReactApp, page_react_html
 from starlette.testclient import TestClient
-
-# Where a full document's dependencies are inserted. Owned by py-shiny, not us.
-DEPS = PageDocument.DEPS_PLACEHOLDER
 
 
 def _write_react_app(tmp_path: Path) -> Path:

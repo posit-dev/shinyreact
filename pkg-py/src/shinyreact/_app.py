@@ -1,6 +1,6 @@
 """``shinyreact.ReactApp``: a ``shiny.App`` whose UI is discovered, not passed.
 
-``shiny.App`` accepts the full-document UI itself via ``ui.PageDocument``
+``shiny.App`` accepts the full-document UI itself via ``ui.page_html()``
 (py-shiny#2475). ``ReactApp`` adds the two things it does not do: discover the
 ui.tsx-pattern UI next to the app file, and serve the sibling assets a full
 document references.
@@ -14,34 +14,19 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from shiny import App as _ShinyApp
-from shiny import ui as _shiny_ui
 from shiny.types import MISSING, MISSING_TYPE
 
 from ._dep import ShinyreactJs, _serves_bundle
 
 if TYPE_CHECKING:
-    from htmltools import HTMLDependency
-
     StaticAssets = str | Path | Mapping[str, str | Path]
 
 
-class ReactHtmlDocument(_shiny_ui.PageDocument):
-    """The full-document UI returned by :func:`shinyreact.page_react_html`.
-
-    A :class:`shiny.ui.PageDocument` that also remembers the directory the
-    document was read from, so :class:`ReactApp` can serve the sibling assets
-    (``ui.js`` etc.) the document references.
-    """
-
-    def __init__(
-        self,
-        html: str,
-        *,
-        src_dir: Path,
-        extra_deps: list[HTMLDependency],
-    ) -> None:
-        super().__init__(html, extra_deps=extra_deps)
-        self.src_dir = src_dir
+# `page_react_html()` tags the `ui.page_html()` document it returns with the
+# directory it was read from, so `ReactApp` can serve the sibling assets
+# (`ui.js` etc.) the document references. An attribute rather than a subclass:
+# py-shiny exports `ui.page_html()` but not its document class.
+SRC_DIR_ATTR = "_shinyreact_src_dir"
 
 
 def _add_react_dir(
@@ -94,8 +79,8 @@ class ReactApp(_ShinyApp):
     switch mid-session when you create or delete ``www/index.html``.
 
     ``ui=`` overrides discovery and behaves exactly like ``shiny.App``'s ``ui``
-    argument, except that a direct :class:`ReactHtmlDocument` (what
-    :func:`page_react_html` returns) still gets its directory mounted. Note the
+    argument, except that a document from :func:`page_react_html` still gets
+    its directory mounted. Note the
     discovery reads the *immediate* calling frame (like :func:`page_react_dep`),
     so a helper that wraps ``ReactApp(...)`` must pass ``ui=`` explicitly.
 
@@ -128,8 +113,8 @@ class ReactApp(_ShinyApp):
       decided per *request* while ``static_assets`` is a *constructor*
       argument, so an unused mount is the only way to keep both modes working.
       An unused mount is harmless; a missing one is a 404 per asset.
-    - **``ui=page_react_html(...)``** — the document's own directory, from
-      :attr:`ReactHtmlDocument.src_dir`.
+    - **``ui=page_react_html(...)``** — the document's own directory, which
+      :func:`page_react_html` tagged onto the document it returned.
 
     Your ``static_assets`` is **merged with** that mount, not substituted for
     it, so adding an unrelated mount doesn't take the bundle down with it::
@@ -170,7 +155,7 @@ class ReactApp(_ShinyApp):
         react_dir: Path | None = None
 
         if ui is None:
-            # Import here: _page imports ReactHtmlDocument from this module.
+            # Import here: _page imports SRC_DIR_ATTR from this module.
             from ._page import page_react, page_react_html
 
             caller_file = sys._getframe(1).f_globals.get("__file__")
@@ -192,10 +177,10 @@ class ReactApp(_ShinyApp):
 
             ui = discovered_ui
 
-        elif isinstance(ui, ReactHtmlDocument):
-            react_dir = ui.src_dir
+        else:
+            react_dir = getattr(ui, SRC_DIR_ATTR, None)
 
-            if bookmark_store != "disable":
+            if react_dir is not None and bookmark_store != "disable":
                 # Shiny would raise here too ("App(ui=) must be a function"),
                 # but the fix a shinyreact author needs is specific, and the
                 # obvious workaround is wrong: wrapping *this object* in a
