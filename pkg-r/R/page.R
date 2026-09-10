@@ -42,8 +42,7 @@ page_bare <- function(..., title = NULL, lang = "en") {
 #' @param css_file CSS filename within `src_dir`. Defaults to `"ui.css"`.
 #' @param title Page title. Defaults to the app folder's name (`src_dir`'s
 #'   parent when `src_dir` is a `www` directory), or `"shinyreact-app"` when
-#'   that resolves to nothing usable (a missing `src_dir` is not an error —
-#'   the bundle may not be built yet).
+#'   that resolves to nothing usable.
 #' @param lang HTML `lang` attribute.
 #' @param shinyreact_js Who supplies `shinyreact.js` (and `shinyreact.css`) to
 #'   the page. `"server"` (the default) serves them from the shinyreact package
@@ -72,10 +71,9 @@ page_react <- function(
     }
   app_name <- basename(base_dir)
   if (!nzchar(app_name) || app_name %in% c(".", "..")) {
-    # A missing src_dir leaves normalizePath()'s path relative, so the app name
-    # can come out as "." -- a nonsense title and a `/lib/.-0/` asset URL. Keep
-    # the permissive resolution (the bundle may not be built yet) but name it
-    # something a reader can recognize.
+    # `src_dir = "www"` at the filesystem root, or any path whose parent has no
+    # name of its own, leaves the app name as "." -- a nonsense title and a
+    # `/lib/.-0/` asset URL. Name it something a reader can recognize.
     app_name <- "shinyreact-app"
   }
   page_bare(
@@ -219,6 +217,12 @@ page_react_html <- function(
 #' attach a stylesheet. A missing `js_file` warns, since it is the entry point
 #' and an empty dependency would otherwise fail silently.
 #'
+#' A missing `src_dir` **errors**, where a missing `js_file` only warns. Shiny
+#' serves the directory's files, so a directory that does not exist can only
+#' produce 404s for every asset the page references — a bug every time, and one
+#' that is far cheaper to see at page-build time than in the browser's network
+#' tab. Matches Python's `page_react_dep()`, which raises `NotADirectoryError`.
+#'
 #' @param src_dir Directory containing the JS/CSS. Required; Python infers this
 #'   from the calling module's `__file__` when omitted, which R has no
 #'   equivalent of.
@@ -235,6 +239,18 @@ page_react_dep <- function(
   css_file = "ui.css",
   name = basename(src_dir)
 ) {
+  if (!dir.exists(src_dir)) {
+    # Mirrors Python's NotADirectoryError. Shiny serves this directory's files,
+    # so a missing one is a bug every time -- and R's failure mode without this
+    # check is worse than Python's: the app starts, and every asset 404s.
+    cli::cli_abort(c(
+      "React asset directory not found: {.path {src_dir}}",
+      "i" = "Shiny serves this directory's files, so it must exist by the time
+             the page is built.",
+      "i" = "Build the bundle first (its output directory is created by the
+             build), or pass a different {.arg src_dir}."
+    ))
+  }
   js_path <- file.path(src_dir, js_file)
   js_exists <- file.exists(js_path)
   mtime <- suppressWarnings(file.mtime(js_path))

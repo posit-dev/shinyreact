@@ -26,8 +26,7 @@ relative to the working directory.}
 
 \item{title}{Page title. Defaults to the app folder's name (\code{src_dir}'s
 parent when \code{src_dir} is a \code{www} directory), or \code{"shinyreact-app"} when
-that resolves to nothing usable (a missing \code{src_dir} is not an error —
-the bundle may not be built yet).}
+that resolves to nothing usable.}
 
 \item{lang}{HTML \code{lang} attribute.}
 

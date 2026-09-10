@@ -169,6 +169,14 @@ def page_react_dep(
     since it is the entry point and an empty dependency would otherwise fail
     silently.
 
+    A missing ``src_dir`` **raises** :class:`NotADirectoryError`, where a
+    missing ``js_file`` only warns. The asymmetry is not arbitrary: Shiny mounts
+    the dependency's source directory as static files, so a directory that does
+    not exist is fatal no matter what this function does — the only question is
+    whether the author gets Starlette's ``Directory '...' does not exist`` from
+    inside ``App.__init__``, or a message naming the argument that chose the
+    path. Matches R's ``page_react_dep()``.
+
     Path resolution
     ---------------
     The base directory is ``src_dir`` when given. Passing it explicitly is
@@ -223,6 +231,19 @@ def page_react_dep(
         # most CLI tools resolving relative paths.
         base_dir = Path(caller_file).parent if caller_file else Path.cwd()
     dep_name = name if name is not None else base_dir.name
+
+    if not base_dir.is_dir():
+        # Shiny mounts a dependency's source dir as static files, so this is
+        # fatal either way -- but the error it raises is Starlette's
+        # "Directory '...' does not exist", from inside App.__init__, naming
+        # neither shinyreact nor the argument that chose the path. Fail here
+        # instead, where the message can say what to do about it.
+        raise NotADirectoryError(
+            f"React asset directory not found: {base_dir}. Shiny serves this "
+            "directory's files, so it must exist by the time the page is "
+            "built. Build the bundle first (its output directory is created "
+            "by the build), or pass a different src_dir=."
+        )
 
     js_path = base_dir / js_file
     mtime = _file_mtime_int(js_path)
