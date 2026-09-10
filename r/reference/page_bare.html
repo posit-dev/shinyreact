@@ -70,6 +70,16 @@ not part of this API. Mirrors Python's <code>page_bare(**kwargs)</code>.</p></dd
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>shiny.tag</code> page.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>With no <code>theme</code>, the page carries <strong>no Bootstrap</strong>: only jQuery, Shiny's own
+JS/CSS, and a <code>width=device-width</code> viewport meta tag. Shiny's own default
+would attach Bootstrap 3 (plus its accessibility plugin, which errors
+against a newer jQuery), and in the <code>ui.tsx</code> pattern the client owns
+styling. Pass a <code>theme</code> — e.g. <code>theme = bslib::bs_theme()</code>, or
+<code>bslib::bs_theme(version = 3)</code> for the classic stack — to get Bootstrap
+back; then <code>...</code> is a plain passthrough to <code><a href="https://rdrr.io/pkg/shiny/man/bootstrapPage.html" class="external-link">shiny::bootstrapPage()</a></code>.</p>
+    </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
