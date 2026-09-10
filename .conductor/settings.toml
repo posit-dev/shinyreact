@@ -1,0 +1,9 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+run_mode = "concurrent"
+
+[scripts.run.docs]
+command = "make docs docs-preview PORT=$CONDUCTOR_PORT"
+icon = "book-open"
+available_in = [ "local" ]

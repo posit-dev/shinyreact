@@ -4,6 +4,8 @@ QUARTO_PATH = ~/.local/share/qvm/versions/v${QUARTO_VERSION}/bin/quarto
 PATH_PKG_R := pkg-r
 PATH_PKG_PY := pkg-py
 PATH_PKG_JS := pkg-js
+# Port for `make docs-preview`; Conductor passes its allocated $CONDUCTOR_PORT.
+PORT ?= 8080
 
 .PHONY: install-quarto
 install-quarto:
@@ -24,7 +26,7 @@ docs: py-docs r-docs-render js-docs ## [docs] Build the documentation site into 
 
 .PHONY: docs-preview
 docs-preview:  ## [docs] Preview the documentation site
-	@npx http-server pkg-py/docs/_site -p 8080
+	@npx --yes http-server pkg-py/docs/_site -p $(PORT)
 
 .PHONY: js-docs
 js-docs:  ## [js] Build JS API docs with TypeDoc

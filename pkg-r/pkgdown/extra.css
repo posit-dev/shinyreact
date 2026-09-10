@@ -1,0 +1,6 @@
+/* pkgdown 2.2 lays out .page-header as a flex row with the logo first, so the
+   README's `align="right"` is ignored. Push it back to the right. */
+.page-header img.logo {
+  order: 1;
+  margin-left: auto;
+}
