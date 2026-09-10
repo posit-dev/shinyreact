@@ -29,7 +29,8 @@ Suggests:
     testthat (>= 3.0.0),
     withr
 VignetteBuilder: 
-    knitr
+    knitr,
+    rmarkdown
 Config/Needs/website: pkgdown, tidyverse/tidytemplate
 Config/roxygen2/version: 8.1.0
 Config/testthat/edition: 3
