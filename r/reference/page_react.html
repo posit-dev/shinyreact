@@ -105,7 +105,7 @@ that resolves to nothing usable.</p></dd>
 the page. <code>"server"</code> (the default) serves them from the shinyreact package
 as an <a href="https://rstudio.github.io/htmltools/reference/htmlDependency.html" class="external-link">htmltools::htmlDependency</a> — what a no-build app needs, and what
 makes <code>window.shinyreact</code> exist. <code>"client"</code> is for an app whose own bundle
-imports <code>@posit/shinyreact</code> and therefore ships its own copy; serving them
+imports <code>@posit-dev/shinyreact</code> and therefore ships its own copy; serving them
 too would put two copies of React and the hooks on one page. The
 <code>#shinyreact-config</code> tag is emitted either way; the npm-tier client
 hard-errors without it. Mirrors Python's <code>page_react(shinyreact_js=)</code>.</p></dd>

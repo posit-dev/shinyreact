@@ -42,7 +42,7 @@ page_react_html(
 
   Who supplies `shinyreact.js` / `shinyreact.css`: `"server"` (the
   default) or `"client"` for an npm-tier app whose bundle imports
-  `@posit/shinyreact` — see
+  `@posit-dev/shinyreact` — see
   [`page_react()`](https://posit-dev.github.io/shinyreact/r/reference/page_react.md).
 
 ## Value
