@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "@posit/shinyreact",
+  "name": "@posit-dev/shinyreact",
   "entryPoints": ["src/npm.ts"],
   "tsconfig": "tsconfig.npm.json",
   "out": "../pkg-py/docs/_site/js",

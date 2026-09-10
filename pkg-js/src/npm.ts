@@ -1,5 +1,5 @@
 /**
- * `@posit/shinyreact` — the ESM entry for bundler-tier apps.
+ * `@posit-dev/shinyreact` — the ESM entry for bundler-tier apps.
  *
  * Import the hooks directly instead of reading `window.shinyreact`; React and
  * ReactDOM are peer dependencies resolved by your bundler (so dev builds get
@@ -32,7 +32,7 @@ import "./shinyreact.css";
 import { installDepDiscovery } from "./dep-discovery";
 import { requireShinyReactConfigTag } from "./shiny-react/config";
 
-// Two copies on one page: this app bundles `@posit/shinyreact` AND the server
+// Two copies on one page: this app bundles `@posit-dev/shinyreact` AND the server
 // served shinyreact.js, because the page entry point left `shinyreact_js` at its
 // default of "server". It still works — the registries are page-scoped, so the
 // two copies share one set of inputs, outputs, and message handlers — but the
@@ -50,7 +50,7 @@ if (
 ) {
   console.warn(
     "[shinyreact] shinyreact.js is loaded twice on this page: the server " +
-      "served it, and this app also imports @posit/shinyreact. The app works, " +
+      "served it, and this app also imports @posit-dev/shinyreact. The app works, " +
       "but it is downloading a second copy of React and the hooks for " +
       'nothing. Pass shinyreact_js="client" to your page entry point — ' +
       "page_react(), page_react_html(), set_react_page(), or ReactApp().",

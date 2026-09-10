@@ -49,7 +49,7 @@ def _serves_bundle(shinyreact_js: ShinyreactJs) -> bool:
             f"shinyreact_js={shinyreact_js!r} is not valid. Expected one of "
             f'{expected}. Use "server" when the shinyreact package should serve '
             "shinyreact.js (the default, and what a no-build app needs), and "
-            '"client" when your own bundle imports @posit/shinyreact and '
+            '"client" when your own bundle imports @posit-dev/shinyreact and '
             "therefore ships its own copy."
         )
     return shinyreact_js == "server"

@@ -116,12 +116,12 @@ payoff); would ship React ESM builds inside pip/CRAN packages.
 
 ## Decision
 
-Adopt **option E**, with the npm package named **`@posit/shinyreact`** (not
+Adopt **option E**, with the npm package named **`@posit-dev/shinyreact`** (not
 `@posit/shiny-react` — name consistency with the Python/R packages; the
 upstream `@posit/shiny-react`@0.0.16 that `pkg-js/src/shiny-react/` was vendored
 from is a separate, frozen artifact).
 
-1. **Publish `@posit/shinyreact` to npm as the real runtime** — the hooks and
+1. **Publish `@posit-dev/shinyreact` to npm as the real runtime** — the hooks and
    components as ESM, with `react`/`react-dom` as peer dependencies. The
    bundler tier imports it directly and never touches the global. Dev mode
    gets a dev React and Fast Refresh with no bridge-alias workaround. Built
@@ -140,7 +140,7 @@ from is a separate, frozen artifact).
    and gives the handshake its delivery vehicle. This change is independent of
    npm publishing and should land first.
 
-4. **Semver protocol handshake at hook boot.** `@posit/shinyreact` declares a
+4. **Semver protocol handshake at hook boot.** `@posit-dev/shinyreact` declares a
    supported protocol range (e.g. `^1`); on init it checks the
    server-rendered `protocolVersion` and fails fast with a message naming both
    versions and the fix. The protocol version bumps only when the wire format
@@ -204,9 +204,9 @@ The rule, then:
    `global.ts` reading the tag instead of `_restore`.
 2. Protocol schema document + cross-language fixture tests.
 3. Package `pkg-js/src/` for dual output (ESM + IIFE); add publish workflow for
-   `@posit/shinyreact`.
+   `@posit-dev/shinyreact`.
 4. Convert one Vite example (`09-hmr` is the natural candidate) to import
-   `@posit/shinyreact`; retire its dev/prod bridge alias. Done in #217, which
+   `@posit-dev/shinyreact`; retire its dev/prod bridge alias. Done in #217, which
    also added the `shinyreact_js="client"` page-entry-point switch the
    conversion needs — an npm-tier page must not *also* be served the IIFE
    bundle.

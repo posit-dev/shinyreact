@@ -4,7 +4,7 @@
 
 This document is the versioned contract between a shinyreact server (the
 Python or R package) and a shinyreact client (the IIFE bundle or the
-`@posit/shinyreact` npm package). Its version — not any package version — is
+`@posit-dev/shinyreact` npm package). Its version — not any package version — is
 what the client asserts at boot, so client and server packages can release
 independently as long as they speak the same protocol major version. Decided
 in `decisions/2026-08-17-js-distribution.md`.
@@ -116,6 +116,6 @@ versions:
 - same major → proceed (minor differences are additive by policy above);
 - different major → throw, naming both versions and which side to upgrade;
 - tag absent → the IIFE bundle proceeds (it cannot skew); the
-  `@posit/shinyreact` npm build treats absence as an error, since an
+  `@posit-dev/shinyreact` npm build treats absence as an error, since an
   independently-installed client meeting a tag-less page means the server
   predates the protocol.

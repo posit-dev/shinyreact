@@ -26,7 +26,7 @@ they can rely on \code{window.shinyreact} existing. Mirrors Python's
 
 \item{shinyreact_js}{Who supplies \code{shinyreact.js} / \code{shinyreact.css}:
 \code{"server"} (the default) or \code{"client"} for an npm-tier app whose bundle
-imports \verb{@posit/shinyreact} — see \code{\link[=page_react]{page_react()}}.}
+imports \verb{@posit-dev/shinyreact} — see \code{\link[=page_react]{page_react()}}.}
 }
 \value{
 UI suitable for \code{shinyApp(ui = ...)}.

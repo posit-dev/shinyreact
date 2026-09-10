@@ -74,7 +74,7 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
       role="alert">` is appended to `<body>` carrying the same text as the
       thrown error (e2e)
     - literals in the message (both versions, `#shinyreact-config`,
-      `@posit/shinyreact`) are marked with backticks and render as `<code>`
+      `@posit-dev/shinyreact`) are marked with backticks and render as `<code>`
       chips; the backticks are stripped from the thrown error and the
       console-only warning (e2e)
     - the message is written with `textContent`, never `innerHTML`, so a
@@ -109,7 +109,7 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
   - `[js]` whether a *missing* tag is fatal depends on which build is running
     - IIFE bundle (shipped inside the R/Python packages): tolerated, because a
       hand-wired `page_bare()` page legitimately has no tag
-    - npm ESM build (`@posit/shinyreact`): fatal, opted into at import time —
+    - npm ESM build (`@posit-dev/shinyreact`): fatal, opted into at import time —
       an independently installed client meeting a tagless page means the server
       predates the protocol
 - server → client custom message: `shinyReactMessage`, payload `{id, data}`
@@ -649,7 +649,7 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
 
 ### `ShinyReactComponentElement` (not exported)
 
-- not reachable from `window.shinyreact`, `@posit/shinyreact`, or
+- not reachable from `window.shinyreact`, `@posit-dev/shinyreact`, or
   `shiny-react/index.ts`; the class and its unit test stay in the tree until
   partial React app support brings it back
 - a base class for custom elements that mount a React component with Shiny
@@ -690,7 +690,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 - it defaults to `"server"` — the package serves both as an `HTMLDependency`
 - `"client"` omits **both files**; the `#shinyreact-config` tag is still
   emitted, because the npm-tier client hard-errors without it
-- it is for the npm tier: a client importing `@posit/shinyreact` bundles its own
+- it is for the npm tier: a client importing `@posit-dev/shinyreact` bundles its own
   copy, so serving them too puts two copies of React and the hooks on the page
 - any other value raises, naming the bad value and both valid ones
   - `[py]` `ValueError`; `[r]` `cli_abort`
@@ -1272,7 +1272,7 @@ initial page.
     assignment — nothing writes that namespace before the bundle runs
   - CSS is a side-effect import, which is how Vite bundles it
   - a missing `#shinyreact-config` tag is tolerated
-- the npm ESM build (`@posit/shinyreact`) is for bundler-tier apps
+- the npm ESM build (`@posit-dev/shinyreact`) is for bundler-tier apps
   - React and ReactDOM are **peer** dependencies resolved by the app's bundler,
     so dev builds get a development React with Fast Refresh
   - hooks are imported directly rather than read off `window.shinyreact`
@@ -1283,7 +1283,7 @@ initial page.
   - it exports `PROTOCOL_VERSION`
   - it does **not** re-export React / ReactDOM
   - the stylesheet ships as `dist-npm/style.css`, reachable as
-    `@posit/shinyreact/styles` (#229; the build emitted no CSS at all before,
+    `@posit-dev/shinyreact/styles` (#229; the build emitted no CSS at all before,
     leaving `ImageOutput`'s spinner without its `@keyframes spin`)
     - Vite does not inject a CSS import into a lib-mode ESM bundle, so
       consumers opt in rather than having it forced on them

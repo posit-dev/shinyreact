@@ -84,7 +84,7 @@ no_bootstrap <- function() {
 #'   the page. `"server"` (the default) serves them from the shinyreact package
 #'   as an [htmltools::htmlDependency] — what a no-build app needs, and what
 #'   makes `window.shinyreact` exist. `"client"` is for an app whose own bundle
-#'   imports `@posit/shinyreact` and therefore ships its own copy; serving them
+#'   imports `@posit-dev/shinyreact` and therefore ships its own copy; serving them
 #'   too would put two copies of React and the hooks on one page. The
 #'   `#shinyreact-config` tag is emitted either way; the npm-tier client
 #'   hard-errors without it. Mirrors Python's `page_react(shinyreact_js=)`.
@@ -186,7 +186,7 @@ page_react <- function(
 #'   `page_react_html(extra_deps=)`.
 #' @param shinyreact_js Who supplies `shinyreact.js` / `shinyreact.css`:
 #'   `"server"` (the default) or `"client"` for an npm-tier app whose bundle
-#'   imports `@posit/shinyreact` — see [page_react()].
+#'   imports `@posit-dev/shinyreact` — see [page_react()].
 #' @return UI suitable for `shinyApp(ui = ...)`.
 #' @export
 page_react_html <- function(

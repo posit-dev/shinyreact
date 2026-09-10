@@ -3,7 +3,7 @@ title: "Client hooks"
 ---
 
 The page entry points serve `shinyreact.js`, which bundles React 19 and installs the client API at `window.shinyreact`.
-Apps with a bundler can instead `npm install @posit/shinyreact` and pass `shinyreact_js="client"` to the page entry point.
+Apps with a bundler can instead `npm install @posit-dev/shinyreact` and pass `shinyreact_js="client"` to the page entry point.
 
 ## Hooks
 

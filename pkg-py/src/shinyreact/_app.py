@@ -96,7 +96,7 @@ class ReactApp(_ShinyApp):
             provides; a static ``ui=page_react_html(...)`` raises.
         shinyreact_js: Who supplies ``shinyreact.js`` / ``shinyreact.css`` to
             the discovered UI: ``"server"`` (default) or ``"client"`` for an
-            npm-tier app whose bundle imports ``@posit/shinyreact``. Ignored
+            npm-tier app whose bundle imports ``@posit-dev/shinyreact``. Ignored
             when ``ui=`` is passed — build that UI with
             ``shinyreact_js="client"`` yourself.
         **kwargs: Forwarded to :class:`shiny.App` (``debug=``, ``test_mode=``).

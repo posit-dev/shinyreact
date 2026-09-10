@@ -145,7 +145,7 @@ def page_react(
             - ``"server"`` (default) — the shinyreact package serves them as an
               :class:`~htmltools.HTMLDependency`. What a no-build app needs,
               and what makes ``window.shinyreact`` exist.
-            - ``"client"`` — your own bundle imports ``@posit/shinyreact`` and
+            - ``"client"`` — your own bundle imports ``@posit-dev/shinyreact`` and
               ships its own copy, so the server sends nothing. Serving them too
               would put two copies of React and the hooks on one page.
 
@@ -409,7 +409,7 @@ def set_react_page(
             exists, else discovers ``www/ui.js`` / ``www/ui.css``.
         shinyreact_js: Who supplies ``shinyreact.js`` / ``shinyreact.css``:
             ``"server"`` (default) or ``"client"`` for an npm-tier app whose
-            bundle imports ``@posit/shinyreact`` — see :func:`page_react`.
+            bundle imports ``@posit-dev/shinyreact`` — see :func:`page_react`.
     """
     # Validate now rather than at first page render: a typo should fail at
     # startup, next to the call that made it.
@@ -482,7 +482,7 @@ def page_react_html(
             ``window.shinyreact`` existing.
         shinyreact_js: Who supplies ``shinyreact.js`` / ``shinyreact.css``:
             ``"server"`` (default) or ``"client"`` for an npm-tier app whose
-            bundle imports ``@posit/shinyreact`` — see :func:`page_react`.
+            bundle imports ``@posit-dev/shinyreact`` — see :func:`page_react`.
     """
     path = Path(path)
     if path.is_absolute():

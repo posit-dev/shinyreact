@@ -102,7 +102,7 @@ root.render(<App />);
 ```
 
 Hooks come off the same global: `const { useShinyInput } = window.shinyreact;`.
-(An npm-tier app that installs `@posit/shinyreact` imports them instead and
+(An npm-tier app that installs `@posit-dev/shinyreact` imports them instead and
 externalizes React the same way; reach for that only when you are publishing a
 component library, not for an app.)
 
@@ -242,7 +242,7 @@ identical; React-owned state is still the default for inputs.
 
 ## Step 4 — the client reads and writes named channels
 
-Everything is on `window.shinyreact` (or imported from `@posit/shinyreact` in
+Everything is on `window.shinyreact` (or imported from `@posit-dev/shinyreact` in
 an npm-tier build).
 
 | | Full | Read-only | Write-only |

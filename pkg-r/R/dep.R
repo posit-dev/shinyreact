@@ -55,7 +55,7 @@ serves_bundle <- function(shinyreact_js) {
       "i" = "{.val server} (the default) serves {.file shinyreact.js} from the
              shinyreact package -- what a no-build app needs.",
       "i" = "{.val client} is for an app whose own bundle imports
-             {.pkg @posit/shinyreact} and therefore ships its own copy."
+             {.pkg @posit-dev/shinyreact} and therefore ships its own copy."
     ))
   }
   identical(shinyreact_js, "server")

@@ -34,7 +34,7 @@ that resolves to nothing usable.}
 the page. \code{"server"} (the default) serves them from the shinyreact package
 as an \link[htmltools:htmlDependency]{htmltools::htmlDependency} — what a no-build app needs, and what
 makes \code{window.shinyreact} exist. \code{"client"} is for an app whose own bundle
-imports \verb{@posit/shinyreact} and therefore ships its own copy; serving them
+imports \verb{@posit-dev/shinyreact} and therefore ships its own copy; serving them
 too would put two copies of React and the hooks on one page. The
 \verb{#shinyreact-config} tag is emitted either way; the npm-tier client
 hard-errors without it. Mirrors Python's \code{page_react(shinyreact_js=)}.}
