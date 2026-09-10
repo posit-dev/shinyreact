@@ -1,5 +1,5 @@
 # Use qvm to manage quarto
-QUARTO_VERSION ?= 1.8.27
+QUARTO_VERSION ?= 1.11.4
 QUARTO_PATH = ~/.local/share/qvm/versions/v${QUARTO_VERSION}/bin/quarto
 PATH_PKG_R := pkg-r
 PATH_PKG_PY := pkg-py
@@ -20,11 +20,11 @@ install-quarto:
 
 
 .PHONY: docs
-docs: py-docs r-docs-render js-docs ## [docs] Build the documentation site into docs/_build/
+docs: py-docs r-docs-render js-docs ## [docs] Build the documentation site into pkg-py/docs/_site/
 
 .PHONY: docs-preview
 docs-preview:  ## [docs] Preview the documentation site
-	@npx http-server docs/_build -p 8080
+	@npx http-server pkg-py/docs/_site -p 8080
 
 .PHONY: js-docs
 js-docs:  ## [js] Build JS API docs with TypeDoc

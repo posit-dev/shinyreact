@@ -4,10 +4,11 @@ project:
     port: 4243
   resources:
     - objects.txt
-  # The Quarto site IS the landing page: it renders to the repo-root deploy
-  # folder, with the Python API under py/. pkgdown (r/) and TypeDoc (js/)
-  # render into sibling folders of the same deploy root.
-  output-dir: ../../docs/_build
+  # The Quarto site IS the landing page, with the Python API under py/.
+  # pkgdown (r/) and TypeDoc (js/) render into this same folder, which is the
+  # deploy root. Kept inside the project: Quarto >= 1.11 warns on an
+  # output-dir outside it and refuses to clean it.
+  output-dir: _site
 
 website:
   title: "shinyreact"

@@ -57,5 +57,5 @@ jobs:
         with:
           clean: false
           branch: gh-pages
-          folder: docs/_build/r
+          folder: pkg-py/docs/_site/r
           target-folder: r

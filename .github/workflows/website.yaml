@@ -21,7 +21,7 @@ permissions:
 
 env:
   PYTHON_VERSION: 3.13
-  QUARTO_VERSION: 1.8.27
+  QUARTO_VERSION: 1.11.4
 
 jobs:
   docs-publish:
@@ -76,5 +76,5 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4.5.0
         with:
           clean: false
-          folder: docs/_build
+          folder: pkg-py/docs/_site
           branch: gh-pages

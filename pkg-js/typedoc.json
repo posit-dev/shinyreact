@@ -3,7 +3,7 @@
   "name": "@posit/shinyreact",
   "entryPoints": ["src/npm.ts"],
   "tsconfig": "tsconfig.npm.json",
-  "out": "../docs/_build/js",
+  "out": "../pkg-py/docs/_site/js",
   "readme": "none",
   "excludeInternal": true,
   "excludePrivate": true,
