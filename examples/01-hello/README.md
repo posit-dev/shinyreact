@@ -92,6 +92,13 @@ Rscript -e 'shiny::runApp("examples/01-hello/app.R")'
 
 Open the URL printed by Shiny.
 
+The R app also runs without a clone, once `shinyreact` is installed
+(`pak::pak("posit-dev/shinyreact")`):
+
+```r
+shiny::runGitHub("posit-dev/shinyreact", subdir = "examples/01-hello")
+```
+
 ## When to use this pattern
 
 Good fit for `ui.tsx`-first apps that are small enough to not need JSX or component libraries — proof of concept, internal tools, anything where the cost of running a build is more than the cost of writing `React.createElement` calls. As soon as you want shadcn or Tailwind utility classes, see [03-columns-shadcn](../03-columns-shadcn/) and [04-shadcn](../04-shadcn/) for the Vite-based setup.
