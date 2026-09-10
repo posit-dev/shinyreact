@@ -244,11 +244,20 @@ test_that("page_react warns on a missing ui.js", {
   expect_warning(page_react(), "ui.js")
 })
 
-test_that("page_react never names the app '.' when src_dir is missing", {
+test_that("page_react errors when src_dir is missing", {
   # A missing src_dir used to yield a "." title and a "/lib/.-0/" asset URL
-  # (#242).
+  # (#242); it was then given a "shinyreact-app" fallback name, and now it
+  # does not get that far. Mirrors Python's page_react()/page_react_dep().
   withr::local_dir(withr::local_tempdir("nowww"))
-  ui <- suppressWarnings(page_react())
+
+  expect_error(page_react(), "React asset directory not found")
+})
+
+test_that("page_react never names the app '.' or ''", {
+  # The fallback's remaining reachable case: a src_dir whose resolved parent
+  # has no basename of its own. "/" exists, so it passes the directory check
+  # and lands on the naming fallback rather than the error above (#242).
+  ui <- suppressWarnings(page_react(src_dir = "/"))
   rendered <- htmltools::renderTags(ui)
   html <- paste0(as.character(rendered$head), as.character(rendered$html))
   dep_names <- vapply(
@@ -259,9 +268,8 @@ test_that("page_react never names the app '.' when src_dir is missing", {
   expect_no_match(html, "<title>.</title>", fixed = TRUE)
   expect_false("." %in% dep_names)
 
-  # On Windows, normalizePath() resolves a nonexistent relative path against
-  # the working directory, so the name comes out as the app folder's and the
-  # fallback is unreachable.
+  # On Windows "/" normalizes to the current drive root, which does have a
+  # name, so the fallback is unreachable there.
   skip_on_os("windows")
   expect_match(html, "<title>shinyreact-app</title>", fixed = TRUE)
   expect_true("shinyreact-app" %in% dep_names)

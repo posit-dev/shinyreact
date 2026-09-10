@@ -23,6 +23,46 @@ test_that("page_react_dep() falls back to version \"0\" when the JS is missing",
   expect_identical(dep$version, "0")
 })
 
+test_that("page_react_dep() errors when src_dir does not exist", {
+  # Mirrors Python's test_page_react_dep_missing_src_dir_raises. R used to
+  # build the app happily and 404 every asset at runtime; Python got
+  # Starlette's "Directory '...' does not exist" from inside App(). Both now
+  # fail here, where the message can name the fix.
+  missing <- file.path(withr::local_tempdir(), "not-built")
+
+  expect_error(page_react_dep(missing), "React asset directory not found")
+})
+
+test_that("page_react_dep()'s missing-src_dir error names the path and the fix", {
+  missing <- file.path(withr::local_tempdir(), "not-built")
+
+  err <- expect_error(page_react_dep(missing))
+  message <- cli::ansi_strip(paste(
+    conditionMessage(err),
+    paste(err$body, collapse = " ")
+  ))
+  expect_match(message, "not-built", fixed = TRUE)
+  expect_match(message, "Build the bundle first", fixed = TRUE)
+  expect_match(message, "src_dir", fixed = TRUE)
+})
+
+test_that("page_react_dep() errors on src_dir before warning about js_file", {
+  # No directory means no ui.js either. Warning about the file would send the
+  # reader looking inside a directory that isn't there.
+  missing <- file.path(withr::local_tempdir(), "not-built")
+
+  expect_no_warning(expect_error(page_react_dep(missing)))
+})
+
+test_that("page_react_dep() rejects a file passed as src_dir", {
+  # dir.exists(), not file.exists() -- a file is just as unservable.
+  dir <- withr::local_tempdir()
+  js <- file.path(dir, "ui.js")
+  writeLines("// app", js)
+
+  expect_error(page_react_dep(js), "React asset directory not found")
+})
+
 test_that("page_react_dep() omits the script when the JS is absent", {
   # No tag pointing at a 404 -- but warn, since an empty dependency loads
   # nothing and would otherwise fail completely silently (#184).

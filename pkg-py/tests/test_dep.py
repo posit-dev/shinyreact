@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import pytest
@@ -75,6 +76,49 @@ def test_page_react_dep_missing_js_falls_back_to_zero_version(tmp_path):
     with pytest.warns(UserWarning, match="JS entry point not found"):
         dep = _run_page_react_dep(tmp_path)
     assert str(dep.version) == "0"
+
+
+def test_page_react_dep_missing_src_dir_raises(tmp_path):
+    """A missing src_dir errors here, not as Starlette's mount failure later.
+
+    Mirrors R's test-page-react-dep.R
+    "page_react_dep() errors when src_dir does not exist".
+    """
+    missing = tmp_path / "not-built"
+    with pytest.raises(NotADirectoryError, match="React asset directory not found"):
+        page_react_dep(src_dir=missing)
+
+
+def test_page_react_dep_missing_src_dir_message_names_the_path_and_the_fix(tmp_path):
+    """The whole point of raising here is a message Starlette's cannot give."""
+    missing = tmp_path / "not-built"
+    with pytest.raises(NotADirectoryError) as excinfo:
+        page_react_dep(src_dir=missing)
+    message = str(excinfo.value)
+    assert str(missing) in message
+    assert "Build the bundle first" in message
+    assert "src_dir" in message
+
+
+def test_page_react_dep_missing_src_dir_beats_the_missing_js_warning(tmp_path):
+    """No src_dir means no js_file either; the directory is the useful error.
+
+    Without this ordering the author gets a warning about `ui.js` that sends
+    them looking for a file inside a directory that isn't there.
+    """
+    missing = tmp_path / "not-built"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        with pytest.raises(NotADirectoryError):
+            page_react_dep(src_dir=missing)
+
+
+def test_page_react_dep_rejects_a_file_as_src_dir(tmp_path):
+    """`is_dir()`, not `exists()` — a file path is just as unmountable."""
+    not_a_dir = tmp_path / "ui.js"
+    not_a_dir.write_text("// app")
+    with pytest.raises(NotADirectoryError, match="React asset directory not found"):
+        page_react_dep(src_dir=not_a_dir)
 
 
 def test_page_react_dep_omits_script_when_js_absent(tmp_path):

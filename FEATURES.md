@@ -752,15 +752,15 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - R has no per-caller `__file__`, so there is nothing else to resolve
       against; pass an absolute path to be independent of the working directory
     - reason: `decisions/2026-08-13-r-python-parity.md`
-  - a missing `src_dir` does not error (the bundle may not be built yet) — only
-    the `js_file` warning fires
-    - `[r]` the app name comes from `normalizePath(src_dir, mustWork = FALSE)`,
-      which leaves a missing relative path unresolved; when the derived name is
-      empty, `.`, or `..` it falls back to `shinyreact-app` for both the title
-      and the dependency name (#242)
-      - on Windows `normalizePath()` resolves a nonexistent relative path
-        against the working directory, so the name is the app folder's and the
-        fallback never fires
+  - a missing `src_dir` errors, from `page_react_dep()` — the page is never
+    built
+    - `[r]` the app name comes from `normalizePath(src_dir, mustWork = FALSE)`;
+      when the derived name is empty, `.`, or `..` it falls back to
+      `shinyreact-app` for both the title and the dependency name (#242)
+      - reachable only for a `src_dir` that exists but whose resolved parent has
+        no basename, e.g. `/`; a missing `src_dir` errors before this
+      - on Windows `/` normalizes to the current drive root, which has a name,
+        so the fallback never fires
     - `[py]` needs no fallback: the path resolves against the calling module, so
       it is absolute whether or not it exists
 
@@ -1093,11 +1093,24 @@ initial page.
     - a classic `<script defer>` throws on the bundle's first `import`, and
       `type="module"` is implicitly deferred, so no `defer` is added
     - a classic (non-module) bundle needs a hand-built dependency instead
+  - a missing `src_dir` **errors** — `[py]` `NotADirectoryError`, `[r]`
+    `cli_abort()` — naming the resolved path, that Shiny serves the directory's
+    files, and both fixes (build the bundle, or pass a different `src_dir`)
+    - the check is "is a directory", not "exists": a file passed as `src_dir`
+      errors the same way
+    - it runs before the `js_file` check, so a missing directory never also
+      warns about a file inside it
+    - `[py]` without it, Starlette raises `Directory '...' does not exist` from
+      inside `App.__init__`, naming neither shinyreact nor `src_dir`
+    - `[r]` without it, the app started and every asset 404'd
   - the script tag is emitted only when `js_file` exists
     - a missing `js_file` warns, naming the resolved path and suggesting the
       bundle be built, rather than emitting a tag that 404s
     - the warning exists because an empty dependency would otherwise fail
       silently — there would not even be a console 404 to go on
+    - a missing `js_file` warns where a missing `src_dir` errors: an existing
+      directory with no bundle in it yet is a state a build is about to fix; a
+      directory that is not there cannot be served at all
   - the stylesheet is emitted only when `css_file` exists, so a bundle that
     ships no CSS emits no link tag
     - `css_file=None` never emits a stylesheet

@@ -50,4 +50,10 @@ inside \code{src_dir}, so a bundle that ships no CSS — or that has not been bu
 yet — does not emit a tag pointing at a 404. Pass \code{css_file = NULL} to never
 attach a stylesheet. A missing \code{js_file} warns, since it is the entry point
 and an empty dependency would otherwise fail silently.
+
+A missing \code{src_dir} \strong{errors}, where a missing \code{js_file} only warns. Shiny
+serves the directory's files, so a directory that does not exist can only
+produce 404s for every asset the page references — a bug every time, and one
+that is far cheaper to see at page-build time than in the browser's network
+tab. Matches Python's \code{page_react_dep()}, which raises \code{NotADirectoryError}.
 }
