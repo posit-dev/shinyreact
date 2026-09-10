@@ -25,6 +25,8 @@
     "build:npm": "vite build --config vite.config.npm.ts && tsc -p tsconfig.npm.json",
     "watch": "vite build --watch",
     "lint": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format-check": "prettier --check .",
     "docs": "typedoc",
     "test": "vitest run"
   },
@@ -40,6 +42,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^4.0.0",
     "jsdom": "^26.1.0",
+    "prettier": "^3.9.6",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "typedoc": "^0.28.20",

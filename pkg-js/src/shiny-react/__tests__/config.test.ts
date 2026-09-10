@@ -24,7 +24,9 @@ afterEach(() => {
 });
 
 function bannerText(): string | undefined {
-  return document.getElementById("shinyreact-fatal-error")?.textContent ?? undefined;
+  return (
+    document.getElementById("shinyreact-fatal-error")?.textContent ?? undefined
+  );
 }
 
 describe("readShinyReactConfig", () => {
@@ -41,7 +43,9 @@ describe("readShinyReactConfig", () => {
   });
 
   it("decodes \\u003c escapes the server uses to neutralize '<'", () => {
-    setConfigTag('{"protocolVersion":"1.0","restore":{"foo":"\\u003c/script>"}}');
+    setConfigTag(
+      '{"protocolVersion":"1.0","restore":{"foo":"\\u003c/script>"}}',
+    );
     expect(readShinyReactConfig()?.restore).toEqual({ foo: "</script>" });
   });
 
@@ -82,7 +86,9 @@ describe("handshake failures are visible on the page", () => {
   it("reuses one banner element across repeated failures", () => {
     expect(() => assertProtocolCompatible("999.0")).toThrow();
     expect(() => assertProtocolCompatible("998.0")).toThrow();
-    expect(document.querySelectorAll("#shinyreact-fatal-error")).toHaveLength(1);
+    expect(document.querySelectorAll("#shinyreact-fatal-error")).toHaveLength(
+      1,
+    );
     expect(bannerText()).toContain("998.0");
   });
 
@@ -95,7 +101,9 @@ describe("handshake failures are visible on the page", () => {
   });
 
   it("does not interpret the message as HTML", () => {
-    expect(() => assertProtocolCompatible("<img src=x onerror=alert(1)>")).toThrow();
+    expect(() =>
+      assertProtocolCompatible("<img src=x onerror=alert(1)>"),
+    ).toThrow();
     const banner = document.getElementById("shinyreact-fatal-error");
     expect(banner?.querySelector("img")).toBeNull();
     expect(banner?.textContent).toContain("<img src=x onerror=alert(1)>");
@@ -126,7 +134,10 @@ describe("PROTOCOL_VERSION parity", () => {
     // test_protocol_version_matches_js_and_r and R's "protocol version
     // matches the JS and Python declarations".
     let repoRoot = process.cwd();
-    while (!existsSync(join(repoRoot, "pkg-py")) && dirname(repoRoot) !== repoRoot) {
+    while (
+      !existsSync(join(repoRoot, "pkg-py")) &&
+      dirname(repoRoot) !== repoRoot
+    ) {
       repoRoot = dirname(repoRoot);
     }
     const pySrc = join(repoRoot, "pkg-py", "src", "shinyreact", "_protocol.py");
@@ -152,10 +163,18 @@ describe("protocol fixture", () => {
     // suites (see protocol/README.md). Mirrors Python's
     // test_protocol_fixture_round_trips.
     let repoRoot = process.cwd();
-    while (!existsSync(join(repoRoot, "protocol")) && dirname(repoRoot) !== repoRoot) {
+    while (
+      !existsSync(join(repoRoot, "protocol")) &&
+      dirname(repoRoot) !== repoRoot
+    ) {
       repoRoot = dirname(repoRoot);
     }
-    const fixturePath = join(repoRoot, "protocol", "fixtures", "config-restore.json");
+    const fixturePath = join(
+      repoRoot,
+      "protocol",
+      "fixtures",
+      "config-restore.json",
+    );
     if (!existsSync(fixturePath)) return; // monorepo sources not available
     const expected = JSON.parse(readFileSync(fixturePath, "utf8"));
     expect(expected.protocolVersion).toBe(PROTOCOL_VERSION);

@@ -176,7 +176,11 @@ export function ImageOutput({
     false,
     skipNs,
   );
-  const imgData = useShinyOutputValue<ImageData>(namespacedId, undefined, skipNs);
+  const imgData = useShinyOutputValue<ImageData>(
+    namespacedId,
+    undefined,
+    skipNs,
+  );
   const imgStatus = useShinyOutputStatus(namespacedId, skipNs);
 
   // Create a reference to the img element to access its properties

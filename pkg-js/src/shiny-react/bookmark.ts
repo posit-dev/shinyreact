@@ -31,7 +31,9 @@ import {
  * sensitive data into inputs that participate in bookmarking.
  */
 export function applyRestoredValues(registry: InputRegistry): void {
-  const win = (typeof window !== "undefined" ? window : (globalThis as any)) as any;
+  const win = (
+    typeof window !== "undefined" ? window : (globalThis as any)
+  ) as any;
   const ns = (win.shinyreact = win.shinyreact || {});
   const existing = ns._restore;
 

@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { _resetReactRegistryForTesting, getReactRegistry } from "../react-registry";
+import {
+  _resetReactRegistryForTesting,
+  getReactRegistry,
+} from "../react-registry";
 import {
   _resetShinyReactInitializedForTesting,
   useShinyOutputValue,

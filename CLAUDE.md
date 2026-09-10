@@ -61,6 +61,7 @@ make py-check-tox                    # full matrix: Python 3.10–3.14
 
 # JS checks
 make js-lint                         # tsc --noEmit
+make js-format                       # prettier --write (js-format-check in CI)
 make js-build-watch                  # watch mode
 
 # R checks

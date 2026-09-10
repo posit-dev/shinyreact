@@ -49,6 +49,16 @@ js-lint:  ## [js] Lint JS code
 	@echo "📐 Linting JS code"
 	cd $(PATH_PKG_JS) && npm run lint
 
+.PHONY: js-format
+js-format:  ## [js] Format JS code (prettier)
+	@echo "🎨 Formatting JS code"
+	cd $(PATH_PKG_JS) && npm run format
+
+.PHONY: js-format-check
+js-format-check:  ## [js] Check JS formatting (prettier)
+	@echo "🎨 Checking JS formatting"
+	cd $(PATH_PKG_JS) && npm run format-check
+
 .PHONY: js-build
 js-build:  ## [js] Build JS code
 	@echo "🧳 Building JS code"

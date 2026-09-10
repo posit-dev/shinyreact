@@ -168,7 +168,14 @@ export function useShinyInput<T>(
       // useEffect will be called again. If someone wants to really get rid of
       // the registry entry, they will have to do so manually.
     };
-  }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault, type]);
+  }, [
+    namespacedId,
+    shinyInitialized,
+    debounceMs,
+    priority,
+    stableDefault,
+    type,
+  ]);
 
   const setValueWrapped = useCallback(
     (value: SetStateAction<T>) => {
@@ -509,7 +516,14 @@ export function useSetShinyInput<T>(
     // Intentionally NO addUseStateSetValueFn — this is a write-only hook;
     // value updates from elsewhere (other producers, server-side updates)
     // must not re-render the component using this hook.
-  }, [namespacedId, shinyInitialized, debounceMs, priority, stableDefault, type]);
+  }, [
+    namespacedId,
+    shinyInitialized,
+    debounceMs,
+    priority,
+    stableDefault,
+    type,
+  ]);
 
   return useCallback(
     (value: SetStateAction<T>) => {

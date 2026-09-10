@@ -103,9 +103,8 @@ describe("entry point parity", () => {
     // requireShinyReactConfigTag() directly, which would still pass if
     // npm.ts stopped opting in.
     await import("../npm");
-    const { isShinyReactConfigTagRequired } = await import(
-      "../shiny-react/config"
-    );
+    const { isShinyReactConfigTagRequired } =
+      await import("../shiny-react/config");
     expect(isShinyReactConfigTagRequired()).toBe(true);
 
     vi.resetModules();

@@ -2,8 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { useNamespacedId } from "./shiny-react/ShinyModuleContext";
 
 /** @group Components */
-export interface ShinyOutputProps
-  extends React.HTMLAttributes<HTMLElement> {
+export interface ShinyOutputProps extends React.HTMLAttributes<HTMLElement> {
   id: string;
   tagName?: string;
   /**
