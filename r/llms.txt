@@ -78,11 +78,12 @@ shiny::runGitHub("posit-dev/shinyreact", subdir = "examples/01-hello")
 - [TSX files and JavaScript build
   tools](https://posit-dev.github.io/shinyreact/articles/tsx-and-build-tools.html)
   explains `.tsx`, JSX, TypeScript, and what `npm run build` does.
-- [Testing wire
-  payloads](https://posit-dev.github.io/shinyreact/r/articles/testing.html)
+- [Testing](https://posit-dev.github.io/shinyreact/r/articles/testing.html)
   covers
+  [`shiny::testServer()`](https://rdrr.io/pkg/shiny/man/testServer.html)
+  for driving a server with no browser, and
   [`wire_tap()`](https://posit-dev.github.io/shinyreact/r/reference/wire_tap.md)
-  for shinytest2 tests.
+  for wire payloads in shinytest2 tests.
 - [Agent
   Skills](https://posit-dev.github.io/shinyreact/r/articles/agent-skills.html)
   explains the skills that ship with the package for coding agents.
@@ -150,5 +151,4 @@ Record the wire payloads a browser test observes.
   Skills](https://posit-dev.github.io/shinyreact/r/articles/agent-skills.md):
 - [Get started with
   shinyreact](https://posit-dev.github.io/shinyreact/r/articles/shinyreact.md):
-- [Testing wire
-  payloads](https://posit-dev.github.io/shinyreact/r/articles/testing.md):
+- [Testing](https://posit-dev.github.io/shinyreact/r/articles/testing.md):

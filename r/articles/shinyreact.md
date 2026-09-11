@@ -197,9 +197,10 @@ uses them as initial values instead of its default.
   tools](https://posit-dev.github.io/shinyreact/articles/tsx-and-build-tools.html)
   explains `.tsx`, JSX, TypeScript, and what `npm run build` does, for
   readers new to JavaScript tooling.
-- [Testing wire
-  payloads](https://posit-dev.github.io/shinyreact/r/articles/testing.html)
-  shows how to assert the JSON that crosses the websocket with
+- [Testing](https://posit-dev.github.io/shinyreact/r/articles/testing.html)
+  shows how to assert the JSON a server produces with
+  [`shiny::testServer()`](https://rdrr.io/pkg/shiny/man/testServer.html),
+  and the JSON that crosses the websocket with
   [`wire_tap()`](https://posit-dev.github.io/shinyreact/r/reference/wire_tap.md).
 - The [JS reference](https://posit-dev.github.io/shinyreact/js/)
   documents every hook and component at `window.shinyreact`.

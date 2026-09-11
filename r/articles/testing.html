@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Testing wire payloads • shinyreact</title>
+<title>Testing • shinyreact</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -18,7 +18,7 @@
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="Testing wire payloads">
+<meta property="og:title" content="Testing">
 </head>
 <body>
     <a href="#container" class="visually-hidden-focusable">Skip to content</a>
@@ -43,7 +43,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/agent-skills.html">Agent Skills</a></li>
-    <li><a class="dropdown-item" href="../articles/testing.html">Testing wire payloads</a></li>
+    <li><a class="dropdown-item" href="../articles/testing.html">Testing</a></li>
   </ul>
 </li>
       </ul>
@@ -64,7 +64,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.svg" class="logo" alt=""><h1>Testing wire payloads</h1>
+      <img src="../logo.svg" class="logo" alt=""><h1>Testing</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/posit-dev/shinyreact/blob/main/vignettes/articles/testing.Rmd" class="external-link"><code>vignettes/articles/testing.Rmd</code></a></small>
@@ -77,16 +77,76 @@
 JSON that crosses the Shiny websocket: the values
 <code><a href="../reference/reactive_output.html">reactive_output()</a></code> delivers, the payloads
 <code><a href="../reference/send_message.html">send_message()</a></code> pushes, and the values
-<code>useShinyInput()</code> sends back. <code><a href="../reference/wire_tap.html">wire_tap()</a></code> records
-those payloads in a <a href="https://rstudio.github.io/shinytest2/" class="external-link">shinytest2</a> test so you
-can assert on them directly, without inspecting the rendered DOM.</p>
+<code>useShinyInput()</code> sends back. Both halves of this article
+assert that JSON — the first with no browser at all, the second inside a
+real one.</p>
 <div class="section level2">
-<h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
+<h2 id="testing-the-server-with-testserver">Testing the server with <code>testServer()</code><a class="anchor" aria-label="anchor" href="#testing-the-server-with-testserver"></a>
 </h2>
+<p>A <code>ui.tsx</code> server contains only reactive computation, so
+“this input produces that output value” <em>is</em> the server.
+<code><a href="../reference/reactive_output.html">reactive_output()</a></code> is an ordinary render function, so
+<code><a href="https://rdrr.io/pkg/shiny/man/testServer.html" class="external-link">shiny::testServer()</a></code> drives it with no browser and no
+client, and <code>output$id</code> is the JSON value itself — no spec
+wrapper, no coercion:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">test_that</span><span class="op">(</span><span class="st">"dist_data bins the waiting column"</span>, <span class="op">{</span></span>
+<span>  <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html" class="external-link">testServer</a></span><span class="op">(</span><span class="va">app_dir</span>, <span class="op">{</span></span>
+<span>    <span class="va">session</span><span class="op">$</span><span class="fu">setInputs</span><span class="op">(</span>bins <span class="op">=</span> <span class="fl">9</span><span class="op">)</span></span>
+<span></span>
+<span>    <span class="fu">expect_named</span><span class="op">(</span><span class="va">output</span><span class="op">$</span><span class="va">dist_data</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"breaks"</span>, <span class="st">"counts"</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu">expect_equal</span><span class="op">(</span></span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="va">output</span><span class="op">$</span><span class="va">dist_data</span><span class="op">$</span><span class="va">counts</span><span class="op">)</span>,</span>
+<span>      <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">16L</span>, <span class="fl">37L</span>, <span class="fl">30L</span>, <span class="fl">16L</span>, <span class="fl">14L</span>, <span class="fl">57L</span>, <span class="fl">67L</span>, <span class="fl">29L</span>, <span class="fl">6L</span><span class="op">)</span></span>
+<span>    <span class="op">)</span></span>
+<span>    <span class="fu">expect_equal</span><span class="op">(</span><span class="va">output</span><span class="op">$</span><span class="va">dist_caption</span>, <span class="st">"272 eruptions in 9 bins"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass()</a></code> is there because the app wraps its vectors in
+<code><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I()</a></code> so a one-bin result serializes as <code>[272]</code>
+rather than <code>272</code> — the <code>AsIs</code> class rides along
+on the value the test sees.</p>
+<p>Pass a directory containing the app, or the <code>server</code>
+function itself. Module ids are namespaced as the session sees them
+(<code>output$`counter-label`</code>), or reachable through
+<code>session$makeScope("counter")</code>; a module server can also be
+driven on its own:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/testServer.html" class="external-link">testServer</a></span><span class="op">(</span><span class="va">card_server</span>, args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>id <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span>, <span class="op">{</span></span>
+<span>  <span class="va">session</span><span class="op">$</span><span class="fu">setInputs</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">7</span><span class="op">)</span></span>
+<span>  <span class="fu">expect_equal</span><span class="op">(</span><span class="va">output</span><span class="op">$</span><span class="va">label</span>, <span class="st">"n=7"</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="https://rdrr.io/pkg/shiny/man/testServer.html" class="external-link">testServer()</a></code> <strong>raises</strong> rather than
+reporting a status. Reading an output whose render function failed
+<code><a href="https://rdrr.io/pkg/shiny/man/req.html" class="external-link">req()</a></code> throws a silent error, which is how you assert that
+an output produced nothing:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">expect_error</span><span class="op">(</span><span class="va">output</span><span class="op">$</span><span class="va">answer</span>, class <span class="op">=</span> <span class="st">"shiny.silent.error"</span><span class="op">)</span></span></code></pre></div>
+<p><code>examples/01-hello</code> and <code>examples/07-plotly</code>
+both carry a <code>tests/testthat/test-outputs.R</code> written this
+way, runnable from the app directory with
+<code><a href="https://rdrr.io/pkg/shiny/man/runTests.html" class="external-link">shiny::runTests()</a></code>.</p>
+<p>The Python counterpart is
+<code>shiny.testserver.test_server()</code>, which reports
+<code>.status</code> (<code>"ok"</code>, <code>"error"</code>,
+<code>"silent"</code>) instead of raising.</p>
+</div>
+<div class="section level2">
+<h2 id="testing-wire-payloads-with-wire_tap">Testing wire payloads with <code>wire_tap()</code><a class="anchor" aria-label="anchor" href="#testing-wire-payloads-with-wire_tap"></a>
+</h2>
+<p><code><a href="../reference/wire_tap.html">wire_tap()</a></code> records the payloads crossing the websocket
+in a <a href="https://rstudio.github.io/shinytest2/" class="external-link">shinytest2</a> test
+so you can assert on them directly, without inspecting the rendered DOM.
+Reserve it for what <code><a href="https://rdrr.io/pkg/shiny/man/testServer.html" class="external-link">testServer()</a></code> structurally cannot see:
+the values the <em>client</em> chooses to send, real bindings, and real
+rendering.</p>
+<div class="section level3">
+<h3 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
+</h3>
 <p><code><a href="../reference/wire_tap.html">wire_tap()</a></code> needs the shinytest2 package. Start the
 <code>AppDriver</code> with <code>shiny.trace = TRUE</code> so every
 websocket frame is recorded in the app’s logs:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">test_that</span><span class="op">(</span><span class="st">"dist_data bins the waiting column"</span>, <span class="op">{</span></span>
 <span>  <span class="va">app</span> <span class="op">&lt;-</span> <span class="fu">shinytest2</span><span class="fu">::</span><span class="va"><a href="https://rstudio.github.io/shinytest2/reference/AppDriver.html" class="external-link">AppDriver</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
 <span>    <span class="va">app_dir</span>,</span>
@@ -99,9 +159,9 @@ websocket frame is recorded in the app’s logs:</p>
 <span>  <span class="va">tap</span><span class="op">$</span><span class="fu">expect_output_value</span><span class="op">(</span><span class="st">"dist_data"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="va">d</span><span class="op">$</span><span class="va">breaks</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">==</span> <span class="fl">43</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="matchers">Matchers<a class="anchor" aria-label="anchor" href="#matchers"></a>
-</h2>
+<div class="section level3">
+<h3 id="matchers">Matchers<a class="anchor" aria-label="anchor" href="#matchers"></a>
+</h3>
 <p>Each <code>expect_*</code> function takes a matcher and retries until
 it matches or a timeout (10 seconds by default) elapses:</p>
 <ul>
@@ -145,27 +205,28 @@ no fraction, so compare against <code>30L</code>, not
 each scans from just past the previous match, so a value that arrives
 between two checks is never missed.</p>
 </div>
-<div class="section level2">
-<h2 id="full-histories">Full histories<a class="anchor" aria-label="anchor" href="#full-histories"></a>
-</h2>
+<div class="section level3">
+<h3 id="full-histories">Full histories<a class="anchor" aria-label="anchor" href="#full-histories"></a>
+</h3>
 <p>To inspect everything that crossed a channel, use the
 <code>all_*</code> functions:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tap</span><span class="op">$</span><span class="fu">all_output_values</span><span class="op">(</span><span class="st">"dist_data"</span><span class="op">)</span></span>
 <span><span class="va">tap</span><span class="op">$</span><span class="fu">all_messages</span><span class="op">(</span><span class="st">"notify"</span><span class="op">)</span></span>
 <span><span class="va">tap</span><span class="op">$</span><span class="fu">all_input_values</span><span class="op">(</span><span class="st">"bins"</span><span class="op">)</span></span></code></pre></div>
 <p>Input ids match the bare id or any <code>id:type</code> wire id, so
 use the id you wrote in <code>useShinyInput()</code>.</p>
 </div>
-<div class="section level2">
-<h2 id="python-counterpart">Python counterpart<a class="anchor" aria-label="anchor" href="#python-counterpart"></a>
-</h2>
+<div class="section level3">
+<h3 id="python-counterpart">Python counterpart<a class="anchor" aria-label="anchor" href="#python-counterpart"></a>
+</h3>
 <p><code>shinyreact.playwright.WireTap</code> in the Python package has
 the same methods and semantics for Playwright tests. One divergence:
 <code><a href="https://jeroen.r-universe.dev/jsonlite/reference/fromJSON.html" class="external-link">jsonlite::fromJSON()</a></code> maps a JSON <code>null</code> output
 value to <code>NULL</code>, indistinguishable from an absent key, so
 early <code>null</code> frames are dropped in R where Python records
 <code>None</code>.</p>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
