@@ -44,18 +44,16 @@ test_that("R example apps are installed at examples-shiny/<name>", {
 test_that("shipped R example apps match examples/", {
   skip_if_not(dir.exists(examples_dir), "not running from the repo")
 
-  # Only app.R + www/ are copied; the example's README/FEATURES/tests and its
-  # Python siblings stay in examples/. Filter before reading, not after: the
-  # example directories also hold binary files (__pycache__, node_modules)
-  # that readLines() warns about.
-  copied <- "^(app\\.R|www/)"
-
-  tree <- function(root) {
-    files <- sort(grep(
-      copied,
-      list.files(root, recursive = TRUE),
-      value = TRUE
-    ))
+  # `keep` filters BEFORE reading, which matters on the examples/ side: a
+  # working copy accumulates untracked detritus (__pycache__/*.pyc,
+  # node_modules/), and readLines() warns "embedded nul" once per line of every
+  # binary file it opens. The installed side is read unfiltered, so a file that
+  # should not have shipped still shows up as drift.
+  tree <- function(root, keep = NULL) {
+    files <- sort(list.files(root, recursive = TRUE))
+    if (!is.null(keep)) {
+      files <- files[grepl(keep, files)]
+    }
     stats::setNames(
       lapply(files, function(f) readLines(file.path(root, f))),
       files
@@ -63,10 +61,11 @@ test_that("shipped R example apps match examples/", {
   }
 
   for (name in shipped_r_examples) {
-    src <- tree(file.path(examples_dir, name))
+    # Only app.R + www/ are copied; the example's README/FEATURES/tests and its
+    # Python siblings stay in examples/.
     expect_equal(
       tree(system.file("examples-shiny", name, package = "shinyreact")),
-      src,
+      tree(file.path(examples_dir, name), keep = "^(app\\.R|www/)"),
       info = "run `make update-examples`"
     )
   }
