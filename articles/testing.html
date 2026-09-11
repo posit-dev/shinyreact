@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Testing wire payloads – shinyreact</title>
+<title>Testing – shinyreact</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -111,10 +111,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 }</script>
 
 
-<meta property="og:title" content="Testing wire payloads – shinyreact">
+<meta property="og:title" content="Testing – shinyreact">
 <meta property="og:description" content="React UI infrastructure for Shiny (Python and R)">
 <meta property="og:site_name" content="shinyreact">
-<meta name="twitter:title" content="Testing wire payloads – shinyreact">
+<meta name="twitter:title" content="Testing – shinyreact">
 <meta name="twitter:description" content="React UI infrastructure for Shiny (Python and R)">
 <meta name="twitter:card" content="summary">
 </head>
@@ -159,7 +159,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>  
         <li>
     <a class="dropdown-item" href="../articles/testing.html">
- <span class="dropdown-text">Testing wire payloads</span></a>
+ <span class="dropdown-text">Testing</span></a>
   </li>  
         <li>
     <a class="dropdown-item" href="../articles/agent-skills.html">
@@ -210,8 +210,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#matchers" id="toc-matchers" class="nav-link active" data-scroll-target="#matchers">Matchers</a></li>
+  <li><a href="#testing-the-server-without-a-browser" id="toc-testing-the-server-without-a-browser" class="nav-link active" data-scroll-target="#testing-the-server-without-a-browser">Testing the server without a browser</a></li>
+  <li><a href="#testing-wire-payloads" id="toc-testing-wire-payloads" class="nav-link" data-scroll-target="#testing-wire-payloads">Testing wire payloads</a>
+  <ul class="collapse">
+  <li><a href="#matchers" id="toc-matchers" class="nav-link" data-scroll-target="#matchers">Matchers</a></li>
   <li><a href="#full-histories" id="toc-full-histories" class="nav-link" data-scroll-target="#full-histories">Full histories</a></li>
+  </ul></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/posit-dev/shinyreact/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li><li><a href="https://github.com/posit-dev/shinyreact/edit/main/pkg-py/docs/articles/testing.qmd" class="toc-action"><i class="bi empty"></i>Edit this page</a></li></ul></div></nav>
     </div>
@@ -220,7 +224,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Testing wire payloads</h1>
+<h1 class="title">Testing</h1>
 </div>
 
 
@@ -237,39 +241,92 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>In a shinyreact app the contract between server and client is the JSON that crosses the Shiny websocket: the values <code>reactive_output</code> delivers, the payloads <code>send_message()</code> pushes, and the values <code>useShinyInput()</code> sends back. A wire tap records those payloads in a browser test so you can assert on them directly, without inspecting the rendered DOM.</p>
+<p>In a shinyreact app the contract between server and client is the JSON that crosses the Shiny websocket: the values <code>reactive_output</code> delivers, the payloads <code>send_message()</code> pushes, and the values <code>useShinyInput()</code> sends back. Both halves of this page assert that JSON — the first without a browser at all, the second inside a real one.</p>
+<section id="testing-the-server-without-a-browser" class="level2">
+<h2 class="anchored" data-anchor-id="testing-the-server-without-a-browser">Testing the server without a browser</h2>
+<p>A <code>ui.tsx</code> server contains only reactive computation, so “this input produces that output value” <em>is</em> the server. Shiny can run one against a mock connection — no browser, no subprocess — and hand you the value the client would have received.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
-<p><code>shinyreact.playwright.WireTap</code> needs the <code>playwright</code> package. Construct it before <code>page.goto()</code> so it sees every frame:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shinyreact.playwright <span class="im">import</span> WireTap</span>
+<p><code>shiny.testserver.test_server()</code> loads the app file (Express or Core, <code>shiny.App</code> or <code>shinyreact.ReactApp</code>) and runs its server:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_dist_data(page, app):</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    tap <span class="op">=</span> WireTap(page)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    page.goto(app.url)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    tap.expect_input_value(<span class="st">"bins"</span>, <span class="dv">30</span>)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    tap.expect_output_value(<span class="st">"dist_data"</span>, <span class="kw">lambda</span> d: d[<span class="st">"breaks"</span>][<span class="dv">0</span>] <span class="op">==</span> <span class="fl">43.0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shiny.testserver <span class="im">import</span> test_server</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>APP <span class="op">=</span> Path(<span class="va">__file__</span>).resolve().parents[<span class="dv">1</span>] <span class="op">/</span> <span class="st">"app.py"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_dist_outputs():</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> test_server(APP) <span class="im">as</span> ts:</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        ts.set_inputs(bins<span class="op">=</span><span class="dv">9</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> ts.get_output(<span class="st">"dist_caption"</span>) <span class="op">==</span> <span class="st">"272 eruptions in 9 bins"</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> ts.get_output(<span class="st">"dist_data"</span>).value[<span class="st">"counts"</span>][<span class="dv">0</span>] <span class="op">==</span> <span class="dv">16</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>get_output()</code> compares equal to the underlying value, so assert on it directly; reach for <code>.value</code> to index into it, and <code>.status</code> (<code>"ok"</code>, <code>"error"</code>, <code>"silent"</code>) or <code>.error</code> for the non-value outcomes. Traditional renderers embedded with <a href="../articles/hooks.html"><code>ShinyOutput</code></a> are readable the same way, so a <code>@render.data_frame</code> payload can be checked here too.</p>
+<p>Three details are specific to shinyreact:</p>
+<ul>
+<li>An <strong>untyped</strong> input id needs no <code>:shinyreact.default</code> suffix — the hook appends it on the wire, but Python’s handler is a no-op, so <code>set_inputs(bins=9)</code> is equivalent.</li>
+<li>A <strong>typed</strong> one does: <code>set_inputs(**{"when:shiny.datetime": 1756382400})</code> is what runs the handler and makes <code>input.when()</code> a <code>datetime</code>.</li>
+<li>An <strong>unset</strong> input means <code>status == "silent"</code>, not a <code>None</code> value, because <code>input.x()</code> raises a silent exception while unset.</li>
+</ul>
+<p>An input read through <code>@reactive.event(..., ignore_init=True)</code> needs two <code>set_inputs</code> calls, mirroring the client: <code>useShinyInput</code> registers its default at mount and sends the event after.</p>
+<p><code>test_server()</code> is newer than shiny 1.7.0.</p>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
-<p><code>wire_tap()</code> needs the shinytest2 package. Start the <code>AppDriver</code> with <code>shiny.trace = TRUE</code> so every websocket frame is recorded in the app’s logs:</p>
+<p><code>reactive_output()</code> is an ordinary render function, so <code>shiny::testServer()</code> drives it directly and <code>output$id</code> is the JSON value itself — no spec wrapper, no coercion:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">"dist_data bins the waiting column"</span>, {</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  app <span class="ot">&lt;-</span> shinytest2<span class="sc">::</span>AppDriver<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    app_dir,</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">options =</span> <span class="fu">list</span>(<span class="at">shiny.trace =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  withr<span class="sc">::</span><span class="fu">defer</span>(app<span class="sc">$</span><span class="fu">stop</span>())</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  tap <span class="ot">&lt;-</span> shinyreact<span class="sc">::</span><span class="fu">wire_tap</span>(app)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  tap<span class="sc">$</span><span class="fu">expect_input_value</span>(<span class="st">"bins"</span>, <span class="dv">30</span>L)</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  tap<span class="sc">$</span><span class="fu">expect_output_value</span>(<span class="st">"dist_data"</span>, <span class="cf">function</span>(d) d<span class="sc">$</span>breaks[[<span class="dv">1</span>]] <span class="sc">==</span> <span class="dv">43</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  shiny<span class="sc">::</span><span class="fu">testServer</span>(app_dir, {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    session<span class="sc">$</span><span class="fu">setInputs</span>(<span class="at">bins =</span> <span class="dv">9</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect_named</span>(output<span class="sc">$</span>dist_data, <span class="fu">c</span>(<span class="st">"breaks"</span>, <span class="st">"counts"</span>))</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect_equal</span>(</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">unclass</span>(output<span class="sc">$</span>dist_data<span class="sc">$</span>counts),</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">c</span>(<span class="dv">16</span>L, <span class="dv">37</span>L, <span class="dv">30</span>L, <span class="dv">16</span>L, <span class="dv">14</span>L, <span class="dv">57</span>L, <span class="dv">67</span>L, <span class="dv">29</span>L, <span class="dv">6</span>L)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">expect_equal</span>(output<span class="sc">$</span>dist_caption, <span class="st">"272 eruptions in 9 bins"</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  })</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>unclass()</code> is there because the app wraps its vectors in <code>I()</code> so a one-bin result serializes as <code>[272]</code> rather than <code>272</code>; the <code>AsIs</code> class rides along on the value the test sees.</p>
+<p>Pass a directory containing the app, or the <code>server</code> function itself. Module ids are namespaced as the session sees them, so a scoped output is read as <code>output$`counter-label`</code>, or reachable through <code>session$makeScope("counter")</code>; a module server can also be driven on its own with <code>testServer(card_server, args = list(id = "left"), { ... })</code>.</p>
+<p><code>testServer()</code> <strong>raises</strong> rather than reporting a status: reading an output whose render function failed <code>req()</code> throws a <code>shiny.silent.error</code>, so <code>expect_error(output$answer, class = "shiny.silent.error")</code> is how you assert an output produced nothing. Python’s <code>test_server()</code> reports that through <code>.status</code> instead.</p>
 </div>
 </div>
 </div>
-<section id="matchers" class="level2">
-<h2 class="anchored" data-anchor-id="matchers">Matchers</h2>
+</section>
+<section id="testing-wire-payloads" class="level2">
+<h2 class="anchored" data-anchor-id="testing-wire-payloads">Testing wire payloads</h2>
+<p>A wire tap records the payloads crossing the websocket in a browser test, so you can assert on them directly instead of inspecting the rendered DOM. Reserve it for what the section above structurally cannot see: the values the <em>client</em> chooses to send, real bindings, and real rendering.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<p><code>shinyreact.playwright.WireTap</code> needs the <code>playwright</code> package. Construct it before <code>page.goto()</code> so it sees every frame:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shinyreact.playwright <span class="im">import</span> WireTap</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_dist_data(page, app):</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    tap <span class="op">=</span> WireTap(page)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    page.goto(app.url)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    tap.expect_input_value(<span class="st">"bins"</span>, <span class="dv">30</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    tap.expect_output_value(<span class="st">"dist_data"</span>, <span class="kw">lambda</span> d: d[<span class="st">"breaks"</span>][<span class="dv">0</span>] <span class="op">==</span> <span class="fl">43.0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<p><code>wire_tap()</code> needs the shinytest2 package. Start the <code>AppDriver</code> with <code>shiny.trace = TRUE</code> so every websocket frame is recorded in the app’s logs:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">test_that</span>(<span class="st">"dist_data bins the waiting column"</span>, {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  app <span class="ot">&lt;-</span> shinytest2<span class="sc">::</span>AppDriver<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    app_dir,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">options =</span> <span class="fu">list</span>(<span class="at">shiny.trace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  withr<span class="sc">::</span><span class="fu">defer</span>(app<span class="sc">$</span><span class="fu">stop</span>())</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  tap <span class="ot">&lt;-</span> shinyreact<span class="sc">::</span><span class="fu">wire_tap</span>(app)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  tap<span class="sc">$</span><span class="fu">expect_input_value</span>(<span class="st">"bins"</span>, <span class="dv">30</span>L)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  tap<span class="sc">$</span><span class="fu">expect_output_value</span>(<span class="st">"dist_data"</span>, <span class="cf">function</span>(d) d<span class="sc">$</span>breaks[[<span class="dv">1</span>]] <span class="sc">==</span> <span class="dv">43</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<section id="matchers" class="level3">
+<h3 class="anchored" data-anchor-id="matchers">Matchers</h3>
 <p>Each <code>expect_*</code> method takes a matcher and retries until it matches or a timeout (10 seconds by default) elapses:</p>
 <ul>
 <li>A <strong>function</strong> is satisfied by a truthy return value. A function that errors on a payload’s shape counts as a non-match, not a test failure.</li>
@@ -304,12 +361,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 <p>Successive expectations on one channel assert an ordered subsequence: each scans from just past the previous match, so a value that arrives between two checks is never missed.</p>
 </section>
-<section id="full-histories" class="level2">
-<h2 class="anchored" data-anchor-id="full-histories">Full histories</h2>
+<section id="full-histories" class="level3">
+<h3 class="anchored" data-anchor-id="full-histories">Full histories</h3>
 <p><code>all_output_values(id)</code>, <code>all_messages(id)</code>, and <code>all_input_values(id)</code> return everything that crossed a channel, in order. Input ids match the bare id or any <code>id:type</code> wire id, so use the id you wrote in <code>useShinyInput()</code>.</p>
 <p>One divergence between the two languages: <code>jsonlite::fromJSON()</code> maps a JSON <code>null</code> output value to <code>NULL</code>, indistinguishable from an absent key, so early <code>null</code> frames are dropped in R where Python records <code>None</code>.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
