@@ -97,7 +97,8 @@ quartodoc:
       contents:
         - send_message
     - title: Testing
-      desc: Record the wire payloads a Playwright test observes.
+      desc: Record the wire payloads a Playwright test observes. For testing a
+        server with no browser, see `shiny.testserver.test_server()`.
       contents:
         - playwright.WireTap
 

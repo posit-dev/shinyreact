@@ -149,12 +149,16 @@ rendered), then the rest of the outputs, then layout and polish.
 
 ## Phase 5 — verify
 
-Three layers, cheapest first: factor pure logic out of the app file so it is
-importable and test it directly; test the client by evaluating the real
-`www/ui.js` against a fake `window.Shiny` in jsdom (not by importing the
-component — that tests a copy the app does not ship); and reserve Playwright
-for layout and real bindings, which the other two structurally cannot see. The
-`shinyreact-build-app` skill's `references/testing.md` has the traps.
+Four layers, cheapest first: factor pure logic out of the app file so it is
+importable and test it directly; drive the ported server with no browser —
+`[r]` `shiny::testServer()`, `[py]` `shiny.testserver.test_server()` — which
+for a `ui.tsx` app covers most of it, since the server is only reactive
+computation; test the client by evaluating the real `www/ui.js` against a fake
+`window.Shiny` in jsdom (not by importing the component — that tests a copy the
+app does not ship); and reserve Playwright for layout and real bindings, which
+the others structurally cannot see. The `shinyreact-build-app` skill's
+[`references/testing.md`](../shinyreact-build-app/references/testing.md) has
+the details and the traps.
 
 A port has one advantage a new app does not: **the original still runs.** Where
 the logic is a pure transform, capture its output from the original app and

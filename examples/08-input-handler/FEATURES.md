@@ -12,7 +12,9 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 - the hook's `type` appends `:shiny.datetime` to the wire id, so the value
   arrives as `when:shiny.datetime` and Shiny's built-in handler coerces it
-  before `input.when()` resolves
+  before `input.when()` resolves `(test)`
+  - the suffix is what buys the coercion: the same number sent as plain `when`
+    stays an `int` `(test)`
 - opting into a `type` bypasses shinyreact's own `shinyreact.default` handler —
   the value is handled by Shiny's registry, not by shinyreact
 - the id/type pairing is a per-id contract: a second mount of `"when"` without
@@ -21,9 +23,10 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 ## Server (`app.py`, Express)
 
 - one output, `when_info` → `"<type name> → <repr>"`, e.g.
-  `"datetime → datetime.datetime(2026, 8, 28, 12, 0, tzinfo=...)"`
-- `input.when()` is `None` before the first client message → returns `"—"`
-  (em dash)
+  `"datetime → datetime.datetime(2026, 8, 28, 12, 0, tzinfo=...)"` `(test)`
+- before the first client message, `input.when()` raises a silent exception, so
+  `when_info` never renders — the `"—"` (em dash) branch in `app.py` is
+  unreachable from a real client `(test)`
 - the example asserts nothing about the timezone the handler attaches
 - `[py]` only — this example has no R server; R's handler registry has no
   `shiny.datetime` equivalent, so the client is not portable as written
