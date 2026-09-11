@@ -22,6 +22,38 @@ describe("ShinyOutput", () => {
     delete (window as any).Shiny;
   });
 
+  /**
+   * Makes every `bindAll` call hang until released, and reports how many are
+   * unsettled. `drain()` releases them one at a time, asserting before each
+   * release that only one is in flight — the invariant for scopes that all
+   * overlap, and the thing a missed overlap check breaks.
+   */
+  function hangingBindAll() {
+    const release: Array<() => void> = [];
+    mockBindAll.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          release.push(resolve);
+        }),
+    );
+    return {
+      get outstanding() {
+        return release.length;
+      },
+      async drain() {
+        // Bounded so a genuine deadlock fails the test instead of hanging.
+        for (let i = 0; i < 20 && release.length > 0; i++) {
+          expect(release.length).toBe(1);
+          release.shift()!();
+          // A macrotask flushes every queued microtask, so any pass that was
+          // waiting on the released one has started by the next iteration.
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        expect(release.length).toBe(0);
+      },
+    };
+  }
+
   it("renders the element with the given id and class", () => {
     const { container } = render(
       <ShinyOutput id="my_plot" className="plotly-output" />,
@@ -366,6 +398,54 @@ describe("ShinyOutput", () => {
 
     resolveSecond();
     await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(3));
+  });
+
+  it("does not overlap scans when StrictMode's cleanup queues a nested scope", async () => {
+    // StrictMode's synthetic mount→cleanup→mount double invoke sends every
+    // scope through the unmount path, which queues a fresh pass. A queued
+    // pass that waits on its own scope's in-flight call alone still lands in
+    // the same microtask flush as a nested scope's pass, so nested layouts
+    // hit the duplicate registration in dev on every mount.
+    const bindAll = hangingBindAll();
+
+    render(
+      <React.StrictMode>
+        <div>
+          <ShinyOutput id="outer" />
+          <div>
+            <ShinyOutput id="inner" />
+          </div>
+        </div>
+      </React.StrictMode>,
+    );
+
+    await bindAll.drain();
+  });
+
+  it("does not overlap scans when a later sibling queues behind its own scope's pass", async () => {
+    // A ShinyOutput mounting under a parent whose in-flight scan started
+    // before it existed has to queue a pass of its own — and that pass must
+    // wait for the overlapping outer scope's outstanding pass too, not just
+    // for its own scope's.
+    const bindAll = hangingBindAll();
+
+    function App({ stage }: { stage: 1 | 2 | 3 }) {
+      return (
+        <div>
+          {stage >= 2 && <ShinyOutput id="outer" />}
+          <div>
+            <ShinyOutput id="a" />
+            {stage >= 3 && <ShinyOutput id="b" />}
+          </div>
+        </div>
+      );
+    }
+
+    const { rerender } = render(<App stage={1} />);
+    rerender(<App stage={2} />);
+    rerender(<App stage={3} />);
+
+    await bindAll.drain();
   });
 
   it("still scans an unrelated scope that cannot overlap", () => {

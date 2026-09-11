@@ -1027,7 +1027,25 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
       either, so a later mount under that parent still gets a pass of its own
   - a queued pass re-reads `window.Shiny.bindAll` when it runs, and no-ops if
     Shiny is gone by then
-  - `ShinyOutput`s under different parents bind independently
+  - `ShinyOutput`s under parents that share no elements bind independently, in
+    parallel — side-by-side parents are not serialized
+- no two **overlapping** scopes scan at once, where overlapping means one scope
+  contains the other (#301)
+  - `bindAll` is descendants-only, so an outer scope's scan walks an inner
+    scope's element too, and both register it — the same duplicate-id report as
+    the same-parent case, reached by two *different* scope elements
+  - a scope whose scan would overlap an in-flight one queues behind it instead
+    of starting
+  - it waits for **every** overlapping pass in flight, not just the first found:
+    one scanning plus one already queued behind it is a reachable state
+  - the wait applies to every way a pass gets queued, not only to a scope with
+    no pass of its own
+    - a nested layout under `React.StrictMode` — whose cleanup queues a pass for
+      each scope — never runs two overlapping passes in one microtask flush
+    - a `ShinyOutput` mounting later under a parent whose running scan predates
+      it queues behind that scan *and* any overlapping outer one
+  - a failing pass does not cancel a scan queued behind it — the queued scan
+    still runs
 - unmounting one `ShinyOutput` unbinds only its own element
 - bind/unbind failures are caught and logged with the resolved output id and the
   phase, never thrown

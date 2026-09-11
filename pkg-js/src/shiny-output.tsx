@@ -132,16 +132,27 @@ function runBindAll(scope: HTMLElement): Promise<unknown> {
   return track(scope, Promise.resolve(bindAll(scope)), covers).promise;
 }
 
+/**
+ * Queue a scan for `scope` behind every in-flight pass it could overlap:
+ * `after` — this scope's own pass, when the caller has one — plus every
+ * nested scope's. The overlapping ones are gathered here rather than at the
+ * call sites so that no caller can queue behind only its own scope's pass
+ * and still land in the same microtask flush as a nested scan.
+ */
 function queueBindAll(
   scope: HTMLElement,
-  after: Promise<unknown>,
+  after?: Promise<unknown>,
 ): BindAllPass {
-  // Queue behind the in-flight call rather than deleting it: deleting would
-  // let whichever ShinyOutput asks next start a second, overlapping scan
-  // while this one is still running.
+  // Queue behind the in-flight calls rather than deleting them: deleting
+  // would let whichever ShinyOutput asks next start a second, overlapping
+  // scan while one of these is still running.
+  const blockers = overlappingPasses(scope).map((p) => p.promise);
+  if (after) blockers.push(after);
   const pass = track(
     scope,
-    after.catch(() => {}).then(() => runBindAll(scope)),
+    // allSettled never rejects, so a failing blocker does not cancel this
+    // scan — it still needs to run.
+    Promise.allSettled(blockers).then(() => runBindAll(scope)),
     null,
   );
   pass.promise.catch((err) => {
@@ -157,27 +168,22 @@ function queueBindAll(
 
 function dedupedBindAll(el: HTMLElement, scope: HTMLElement): Promise<unknown> {
   const pending = pendingBindAll.get(scope);
-  if (!pending) {
-    // No scan for this exact scope, but a nested one (an ancestor's or a
-    // descendant's) can still be walking these same elements. Wait for all
-    // of them rather than just the first: queueing behind one still leaves
-    // this scan overlapping the others.
-    const overlapping = overlappingPasses(scope);
-    if (overlapping.length === 0) return runBindAll(scope);
-    const pass = queueBindAll(
-      scope,
-      Promise.allSettled(overlapping.map((p) => p.promise)),
-    );
-    pass.consumed = true;
-    return pass.promise;
+  // Only share a running pass for this exact scope that scanned `el`. One
+  // that started before `el` mounted binds it never, and reports nothing
+  // about it — a silent unbound output, the failure mode this dedupe must
+  // not introduce.
+  if (pending && (!pending.covers || pending.covers.has(el))) {
+    pending.consumed = true;
+    return pending.promise;
   }
-  // Only share a running pass that scanned `el`. One that started before
-  // `el` mounted binds it never, and reports nothing about it — a silent
-  // unbound output, the failure mode this dedupe must not introduce.
-  const pass =
-    !pending.covers || pending.covers.has(el)
-      ? pending
-      : queueBindAll(scope, pending.promise);
+  // Nothing shareable for this exact scope. A nested scope's scan (an
+  // ancestor's or a descendant's) can still be walking these same elements,
+  // and `queueBindAll` waits for those too, so scan right away only when
+  // nothing overlapping is in flight at all.
+  if (!pending && overlappingPasses(scope).length === 0) {
+    return runBindAll(scope);
+  }
+  const pass = queueBindAll(scope, pending?.promise);
   pass.consumed = true;
   return pass.promise;
 }
