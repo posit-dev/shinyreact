@@ -32,6 +32,21 @@ function App() {
     h(ShinyOutput, { id: "widgets_b", className: "shiny-html-output" }),
     showLate &&
       h(ShinyOutput, { id: "widgets_late", className: "shiny-html-output" }),
+    // A nested parent: a different scope element from the container above,
+    // but inside it, so the container's pass walks these outputs too. Both
+    // scans binding a not-yet-marked element is the duplicate registration
+    // #301 reported, and the late one under here needs its queued pass to
+    // wait for the container's outstanding pass, not only for this scope's.
+    h(
+      "div",
+      { "data-test": "nested" },
+      h(ShinyOutput, { id: "widgets_nested", className: "shiny-html-output" }),
+      showLate &&
+        h(ShinyOutput, {
+          id: "widgets_nested_late",
+          className: "shiny-html-output",
+        }),
+    ),
     h("pre", { id: "echo-view" }, echo ? JSON.stringify(echo) : ""),
   );
 }
