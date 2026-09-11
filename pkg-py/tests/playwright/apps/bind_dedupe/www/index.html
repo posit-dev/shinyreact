@@ -1,0 +1,10 @@
+<p>
+  Two sibling <code>ShinyOutput</code> holders under one parent, plus a third
+  (<code>Letter</code>) that mounts one commit later, while their shared
+  <code>bindAll</code> pass is still in flight. Expected: all three widgets
+  rendered and bound, the echo line below showing
+  <code>{"a":9,"b":19,"letter":"a"}</code>, and <em>no</em> "Duplicate output
+  IDs were found" warning in the browser console.
+</p>
+<div id="root"></div>
+<script src="app.js" defer></script>

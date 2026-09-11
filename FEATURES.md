@@ -985,23 +985,59 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 - binding scope is deliberately asymmetric, because Shiny's API is
   - `bindAll` receives the **parent** element, since output bindings search
     descendants only and would otherwise skip the element itself
-  - re-binding the parent is safe: Shiny skips already-bound elements, so
-    siblings are not re-bound
+  - re-binding the parent after an earlier `bindAll` has settled is safe:
+    Shiny skips already-bound elements, so siblings are not re-bound
+  - re-binding it while an earlier `bindAll` is still in flight is not:
+    Shiny marks an element bound only after an `await`, so two overlapping
+    passes each bind every not-yet-marked element, and Shiny's "Duplicate
+    output IDs" check then reports each of them once per pass (#298)
   - `unbindAll` receives **its own** element with `includeSelf=true`, so
     unmounting one output cannot clobber siblings
 - it re-binds when the resolved id or `tagName` changes, and not when unrelated
   props change
   - an id change unbinds the previously bound element before binding the new one
+  - the re-bind is queued behind any `bindAll` pass still in flight for the same
+    parent, so it lands a microtask later, not synchronously
 - every prop other than `id` / `tagName` / `namespace` is forwarded to the
   rendered element, including event handlers and children
   - children act as fallback content until Shiny renders into the element
-- several `ShinyOutput`s bind independently, and unmounting one unbinds only its
-  own element
+- one `bindAll` pass per parent element at a time (#298)
+  - `ShinyOutput`s under one parent that mount in the same commit share the
+    first one's pass; only the first call reaches `Shiny.bindAll`
+    - the browser logs no `[shiny] Duplicate output IDs were found` warning for
+      sibling holders under one parent `(e2e)` — the symptom #298 reported, and
+      one a jsdom test cannot reproduce: a mocked `bindAll` is synchronous and
+      marks nothing bound
+  - an unbind under that parent (an id or `tagName` change, an unmount, React
+    StrictMode's synthetic mount-cleanup-mount) queues a fresh pass for after
+    the in-flight one settles instead of starting one at once
+    - StrictMode's double invoke never starts a second, overlapping pass, even
+      for one `ShinyOutput` with no siblings
+  - once a pass settles it is forgotten, so a later mount under the same parent
+    starts a fresh one
+  - a `ShinyOutput` that mounts under the same parent while a pass is already
+    running does **not** share it — that pass scanned the parent's children
+    before this element existed, so it would leave it unbound with no error —
+    it queues its own pass behind it instead `(e2e)`
+    - a pass that is queued but has not started yet is shared: it scans the
+      parent only when it runs, so it will see the new element
+  - a `bindAll` that throws synchronously is never shared: the next
+    `ShinyOutput` under that parent makes its own attempt
+    - a *queued* pass whose `bindAll` throws synchronously is not cached
+      either, so a later mount under that parent still gets a pass of its own
+  - a queued pass re-reads `window.Shiny.bindAll` when it runs, and no-ops if
+    Shiny is gone by then
+  - `ShinyOutput`s under different parents bind independently
+- unmounting one `ShinyOutput` unbinds only its own element
 - bind/unbind failures are caught and logged with the resolved output id and the
   phase, never thrown
   - a promise-returning `bindAll` has its rejection caught too
-  - the component stays mounted after a failure, and a failing sibling does not
-    stop the others from rendering and binding
+  - the component stays mounted after a failure; when the pass shared by
+    several `ShinyOutput`s under one parent rejects, each of them logs its own
+    error with its own id, and all of them stay mounted
+  - a queued pass that fails with no `ShinyOutput` left waiting on it (queued
+    by an unmount) logs `[shinyreact] ShinyOutput bindAll failed:` without an
+    id, rather than surfacing as an unhandled rejection
   - it no-ops when `window.Shiny` is absent, and tolerates a `Shiny` that is
     missing `bindAll` or `unbindAll`
   - `Shiny` appearing on `window` *after* mount is ignored — there is no retry
@@ -1023,6 +1059,11 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - dragging the hosted slider to its max pushes `50` to the server `(e2e)`
   - `ui.update_slider()` / `ui.update_selectize()` still target the hosted
     widgets by id, and the new values flow back through `input` `(e2e)`
+  - several holders side by side under one parent share one `bindAll` pass
+    (see `ShinyOutput`), so the browser logs no "Duplicate output IDs" warning
+    for them (#298) `(e2e)`
+    - a holder mounting one commit later, while that pass is still in flight,
+      is bound too, and its widget's value reaches the server `(e2e)`
 - React-owned input state remains the documented default; the holder is the
   documented exception for ports that must look widget-for-widget identical
 
