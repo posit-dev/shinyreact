@@ -5,7 +5,7 @@ articles:
   articles/agent-skills: agent-skills.html
   shinyreact: shinyreact.html
   articles/testing: testing.html
-last_built: 2026-09-11T15:10Z
+last_built: 2026-09-11T20:01Z
 urls:
   reference: https://posit-dev.github.io/shinyreact/r/reference
   article: https://posit-dev.github.io/shinyreact/r/articles
