@@ -26,6 +26,29 @@ def widgets_late():
     return ui.input_selectize("letter", "Letter", choices=["a", "b", "c"])
 
 
+# Hosted by the client in a `div` *inside* the parent of the three above, so
+# its scope and theirs are two different elements that nonetheless scan the
+# same subtree: `bindAll` is descendants-only, so the outer pass walks these
+# too. The shape #301 found.
+@render.ui
+def widgets_nested():
+    return ui.input_slider("bins_nested", "Nested", min=1, max=50, value=29)
+
+
+# Same late commit as `widgets_late`, but under the nested parent: this is the
+# combination that needs the queued pass to wait for the *overlapping* outer
+# pass as well as for its own scope's.
+@render.ui
+def widgets_nested_late():
+    return ui.input_selectize("nested_letter", "Nested letter", choices=["x", "y"])
+
+
 @shinyreact.reactive_output
 def echo():
-    return {"a": input.bins_a(), "b": input.bins_b(), "letter": input.letter()}
+    return {
+        "a": input.bins_a(),
+        "b": input.bins_b(),
+        "letter": input.letter(),
+        "nested": input.bins_nested(),
+        "nested_letter": input.nested_letter(),
+    }

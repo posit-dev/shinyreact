@@ -1034,8 +1034,13 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - `bindAll` is descendants-only, so an outer scope's scan walks an inner
     scope's element too, and both register it — the same duplicate-id report as
     the same-parent case, reached by two *different* scope elements
+    - the browser logs no `[shiny] Duplicate output ID` warning for a holder
+      under a `div` nested in a parent that holds holders of its own `(e2e)` —
+      like the sibling case, a symptom jsdom cannot reproduce
   - a scope whose scan would overlap an in-flight one queues behind it instead
     of starting
+    - and is still bound: the nested holders carry `.shiny-bound-output` and
+      their widget values reach the server `(e2e)`
   - it waits for **every** overlapping pass in flight, not just the first found:
     one scanning plus one already queued behind it is a reachable state
   - the wait applies to every way a pass gets queued, not only to a scope with
@@ -1043,7 +1048,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - a nested layout under `React.StrictMode` — whose cleanup queues a pass for
       each scope — never runs two overlapping passes in one microtask flush
     - a `ShinyOutput` mounting later under a parent whose running scan predates
-      it queues behind that scan *and* any overlapping outer one
+      it queues behind that scan *and* any overlapping outer one `(e2e)`
   - a failing pass does not cancel a scan queued behind it — the queued scan
     still runs
 - unmounting one `ShinyOutput` unbinds only its own element
