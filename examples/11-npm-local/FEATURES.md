@@ -57,6 +57,11 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
   - `[py]` `input.bins()` raises a silent exception, so neither output produces
     a value
   - `[r]` `input$bins` is `NULL` and both outputs return `NULL` explicitly
+- alone among the examples, the outputs are **not** driven in memory:
+  `test_server()` / `testServer()` load the app, which is the one thing this
+  example's tests avoid — `[py]` loading `app.py` triggers its
+  build-on-first-run. `examples/01-hello` pins the same binning and the same
+  two output shapes against three servers
 
 ## Client (`src/ui.jsx`)
 
