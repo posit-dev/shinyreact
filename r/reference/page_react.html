@@ -107,8 +107,9 @@ as an <a href="https://rstudio.github.io/htmltools/reference/htmlDependency.html
 makes <code>window.shinyreact</code> exist. <code>"client"</code> is for an app whose own bundle
 imports <code>@posit-dev/shinyreact</code> and therefore ships its own copy; serving them
 too would put two copies of React and the hooks on one page. The
-<code>#shinyreact-config</code> tag is emitted either way; the npm-tier client
-hard-errors without it. Mirrors Python's <code>page_react(shinyreact_js=)</code>.</p></dd>
+<code>#shinyreact-config</code> tag is emitted either way — it carries the protocol
+version and any bookmark restore payload. Mirrors Python's
+<code>page_react(shinyreact_js=)</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
