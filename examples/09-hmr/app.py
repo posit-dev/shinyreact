@@ -24,7 +24,8 @@ if not (_app_dir / "www" / "ui.js").exists():
 
 # npm tier: the client imports `@posit-dev/shinyreact` and bundles shinyreact.js
 # itself, so the server must not serve it too -- two copies on one page. The
-# `#shinyreact-config` tag is still emitted, and the npm client requires it.
+# `#shinyreact-config` tag is still emitted: it carries the protocol version
+# and any bookmark restore payload.
 set_react_page(shinyreact_js="client")
 
 
