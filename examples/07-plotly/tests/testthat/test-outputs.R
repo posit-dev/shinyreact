@@ -13,6 +13,10 @@
 # pkg-r/tests/testthat/test-examples.R.
 app_dir <- testthat::test_path("..", "..")
 
+# app.R calls plotly::renderPlotly() inside server(), so every testServer()
+# call here -- not just the scatter test -- needs plotly installed.
+testthat::skip_if_not_installed("plotly")
+
 test_that("greeting counts the points", {
   shiny::testServer(app_dir, {
     session$setInputs(num_points = 50)
@@ -33,8 +37,6 @@ test_that("greeting is NULL before the client's first message", {
 })
 
 test_that("scatter renders a plotly widget with no plotlyOutput() anywhere", {
-  skip_if_not_installed("plotly")
-
   shiny::testServer(app_dir, {
     session$setInputs(num_points = 50)
 
@@ -44,7 +46,12 @@ test_that("scatter renders a plotly widget with no plotlyOutput() anywhere", {
     # after the flush.
     expect_s3_class(output$scatter, "json")
     expect_match(output$scatter, '"type":"scatter"', fixed = TRUE)
-    dep_names <- vapply(attr(output$scatter, "deps"), `[[`, character(1), "name")
+    dep_names <- vapply(
+      attr(output$scatter, "deps"),
+      `[[`,
+      character(1),
+      "name"
+    )
     expect_true("plotly-main" %in% dep_names)
     # The *binding* JS is not in here: page_react() discovers it from the
     # render function and pushes it as a shinyreact-deps message instead,

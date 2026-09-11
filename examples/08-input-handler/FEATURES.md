@@ -23,11 +23,12 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 ## Server (`app.py`, Express)
 
 - one output, `when_info` → `"<type name> → <repr>"`, e.g.
-  `"datetime → datetime.datetime(2026, 8, 28, 12, 0, tzinfo=...)"` `(test)`
+  `1756382400` → `"datetime → datetime.datetime(2025, 8, 28, 12, 0)"` `(test)`
+  - Shiny's handler decodes as UTC and strips the `tzinfo`, so the repr is
+    naive and machine-independent `(test)`
 - before the first client message, `input.when()` raises a silent exception, so
   `when_info` never renders — the `"—"` (em dash) branch in `app.py` is
   unreachable from a real client `(test)`
-- the example asserts nothing about the timezone the handler attaches
 - `[py]` only — this example has no R server; R's handler registry has no
   `shiny.datetime` equivalent, so the client is not portable as written
 

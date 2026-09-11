@@ -11,7 +11,6 @@ it from the app directory::
 
 from __future__ import annotations
 
-import datetime
 from pathlib import Path
 
 from shiny.testserver import test_server
@@ -25,9 +24,9 @@ def test_the_handler_turns_unix_seconds_into_a_datetime() -> None:
         ts.set_inputs(**{"when:shiny.datetime": 1756382400})
         echoed = ts.get_output("when_info").value
 
-        assert echoed.startswith("datetime → datetime.datetime(")
-        # The example asserts nothing about the timezone, only the type.
-        assert datetime.datetime.fromtimestamp(1756382400).year == 2025
+        # Shiny's handler decodes as UTC and strips the tzinfo, so the value
+        # is the same on every machine: 1756382400 is 2025-08-28T12:00:00Z.
+        assert echoed == "datetime → datetime.datetime(2025, 8, 28, 12, 0)"
 
 
 def test_an_unsuffixed_value_is_not_coerced() -> None:
