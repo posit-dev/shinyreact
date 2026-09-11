@@ -303,7 +303,11 @@ export function createReactOutputBinding(getOutputs: () => OutputRegistry) {
     }
 
     override renderError(el: HTMLElement, err: ErrorsMessageValue): void {
-      console.error(`Error for ${el.id}:`, err);
+      // An empty message means a silent error (`req()`/`validate()`) — normal
+      // gating, not a failure. Vanilla Shiny's binding returns early here too.
+      if (err.message !== "") {
+        console.error(`Error for ${el.id}:`, err);
+      }
       const outputEntry = getOutputs().get(el.id);
       if (outputEntry) {
         outputEntry.setError(err);

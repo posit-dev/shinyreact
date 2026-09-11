@@ -404,6 +404,22 @@ describe("ReactOutputBinding", () => {
 
     expect(registry.get("out")!.getStatus()).toBe("error");
     expect(registry.get("out")!.getLastError()).toEqual(err);
+    expect(spy).toHaveBeenCalledWith("Error for out:", err);
+    spy.mockRestore();
+  });
+
+  it("does not log a silent error (`req()`/`validate()`)", () => {
+    const { binding, registry } = setup();
+    const el = document.createElement("div");
+    el.id = "out";
+    registry.add("out", vi.fn(), vi.fn(), vi.fn());
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    binding.renderError(el, { message: "", call: [] });
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(registry.get("out")!.getStatus()).toBe("ready");
+    expect(registry.get("out")!.getLastError()).toBe(null);
     spy.mockRestore();
   });
 
