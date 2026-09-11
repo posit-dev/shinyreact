@@ -26,9 +26,10 @@ intentional — Shiny's API is asymmetric):</p>
 <p>• <code>Shiny.bindAll(scope)</code> is descendants-only — output bindings call
 <code>$(scope).find(selector)</code>, which excludes <code>scope</code> itself. So we pass
 the <em>parent</em> element as scope, guaranteeing our element is found.
-This is safe to call repeatedly: Shiny skips elements already marked
-<code>.shiny-bound-output</code> / <code>.shiny-bound-input</code>, so re-binding the parent
-does not re-bind sibling outputs.</p>
+Once a call has settled this is safe to repeat: Shiny skips elements
+already marked <code>.shiny-bound-output</code> / <code>.shiny-bound-input</code>, so
+re-binding the parent does not re-bind sibling outputs. Calls that
+would overlap are coalesced by <code>dedupedBindAll</code> above (#298).</p>
 <p>• <code>Shiny.unbindAll(scope)</code> would unbind every Shiny output under
 <code>scope</code>, which would clobber siblings. Instead we pass our own element
 with <code>includeSelf=true</code>, so only this output is unbound.</p>
@@ -39,7 +40,7 @@ with <code>includeSelf=true</code>, so only this output is unbound.</p>
 <li><span><span class="tsd-kind-parameter">__namedParameters</span>: <a href="../interfaces/ShinyOutputProps.html" class="tsd-signature-type tsd-kind-interface">ShinyOutputProps</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Element</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/posit-dev/shinyreact/blob/8451cef9c8dd3cbac593f067abf8297f9a646845/pkg-js/src/shiny-output.tsx#L44">src/shiny-output.tsx:44</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/posit-dev/shinyreact/blob/3ff0648fec31f927693de65304c3cfc8248f4a9f/pkg-js/src/shiny-output.tsx#L161">src/shiny-output.tsx:161</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
