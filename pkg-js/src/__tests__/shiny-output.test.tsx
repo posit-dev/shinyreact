@@ -277,6 +277,113 @@ describe("ShinyOutput", () => {
     expect(mockBindAll).toHaveBeenCalledTimes(1);
   });
 
+  it("does not overlap scans when one ShinyOutput's parent is nested inside another's", async () => {
+    // Deduping per scope ELEMENT only catches siblings sharing one parent.
+    // Nested parents are two different elements, so both scans used to run,
+    // and the outer one walks the inner element too: bindOutputs() checks
+    // .shiny-bound-output before its own await and adds the class only
+    // after, so both got past that check and registered the same element,
+    // which Shiny reports as a duplicate id. Real apps hit this constantly:
+    // a card body holding outputs, with a div of controls inside that same
+    // card body, is an ordinary layout.
+    let resolveOuter: () => void = () => {};
+    mockBindAll.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveOuter = resolve;
+      }),
+    );
+
+    render(
+      <div>
+        <ShinyOutput id="outer" />
+        <div>
+          <ShinyOutput id="inner" />
+        </div>
+      </div>,
+    );
+
+    // The inner scope's scan must wait, not run alongside the outer one.
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    resolveOuter();
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(2));
+
+    // And it must still happen: never binding the inner element at all is
+    // the failure this must not trade the duplicate warning for.
+    const scopes = mockBindAll.mock.calls.map((c) => c[0] as HTMLElement);
+    expect(scopes[1]!.querySelector("#inner")).not.toBeNull();
+  });
+
+  it("waits for every overlapping scan, not just the first one found", async () => {
+    // Two overlapping passes can be outstanding at once: one actually
+    // scanning, another already queued behind it. A third scope that
+    // overlaps both has to wait for both. Queueing behind only the first
+    // would let it run alongside the second, which is the same duplicate
+    // registration in a narrower window.
+    let resolveFirst: () => void = () => {};
+    let resolveSecond: () => void = () => {};
+    mockBindAll
+      .mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolveFirst = resolve;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          resolveSecond = resolve;
+        }),
+      );
+
+    // Mounted in three stages so each scope joins while the previous ones
+    // are still outstanding: middle scans, outer queues behind it, inner
+    // then overlaps both.
+    function App({ stage }: { stage: 1 | 2 | 3 }) {
+      return (
+        <div>
+          {stage >= 2 && <ShinyOutput id="outer" />}
+          <div>
+            <ShinyOutput id="middle" />
+            <div>{stage >= 3 && <ShinyOutput id="inner" />}</div>
+          </div>
+        </div>
+      );
+    }
+
+    const { rerender } = render(<App stage={1} />);
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    rerender(<App stage={2} />);
+    rerender(<App stage={3} />);
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    // The scanning pass settles, so the queued outer one runs. The inner
+    // scope must still wait: that outer pass is now the one in flight.
+    resolveFirst();
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(2));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockBindAll).toHaveBeenCalledTimes(2);
+
+    resolveSecond();
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(3));
+  });
+
+  it("still scans an unrelated scope that cannot overlap", () => {
+    // Two parents side by side share no elements, so serialising them would
+    // be a needless slowdown rather than a fix.
+    render(
+      <>
+        <div>
+          <ShinyOutput id="a" />
+        </div>
+        <div>
+          <ShinyOutput id="b" />
+        </div>
+      </>,
+    );
+    expect(mockBindAll).toHaveBeenCalledTimes(2);
+  });
+
   it("binds a ShinyOutput that mounts under the same parent after a bindAll is already in flight", async () => {
     // bindAll scans scope's descendants when it starts, so a sibling that
     // mounts in a *later* commit is not in that scan and would never be
