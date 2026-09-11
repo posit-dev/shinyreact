@@ -1011,8 +1011,18 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
       for one `ShinyOutput` with no siblings
   - once a pass settles it is forgotten, so a later mount under the same parent
     starts a fresh one
+  - a `ShinyOutput` that mounts under the same parent while a pass is already
+    running does **not** share it — that pass scanned the parent's children
+    before this element existed, so it would leave it unbound with no error —
+    it queues its own pass behind it instead
+    - a pass that is queued but has not started yet is shared: it scans the
+      parent only when it runs, so it will see the new element
   - a `bindAll` that throws synchronously is never shared: the next
     `ShinyOutput` under that parent makes its own attempt
+    - a *queued* pass whose `bindAll` throws synchronously is not cached
+      either, so a later mount under that parent still gets a pass of its own
+  - a queued pass re-reads `window.Shiny.bindAll` when it runs, and no-ops if
+    Shiny is gone by then
   - `ShinyOutput`s under different parents bind independently
 - unmounting one `ShinyOutput` unbinds only its own element
 - bind/unbind failures are caught and logged with the resolved output id and the
@@ -1021,6 +1031,9 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - the component stays mounted after a failure; when the pass shared by
     several `ShinyOutput`s under one parent rejects, each of them logs its own
     error with its own id, and all of them stay mounted
+  - a queued pass that fails with no `ShinyOutput` left waiting on it (queued
+    by an unmount) logs `[shinyreact] ShinyOutput bindAll failed:` without an
+    id, rather than surfacing as an unhandled rejection
   - it no-ops when `window.Shiny` is absent, and tolerates a `Shiny` that is
     missing `bindAll` or `unbindAll`
   - `Shiny` appearing on `window` *after* mount is ignored — there is no retry

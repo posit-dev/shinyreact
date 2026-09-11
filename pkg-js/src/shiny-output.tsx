@@ -15,8 +15,11 @@ import { useNamespacedId } from "./shiny-react/ShinyModuleContext";
  *
  * The fix: track one call per scope element, and never let a second one
  * start while it is still in flight. A `ShinyOutput` sibling whose effect
- * runs while another one's call for the same element is still pending
- * reuses that same call. An unbind under that scope (an id or tagName
+ * runs in the same commit as another one's call for the same element
+ * reuses that same call — but only if that call's scan covers it. One that
+ * started before this element existed scanned a DOM without it, so it binds
+ * it never and says nothing about it; such a `ShinyOutput` queues a pass of
+ * its own instead. An unbind under that scope (an id or tagName
  * change, an unmount, or React StrictMode's synthetic mount-cleanup-mount
  * double invoke) queues a fresh scan for *after* the current one settles,
  * rather than starting one right away: starting one immediately, while an
@@ -29,32 +32,89 @@ import { useNamespacedId } from "./shiny-react/ShinyModuleContext";
  * mid-flight, and StrictMode's double invoke reaches that mid-flight
  * window every time, even for one `ShinyOutput` with no siblings at all.
  */
-const pendingBindAll = new WeakMap<HTMLElement, Promise<unknown>>();
-
-function runBindAll(scope: HTMLElement): Promise<unknown> {
-  const promise = Promise.resolve(window.Shiny!.bindAll!(scope)).finally(() => {
-    if (pendingBindAll.get(scope) === promise) {
-      pendingBindAll.delete(scope);
-    }
-  });
-  pendingBindAll.set(scope, promise);
-  return promise;
+interface BindAllPass {
+  promise: Promise<unknown>;
+  /**
+   * The scope's children when this pass started scanning them — the only
+   * elements it can bind. `null` for a pass that is queued but has not
+   * started: it will scan whatever is there when it does.
+   */
+  covers: WeakSet<Element> | null;
+  /** Whether some mounted `ShinyOutput` is waiting on (and will log) it. */
+  consumed: boolean;
 }
 
-function dedupedBindAll(scope: HTMLElement): Promise<unknown> {
-  return pendingBindAll.get(scope) ?? runBindAll(scope);
+const pendingBindAll = new WeakMap<HTMLElement, BindAllPass>();
+
+function track(
+  scope: HTMLElement,
+  promise: Promise<unknown>,
+  covers: WeakSet<Element> | null,
+): BindAllPass {
+  const pass: BindAllPass = {
+    promise: promise.finally(() => {
+      if (pendingBindAll.get(scope) === pass) {
+        pendingBindAll.delete(scope);
+      }
+    }),
+    covers,
+    consumed: false,
+  };
+  pendingBindAll.set(scope, pass);
+  return pass;
+}
+
+function runBindAll(scope: HTMLElement): Promise<unknown> {
+  // Re-read rather than reusing the mount-time reference: a queued pass runs
+  // later, and Shiny may be gone by then.
+  const bindAll = window.Shiny?.bindAll;
+  if (!bindAll) return Promise.resolve();
+  // Every ShinyOutput passes its own parent as scope, so the elements this
+  // call can bind are among scope's children as they are right now.
+  const covers = new WeakSet<Element>(Array.from(scope.children));
+  // A synchronous throw here propagates before anything is stored, so a
+  // failing call is never shared.
+  return track(scope, Promise.resolve(bindAll(scope)), covers).promise;
+}
+
+function queueBindAll(scope: HTMLElement, pending: BindAllPass): BindAllPass {
+  // Queue behind the in-flight call rather than deleting it: deleting would
+  // let whichever ShinyOutput asks next start a second, overlapping scan
+  // while this one is still running.
+  const pass = track(
+    scope,
+    pending.promise.catch(() => {}).then(() => runBindAll(scope)),
+    null,
+  );
+  pass.promise.catch((err) => {
+    // Queued passes are fire-and-forget, so an unmount-triggered one can
+    // fail with nothing mounted to report it — and its rejection must be
+    // handled here either way, or it surfaces as an unhandled rejection.
+    if (!pass.consumed) {
+      console.error("[shinyreact] ShinyOutput bindAll failed:", err);
+    }
+  });
+  return pass;
+}
+
+function dedupedBindAll(el: HTMLElement, scope: HTMLElement): Promise<unknown> {
+  const pending = pendingBindAll.get(scope);
+  if (!pending) return runBindAll(scope);
+  // Only share a running pass that scanned `el`. One that started before
+  // `el` mounted binds it never, and reports nothing about it — a silent
+  // unbound output, the failure mode this dedupe must not introduce.
+  const pass =
+    !pending.covers || pending.covers.has(el)
+      ? pending
+      : queueBindAll(scope, pending);
+  pass.consumed = true;
+  return pass.promise;
 }
 
 function refreshBindAll(scope: HTMLElement): void {
-  const current = pendingBindAll.get(scope);
-  if (!current) return;
-  // Queue behind the in-flight call rather than deleting it: deleting
-  // would let whichever ShinyOutput asks next start a second, overlapping
-  // scan while this one is still running.
-  pendingBindAll.set(
-    scope,
-    current.catch(() => {}).then(() => runBindAll(scope)),
-  );
+  const pending = pendingBindAll.get(scope);
+  if (!pending) return;
+  queueBindAll(scope, pending);
 }
 
 /** @group Components */
@@ -123,7 +183,7 @@ export function ShinyOutput({
     };
 
     try {
-      dedupedBindAll(scope).catch((err) => logError(err, "bindAll"));
+      dedupedBindAll(el, scope).catch((err) => logError(err, "bindAll"));
     } catch (err) {
       logError(err, "bindAll");
     }

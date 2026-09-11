@@ -277,6 +277,101 @@ describe("ShinyOutput", () => {
     expect(mockBindAll).toHaveBeenCalledTimes(1);
   });
 
+  it("binds a ShinyOutput that mounts under the same parent after a bindAll is already in flight", async () => {
+    // bindAll scans scope's descendants when it starts, so a sibling that
+    // mounts in a *later* commit is not in that scan and would never be
+    // bound — silently, with no error — if it just reused the in-flight
+    // call. It must queue its own pass behind it instead.
+    let resolveFirstCall: () => void = () => {};
+    mockBindAll.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveFirstCall = resolve;
+      }),
+    );
+
+    function App({ showB }: { showB: boolean }) {
+      return (
+        <div>
+          <ShinyOutput id="a" />
+          {showB && <ShinyOutput id="b" />}
+        </div>
+      );
+    }
+
+    const { rerender } = render(<App showB={false} />);
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    rerender(<App showB={true} />);
+    // Still queued: no second, overlapping scan while the first runs.
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    resolveFirstCall();
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(2));
+  });
+
+  it("still binds later mounts after a queued bindAll throws synchronously", async () => {
+    // A queued pass that throws must not leave its rejected promise cached
+    // as the parent's pending pass, or every later ShinyOutput under that
+    // parent reuses it and is never bound.
+    const { container, rerender } = render(
+      <div>
+        <ShinyOutput id="a" />
+      </div>,
+    );
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockBindAll.mockImplementationOnce(() => {
+      throw new Error("queued boom");
+    });
+    // Unmounting "a" queues a fresh pass, which throws when it runs.
+    rerender(<div />);
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(2));
+
+    rerender(
+      <div>
+        <ShinyOutput id="b" />
+      </div>,
+    );
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(3));
+    expect(container.querySelector("#b")).not.toBeNull();
+    errorSpy.mockRestore();
+  });
+
+  it("logs, rather than leaving unhandled, a queued bindAll rejection with nothing left mounted", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const boom = new Error("queued rejection");
+
+    const { rerender } = render(
+      <div>
+        <ShinyOutput id="a" />
+      </div>,
+    );
+    mockBindAll.mockReturnValueOnce(Promise.reject(boom));
+    rerender(<div />);
+
+    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledTimes(1));
+    expect(errorSpy.mock.calls[0][0]).toBe(
+      "[shinyreact] ShinyOutput bindAll failed:",
+    );
+    expect(errorSpy.mock.calls[0][1]).toBe(boom);
+    errorSpy.mockRestore();
+  });
+
+  it("does not call a bindAll that disappeared from window.Shiny before a queued pass ran", async () => {
+    const { rerender } = render(
+      <div>
+        <ShinyOutput id="a" />
+      </div>,
+    );
+    expect(mockBindAll).toHaveBeenCalledTimes(1);
+
+    rerender(<div />); // queues a fresh pass
+    delete (window as any).Shiny;
+
+    await vi.waitFor(() => expect(mockBindAll).toHaveBeenCalledTimes(1));
+  });
+
   it("unmounting one ShinyOutput unbinds only that element, not its siblings", () => {
     // The functional payoff of `unbindAll(el, true)`: removing one output
     // from a shared parent must not touch sibling outputs' bindings.
