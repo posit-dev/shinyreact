@@ -1004,6 +1004,10 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 - one `bindAll` pass per parent element at a time (#298)
   - `ShinyOutput`s under one parent that mount in the same commit share the
     first one's pass; only the first call reaches `Shiny.bindAll`
+    - the browser logs no `[shiny] Duplicate output IDs were found` warning for
+      sibling holders under one parent `(e2e)` — the symptom #298 reported, and
+      one a jsdom test cannot reproduce: a mocked `bindAll` is synchronous and
+      marks nothing bound
   - an unbind under that parent (an id or `tagName` change, an unmount, React
     StrictMode's synthetic mount-cleanup-mount) queues a fresh pass for after
     the in-flight one settles instead of starting one at once
@@ -1014,7 +1018,7 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - a `ShinyOutput` that mounts under the same parent while a pass is already
     running does **not** share it — that pass scanned the parent's children
     before this element existed, so it would leave it unbound with no error —
-    it queues its own pass behind it instead
+    it queues its own pass behind it instead `(e2e)`
     - a pass that is queued but has not started yet is shared: it scans the
       parent only when it runs, so it will see the new element
   - a `bindAll` that throws synchronously is never shared: the next
@@ -1057,7 +1061,9 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     widgets by id, and the new values flow back through `input` `(e2e)`
   - several holders side by side under one parent share one `bindAll` pass
     (see `ShinyOutput`), so the browser logs no "Duplicate output IDs" warning
-    for them (#298)
+    for them (#298) `(e2e)`
+    - a holder mounting one commit later, while that pass is still in flight,
+      is bound too, and its widget's value reaches the server `(e2e)`
 - React-owned input state remains the documented default; the holder is the
   documented exception for ports that must look widget-for-widget identical
 
