@@ -20,7 +20,8 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server
 
-- output `dist_data` → `{breaks: number[], counts: number[]}`
+- output `dist_data` → `{breaks: number[], counts: number[]}` `(test)`
+  - the two keys, in that order, and nothing else `(test)`
   - equal-width bins over `[min, max]`: `breaks` has `bins + 1` entries,
     `counts` has `bins` `(test)`
   - binning matches R's `hist()`: half-open `(lo, hi]` with the first bin
@@ -35,16 +36,20 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
   - `bins = 9` → `counts == [16, 37, 30, 16, 14, 57, 67, 29, 6]`, identical in
     R and Python `(test)`
   - `[r]` vectors are wrapped in `I()` so a one-bin result serializes as a JSON
-    array, not a scalar
-- output `dist_caption` → `"272 eruptions in N bins"`
+    array, not a scalar — the value the output delivers carries the `AsIs`
+    class `(test)`
+- output `dist_caption` → `"272 eruptions in N bins"` `(test)`
   - singular `"bin"` when `N == 1` `(test)`
   - the count is the dataset length, not the bin count
+- `[py]` `app.py` (Express) and `app-core.py` (Core) produce identical values
+  for both outputs — the same `tests/test_outputs.py` runs against each
+  `(test)`
 - before the client's first `bins` message
   - `[py]` `input.bins()` raises a silent exception, so neither output produces
-    a value
+    a value — not an error, and not a `None` value `(test)`
   - `[r]` `input$bins` is `NULL` and both outputs return `NULL` explicitly —
     `req()` is deliberately not used, because its silent error still reaches
-    the client console
+    the client console `(test)`
 - the server never renders an image: no plotting library, no `plotOutput`
   placeholder
 

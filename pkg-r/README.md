@@ -63,6 +63,6 @@ shiny::runGitHub("posit-dev/shinyreact", subdir = "examples/01-hello")
 
 - `vignette("shinyreact")` walks through the `ui.tsx` pattern: inputs, outputs, messages, and embedding traditional Shiny renderers.
 - [TSX files and JavaScript build tools](https://posit-dev.github.io/shinyreact/articles/tsx-and-build-tools.html) explains `.tsx`, JSX, TypeScript, and what `npm run build` does.
-- [Testing wire payloads](https://posit-dev.github.io/shinyreact/r/articles/testing.html) covers `wire_tap()` for shinytest2 tests.
+- [Testing](https://posit-dev.github.io/shinyreact/r/articles/testing.html) covers `shiny::testServer()` for driving a server with no browser, and `wire_tap()` for wire payloads in shinytest2 tests.
 - [Agent Skills](https://posit-dev.github.io/shinyreact/r/articles/agent-skills.html) explains the skills that ship with the package for coding agents.
 - The [examples catalog](https://github.com/posit-dev/shinyreact/blob/main/examples/README.md) lists runnable apps from no-build to Vite + HMR.

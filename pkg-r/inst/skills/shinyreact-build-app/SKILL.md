@@ -383,8 +383,8 @@ a list. Use `type: "shinyreact.asis"` for the parsed value untouched.
 Do not stop at "the code is written". Three steps, in order:
 
 1. **Factor pure logic out of the app file** — binning, formatting,
-   conversions go in a module beside the app. Logic inside `app.py` /
-   `app.R` next to the page call cannot be reached by a test at all.
+   conversions go in a module beside the app, where a test can import them
+   without starting a session at all.
 2. **Write down what the app does, in plain English, before the tests.** An
    agent that writes the client and then writes the client's tests is
    agreeing with itself — both encode the same misunderstanding. A
@@ -394,16 +394,19 @@ Do not stop at "the code is written". Three steps, in order:
    directory** — `pytest`, or `[r]` `shiny::runTests()`, which needs the
    `tests/testthat.R` + `tests/testthat/` layout.
 
-`[r]` `shiny::testServer()` drives the reactive graph with no browser:
-`session$setInputs(bins = 9)` then assert on `output$dist_data`, which is the
-JSON value the client would have received. **`[py]` has no equivalent**, so
-factoring logic into an importable module matters more there.
+Both languages drive the reactive graph with no browser, which for a `ui.tsx`
+app is most of the server: `[r]` `shiny::testServer()` (`session$setInputs(bins
+= 9)`, then assert on `output$dist_data`) and `[py]`
+`shiny.testserver.test_server()` (`ts.set_inputs(bins=9)`, then
+`ts.get_output("dist_data")`). Either way the value you assert is the JSON the
+client would have received.
 
 [`references/testing.md`](references/testing.md) has the four layers, the test
-layout for each language, `testServer()` for plain and module servers, how to
-mount the real `www/ui.js` against a fake Shiny, and the traps that cost time
-(React ignores raw `change` events; debounce coalesces within a tick even at
-`debounceMs: 0`).
+layout for each language, `testServer()` / `test_server()` for plain and module
+servers — including the input ids that need a `:type` suffix and the event
+inputs that need two `set_inputs` calls — how to mount the real `www/ui.js`
+against a fake Shiny, and the traps that cost time (React ignores raw `change`
+events; debounce coalesces within a tick even at `debounceMs: 0`).
 
 ## Debugging
 

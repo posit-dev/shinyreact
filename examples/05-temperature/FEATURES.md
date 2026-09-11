@@ -9,19 +9,23 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server (`app.py`, Express)
 
-- one output, `display` → `{celsius, fahrenheit, zone}`
+- one output, `display` → `{celsius, fahrenheit, zone}` `(test)`
 - `fahrenheit` is `round(c * 9 / 5 + 32, 1)` — one decimal, so 20 °C → 68.0
-- `zone` thresholds, all inclusive upper bounds
+  `(test)`
+  - the client rounds to whole degrees, so the two disagree by design: 37 °C is
+    `98.6` from the server and `99` on the client `(test)`
+- `zone` thresholds, all inclusive upper bounds `(test)`
   - `c <= 0` → `"Freezing"`
   - `c <= 15` → `"Cold"`
   - `c <= 30` → `"Comfortable"`
   - otherwise → `"Hot"`
-- `input.celsius()` is `None` before the client's first message → returns
-  `None`, so the echo line does not render
+- before the client's first message, `input.celsius()` raises a silent
+  exception, so `display` never renders — the `c is None` guard in `app.py` is
+  unreachable from a real client `(test)`
 - `[py]` only — this example has no R server
 - the logic lives inside `app.py` next to `set_react_page()`, so it is not
-  importable and no unit test covers it — logic in a module beside `app.py`
-  would be testable
+  importable — `tests/test_display.py` drives the app itself with
+  `shiny.testserver.test_server()` instead
 
 ## Client (`www/ui.js`)
 
