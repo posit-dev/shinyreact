@@ -45,3 +45,37 @@ def test_silent_error_delivers_no_message(
     expect(value).to_be_empty()
     expect(page.locator("[data-test=error]")).to_be_empty()
     expect(page.locator("[data-test=status]")).to_have_text("ready")
+
+
+def test_empty_message_error_is_not_logged_to_the_console(
+    page: Page, output_error_app: ShinyAppProc
+) -> None:
+    """An error with an empty message is Shiny's *silent* error — R's `req()`
+    puts exactly this on the wire — so the binding must not `console.error()`
+    it, matching vanilla Shiny's `renderError` (#300). A real error still logs.
+    """
+    logged: list[str] = []
+    page.on(
+        "console",
+        lambda msg: logged.append(msg.text) if msg.type == "error" else None,
+    )
+    page.goto(output_error_app.url)
+
+    value = page.locator("[data-test=value]")
+    expect(value).to_have_text("ok: 1")
+
+    # -2 raises ValueError("") server-side: empty message, so it reaches
+    # `renderError` rather than arriving as a `null` value like `req()` does.
+    page.locator("[data-test=input]").fill("-2")
+    expect(value).to_be_empty()
+    expect(page.locator("[data-test=error]")).to_be_empty()
+    expect(page.locator("[data-test=status]")).to_have_text("ready")
+    assert [m for m in logged if "Error for answer:" in m] == []
+
+    # A real error does log, so the assertion above has teeth.
+    page.locator("[data-test=input]").fill("0")
+    expect(page.locator("[data-test=error]")).to_have_text(
+        "invalid number of 'breaks'"
+    )
+    expect(page.locator("[data-test=status]")).to_have_text("error")
+    assert [m for m in logged if "Error for answer:" in m] != []

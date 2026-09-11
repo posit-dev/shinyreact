@@ -464,6 +464,10 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
   - `renderValue` → `setValue`, `renderError` → `setError`,
     `showProgress` → `setRecalculating`
   - a value or progress event for an unknown id logs an error and returns
+  - `renderError` logs `Error for <id>:` to the console, **except** for a
+    silent error (empty `message`, from `req()` / `validate()`), which is
+    ordinary gating and logs nothing — matching vanilla Shiny's binding (e2e:
+    an empty-message error logs nothing, a real one does)
   - it reaches the output registry through the same page-scoped accessor the
     hooks use, resolved **per call** rather than captured when the binding was
     constructed, so it can never route to a registry a second copy of the
