@@ -249,19 +249,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
-<p><code>shiny.testserver.test_server()</code> loads the app file (Express or Core, <code>shiny.App</code> or <code>shinyreact.ReactApp</code>) and runs its server:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<p>Shiny’s built-in <code>local_server</code> pytest fixture — an already-started <code>shiny.testserver.test_server()</code> session — loads the app file (Express or Core, <code>shiny.App</code> or <code>shinyreact.ReactApp</code>) and runs its server:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pytest</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shiny.testserver <span class="im">import</span> test_server</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>APP <span class="op">=</span> Path(<span class="va">__file__</span>).resolve().parents[<span class="dv">1</span>] <span class="op">/</span> <span class="st">"app.py"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># The fixture defaults to `app.py` beside the test file; ours is a directory up.</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>pytestmark <span class="op">=</span> pytest.mark.parametrize(<span class="st">"local_server"</span>, [<span class="st">"../app.py"</span>], indirect<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_dist_outputs():</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> test_server(APP) <span class="im">as</span> ts:</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        ts.set_inputs(bins<span class="op">=</span><span class="dv">9</span>)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> ts.get_output(<span class="st">"dist_caption"</span>) <span class="op">==</span> <span class="st">"272 eruptions in 9 bins"</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">assert</span> ts.get_output(<span class="st">"dist_data"</span>).value[<span class="st">"counts"</span>][<span class="dv">0</span>] <span class="op">==</span> <span class="dv">16</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_dist_outputs(local_server):</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    local_server.set_inputs(bins<span class="op">=</span><span class="dv">9</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> local_server.get_output(<span class="st">"dist_caption"</span>) <span class="op">==</span> <span class="st">"272 eruptions in 9 bins"</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> local_server.get_output(<span class="st">"dist_data"</span>).value[<span class="st">"counts"</span>][<span class="dv">0</span>] <span class="op">==</span> <span class="dv">16</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The fixture is function-scoped, so each test gets a fresh session. Call <code>test_server()</code> directly — as a context manager, since it returns an <em>unstarted</em> session — when the fixture cannot express what you need: a server function or <code>App</code> object, <code>client_data=</code>, or <code>timeout_secs=</code>.</p>
 <p><code>get_output()</code> compares equal to the underlying value, so assert on it directly; reach for <code>.value</code> to index into it, and <code>.status</code> (<code>"ok"</code>, <code>"error"</code>, <code>"silent"</code>) or <code>.error</code> for the non-value outcomes. Traditional renderers embedded with <a href="../articles/hooks.html"><code>ShinyOutput</code></a> are readable the same way, so a <code>@render.data_frame</code> payload can be checked here too.</p>
 <p>Three details are specific to shinyreact:</p>
 <ul>
@@ -270,7 +269,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>An <strong>unset</strong> input means <code>status == "silent"</code>, not a <code>None</code> value, because <code>input.x()</code> raises a silent exception while unset.</li>
 </ul>
 <p>An input read through <code>@reactive.event(..., ignore_init=True)</code> needs two <code>set_inputs</code> calls, mirroring the client: <code>useShinyInput</code> registers its default at mount and sends the event after.</p>
-<p><code>test_server()</code> is newer than shiny 1.7.0.</p>
+<p><code>local_server</code> and <code>test_server()</code> are newer than shiny 1.7.0.</p>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <p><code>reactive_output()</code> is an ordinary render function, so <code>shiny::testServer()</code> drives it directly and <code>output$id</code> is the JSON value itself — no spec wrapper, no coercion:</p>
