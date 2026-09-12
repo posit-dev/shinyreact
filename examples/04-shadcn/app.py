@@ -35,7 +35,9 @@ sample_data = pd.DataFrame(
 
 @reactive_output
 def scatter_data():
-    return sample_data[["age", "score"]].to_dict(orient="list")
+    # `.loc[:, [...]]`, not `[[...]]`: pandas types the latter as
+    # `Series | Unknown`, and `Series.to_dict()` takes no `orient=`.
+    return sample_data.loc[:, ["age", "score"]].to_dict(orient="list")
 
 
 @reactive_output

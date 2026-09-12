@@ -203,16 +203,22 @@ py-check-types:  ## [py] Run python type checks
 	@echo "📝 Checking types with pyright"
 	uv run pyright
 
+# Both targets cover `examples/` as well as `pkg-py/`: the example apps and
+# their tests are shipped, read as documentation, and run by the default pytest
+# invocation, so they are held to the same bar as the package.
+PATHS_PY = pkg-py examples
+
 .PHONY: py-check-format
 py-check-format:  ## [py] Check python formatting
 	@echo ""
 	@echo "📐 Checking format with ruff"
-	uv run ruff check pkg-py --config pyproject.toml
+	uv run ruff check $(PATHS_PY) --config pyproject.toml
+	uv run ruff format --check $(PATHS_PY) --config pyproject.toml
 
 .PHONY: py-format
 py-format: ## [py] Format python code
-	uv run ruff check --fix pkg-py --config pyproject.toml
-	uv run ruff format pkg-py --config pyproject.toml
+	uv run ruff check --fix $(PATHS_PY) --config pyproject.toml
+	uv run ruff format $(PATHS_PY) --config pyproject.toml
 
 .PHONY: py-install-e2e
 py-install-e2e:  ## [py] Install Playwright browsers for e2e tests

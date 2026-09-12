@@ -5,11 +5,17 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-from htmltools import HTML, HTMLDependency, HTMLTextDocument, Tag, TagChild, TagList
+from htmltools import HTML, HTMLDependency, Tag, TagChild, TagList
 from shiny.express.ui import page_opts
 from shiny.render.renderer import Renderer
 from shiny.session import get_current_session
 from shiny.ui import page_html
+
+# The class `page_html()` returns. `App(ui=)` accepts it but not its
+# `HTMLTextDocument` base, so declaring the base as our return type would make
+# the documented `App(page_react_html(...), server)` fail to type-check.
+# py-shiny exports the function but not the class -- hence the private import.
+from shiny.ui._page import PageHtmlDocument
 
 from ._app import SRC_DIR_ATTR
 from ._bookmark import _config_script_tag
@@ -437,7 +443,7 @@ def page_react_html(
     *,
     extra_deps: list[HTMLDependency] | None = None,
     shinyreact_js: ShinyreactJs = "server",
-) -> HTMLTextDocument:
+) -> PageHtmlDocument:
     """Serve a React ``index.html`` document (the ui.tsx pattern, Core API).
 
     Reads a complete HTML document — the kind a Vite build emits — and injects
@@ -507,7 +513,7 @@ def page_react_html(
             *(extra_deps or []),
         ],
     )
-    # Tagged, not subclassed: py-shiny exports page_html() but not its class.
+    # Tagged, not subclassed: py-shiny does not export the class publicly.
     # ReactApp reads this to mount the document's directory at "/".
     setattr(doc, SRC_DIR_ATTR, index_path.parent)
     return doc

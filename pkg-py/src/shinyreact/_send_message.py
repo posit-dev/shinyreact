@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from shiny.module import resolve_id
+
+from ._json import JsonValue
 
 if TYPE_CHECKING:
     from shiny.session import Session
@@ -12,7 +14,7 @@ if TYPE_CHECKING:
 async def send_message(
     session: Session,
     id: str,
-    data: Jsonifiable,
+    data: JsonValue,
 ) -> None:
     """Send a custom message from server to client React components.
 
@@ -36,5 +38,5 @@ async def send_message(
     """
     namespaced_id = resolve_id(id)
     await session.send_custom_message(
-        "shinyReactMessage", {"id": namespaced_id, "data": data}
+        "shinyReactMessage", {"id": namespaced_id, "data": cast("Jsonifiable", data)}
     )

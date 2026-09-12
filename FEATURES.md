@@ -192,7 +192,7 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
   - it accepts any JSON-serializable value
   - the client reads it with `useShinyOutputValue(id)`
   - call shape — **deliberate divergence**
-    - `[py]` a `Renderer[Jsonifiable]` subclass, used as a decorator, assigned
+    - `[py]` a `Renderer[JsonValue]` subclass, used as a decorator, assigned
       to `output[id]`
     - `[r]` a function, called as `output$id <- reactive_output(expr, ...)`
     - reason: each language's renderer idiom — a Python `Renderer` subclass has
@@ -201,6 +201,17 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
       never a #184 parity question
   - `[py]` accepted types are whatever `Jsonifiable` admits: `dict`, `list`,
     `tuple`, `str`, `int`, `float`, `bool`, `None`
+    - spelled as `shinyreact._json.JsonValue`, whose containers are `Mapping` /
+      `Sequence` rather than `Jsonifiable`'s `dict` / `list`
+      - `dict` and `list` are **invariant** in their element types, so a render
+        function returning `dict[str, int]` is not assignable to `Jsonifiable`
+        — a type error at the most ordinary call site there is
+      - `Mapping` / `Sequence` are covariant, so `dict[str, int]`,
+        `dict[str, list[float]]` and `list[dict[str, str]]` all type-check with
+        no annotation at the call site
+      - same alias on `send_message(data=)`, for the same reason
+      - pinned by `pkg-py/tests/test_typing.py`, which asserts nothing at
+        runtime — pyright failing is the test
   - `[py]` a `str` return is sent as a JSON string, not a text node
   - `[py]` `auto_output_ui()` returns `None`, inherited from `Renderer` — there
     is no placeholder element to emit
@@ -859,6 +870,12 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - it works as `shiny.App(ui=...)`, but only `ReactApp` mounts the
       document's directory — under plain `shiny.App` the sibling `ui.js` is
       not served
+      - the declared return type is py-shiny's `PageHtmlDocument`, which is
+        what `App(ui=)` accepts; its `HTMLTextDocument` base is **not**
+        accepted, so declaring the base would make that documented path a type
+        error
+      - `PageHtmlDocument` is imported from `shiny.ui._page`: py-shiny exports
+        `page_html()` but not its class
     - `shiny.ui.page_html()` arrives with py-shiny#2475, consumed as a git
       dependency on py-shiny `main` until it releases
   - `[r]` used directly as `shinyApp(ui = page_react_html())`, implemented by
