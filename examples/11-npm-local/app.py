@@ -52,7 +52,9 @@ ui = page_bare(
 
 
 def server(input: Inputs, output: Outputs, session: Session):
-    @reactive_output
+    # py-shiny#2497: `Jsonifiable`'s `dict`/`list` arms are invariant, so a
+    # `dict` return is not assignable to it. Drop the ignore when that lands.
+    @reactive_output  # pyright: ignore[reportArgumentType]
     def dist_data():
         return histogram(waiting, input.bins())
 

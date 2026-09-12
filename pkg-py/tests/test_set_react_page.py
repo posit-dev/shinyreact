@@ -3,17 +3,17 @@ from typing import Any, Callable
 from unittest.mock import patch
 
 import pytest
-from htmltools import Tag
+from htmltools import RenderedHTML, Tag
 from shiny import render
 from shinyreact import reactive_output, set_react_page
 from shinyreact._page import _build_react_page_fn, _build_react_page_fn_discovered
 
 
-def _render(page_fn: Callable[..., Tag], *args: Any) -> dict[str, Any]:
+def _render(page_fn: Callable[..., Tag], *args: Any) -> RenderedHTML:
     return page_fn(*args).tagify().render()
 
 
-def _render_with(page_fn: Callable[..., Tag], **kwargs: Any) -> dict[str, Any]:
+def _render_with(page_fn: Callable[..., Tag], **kwargs: Any) -> RenderedHTML:
     """Render a page_fn the way page_auto() calls it: options as kwargs."""
     return page_fn(**kwargs).tagify().render()
 

@@ -1,11 +1,36 @@
 import warnings
 from pathlib import Path
+from typing import cast
 
 import pytest
 import shinyreact._dep as _dep_mod
 from htmltools import HTMLDependency
+from htmltools._core import HTMLDependencySource, ScriptItem, StylesheetItem
 from shinyreact._dep import _SHINYREACT_JS_PATH, _dep
 from shinyreact._page import page_react_dep
+
+
+# `HTMLDependency` normalizes `script=` / `stylesheet=` to a list and `source=`
+# to one of two TypedDicts, but the attributes stay declared as the wider
+# argument types. These narrow once here so the assertions below read as
+# assertions rather than as type gymnastics.
+def dep_source(dep: HTMLDependency) -> HTMLDependencySource:
+    source = dep.source
+    assert source is not None
+    assert "subdir" in source, "a local dep, not an href one"
+    return cast(HTMLDependencySource, source)
+
+
+def first_script(dep: HTMLDependency) -> ScriptItem:
+    script = dep.script
+    assert script is not None
+    return script[0] if isinstance(script, list) else script
+
+
+def first_stylesheet(dep: HTMLDependency) -> StylesheetItem:
+    stylesheet = dep.stylesheet
+    assert stylesheet is not None
+    return stylesheet[0] if isinstance(stylesheet, list) else stylesheet
 
 
 def test_dep_version_tracks_bundle_mtime():
@@ -21,11 +46,7 @@ def test_dep_version_tracks_bundle_mtime():
 
 
 def test_dep_script_has_defer():
-    script = _dep().script
-    assert script is not None
-    if isinstance(script, list):
-        script = script[0]
-    assert script.get("defer") == ""
+    assert first_script(_dep()).get("defer") == ""
 
 
 # --- page_react_dep tests ---
@@ -57,7 +78,7 @@ def test_page_react_dep_returns_htmldependency(tmp_path):
 
     dep = _run_page_react_dep(tmp_path)
     assert isinstance(dep, HTMLDependency)
-    assert dep.source["subdir"] == str(tmp_path)
+    assert dep_source(dep)["subdir"] == str(tmp_path)
     assert dep.name == tmp_path.name
 
 
@@ -133,7 +154,7 @@ def test_page_react_dep_attaches_script_when_js_present(tmp_path):
     (tmp_path / "ui.js").write_text("// app")
 
     dep = page_react_dep(src_dir=tmp_path)
-    script = dep.script if isinstance(dep.script, dict) else dep.script[0]
+    script = first_script(dep)
     assert script["src"] == "ui.js"
     assert script.get("type") == "module"
 
@@ -143,10 +164,8 @@ def test_page_react_dep_custom_filenames(tmp_path):
     (tmp_path / "app.css").write_text("/* styles */")
 
     dep = _run_page_react_dep(tmp_path, js_file="app.js", css_file="app.css")
-    script = dep.script if isinstance(dep.script, dict) else dep.script[0]
-    stylesheet = (
-        dep.stylesheet if isinstance(dep.stylesheet, dict) else dep.stylesheet[0]
-    )
+    script = first_script(dep)
+    stylesheet = first_stylesheet(dep)
     assert script["src"] == "app.js"
     assert stylesheet["href"] == "app.css"
 
@@ -156,7 +175,7 @@ def test_page_react_dep_script_type_module(tmp_path):
     (tmp_path / "ui.css").write_text("/* styles */")
 
     dep = _run_page_react_dep(tmp_path)
-    script = dep.script if isinstance(dep.script, dict) else dep.script[0]
+    script = first_script(dep)
     assert script.get("type") == "module"
 
 
@@ -169,8 +188,7 @@ def test_page_react_dep_explicit_src_dir_and_name(tmp_path):
     (tmp_path / "ui.js").write_text("// app")
 
     dep = page_react_dep(src_dir=tmp_path, name="my-app")
-    assert dep.source is not None
-    assert dep.source["subdir"] == str(tmp_path)
+    assert dep_source(dep)["subdir"] == str(tmp_path)
     assert dep.name == "my-app"
     assert str(dep.version) == str(int((tmp_path / "ui.js").stat().st_mtime))
 
@@ -188,9 +206,7 @@ def test_page_react_dep_attaches_stylesheet_when_css_present(tmp_path):
     (tmp_path / "ui.js").write_text("// app")
     (tmp_path / "ui.css").write_text("/* styles */")
 
-    stylesheet = page_react_dep(src_dir=tmp_path).stylesheet
-    assert stylesheet is not None
-    entry = stylesheet if isinstance(stylesheet, dict) else stylesheet[0]
+    entry = first_stylesheet(page_react_dep(src_dir=tmp_path))
     assert entry["href"] == "ui.css"
 
 
@@ -198,7 +214,9 @@ def test_dep_stylesheet_attached_unconditionally() -> None:
     # No existence check on the CSS, unlike page_react_dep()'s. Mirrors R's
     # "shinyreact_dep() attaches the stylesheet unconditionally".
     dep = _dep()
-    assert [s["href"] for s in dep.stylesheet] == ["shinyreact.css"]
+    assert [s["href"] for s in cast("list[StylesheetItem]", dep.stylesheet)] == [
+        "shinyreact.css"
+    ]
 
 
 def test_dep_version_falls_back_when_bundle_missing(

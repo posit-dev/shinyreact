@@ -51,8 +51,12 @@ docs = [
     "griffe<2",
 ]
 tests-e2e = [
+    # `pytest-playwright` pulls in `playwright` itself. py-shiny has no
+    # `playwright` extra (theme, otel, test, dev, doc, add-test), and asking for
+    # one uv cannot find is a warning on every `uv sync`, not an error -- which
+    # is exactly how a real extras problem would hide.
     "pytest-playwright>=0.5.0",
-    "shiny[playwright] @ git+https://github.com/posit-dev/py-shiny.git@main",
+    "shiny @ git+https://github.com/posit-dev/py-shiny.git@main",
     "shinywidgets>=0.8.0",
     "plotly>=6.7.0",
     "pandas>=2.1.0",
@@ -77,8 +81,18 @@ testpaths = ["pkg-py/tests", "examples"]
 addopts = "--ignore=pkg-py/tests/playwright"
 
 [tool.pyright]
+# Tests and examples are checked too, not just the package. They are the only
+# place the *caller's* view of the API is exercised, so a signature that is
+# unusable from user code -- a `reactive_output` that rejects the `dict` every
+# app returns -- shows up here and nowhere else.
 include = [
     "pkg-py/src/shinyreact",
+    "pkg-py/tests",
+    "examples",
+]
+exclude = [
+    "examples/shiny-react-upstream",
+    "**/node_modules",
 ]
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
