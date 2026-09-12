@@ -87,9 +87,8 @@ test_that("reactive_output surfaces errors and silent errors to the test", {
   # Mirrors test_output_error_statuses in pkg-py/tests/test_in_memory_server.py
   # -- with a deliberate divergence in the *testing* API, not in shinyreact:
   # R's testServer() re-raises, so reading the output is the assertion, while
-  # Python's test_server() reports `.status` / `.error` instead. Python also
-  # keeps the previous value after a silent error where R does not
-  # (posit-dev/py-shiny#2492).
+  # Python's `local_server` reports `.status` / `.error` instead. Both drop the
+  # previous value after a silent error (posit-dev/py-shiny#2492).
   server <- function(input, output, session) {
     output$answer <- reactive_output({
       n <- input$n
