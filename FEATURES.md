@@ -1176,11 +1176,16 @@ initial page.
 ## Asset delivery
 
 - the shinyreact bundle ships as one `HTMLDependency` named `shinyreact`
-  - its version is the bundle file's mtime in whole seconds, so browsers
-    re-fetch after a `make update-dist`
-  - the version fallback when the bundle file is missing differs
-    - `[py]` the literal `"0.1.0"`
-    - `[r]` `packageVersion("shinyreact")`
+  - its version is `@posit-dev/shinyreact`'s own version, a hardcoded constant
+    in each package, so `/lib/shinyreact-0.1.1/` names the JS release being
+    served `(test)`
+    - the constant must equal `pkg-js/package.json`'s `version`; a test in
+      each package fails on drift when run from the repo checkout `(test)`
+    - in a repo checkout (editable install / `load_all()`, detected by the
+      repo's `pkg-js/package.json` being reachable from the package) the
+      version is `<version>.<bundle mtime in whole seconds>`, so
+      `make update-dist` still cache-busts `(test)`
+    - an installed package never carries the mtime suffix `(test)`
   - the script is `shinyreact.js` with a `defer` attribute
   - the stylesheet is `shinyreact.css`, attached unconditionally (no existence
     check)

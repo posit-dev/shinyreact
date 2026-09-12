@@ -2,13 +2,45 @@
   system.file("lib", "shiny", package = "shinyreact")
 }
 
+# `@posit-dev/shinyreact`'s version, i.e. the release of the bundle in
+# `inst/lib/shiny/`. It is the shinyreact htmlDependency's version, so
+# `/lib/shinyreact-0.1.1/shinyreact.js` names the JS release being served and
+# an npm-tier app can read the page source to see whether its bundled copy
+# matches the server's. Bump alongside `pkg-js/package.json`; `test-dep.R`
+# pins the two together. Mirrors Python's `_SHINYREACT_JS_VERSION`.
+.shinyreact_js_version <- "0.1.1"
+
+# Internal: TRUE only in a repo checkout (`load_all()`), where the repo's
+# `pkg-js/package.json` sits four levels above `inst/lib/shiny/`. Never TRUE
+# for an installed package.
+.dev_checkout <- function() {
+  file.exists(file.path(
+    .www_dir(),
+    "..",
+    "..",
+    "..",
+    "..",
+    "pkg-js",
+    "package.json"
+  ))
+}
+
+# Internal: `.shinyreact_js_version`, suffixed with the bundle's mtime in a
+# dev checkout. Installed, a page loads `/lib/shinyreact-0.1.1/`; in the repo
+# it loads `/lib/shinyreact-0.1.1.<mtime>/` instead, so `make update-dist`
+# still cache-busts while the URL still names the release. Mirrors Python's
+# `_bundle_version()`.
 .bundle_version <- function() {
-  js <- file.path(.www_dir(), "shinyreact.js")
-  mtime <- suppressWarnings(file.mtime(js))
-  if (length(mtime) == 1L && !is.na(mtime)) {
-    return(as.character(as.integer(mtime)))
+  if (.dev_checkout()) {
+    mtime <- suppressWarnings(file.mtime(file.path(
+      .www_dir(),
+      "shinyreact.js"
+    )))
+    if (length(mtime) == 1L && !is.na(mtime)) {
+      return(paste0(.shinyreact_js_version, ".", as.integer(mtime)))
+    }
   }
-  as.character(utils::packageVersion("shinyreact"))
+  .shinyreact_js_version
 }
 
 # Internal: bare bundle dependency for per-output consumers.
