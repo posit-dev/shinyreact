@@ -7,7 +7,7 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "@posit-dev/shinyreact": "file:../../pkg-js"
+    "@posit-dev/shinyreact": "^0.1.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.0",

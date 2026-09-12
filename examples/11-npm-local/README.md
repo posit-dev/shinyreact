@@ -36,10 +36,10 @@ The hooks come from an import, not from `window.shinyreact`:
 import { useShinyInput, useShinyOutputValue } from "@posit-dev/shinyreact";
 ```
 
-Until the first npm publish that package is the repo-relative
-`file:../../pkg-js`, the same placeholder [09-hmr](../09-hmr/) uses — build
-`pkg-js` (`make js-build`) before `npm install`. Nothing machine-specific
-reaches `package.json` or the lockfile.
+That package comes from npm like any other dependency, so nothing in this repo
+has to be built before `npm install` — copy this directory anywhere and it
+works. See [09-hmr](../09-hmr/) for how to point it at a local `pkg-js/`
+instead while developing the library.
 
 ## Run it
 
@@ -50,7 +50,6 @@ shiny run app.py                 # Python — builds the bundle on first run
 `app.R` does not build anything, so build once before running it:
 
 ```bash
-make js-build                    # from the repo root; pkg-js/dist-npm/
 npm install
 npm run build                    # → www/ui.js, www/ui.css
 

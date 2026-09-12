@@ -11,9 +11,9 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Client distribution
 
-- `package.json` depends on `"@posit-dev/shinyreact": "file:../../pkg-js"` — the
-  repo-relative placeholder `examples/09-hmr` uses until the first npm publish
-  - `pkg-js` must be built (`make js-build`) before `npm install`
+- `package.json` depends on `"@posit-dev/shinyreact": "^0.1.1"` from the
+  registry, same as `examples/09-hmr`
+  - nothing in this repo has to be built before `npm install`
   - nothing machine-specific reaches `package.json` or the lockfile
 - React and ReactDOM are the app's own devDependencies, bundled into
   `www/ui.js`
@@ -35,8 +35,8 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 - `www/ui.js` and `www/ui.css` are served by the dependency, versioned by
   `ui.js`'s mtime; neither is committed, and neither is `www/` itself
   - `[py]` `app.py` builds the bundle on first run when `www/ui.js` is absent
-    (`npm install` + `npm run build`, preceded by the same in `pkg-js/` when
-    `dist-npm/` is missing) — same as `examples/09-hmr`
+    (`npm install` + `npm run build`, and nothing else) — same as
+    `examples/09-hmr`
   - `[r]` `app.R` does not: a fresh clone gets `page_react_dep()`'s "React
     asset directory not found" error, which names the fix
   - the tests never import `app.py` or source `app.R`, so neither triggers a

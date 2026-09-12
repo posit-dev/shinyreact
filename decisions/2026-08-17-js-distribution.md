@@ -1,7 +1,7 @@
 # Shipping the JS runtime: npm package + HTMLDependency hybrid
 
 **Date:** 2026-08-17
-**Status:** Decided; in progress — config tag + handshake (#198), page modes (#208, #214), protocol doc + dual build + publish workflow (npm-package PR), `shinyreact_js=` switch + 09-hmr conversion (#217), `page_bare()` at the npm tier + removal of the config-tag strict mode (#261, `examples/11-npm-local`). Remaining: first npm publish (until then `examples/09-hmr` and `examples/11-npm-local` depend on `file:../../pkg-js`)
+**Status:** Decided; in progress — config tag + handshake (#198), page modes (#208, #214), protocol doc + dual build + publish workflow (npm-package PR), `shinyreact_js=` switch + 09-hmr conversion (#217), `page_bare()` at the npm tier + removal of the config-tag strict mode (#261, `examples/11-npm-local`). **Done:** `@posit-dev/shinyreact` published to npm — `0.1.0` by hand (npm cannot stage a package that does not exist), `0.1.1` onward staged by `release-js.yaml` for maintainer approval under trusted publishing. `examples/09-hmr` and `examples/11-npm-local` depend on the released package
 **Issues:** [#172](https://github.com/posit-dev/shinyreact/issues/172) (spike), [#28](https://github.com/posit-dev/shinyreact/issues/28) (upstream npm publication)
 
 ## Context
