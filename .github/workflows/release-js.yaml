@@ -80,12 +80,14 @@ jobs:
           {
             echo "### Staged, not published"
             echo
-            echo "Nothing is on npm yet. Approve the stage (2FA required, so CI"
-            echo "cannot), or leave it to abandon the release:"
+            echo "Nothing is on npm yet, and nobody can install this. Approve or"
+            echo "reject it — 2FA is required, so CI cannot:"
             echo
             echo '```'
             echo 'npm stage list @posit-dev/shinyreact'
-            echo 'npm stage approve <stage-id>'
+            echo 'npm stage view <stage-id>'
+            echo 'npm stage approve <stage-id> --otp <code>   # publish it'
+            echo 'npm stage reject <stage-id>                 # throw it away'
             echo '```'
             echo
             echo "Or the Staged Packages tab at <https://www.npmjs.com/package/@posit-dev/shinyreact>."

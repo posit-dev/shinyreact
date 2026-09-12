@@ -73,20 +73,31 @@ steps, and the second one is not yours to do.
    npm stage list @posit-dev/shinyreact   # find the stage id
    npm stage view <stage-id>              # inspect what CI built
    npm stage download <stage-id>          # or pull the actual tarball
-   npm stage approve <stage-id>           # publishes it, prompts for 2FA
+   npm stage approve <stage-id> --otp <code>   # publishes it
+   npm stage reject <stage-id>                 # throws it away
    ```
 
    The Staged Packages tab on <https://www.npmjs.com/package/@posit-dev/shinyreact>
-   does the same thing in a browser. A stage that is never approved never
-   publishes — that is how you abandon a bad release, no `npm unpublish`
-   needed.
+   does the same thing in a browser; 2FA is prompted either way. A stage is not
+   on the registry and nobody can install it, so a bad build is rejected rather
+   than unpublished — there is no 72-hour `npm unpublish` window to race.
 
-There is **no `NPM_TOKEN`**, and adding one would be a regression. Auth is npm
-trusted publishing (OIDC): configured once on the package's Access settings
-page against org `posit-dev`, this repo, workflow filename `release-js.yaml`,
-and `npm stage publish` as the *allowed action* — which is what makes
-token-free publishing impossible even if someone compromised the workflow.
-Provenance is automatic under OIDC; the workflow passes no `--provenance`.
+There is **no `NPM_TOKEN`**, and adding one would be a regression — npm's own
+guidance is "when trusted publishing is available for your workflow, always
+prefer it over long-lived tokens", and direct publishing with a granular token
+is being removed entirely in January 2027. Auth is npm trusted publishing
+(OIDC): configured once on the package's Settings page against org
+`posit-dev`, this repo, workflow filename `release-js.yaml`, and
+`npm stage publish` as the *allowed action* — so the workflow cannot publish
+directly even if someone edits it. Provenance is automatic under OIDC; the
+workflow passes no `--provenance`.
+
+Settings → Publishing access is also set to **"Require two-factor
+authentication and disallow tokens"**. That closes the side door a token would
+open without touching CI, since trusted publishing is OIDC rather than a
+token. npm calls stage-only trusted publishing plus disallowed tokens the
+maximum security posture; if you ever find yourself creating a token to work
+around a release, that is the thing you are undoing.
 
 Requires npm ≥ 11.15.0 and Node ≥ 22.14.0. `pkg-js/.nvmrc` pins Node 22, which
 bundles npm 10.x, so the workflow upgrades npm explicitly — if a release fails
@@ -100,10 +111,13 @@ ship the same bundle — but they are separate versions and separate tags. Do th
 
 - **A brand-new package cannot be staged**, and trusted publishing cannot be
   configured until the package exists. `0.1.0` was therefore published by hand
-  from a maintainer's laptop, and has no `js/v0.1.0` tag (pushing one would
-  only have triggered a job that failed on a version already taken). Every
+  from a maintainer's laptop — `npm login` and `npm publish --access public`,
+  interactively with 2FA, **no token created**. It has no `js/v0.1.0` tag
+  (pushing one would only have triggered a job that failed on a version already
+  taken) and no provenance attestation, since that requires a CI publish. Every
   release from `0.1.1` on follows the flow above.
-- **A new scope or a new package name** puts you back in that bootstrap case.
+- **A new scope or a new package name** puts you back in that bootstrap case:
+  publish once interactively, then configure the trusted publisher.
 
 ## R → CRAN
 
