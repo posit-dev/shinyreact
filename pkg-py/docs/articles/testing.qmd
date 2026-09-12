@@ -14,22 +14,23 @@ Shiny can run one against a mock connection — no browser, no subprocess — an
 
 ### Python
 
-`shiny.testserver.test_server()` loads the app file (Express or Core, `shiny.App` or `shinyreact.ReactApp`) and runs its server:
+Shiny's built-in `local_server` pytest fixture — an already-started `shiny.testserver.test_server()` session — loads the app file (Express or Core, `shiny.App` or `shinyreact.ReactApp`) and runs its server:
 
 ```python
-from pathlib import Path
+import pytest
 
-from shiny.testserver import test_server
+# The fixture defaults to `app.py` beside the test file; ours is a directory up.
+pytestmark = pytest.mark.parametrize("local_server", ["../app.py"], indirect=True)
 
-APP = Path(__file__).resolve().parents[1] / "app.py"
 
-
-def test_dist_outputs():
-    with test_server(APP) as ts:
-        ts.set_inputs(bins=9)
-        assert ts.get_output("dist_caption") == "272 eruptions in 9 bins"
-        assert ts.get_output("dist_data").value["counts"][0] == 16
+def test_dist_outputs(local_server):
+    local_server.set_inputs(bins=9)
+    assert local_server.get_output("dist_caption") == "272 eruptions in 9 bins"
+    assert local_server.get_output("dist_data").value["counts"][0] == 16
 ```
+
+The fixture is function-scoped, so each test gets a fresh session.
+Call `test_server()` directly — as a context manager, since it returns an *unstarted* session — when the fixture cannot express what you need: a server function or `App` object, `client_data=`, or `timeout_secs=`.
 
 `get_output()` compares equal to the underlying value, so assert on it directly; reach for `.value` to index into it, and `.status` (`"ok"`, `"error"`, `"silent"`) or `.error` for the non-value outcomes.
 Traditional renderers embedded with [`ShinyOutput`](hooks.qmd) are readable the same way, so a `@render.data_frame` payload can be checked here too.
@@ -42,7 +43,7 @@ Three details are specific to shinyreact:
 
 An input read through `@reactive.event(..., ignore_init=True)` needs two `set_inputs` calls, mirroring the client: `useShinyInput` registers its default at mount and sends the event after.
 
-`test_server()` is newer than shiny 1.7.0.
+`local_server` and `test_server()` are newer than shiny 1.7.0.
 
 ### R
 

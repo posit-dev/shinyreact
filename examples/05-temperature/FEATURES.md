@@ -25,7 +25,7 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 - `[py]` only — this example has no R server
 - the logic lives inside `app.py` next to `set_react_page()`, so it is not
   importable — `tests/test_display.py` drives the app itself with
-  `shiny.testserver.test_server()` instead
+  the `local_server` fixture instead
 
 ## Client (`www/ui.js`)
 

@@ -151,7 +151,7 @@ rendered), then the rest of the outputs, then layout and polish.
 
 Four layers, cheapest first: factor pure logic out of the app file so it is
 importable and test it directly; drive the ported server with no browser —
-`[r]` `shiny::testServer()`, `[py]` `shiny.testserver.test_server()` — which
+`[r]` `shiny::testServer()`, `[py]` the `local_server` pytest fixture — which
 for a `ui.tsx` app covers most of it, since the server is only reactive
 computation; test the client by evaluating the real `www/ui.js` against a fake
 `window.Shiny` in jsdom (not by importing the component — that tests a copy the

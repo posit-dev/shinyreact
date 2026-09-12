@@ -5,7 +5,7 @@ Do not stop at "the code is written". At minimum:
 1. **Factor pure logic out of the app file.** Binning, formatting, conversions
    go in a module beside the app so a test can import them directly, with no
    session at all. Logic left inside `app.py` / `app.R` next to the page call
-   is still reachable — `testServer()` / `test_server()` below drive the app
+   is still reachable — `testServer()` / `local_server` below drive the app
    itself — but only through an input, which is a slower and blunter tool than
    calling a function.
 2. **Write down what the app does, in plain English, before the tests** — a
@@ -19,7 +19,7 @@ Do not stop at "the code is written". At minimum:
 | Layer | Proves | Cost |
 |---|---|---|
 | pure functions in their own module | binning, formatting, conversions | trivial — always do this |
-| `shiny::testServer()` `[r]` / `shiny.testserver.test_server()` `[py]` | the reactive graph: inputs in, `reactive_output` values out | low, and no browser |
+| `shiny::testServer()` `[r]` / the `local_server` fixture `[py]` | the reactive graph: inputs in, `reactive_output` values out | low, and no browser |
 | the client mounted in jsdom against a fake Shiny | rendering, input wiring, wire ids, status handling | low, and it exercises the file the app ships |
 | Playwright | layout, real Shiny, real bindings | high; reserve for what the others cannot see |
 
@@ -35,7 +35,7 @@ myapp/
   www/ui.js
   tests/
     test_faithful.py     [py]  pytest — the factored logic, called directly
-    test_outputs.py      [py]  pytest — the app, via test_server()
+    test_outputs.py      [py]  pytest — the app, via `local_server`
     testthat.R           [r]   runner: library(testthat); test_dir("testthat")
     testthat/
       test-histogram.R   [r]
@@ -62,7 +62,7 @@ sys.path.insert(0, str(EXAMPLE))
 from faithful import histogram, waiting  # noqa: E402
 ```
 
-## Testing the server: `testServer()` `[r]`, `test_server()` `[py]`
+## Testing the server: `testServer()` `[r]`, `local_server` `[py]`
 
 **This is the highest-value layer for a `ui.tsx` app.** The server contains
 only reactive computation, so "input X produces output Y" *is* the server, and
@@ -100,25 +100,33 @@ which is most of what a shinyreact server does.
 Module servers work the same way: `testServer(card_server, args = list(id =
 "left"), { ... })`.
 
-### `[py]` `shiny.testserver.test_server()`
+### `[py]` the `local_server` fixture
 
-The Python counterpart (py-shiny#2470, so newer than shiny 1.7.0). It loads the
-app file — Express or Core, `shiny.App` or `shinyreact.ReactApp` — and runs its
-server against a mock connection:
+The Python counterpart (py-shiny#2470, so newer than shiny 1.7.0). `local_server`
+is a built-in pytest fixture — nothing to import — holding an already-started
+`shiny.testserver.test_server()` session. It loads the app file — Express or
+Core, `shiny.App` or `shinyreact.ReactApp` — and runs its server against a mock
+connection:
 
 ```python
-from pathlib import Path
-from shiny.testserver import test_server
+import pytest
+from shiny.testserver import TestServerSession
 
-APP = Path(__file__).resolve().parents[1] / "app.py"
+# The fixture defaults to `app.py` beside the test file; ours is a directory up.
+pytestmark = pytest.mark.parametrize("local_server", ["../app.py"], indirect=True)
 
 
-def test_the_histogram_recomputes_when_bins_changes():
-    with test_server(APP) as ts:
-        ts.set_inputs(bins=9)
-        assert ts.get_output("dist_data").value["counts"] == [16, 37, 30, 16, 14, 57, 67, 29, 6]
-        assert ts.get_output("dist_caption") == "272 eruptions in 9 bins"
+def test_the_histogram_recomputes_when_bins_changes(local_server: TestServerSession):
+    local_server.set_inputs(bins=9)
+    counts = local_server.get_output("dist_data").value["counts"]
+    assert counts == [16, 37, 30, 16, 14, 57, 67, 29, 6]
+    assert local_server.get_output("dist_caption") == "272 eruptions in 9 bins"
 ```
+
+The fixture is function-scoped, so each test gets a fresh session. Call
+`test_server()` directly (as a context manager — it returns an *unstarted*
+session) when the fixture cannot express what you need: a server function or
+`App` object, `client_data=`, `timeout_secs=`.
 
 `get_output()` returns a value that compares equal to the underlying one, so
 assert on it directly; use `.value` when you need to index into it, and
@@ -126,9 +134,6 @@ assert on it directly; use `.value` when you need to index into it, and
 non-value outcomes. Traditional renderers are readable too, so
 `@render.data_frame` / `@render_plotly` outputs mounted through `ShinyOutput`
 can be checked at the wire level.
-
-Pass an **absolute `Path`**: a relative one resolves against the test file's
-directory, and the app is a directory up from `tests/`.
 
 Four things to know, all of them shinyreact-specific:
 
@@ -145,16 +150,17 @@ Four things to know, all of them shinyreact-specific:
 - **An unset input means `status == "silent"`, not a `None` value.**
   `input.x()` raises a silent exception while unset, so a `if x is None:`
   branch in your server is unreachable from a real client — assert the status
-  instead. (A *later* `req()` failure is not visible in memory at all:
-  py-shiny#2492.)
+  instead. A later `req()` failure reports `"silent"` too: the status describes
+  the *latest* render, matching the blank the browser shows.
 
-Module ids can be read as the session sees them (`ts.get_output("counter-n")`)
-or through a scope, which strips the namespace on the way in and out:
+Module ids can be read as the session sees them
+(`local_server.get_output("counter-n")`) or through a scope, which strips the
+namespace on the way in and out:
 
 ```python
-with ts.make_scope("counter") as counter:
-    counter.set_inputs(n=7)
-    assert counter.get_output("label") == "n=7"
+counter = local_server.make_scope("counter")
+counter.set_inputs(n=7)
+assert counter.get_output("label") == "n=7"
 ```
 
 ## The jsdom layer — mount the client the app ships

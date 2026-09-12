@@ -396,13 +396,13 @@ Do not stop at "the code is written". Three steps, in order:
 
 Both languages drive the reactive graph with no browser, which for a `ui.tsx`
 app is most of the server: `[r]` `shiny::testServer()` (`session$setInputs(bins
-= 9)`, then assert on `output$dist_data`) and `[py]`
-`shiny.testserver.test_server()` (`ts.set_inputs(bins=9)`, then
-`ts.get_output("dist_data")`). Either way the value you assert is the JSON the
+= 9)`, then assert on `output$dist_data`) and `[py]` the built-in
+`local_server` pytest fixture (`local_server.set_inputs(bins=9)`, then
+`local_server.get_output("dist_data")`). Either way the value you assert is the JSON the
 client would have received.
 
 [`references/testing.md`](references/testing.md) has the four layers, the test
-layout for each language, `testServer()` / `test_server()` for plain and module
+layout for each language, `testServer()` / `local_server` for plain and module
 servers — including the input ids that need a `:type` suffix and the event
 inputs that need two `set_inputs` calls — how to mount the real `www/ui.js`
 against a fake Shiny, and the traps that cost time (React ignores raw `change`

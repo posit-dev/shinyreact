@@ -113,20 +113,24 @@ Rscript -e 'shiny::runTests()'           # the app's R tests (also shinytest2::t
 npx vitest run --root .. 01-hello        # the app's UI tests
 ```
 
-Most of the Python tests drive the app itself, with
-[`shiny.testserver.test_server()`](https://shiny.posit.co/py/api/testing/):
-inputs in, output values out, in memory. That is a good fit for these apps
+Most of the Python tests drive the app itself, with shiny's built-in
+[`local_server`](https://shiny.posit.co/py/api/testing/) pytest fixture — an
+already-started `test_server()` session: inputs in, output values out, in
+memory. That is a good fit for these apps
 because a `ui.tsx` server contains only reactive computation, so the JSON a
 test asserts is exactly what `useShinyOutputValue()` receives:
 
 ```python
-with test_server(APP) as ts:
-    ts.set_inputs(bins=9)
-    assert ts.get_output("dist_caption") == "272 eruptions in 9 bins"
+# The fixture defaults to `app.py` beside the test file; ours is a directory up.
+pytestmark = pytest.mark.parametrize("local_server", ["../app.py"], indirect=True)
+
+
+def test_dist_caption(local_server):
+    local_server.set_inputs(bins=9)
+    assert local_server.get_output("dist_caption") == "272 eruptions in 9 bins"
 ```
 
-Pass an absolute `Path` (`Path(__file__).resolve().parents[1] / "app.py"`), and
-mind two shinyreact-specific details: an **untyped** input id needs no
+Mind two shinyreact-specific details: an **untyped** input id needs no
 `:shinyreact.default` suffix (the hook adds it on the wire, but Python's
 handler is a no-op), while a **typed** one does, because the suffix is what
 runs the handler; and an input read through `@reactive.event(...,
