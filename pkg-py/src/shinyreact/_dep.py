@@ -6,7 +6,19 @@ from htmltools import HTMLDependency, TagChild, TagList
 from ._bookmark import _config_script_tag
 
 _WWW_DIR = Path(__file__).parent / "www"
-_SHINYREACT_JS_PATH = _WWW_DIR / "shinyreact.js"
+
+# `@posit-dev/shinyreact`'s version, i.e. the release of the bundle in `www/`.
+# It is the shinyreact HTMLDependency's version, so
+# `/lib/shinyreact-0.1.1/shinyreact.js` names the JS release being served and
+# an npm-tier app can read the page source to see whether its bundled copy
+# matches the server's. Bump alongside `pkg-js/package.json`; `test_dep.py`
+# pins the two together. Mirrors R's `.shinyreact_js_version`.
+_SHINYREACT_JS_VERSION = "0.1.1"
+
+# Only reachable from a repo checkout (editable install), never from an
+# installed wheel. Its presence is the "dev checkout" signal for
+# `_bundle_version()`.
+_JS_PACKAGE_JSON = Path(__file__).parents[3] / "pkg-js" / "package.json"
 
 # Who supplies shinyreact.js (and shinyreact.css) to the page.
 ShinyreactJs = Literal["server", "client"]
@@ -21,15 +33,25 @@ def _file_mtime_int(path: Path) -> int | None:
         return None
 
 
+def _bundle_version() -> str:
+    """``_SHINYREACT_JS_VERSION``, suffixed with the bundle's mtime in a dev checkout.
+
+    An installed package serves ``/lib/shinyreact-0.1.1/``. In the repo
+    checkout it is ``/lib/shinyreact-0.1.1.<mtime>/`` instead, so a
+    ``make update-dist`` still cache-busts while the URL still names the release.
+    Mirrors R's ``.bundle_version()``.
+    """
+    if _JS_PACKAGE_JSON.is_file():
+        mtime = _file_mtime_int(_WWW_DIR / "shinyreact.js")
+        if mtime is not None:
+            return f"{_SHINYREACT_JS_VERSION}.{mtime}"
+    return _SHINYREACT_JS_VERSION
+
+
 def _dep() -> HTMLDependency:
-    # Use the bundle's mtime as the version so browsers re-fetch after a
-    # `make update-dist`. Falls back to a fixed version if the bundle is
-    # missing (e.g. in a partially-built dev checkout).
-    mtime = _file_mtime_int(_SHINYREACT_JS_PATH)
-    version = str(mtime) if mtime is not None else "0.1.0"
     return HTMLDependency(
         name="shinyreact",
-        version=version,
+        version=_bundle_version(),
         source={"subdir": str(_WWW_DIR)},
         script={"src": "shinyreact.js", "defer": ""},
         stylesheet={"href": "shinyreact.css"},

@@ -60,7 +60,10 @@ build that uploads a pending tarball; a human then approves it with 2FA. Two
 steps, and the second one is not yours to do.
 
 1. Bump `version` in `pkg-js/package.json` (`cd pkg-js && npm version 1.2.3
-   --no-git-tag-version` also updates `package-lock.json`). Open a PR, merge it.
+   --no-git-tag-version` also updates `package-lock.json`), and the matching
+   constants `_SHINYREACT_JS_VERSION` in `pkg-py/src/shinyreact/_dep.py` and
+   `.shinyreact_js_version` in `pkg-r/R/dep.R` (the shinyreact HTMLDependency
+   version; `test_dep.py` / `test-dep.R` fail on drift). Open a PR, merge it.
 2. `git tag js/v1.2.3 && git push origin js/v1.2.3`.
 3. `release-js.yaml` verifies the tag matches `package.json`, lints, tests,
    builds (IIFE + npm ESM + types), and runs `npm stage publish`. Nothing is on
