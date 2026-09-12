@@ -5,7 +5,9 @@ from shinyreact import reactive_output, set_react_page
 set_react_page()
 
 
-@reactive_output
+# py-shiny#2497: `Jsonifiable`'s `dict`/`list` arms are invariant, so a
+# `dict` return is not assignable to it. Drop the ignore when that lands.
+@reactive_output  # pyright: ignore[reportArgumentType]
 def dist_data():
     return histogram(waiting, input.bins())
 
