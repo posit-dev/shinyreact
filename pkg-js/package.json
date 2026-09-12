@@ -1,8 +1,10 @@
 {
   "name": "@posit-dev/shinyreact",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "React hooks and components for Shiny (shinyreact) — the ui.tsx pattern's client runtime",
   "license": "MIT",
+  "homepage": "https://posit-dev.github.io/shinyreact/js/",
+  "bugs": "https://github.com/posit-dev/shinyreact/issues",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/posit-dev/shinyreact.git",
