@@ -10,21 +10,31 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server
 
-- output `greeting` (`reactive_output`) → `"Showing N random points"`
+- output `greeting` (`reactive_output`) → `"Showing N random points"` `(test)`
+  - no singular special case: `N = 1` reads `"Showing 1 random points"`
+    `(test)`
   - `[r]` returns `NULL` while `input$num_points` is `NULL`; `req()` is
     deliberately avoided so the silent error does not reach the client console
+    `(test)`
   - `[py]` `input.num_points()` raises a silent exception before the first
-    message
+    message, so neither output renders `(test)`
 - output `scatter` — a Plotly figure of `N` standard-normal `(x, y)` points,
   seeded 42, title `"Random Scatter (N points)"`, margins l 40 / r 20 / t 40 /
   b 40
   - `[py]` `@render_plotly` from shinywidgets, `px.scatter` over
     `np.random.default_rng(42)`
   - `[r]` `plotly::renderPlotly` with `set.seed(42)` and `rnorm`
+    - on the wire it is a `json` string carrying the figure, with the widget's
+      own dependencies (`plotly-main`, `crosstalk`, …) attached to it — but
+      **not** `plotly-binding`, which arrives separately `(test)`
   - the two servers draw *different* points — the RNG streams differ — so this
     is not a cross-language parity claim
   - `[r]` uses `req(input$num_points)` here, unlike `greeting`
+  - `[py]` on the wire it is a widget reference, not a figure:
+    `{model_id, fill, widget_pkg: "plotly"}` — the client's `ShinyOutput` is
+    what turns it into a plot `(test)`
 - there is no `output_widget()` / `plotlyOutput()` placeholder in either server
+  — the value is produced all the same `(test)`
 - the render function's binding JS is discovered and delivered automatically
   - `[py]` `set_react_page()` inlines the dependency into `<head>`
   - `[r]` `page_react()` cannot inline it (the UI is built before `server()`

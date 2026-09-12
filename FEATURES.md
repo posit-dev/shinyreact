@@ -85,8 +85,9 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
       reported is that client and server cannot talk
     - one element reused across repeated failures; the newest message wins
     - the throw is unchanged (fail fast); the banner is additive
-    - covers all three fatal paths: major mismatch (either direction), missing
-      tag in the npm build, and a tag with no `protocolVersion` in the npm build
+    - covers the only fatal path there is: a major-version mismatch (either
+      direction). A missing tag, or a tag with no `protocolVersion`, is not
+      fatal in either build
 - server → client boot config: one `<script type="application/json"
   id="shinyreact-config">` tag
   - it lands in `<head>` in every language and on every path
@@ -95,9 +96,8 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
       dependency's `head` HTML, with `all_files = FALSE` since it ships no files
     - R emitted it inline in `<body>` until #224
   - always carries `protocolVersion`
-    - `[js]` a tag *without* one no longer skips the handshake silently: the
-      IIFE logs an error, and the npm build throws, since an independently
-      installed client cannot assume compatibility
+    - `[js]` a tag *without* one does not skip the handshake silently: both
+      builds log an error naming what could not be verified
   - carries `restore` (an `{inputId: value}` map) only when a bookmark restore
     is active *and* the map is non-empty
   - emitted by every page entry point except `page_bare()`
@@ -106,12 +106,11 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
     - the reader logs and returns `null` on malformed JSON rather than
       throwing — a broken config must not take down an app that never bookmarks
     - the reader returns `null` when there is no `document` (non-DOM env)
-  - `[js]` whether a *missing* tag is fatal depends on which build is running
-    - IIFE bundle (shipped inside the R/Python packages): tolerated, because a
-      hand-wired `page_bare()` page legitimately has no tag
-    - npm ESM build (`@posit-dev/shinyreact`): fatal, opted into at import time —
-      an independently installed client meeting a tagless page means the server
-      predates the protocol
+  - `[js]` a *missing* tag is tolerated by both builds — IIFE and npm ESM
+    - a `page_bare()` page legitimately has none, at either tier — see
+      `examples/11-npm-local`, an npm-tier app with no tag on the page
+    - the npm build treated absence as fatal until #261, when the opt-in
+      strict mode was removed entirely
 - server → client custom message: `shinyReactMessage`, payload `{id, data}`
 - client → server input values: the wire id may carry a `:<type>` suffix naming
   a server-side input handler
@@ -464,6 +463,10 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
   - `renderValue` → `setValue`, `renderError` → `setError`,
     `showProgress` → `setRecalculating`
   - a value or progress event for an unknown id logs an error and returns
+  - `renderError` logs `Error for <id>:` to the console, **except** for a
+    silent error (empty `message`, from `req()` / `validate()`), which is
+    ordinary gating and logs nothing — matching vanilla Shiny's binding (e2e:
+    an empty-message error logs nothing, a real one does)
   - it reaches the output registry through the same page-scoped accessor the
     hooks use, resolved **per call** rather than captured when the binding was
     constructed, so it can never route to a registry a second copy of the
@@ -605,9 +608,9 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     `shinyreact-deps` handler and no ping, so the server never installed
     discovery for the session at all
   - pinned by `entry-parity.test.ts`, which imports each entry and asserts its
-    side effects — including the three *deliberate* tier differences (only the
-    IIFE installs `window.shinyreact`; only the npm build treats a missing
-    config tag as fatal; only the npm build warns about a double load)
+    side effects — including the two *deliberate* tier differences (only the
+    IIFE installs `window.shinyreact`; only the npm build warns about a double
+    load) and that neither entry treats a missing config tag as fatal
 - installing twice is a no-op, so calling it from both entries is safe
   - the latch is **module-scoped**, so this holds per copy of the library, not
     per page: two copies each install a `shinyreact-deps` handler and each send
@@ -689,7 +692,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
 
 - it defaults to `"server"` — the package serves both as an `HTMLDependency`
 - `"client"` omits **both files**; the `#shinyreact-config` tag is still
-  emitted, because the npm-tier client hard-errors without it
+  emitted, since it carries the protocol version and any bookmark restore
+  payload
 - it is for the npm tier: a client importing `@posit-dev/shinyreact` bundles its own
   copy, so serving them too puts two copies of React and the hooks on the page
 - any other value raises, naming the bad value and both valid ones
@@ -1027,7 +1031,30 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
       either, so a later mount under that parent still gets a pass of its own
   - a queued pass re-reads `window.Shiny.bindAll` when it runs, and no-ops if
     Shiny is gone by then
-  - `ShinyOutput`s under different parents bind independently
+  - `ShinyOutput`s under parents that share no elements bind independently, in
+    parallel — side-by-side parents are not serialized
+- no two **overlapping** scopes scan at once, where overlapping means one scope
+  contains the other (#301)
+  - `bindAll` is descendants-only, so an outer scope's scan walks an inner
+    scope's element too, and both register it — the same duplicate-id report as
+    the same-parent case, reached by two *different* scope elements
+    - the browser logs no `[shiny] Duplicate output ID` warning for a holder
+      under a `div` nested in a parent that holds holders of its own `(e2e)` —
+      like the sibling case, a symptom jsdom cannot reproduce
+  - a scope whose scan would overlap an in-flight one queues behind it instead
+    of starting
+    - and is still bound: the nested holders carry `.shiny-bound-output` and
+      their widget values reach the server `(e2e)`
+  - it waits for **every** overlapping pass in flight, not just the first found:
+    one scanning plus one already queued behind it is a reachable state
+  - the wait applies to every way a pass gets queued, not only to a scope with
+    no pass of its own
+    - a nested layout under `React.StrictMode` — whose cleanup queues a pass for
+      each scope — never runs two overlapping passes in one microtask flush
+    - a `ShinyOutput` mounting later under a parent whose running scan predates
+      it queues behind that scan *and* any overlapping outer one `(e2e)`
+  - a failing pass does not cancel a scan queued behind it — the queued scan
+    still runs
 - unmounting one `ShinyOutput` unbinds only its own element
 - bind/unbind failures are caught and logged with the resolved output id and the
   phase, never thrown
@@ -1328,7 +1355,8 @@ initial page.
     leaving `ImageOutput`'s spinner without its `@keyframes spin`)
     - Vite does not inject a CSS import into a lib-mode ESM bundle, so
       consumers opt in rather than having it forced on them
-  - a missing `#shinyreact-config` tag is a hard error, opted into at import
+  - a missing `#shinyreact-config` tag is tolerated, as in the IIFE bundle, so
+    a `page_bare(page_react_dep())` page boots at the npm tier (#261)
 - `window.shinyreact` contains exactly: `useShinyInput`, `useShinyInputValue`,
   `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`,
   `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`,

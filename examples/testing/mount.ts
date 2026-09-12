@@ -28,7 +28,6 @@ import { fileURLToPath } from "node:url";
 import { vi } from "vitest";
 
 import { installGlobal } from "../../pkg-js/src/global";
-import { _resetConfigTagRequirementForTesting } from "../../pkg-js/src/shiny-react/config";
 import { __resetLifecycleStoreForTests } from "../../pkg-js/src/shiny-react/lifecycle-store";
 import {
   _resetReactRegistryForTesting,
@@ -87,7 +86,6 @@ export async function mountExample(name: string): Promise<MountedExample> {
 
   _resetReactRegistryForTesting();
   _resetShinyReactInitializedForTesting();
-  _resetConfigTagRequirementForTesting();
   __resetLifecycleStoreForTests();
   document.body.innerHTML = "";
 

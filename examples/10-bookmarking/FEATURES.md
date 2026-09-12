@@ -15,12 +15,16 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
     further wiring — a UI object built once could not carry a per-request
     restore payload
 - output `greeting` (`reactive_output`) → `text='<txt>' num=<num>
-  checked=<yes|no>`
-  - `checked` is the string `"yes"` / `"no"`, not a boolean
-  - `txt` is `repr`'d, so it is quoted
+  checked=<yes|no>` `(test)`
+  - `checked` is the string `"yes"` / `"no"`, not a boolean `(test)`
+  - `txt` is `repr`'d, so it is quoted `(test)`
+  - it renders from the hook defaults (`""` / `0` / `false`), since the client
+    does not gate on `useShinyInitialized()` `(test)`
 - `@reactive.effect` + `@reactive.event(input.bookmark_clicks,
   ignore_init=True)` → `await session.bookmark()`, which rewrites the browser
   URL
+  - the mount-time `0` does not bookmark; the URL rewrite itself needs a
+    browser, so in-memory tests only assert the effect runs cleanly `(test)`
 - `[py]` only — this example has no R server
 
 ## Restore path

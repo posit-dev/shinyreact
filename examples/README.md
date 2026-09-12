@@ -5,12 +5,14 @@ reactive computation, and the UI is defined in a client-side React codebase
 whose entry is conventionally `ui.tsx` (simpler variants like `www/ui.js`
 for no-build or `src/ui.jsx` for Vite + JSX fill the same role).
 
-Examples are Python unless noted; [01-hello](01-hello/) and
-[07-plotly](07-plotly/) also ship an `app.R` showing the same app on the R
-package. Those two are the canonical source for a copy in
-`pkg-r/inst/examples-shiny/` that ships with the installed R package — **after
-editing their `app.R` or `www/`, run `make update-examples`** (a testthat
-drift guard fails otherwise).
+Examples are Python unless noted; [01-hello](01-hello/),
+[07-plotly](07-plotly/) and [11-npm-local](11-npm-local/) also ship an `app.R`
+showing the same app on the R package. The first two are the canonical source
+for a copy in `pkg-r/inst/examples-shiny/` that ships with the installed R
+package — **after editing their `app.R` or `www/`, run `make update-examples`**
+(a testthat drift guard fails otherwise). 11-npm-local is not copied: its
+`www/ui.js` is built, not committed, so the shipped copy would be an app that
+cannot run.
 
 **Shipping several servers over one `www/` client is a device of these
 examples, not a pattern to copy.** A real app has one server. It exists here
@@ -34,6 +36,7 @@ see [Example behavior trees](#example-behavior-trees) below.
 | [08-input-handler](08-input-handler/) | `useShinyInput` with `type="shiny.datetime"` — client sends unix seconds; server `input.when()` is a `datetime.datetime` via Shiny's built-in handler |
 | [09-hmr](09-hmr/) | React Fast Refresh in dev (Vite dev server alongside Shiny). The npm tier: imports `@posit-dev/shinyreact` and bundles its own React, with `set_react_page(shinyreact_js="client")` so the server doesn't also serve shinyreact.js |
 | [10-bookmarking](10-bookmarking/) | Bookmark restoration: URL query string (or server-stored state) hydrates `useShinyInput` initial values via the `#shinyreact-config` tag emitted by `page_react()` |
+| [11-npm-local](11-npm-local/) | The npm tier with nothing else on the page: the client imports `@posit-dev/shinyreact` (repo-relative `file:../../pkg-js`, as 09-hmr does) and the server is `page_bare(page_react_dep(...))` — no shinyreact JS, no `#shinyreact-config` tag, no protocol handshake. `app.py` + `app.R` |
 
 ## Running an example
 
@@ -109,6 +112,26 @@ pytest                                   # the app's Python tests
 Rscript -e 'shiny::runTests()'           # the app's R tests (also shinytest2::test_app())
 npx vitest run --root .. 01-hello        # the app's UI tests
 ```
+
+Most of the Python tests drive the app itself, with
+[`shiny.testserver.test_server()`](https://shiny.posit.co/py/api/testing/):
+inputs in, output values out, in memory. That is a good fit for these apps
+because a `ui.tsx` server contains only reactive computation, so the JSON a
+test asserts is exactly what `useShinyOutputValue()` receives:
+
+```python
+with test_server(APP) as ts:
+    ts.set_inputs(bins=9)
+    assert ts.get_output("dist_caption") == "272 eruptions in 9 bins"
+```
+
+Pass an absolute `Path` (`Path(__file__).resolve().parents[1] / "app.py"`), and
+mind two shinyreact-specific details: an **untyped** input id needs no
+`:shinyreact.default` suffix (the hook adds it on the wire, but Python's
+handler is a no-op), while a **typed** one does, because the suffix is what
+runs the handler; and an input read through `@reactive.event(...,
+ignore_init=True)` needs two `set_inputs` calls, mirroring the client's
+register-at-mount then send-the-event.
 
 The UI tests need a JS toolchain, which the no-build examples deliberately do
 not carry. `examples/package.json` provides one for the whole examples tree, so

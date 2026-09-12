@@ -17,18 +17,22 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Server (`app.py`, Express)
 
-- output `column_data` → the whole `{col: item[]}` dict
+- output `column_data` → the whole `{col: item[]}` dict `(test)`
+  - it renders from the initial contents before any input arrives `(test)`
 - input `move_item` → `{item, from, to}`
   - handled by a `@reactive.effect` + `@reactive.event(input.move_item,
-    ignore_init=True)`, so the initial `null` from mount is ignored
+    ignore_init=True)`, so the initial `null` from mount is ignored `(test)`
   - the move is applied to a copy of the dict, then `columns.set(...)` — the
     reactive value is replaced, not mutated in place
-  - if `item` is not in `data[from]`, nothing changes (no error)
+  - if `item` is not in `data[from]`, nothing changes (no error) `(test)`
   - the item is appended to the end of the destination column, never inserted
+    `(test)`
+  - successive moves accumulate `(test)`
 - `[py]` only — this example has no R server
 - the server logic lives inside `app.py` next to `set_react_page()`, so it is
-  not importable and no unit test covers it — logic in a module beside `app.py`
-  would be testable
+  not importable — `tests/test_moves.py` drives the app itself with
+  `shiny.testserver.test_server()` instead, sending the mount-time `null`
+  first so the move is not swallowed as the init
 
 ## Client (`www/ui.js`)
 

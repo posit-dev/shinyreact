@@ -1,7 +1,7 @@
 # Shipping the JS runtime: npm package + HTMLDependency hybrid
 
 **Date:** 2026-08-17
-**Status:** Decided; in progress — config tag + handshake (#198), page modes (#208, #214), protocol doc + dual build + publish workflow (npm-package PR), `shinyreact_js=` switch + 09-hmr conversion (#217). Remaining: first npm publish (until then `examples/09-hmr` depends on `file:../../pkg-js`)
+**Status:** Decided; in progress — config tag + handshake (#198), page modes (#208, #214), protocol doc + dual build + publish workflow (npm-package PR), `shinyreact_js=` switch + 09-hmr conversion (#217), `page_bare()` at the npm tier + removal of the config-tag strict mode (#261, `examples/11-npm-local`). Remaining: first npm publish (until then `examples/09-hmr` and `examples/11-npm-local` depend on `file:../../pkg-js`)
 **Issues:** [#172](https://github.com/posit-dev/shinyreact/issues/172) (spike), [#28](https://github.com/posit-dev/shinyreact/issues/28) (upstream npm publication)
 
 ## Context
@@ -170,14 +170,14 @@ The rule, then:
   distinction and must be installed by both. To stay import-time safe, such an
   installer must no-op without `document` (SSR, node tests), do nothing beyond
   registering a listener until Shiny exists, and tolerate being called twice.
-- **Tier distinctions are deliberate and few.** Three today: the IIFE
-  installs `window.shinyreact` (npm consumers import the hooks directly); the
-  npm build treats a missing `#shinyreact-config` tag as fatal (an
-  independently installed client meeting a tagless page means the server
-  predates the protocol; the IIFE ships *with* the server, so absence is
-  legitimate for a hand-wired `page_bare()` page); and the npm build warns when
-  `window.shinyreact` is already present, since only it can observe the
-  double-load — script order guarantees the IIFE ran first (#217).
+- **Tier distinctions are deliberate and few.** Two today: the IIFE installs
+  `window.shinyreact` (npm consumers import the hooks directly), and the npm
+  build warns when `window.shinyreact` is already present, since only it can
+  observe the double-load — script order guarantees the IIFE ran first (#217).
+  A third — the npm build treating a missing `#shinyreact-config` tag as fatal
+  — was dropped in #261: it assumed a client installed independently of the
+  server, which is exactly what installing from the server package undoes, and
+  it banned the tagless `page_bare(page_react_dep())` page.
 - **Both are pinned by tests.** `pkg-js/src/__tests__/entry-parity.test.ts`
   imports each entry for real and asserts its observable side effects, including
   the deliberate differences. Comments do not stop drift; that test does.

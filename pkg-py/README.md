@@ -78,6 +78,6 @@ shiny run shinyreact/examples/01-hello/app.py
 - [Get started](https://posit-dev.github.io/shinyreact/) walks through the `ui.tsx` pattern: inputs, outputs, messages, and embedding traditional Shiny renderers.
 - [TSX files and JavaScript build tools](https://posit-dev.github.io/shinyreact/articles/tsx-and-build-tools.html) explains `.tsx`, JSX, TypeScript, and what `npm run build` does.
 - [Client hooks](https://posit-dev.github.io/shinyreact/articles/hooks.html) lists everything at `window.shinyreact`.
-- [Testing wire payloads](https://posit-dev.github.io/shinyreact/articles/testing.html) covers `WireTap` for Playwright tests.
+- [Testing](https://posit-dev.github.io/shinyreact/articles/testing.html) covers `shiny.testserver.test_server()` for driving a server with no browser, and `WireTap` for wire payloads in Playwright tests.
 - [Agent Skills](https://posit-dev.github.io/shinyreact/articles/agent-skills.html) explains the skills that ship with the package for coding agents.
 - The [examples catalog](https://github.com/posit-dev/shinyreact/blob/main/examples/README.md) lists runnable apps from no-build to Vite + HMR.
