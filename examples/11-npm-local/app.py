@@ -14,13 +14,8 @@ _APP_DIR = Path(__file__).parent
 # examples/09-hmr, the other npm-tier example.
 if not (_APP_DIR / "www" / "ui.js").exists():
     print("www/ui.js not found -- building the client bundle...", file=sys.stderr)
-    # `@posit-dev/shinyreact` is a `file:../../pkg-js` dep whose exports point
-    # at `dist-npm/`, which is not committed -- so the package has to be built
-    # before this app's own build can resolve it.
-    _pkg_js = _APP_DIR.parent.parent / "pkg-js"
-    if not (_pkg_js / "dist-npm").exists():
-        subprocess.run(["npm", "install"], cwd=_pkg_js, check=True)
-        subprocess.run(["npm", "run", "build"], cwd=_pkg_js, check=True)
+    # `@posit-dev/shinyreact` comes from npm, so this is an ordinary install --
+    # nothing in the repo has to be built first.
     subprocess.run(["npm", "install"], cwd=_APP_DIR, check=True)
     subprocess.run(["npm", "run", "build"], cwd=_APP_DIR, check=True)
 

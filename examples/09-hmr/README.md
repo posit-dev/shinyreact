@@ -14,19 +14,24 @@ Because the client ships the runtime itself, the server must not serve
 `set_react_page(shinyreact_js="client")` in `app.py`. The `#shinyreact-config`
 tag is still emitted, and the npm client requires it.
 
-Until `@posit-dev/shinyreact` is published, `package.json` depends on it as
-`file:../../pkg-js` — repo-relative, so it only resolves inside a checkout of
-this repo. Copy this example elsewhere and that line becomes
-`"@posit-dev/shinyreact": "^<version>"` from npm. In the meantime the package has
-to be built before this example can build against it:
+`package.json` depends on the published
+[`@posit-dev/shinyreact`](https://www.npmjs.com/package/@posit-dev/shinyreact),
+so `npm install` here is an ordinary install and nothing in this repo has to be
+built first. Copy this directory anywhere and it works.
+
+`app.py` runs the install and build for you when `www/ui.js` is missing, so
+`uv run shiny run app.py` works in a fresh clone.
+
+To develop against uncommitted `pkg-js/` changes rather than the release, point
+npm at the local package for as long as you need it:
 
 ```bash
-cd ../../pkg-js && npm install && npm run build
+cd ../../pkg-js && npm install && npm run build   # dist-npm/ is not committed
+cd ../examples/09-hmr && npm install ../../pkg-js
 ```
 
-`app.py` does both builds for you when `www/ui.js` is missing, so
-`uv run shiny run app.py` works in a fresh clone. The commands above are for
-rebuilding by hand.
+Undo with `npm install` after reverting `package.json` — don't commit the
+`file:` dependency.
 
 ## How it works
 
