@@ -11,12 +11,6 @@ from shiny.render.renderer import Renderer
 from shiny.session import get_current_session
 from shiny.ui import page_html
 
-# The class `page_html()` returns. `App(ui=)` accepts it but not its
-# `HTMLTextDocument` base, so declaring the base as our return type would make
-# the documented `App(page_react_html(...), server)` fail to type-check.
-# py-shiny exports the function but not the class -- hence the private import.
-from shiny.ui._page import PageHtmlDocument
-
 from ._app import SRC_DIR_ATTR
 from ._bookmark import _config_script_tag
 from ._dep import ShinyreactJs, _dep, _dep_page, _file_mtime_int, _serves_bundle
@@ -24,6 +18,14 @@ from ._dep import ShinyreactJs, _dep, _dep_page, _file_mtime_int, _serves_bundle
 if TYPE_CHECKING:
     # Private, but it is the only name for HTMLDependency's stylesheet entry.
     from htmltools._core import ScriptItem, StylesheetItem
+
+    # The class `page_html()` returns. `App(ui=)` accepts it but not its
+    # `HTMLTextDocument` base, so declaring the base as our return type would
+    # make the documented `App(page_react_html(...), server)` fail to
+    # type-check. py-shiny exports the function but not the class -- hence the
+    # private import, kept type-only so a rename upstream is a pyright error,
+    # not an ImportError at app startup.
+    from shiny.ui._page import PageHtmlDocument
 
 
 def page_bare(

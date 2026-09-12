@@ -37,7 +37,7 @@ async def test_passthrough_string_is_json_not_text_node() -> None:
 @pytest.mark.asyncio
 async def test_passthrough_list() -> None:
     # py-shiny#2497: `Jsonifiable`'s `dict`/`list` arms are invariant, so a
-    # `dict` return is not assignable to it. Drop the ignore when that lands.
+    # `list` return is not assignable to it. Drop the ignore when that lands.
     @reactive_output  # pyright: ignore[reportArgumentType]
     def out():
         return [1, 2, 3]
