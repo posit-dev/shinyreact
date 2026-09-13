@@ -1,11 +1,8 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 0 notes
 
 * This is a new release.
-* The "possibly misspelled words" are intentional: UI is expanded as
-  "user interface (UI)" on first use, and "renderer" is Shiny's term for a
-  `render*()` function.
 
 ## Method references
 
