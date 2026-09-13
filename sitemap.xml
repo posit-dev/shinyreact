@@ -2,62 +2,66 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://posit-dev.github.io/shinyreact/articles/tsx-and-build-tools.html</loc>
-    <lastmod>2026-09-13T02:05:09.203Z</lastmod>
+    <lastmod>2026-09-13T16:20:47.142Z</lastmod>
   </url>
   <url>
     <loc>https://posit-dev.github.io/shinyreact/articles/testing.html</loc>
-    <lastmod>2026-09-13T02:05:09.203Z</lastmod>
+    <lastmod>2026-09-13T16:20:47.142Z</lastmod>
   </url>
   <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/set_react_page.html</loc>
-    <lastmod>2026-09-13T02:05:36.319Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/playwright.WireTap.html</loc>
-    <lastmod>2026-09-13T02:05:36.330Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/send_message.html</loc>
-    <lastmod>2026-09-13T02:05:36.325Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/page_react_dep.html</loc>
-    <lastmod>2026-09-13T02:05:36.324Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/ReactApp.html</loc>
-    <lastmod>2026-09-13T02:05:36.322Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/index.html</loc>
-    <lastmod>2026-09-13T02:05:09.203Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/index.html</loc>
-    <lastmod>2026-09-13T02:05:36.308Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/reactive_output.html</loc>
-    <lastmod>2026-09-13T02:05:36.325Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/page_react.html</loc>
-    <lastmod>2026-09-13T02:05:36.320Z</lastmod>
-  </url>
-  <url>
-    <loc>https://posit-dev.github.io/shinyreact/py/page_react_html.html</loc>
-    <lastmod>2026-09-13T02:05:36.321Z</lastmod>
+    <loc>https://posit-dev.github.io/shinyreact/articles/comparison.html</loc>
+    <lastmod>2026-09-13T16:20:47.142Z</lastmod>
   </url>
   <url>
     <loc>https://posit-dev.github.io/shinyreact/py/page_bare.html</loc>
-    <lastmod>2026-09-13T02:05:36.323Z</lastmod>
+    <lastmod>2026-09-13T16:21:12.858Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/page_react_html.html</loc>
+    <lastmod>2026-09-13T16:21:12.856Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/page_react.html</loc>
+    <lastmod>2026-09-13T16:21:12.856Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/reactive_output.html</loc>
+    <lastmod>2026-09-13T16:21:12.859Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/index.html</loc>
+    <lastmod>2026-09-13T16:21:12.848Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/index.html</loc>
+    <lastmod>2026-09-13T16:20:47.142Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/ReactApp.html</loc>
+    <lastmod>2026-09-13T16:21:12.857Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/page_react_dep.html</loc>
+    <lastmod>2026-09-13T16:21:12.858Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/send_message.html</loc>
+    <lastmod>2026-09-13T16:21:12.859Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/playwright.WireTap.html</loc>
+    <lastmod>2026-09-13T16:21:12.862Z</lastmod>
+  </url>
+  <url>
+    <loc>https://posit-dev.github.io/shinyreact/py/set_react_page.html</loc>
+    <lastmod>2026-09-13T16:21:12.855Z</lastmod>
   </url>
   <url>
     <loc>https://posit-dev.github.io/shinyreact/articles/hooks.html</loc>
-    <lastmod>2026-09-13T02:05:09.203Z</lastmod>
+    <lastmod>2026-09-13T16:20:47.142Z</lastmod>
   </url>
   <url>
     <loc>https://posit-dev.github.io/shinyreact/articles/agent-skills.html</loc>
-    <lastmod>2026-09-13T02:05:09.202Z</lastmod>
+    <lastmod>2026-09-13T16:20:47.142Z</lastmod>
   </url>
 </urlset>
