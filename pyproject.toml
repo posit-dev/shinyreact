@@ -6,11 +6,38 @@ build-backend = "hatchling.build"
 name = "shinyreact"
 version = "0.1.0"
 description = "Shiny UI infrastructure for React-based component rendering"
+readme = "pkg-py/README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Barret Schloerke", email = "barret@posit.co" }]
+keywords = ["shiny", "react", "web", "dashboard"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+]
 requires-python = ">=3.10"
 dependencies = [
     "shiny>=1.8.0",
     "htmltools>=0.7.0",
 ]
+
+[project.urls]
+Homepage = "https://posit-dev.github.io/shinyreact/py/"
+Documentation = "https://posit-dev.github.io/shinyreact/py/"
+Repository = "https://github.com/posit-dev/shinyreact"
+Changelog = "https://github.com/posit-dev/shinyreact/blob/main/pkg-py/CHANGELOG.md"
+Issues = "https://github.com/posit-dev/shinyreact/issues"
+
+# The sdist is the Python package only, not the monorepo.
+[tool.hatch.build.targets.sdist]
+only-include = ["pkg-py/src", "pkg-py/README.md", "pkg-py/CHANGELOG.md"]
 
 [tool.hatch.build.targets.wheel]
 packages = [
