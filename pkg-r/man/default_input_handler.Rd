@@ -16,7 +16,7 @@ simplifies (see \verb{pkg-py/src/shinyreact/_input_handler.py}).
 The contract, stated in terms of the JSON the React hook sent:
 \itemize{
 \item \strong{Array of objects} (\verb{[\{a: 1\}, \{b: 2\}]}) — kept as a list of records
-This is the case shiny's default handler gets wrong.
+This is the case Shiny's default handler gets wrong.
 \item \strong{Array of scalars} (\verb{[0, 100]}, \verb{["a", "b"]}) — flattened to an atomic
 vector, exactly as shiny does by default.
 \item \strong{Empty array} (\verb{[]}) — \code{list()}, matching Python's \verb{[]}. Shiny's default
