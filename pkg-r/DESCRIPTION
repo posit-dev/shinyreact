@@ -16,8 +16,8 @@ Authors@R: c(
            comment = "'React' and 'ReactDOM', bundled in inst/lib/shiny/shinyreact.js")
   )
 Description: Server-side plumbing for the 'ui.tsx' pattern in 'Shiny': the
-    UI is defined in a client 'React' (<https://react.dev/>) bundle, and the
-    'Shiny' server contains only reactive computation. Ships no UI
+    UI is defined in a client 'React' (<https://react.dev/>) bundle, and
+    the 'Shiny' server contains only reactive computation. Ships no UI
     components.
 License: MIT + file LICENSE
 URL: https://posit-dev.github.io/shinyreact/r/,
