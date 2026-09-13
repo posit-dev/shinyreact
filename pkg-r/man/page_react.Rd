@@ -58,3 +58,14 @@ DOM: create and append your own mount container, e.g.
 re-fetches after every edit — unlike raw \verb{<script src=...>} tags in a
 hand-written HTML file, which the browser caches.
 }
+\examples{
+# In an app directory containing www/ui.js, `page_react()` with no
+# arguments is the whole UI. Here the shipped hello example is pointed at
+# explicitly:
+www <- system.file("examples-shiny", "01-hello", "www", package = "shinyreact")
+ui <- page_react(src_dir = www)
+
+if (interactive()) {
+  shiny::runApp(system.file("examples-shiny", "01-hello", package = "shinyreact"))
+}
+}

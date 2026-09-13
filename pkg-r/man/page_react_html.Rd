@@ -83,3 +83,18 @@ fixed-string match, so a differently-quoted or reordered \verb{<meta>} tag is
 rejected.
 }
 
+\examples{
+index <- tempfile(fileext = ".html")
+writeLines(
+  c(
+    "<!doctype html>",
+    "<html><head>",
+    '<meta name="shiny-dependency-placeholder" content="">',
+    '<script type="module" src="ui.js"></script>',
+    "</head><body></body></html>"
+  ),
+  index
+)
+ui <- page_react_html(index)
+unlink(index)
+}

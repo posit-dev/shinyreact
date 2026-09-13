@@ -57,3 +57,7 @@ produce 404s for every asset the page references — a bug every time, and one
 that is far cheaper to see at page-build time than in the browser's network
 tab. Matches Python's \code{page_react_dep()}, which raises \code{NotADirectoryError}.
 }
+\examples{
+www <- system.file("examples-shiny", "01-hello", "www", package = "shinyreact")
+page_react_dep(www)
+}

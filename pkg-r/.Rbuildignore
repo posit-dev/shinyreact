@@ -3,4 +3,5 @@
 ^pkgdown$
 ^\.air\.toml$
 ^LICENSE\.md$
+^cran-comments\.md$
 ^vignettes/articles$

@@ -22,3 +22,16 @@ a React client reads the value by id. There is no UI placeholder — the
 client owns all UI. Accepts any JSON-serializable value (passed through
 unchanged).
 }
+\examples{
+# The client reads this with useShinyOutputValue("greeting")
+# and writes input$name with useShinyInput("name", "world").
+server <- function(input, output, session) {
+  output$greeting <- reactive_output({
+    paste0("Hello, ", input$name, "!")
+  })
+}
+
+if (interactive()) {
+  shiny::shinyApp(page_react(), server)
+}
+}

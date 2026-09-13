@@ -9,7 +9,11 @@ shinyreact lets you write the UI of a [Shiny](https://shiny.posit.co/) app as a 
 
 ## Installation
 
-shinyreact is not yet on CRAN. Install the development version from GitHub:
+```r
+install.packages("shinyreact")
+```
+
+Or install the development version from GitHub:
 
 ```r
 # install.packages("pak")
