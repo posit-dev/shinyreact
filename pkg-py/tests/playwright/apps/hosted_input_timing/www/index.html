@@ -1,0 +1,19 @@
+<style>
+  #hidden-panel {
+    display: none;
+  }
+</style>
+<p>
+  Click <b>Render it</b>: the slider appears at <code>9</code>, not
+  <code>30</code> — the startup <code>update_slider()</code> was dropped
+  because the widget did not exist yet. Click <b>Bump it</b> and the same call
+  now works, giving <code>30</code>.
+</p>
+<p>
+  A hidden panel below holds two more sliders. Only
+  <code>#unsuspended_bins</code> exists in the DOM;
+  <code>#suspended_bins</code> never rendered, because Shiny suspends an output
+  nothing on screen is asking for.
+</p>
+<div id="root"></div>
+<script src="app.js" defer></script>

@@ -66,9 +66,50 @@ def widgets():
 Shiny's html-output binding calls `renderContent()`, which loads the
 dependencies and then runs `initializeInputs()` *and* `bindAll()`. So
 `input.bins()` / `input$bins` arrives exactly as in a classic app, and
-`update_slider()` / `updateSliderInput()` keeps working against the id.
+`update_slider()` / `updateSliderInput()` keeps working against the id — once
+the holder has rendered; see below.
 
 This is a deliberate exception, not the default — React-owned state through
 `useShinyInput` / `useSetShinyInput` is still how you build inputs. Use the
 holder when pixel-identical widgets matter more than owning the state.
+
+## Two things that break only once a widget is hosted
+
+Both are Shiny's own behavior, not shinyreact's — a plain `output_ui()` /
+`uiOutput()` app with no React anywhere hits them identically. The holder
+recipe above just makes them easy to walk into.
+
+**An update sent before the holder has rendered goes nowhere.** The widget
+does not exist, server or client, until its `@render.ui` / `renderUI()` has
+actually run. An update reaching Shiny before that targets an id Shiny does
+not know about yet and is dropped: no error, no warning, the widget simply
+starts at its own initial value.
+
+```python
+@reactive.effect                      # [r] observe({
+def _():                              # [r]   updateSliderInput(session, "bins", value = 30)
+    ui.update_slider("bins", value=30)  # [r] })
+```
+
+A hosted widget makes the race easy to hit, since the render now waits on a
+React commit as well. Prefer putting the value in the widget's own call
+(`ui.input_slider("bins", "Bins", 1, 50, value=30)`); reach for `update_*`
+only for a value you do not know until after the widget already exists.
+
+**A holder that starts hidden never renders at all.** Shiny suspends a
+`@render.ui` / `renderUI()` output while nothing on screen is asking for it,
+and a `ShinyOutput` inside a closed accordion, a non-default tab, or any
+`display: none` container counts as not asked for — even though the element
+itself has mounted. The render function never runs, the widget stays blank
+indefinitely, and nothing in the console says why.
+
+```python
+# [py] Express
+session.output(suspend_when_hidden=False)(widgets)
+
+# [py] Core: @output(suspend_when_hidden=False) above @render.ui
+# [r]  outputOptions(output, "widgets", suspendWhenHidden = FALSE)
+```
+
+Set it on every hosted widget that can start outside the visible panel.
 
