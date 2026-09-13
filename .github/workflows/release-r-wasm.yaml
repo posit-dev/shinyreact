@@ -1,0 +1,37 @@
+name: release-r-wasm
+
+# Attaches WebAssembly assets (`library.data.gz` + `library.js.metadata`) to an
+# `r/v*` GitHub release, so shinylive can install the R package from GitHub.
+#
+# shinylive:::get_github_wasm_assets() looks up
+# /repos/posit-dev/shinyreact/releases/tags/<RemoteRef> and expects those two
+# assets, where <RemoteRef> is whatever ref the user installed:
+#
+#   pak::pak("posit-dev/shinyreact/pkg-r@r/v0.1.0")   # RemoteRef: "r/v0.1.0"
+#
+# So the release tag and the install ref must be the same string. A slash in the
+# ref is fine for both pak and the GitHub API.
+#
+# Until shinyreact is on CRAN (and so on repo.r-wasm.org), this release is the
+# only way a shinylive app can `library(shinyreact)`. See #268.
+#
+# `release` events only run workflows from the default branch, so this file must
+# be on main before the release is created.
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  wasm:
+    if: startsWith(github.event.release.tag_name, 'r/v')
+    permissions:
+      contents: write
+      repository-projects: read
+    uses: r-wasm/actions/.github/workflows/release-file-system-image.yml@v3
+    with:
+      packages: local::./pkg-r
+      strip: "demo, doc, examples, help, html, include, tests, vignette"
+      # Pin to the webR release shinylive ships (0.6.0 / R 4.6.0). A wasm binary
+      # built against a different R version won't load.
+      webr-image: ghcr.io/r-wasm/webr:v0.6.0
