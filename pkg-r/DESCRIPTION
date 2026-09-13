@@ -1,5 +1,5 @@
 Package: shinyreact
-Title: Client-Side 'React' User Interfaces for 'Shiny'
+Title: Client-Side 'React' Interface for 'Shiny'
 Version: 0.1.0
 Authors@R: c(
     person("Barret", "Schloerke", , "barret@posit.co", role = c("cre", "aut"),

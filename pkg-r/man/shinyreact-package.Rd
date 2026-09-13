@@ -4,7 +4,7 @@
 \name{shinyreact-package}
 \alias{shinyreact}
 \alias{shinyreact-package}
-\title{shinyreact: Client-Side 'React' User Interfaces for 'Shiny'}
+\title{shinyreact: Client-Side 'React' Interface for 'Shiny'}
 \description{
 \if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
 
