@@ -3,8 +3,9 @@ name: release-r-wasm
 # Attaches WebAssembly assets (`library.data.gz` + `library.js.metadata`) to an
 # `r/v*` GitHub release, so shinylive can install the R package from GitHub.
 #
-# shinylive:::get_github_wasm_assets() looks up
-# /repos/posit-dev/shinyreact/releases/tags/<RemoteRef> and expects those two
+# shinylive:::get_github_wasm_assets() is the only path shinylive has for a
+# GitHub-installed R package: it looks up
+# /repos/posit-dev/shinyreact/releases/tags/<RemoteRef> and wants those two
 # assets, where <RemoteRef> is whatever ref the user installed:
 #
 #   pak::pak("posit-dev/shinyreact/pkg-r@r/v0.1.0")   # RemoteRef: "r/v0.1.0"
@@ -17,6 +18,17 @@ name: release-r-wasm
 #
 # `release` events only run workflows from the default branch, so this file must
 # be on main before the release is created.
+#
+# This drives the webR container directly instead of using
+# r-wasm/actions/.github/workflows/release-file-system-image.yml, for one
+# reason: that workflow's `rwasm::add_pkg()` call leaves `remotes = NA`, which
+# resolves rwasm's built-in list of webR package forks (`r-wasm/shiny@webr` and
+# friends) from GitHub with no PAT. In this repo that resolution fails, and an
+# older pkgdepends in the container reports it as an opaque
+# `res_one_row_df(): nrow(out) must equal 1`. We build only shinyreact
+# (`dependencies = FALSE`, matching the reusable workflow), so the fork
+# preferences are irrelevant here and `remotes = NULL` skips them. shinyreact's
+# own dependencies come from repo.r-wasm.org at runtime.
 
 on:
   release:
@@ -25,13 +37,37 @@ on:
 jobs:
   wasm:
     if: startsWith(github.event.release.tag_name, 'r/v')
+    runs-on: ubuntu-24.04
     permissions:
-      contents: write
-      repository-projects: read
-    uses: r-wasm/actions/.github/workflows/release-file-system-image.yml@v3
-    with:
-      packages: local::./pkg-r
-      strip: "demo, doc, examples, help, html, include, tests, vignette"
-      # Pin to the webR release shinylive ships (0.6.0 / R 4.6.0). A wasm binary
-      # built against a different R version won't load.
-      webr-image: ghcr.io/r-wasm/webr:v0.6.0
+      contents: write # upload assets to the release
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: 🧱 Build the webR filesystem image
+        run: |
+          cat > build-wasm.R <<'EOF'
+          setwd("/github/workspace")
+          rwasm::add_pkg("local::./pkg-r", repo_dir = "_site", remotes = NULL)
+          rwasm::make_vfs_library(
+            out_dir = "_rwasm",
+            repo_dir = "_site",
+            compress = TRUE,
+            strip = c("demo", "doc", "examples", "help", "html", "include", "tests", "vignette")
+          )
+          # compress = TRUE also leaves the uncompressed image behind; drop it
+          # so only library.data.gz is uploaded.
+          unlink(list.files("_rwasm", pattern = "\\.data$", full.names = TRUE))
+          EOF
+          # Pinned to the webR release shinylive ships (0.6.0 / R 4.6.0). A wasm
+          # binary built against a different R version won't load.
+          docker run --rm \
+            -v "$PWD":/github/workspace --workdir /github/workspace \
+            --entrypoint Rscript ghcr.io/r-wasm/webr:v0.6.0 \
+            /github/workspace/build-wasm.R
+          ls -l _rwasm
+
+      - name: 📦 Upload the assets to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" _rwasm/* --clobber
