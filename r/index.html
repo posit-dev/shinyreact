@@ -19,8 +19,8 @@
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="Shiny UI Infrastructure for Client-Side React Rendering">
-<meta name="description" content="Server-side plumbing for the ui.tsx pattern in Shiny: the UI is defined in a client React bundle, and the Shiny server contains only reactive computation. Ships no UI components.">
-<meta property="og:description" content="Server-side plumbing for the ui.tsx pattern in Shiny: the UI is defined in a client React bundle, and the Shiny server contains only reactive computation. Ships no UI components.">
+<meta name="description" content="Server-side plumbing for the ui.tsx pattern in Shiny: the user interface (UI) is defined in a client React (&lt;https://react.dev/&gt;) bundle, and the Shiny server contains only reactive computation. Provides page builders that discover and serve the client bundle, a renderer that publishes any JSON-serializable value to the client, and custom messages to React components. Ships no UI components, so the app author owns the whole front end. The React runtime and the client hooks are bundled, so no JavaScript build step is required to get started.">
+<meta property="og:description" content="Server-side plumbing for the ui.tsx pattern in Shiny: the user interface (UI) is defined in a client React (&lt;https://react.dev/&gt;) bundle, and the Shiny server contains only reactive computation. Provides page builders that discover and serve the client bundle, a renderer that publishes any JSON-serializable value to the client, and custom messages to React components. Ships no UI components, so the app author owns the whole front end. The React runtime and the client hooks are bundled, so no JavaScript build step is required to get started.">
 <meta property="og:image" content="https://posit-dev.github.io/shinyreact/r/logo.svg">
 <!-- See https://stackoverflow.com/questions/1865837/whats-the-difference-between-window-location-and-window-location-replace — we use .replace() because we don't want the old url to appear in the browser history. --><script>
   if (!/(\/|html?)$/.test(window.location.href)){
@@ -80,8 +80,10 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>shinyreact is not yet on CRAN. Install the development version from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"shinyreact"</span><span class="op">)</span></span></code></pre></div>
+<p>Or install the development version from GitHub:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"posit-dev/shinyreact/pkg-r"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -89,7 +91,7 @@
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
 <p><code><a href="reference/page_react.html">page_react()</a></code> discovers <code>www/ui.js</code> (and <code>www/ui.css</code>, if present) and serves them as the page. <code><a href="reference/reactive_output.html">reactive_output()</a></code> publishes any JSON-serializable value to the client’s <code>useShinyOutputValue()</code> hook:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.posit.co/" class="external-link">shiny</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://posit-dev.github.io/shinyreact/r/">shinyreact</a></span><span class="op">)</span></span>
 <span></span>
@@ -101,23 +103,23 @@
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/shinyApp.html" class="external-link">shinyApp</a></span><span class="op">(</span><span class="fu"><a href="reference/page_react.html">page_react</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">server</span><span class="op">)</span></span></code></pre></div>
 <p>The matching <code>www/ui.js</code>:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="kw">const</span> { React<span class="op">,</span> ReactDOM<span class="op">,</span> useShinyInput<span class="op">,</span> useShinyOutputValue } <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">shinyreact</span><span class="op">;</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="kw">const</span> h <span class="op">=</span> React<span class="op">.</span><span class="at">createElement</span><span class="op">;</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="kw">function</span> <span class="fu">App</span>() {</span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="kw">const</span> [name<span class="op">,</span> setName] <span class="op">=</span> <span class="fu">useShinyInput</span>(<span class="st">"name"</span><span class="op">,</span> <span class="st">"world"</span>)<span class="op">;</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="kw">const</span> greeting <span class="op">=</span> <span class="fu">useShinyOutputValue</span>(<span class="st">"greeting"</span>)<span class="op">;</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="cf">return</span> <span class="fu">h</span>(</span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="st">"div"</span><span class="op">,</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>    <span class="kw">null</span><span class="op">,</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>    <span class="fu">h</span>(<span class="st">"input"</span><span class="op">,</span> { <span class="dt">value</span><span class="op">:</span> name<span class="op">,</span> <span class="dt">onChange</span><span class="op">:</span> (e) <span class="kw">=&gt;</span> <span class="fu">setName</span>(e<span class="op">.</span><span class="at">target</span><span class="op">.</span><span class="at">value</span>) })<span class="op">,</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>    <span class="fu">h</span>(<span class="st">"p"</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> greeting)</span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  )<span class="op">;</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>}</span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>ReactDOM<span class="op">.</span><span class="fu">createRoot</span>(<span class="bu">document</span><span class="op">.</span><span class="at">body</span><span class="op">.</span><span class="fu">appendChild</span>(<span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)))<span class="op">.</span><span class="fu">render</span>(<span class="fu">h</span>(App))<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="kw">const</span> { React<span class="op">,</span> ReactDOM<span class="op">,</span> useShinyInput<span class="op">,</span> useShinyOutputValue } <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">shinyreact</span><span class="op">;</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="kw">const</span> h <span class="op">=</span> React<span class="op">.</span><span class="at">createElement</span><span class="op">;</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="kw">function</span> <span class="fu">App</span>() {</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="kw">const</span> [name<span class="op">,</span> setName] <span class="op">=</span> <span class="fu">useShinyInput</span>(<span class="st">"name"</span><span class="op">,</span> <span class="st">"world"</span>)<span class="op">;</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="kw">const</span> greeting <span class="op">=</span> <span class="fu">useShinyOutputValue</span>(<span class="st">"greeting"</span>)<span class="op">;</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>  <span class="cf">return</span> <span class="fu">h</span>(</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    <span class="st">"div"</span><span class="op">,</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    <span class="kw">null</span><span class="op">,</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    <span class="fu">h</span>(<span class="st">"input"</span><span class="op">,</span> { <span class="dt">value</span><span class="op">:</span> name<span class="op">,</span> <span class="dt">onChange</span><span class="op">:</span> (e) <span class="kw">=&gt;</span> <span class="fu">setName</span>(e<span class="op">.</span><span class="at">target</span><span class="op">.</span><span class="at">value</span>) })<span class="op">,</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>    <span class="fu">h</span>(<span class="st">"p"</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> greeting)</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  )<span class="op">;</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>}</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>ReactDOM<span class="op">.</span><span class="fu">createRoot</span>(<span class="bu">document</span><span class="op">.</span><span class="at">body</span><span class="op">.</span><span class="fu">appendChild</span>(<span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)))<span class="op">.</span><span class="fu">render</span>(<span class="fu">h</span>(App))<span class="op">;</span></span></code></pre></div>
 <p>Try a complete app without cloning:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/runUrl.html" class="external-link">runGitHub</a></span><span class="op">(</span><span class="st">"posit-dev/shinyreact"</span>, subdir <span class="op">=</span> <span class="st">"examples/01-hello"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">

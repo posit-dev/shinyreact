@@ -126,6 +126,19 @@ re-fetches after every edit — unlike raw <code>&lt;script src=...&gt;</code> t
 hand-written HTML file, which the browser caches.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># In an app directory containing www/ui.js, `page_react()` with no</span></span></span>
+<span class="r-in"><span><span class="co"># arguments is the whole UI. Here the shipped hello example is pointed at</span></span></span>
+<span class="r-in"><span><span class="co"># explicitly:</span></span></span>
+<span class="r-in"><span><span class="va">www</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples-shiny"</span>, <span class="st">"01-hello"</span>, <span class="st">"www"</span>, package <span class="op">=</span> <span class="st">"shinyreact"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ui</span> <span class="op">&lt;-</span> <span class="fu">page_react</span><span class="op">(</span>src_dir <span class="op">=</span> <span class="va">www</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/runApp.html" class="external-link">runApp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples-shiny"</span>, <span class="st">"01-hello"</span>, package <span class="op">=</span> <span class="st">"shinyreact"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

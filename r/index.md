@@ -11,8 +11,12 @@ site](https://posit-dev.github.io/shinyreact/) covers all three.
 
 ## Installation
 
-shinyreact is not yet on CRAN. Install the development version from
-GitHub:
+``` r
+
+install.packages("shinyreact")
+```
+
+Or install the development version from GitHub:
 
 ``` r
 

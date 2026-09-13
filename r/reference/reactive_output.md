@@ -28,3 +28,19 @@ reactive_output(expr, env = parent.frame(), quoted = FALSE)
 ## Value
 
 A Shiny render function.
+
+## Examples
+
+``` r
+# The client reads this with useShinyOutputValue("greeting")
+# and writes input$name with useShinyInput("name", "world").
+server <- function(input, output, session) {
+  output$greeting <- reactive_output({
+    paste0("Hello, ", input$name, "!")
+  })
+}
+
+if (interactive()) {
+  shiny::shinyApp(page_react(), server)
+}
+```

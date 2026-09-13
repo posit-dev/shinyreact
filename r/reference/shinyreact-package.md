@@ -1,8 +1,14 @@
-# shinyreact: Shiny UI Infrastructure for Client-Side React Rendering
+# shinyreact: 'Shiny' UI Infrastructure for Client-Side 'React' Rendering
 
-Server-side plumbing for the 'ui.tsx' pattern in Shiny: the UI is
-defined in a client React bundle, and the Shiny server contains only
-reactive computation. Ships no UI components.
+Server-side plumbing for the 'ui.tsx' pattern in 'Shiny': the user
+interface (UI) is defined in a client 'React' (<https://react.dev/>)
+bundle, and the 'Shiny' server contains only reactive computation.
+Provides page builders that discover and serve the client bundle, a
+renderer that publishes any JSON-serializable value to the client, and
+custom messages to 'React' components. Ships no UI components, so the
+app author owns the whole front end. The 'React' runtime and the client
+hooks are bundled, so no JavaScript build step is required to get
+started.
 
 ## See also
 
@@ -37,3 +43,6 @@ Other contributors:
 
 - Posit Software, PBC ([ROR](https://ror.org/03wc8by49)) \[copyright
   holder, funder\]
+
+- Meta Platforms, Inc. ('React' and 'ReactDOM', bundled in
+  inst/lib/shiny/shinyreact.js) \[copyright holder\]

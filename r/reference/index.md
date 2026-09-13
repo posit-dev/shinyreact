@@ -48,4 +48,5 @@ Record the wire payloads a browser test observes.
 
 - [`shinyreact`](https://posit-dev.github.io/shinyreact/r/reference/shinyreact-package.md)
   [`shinyreact-package`](https://posit-dev.github.io/shinyreact/r/reference/shinyreact-package.md)
-  : shinyreact: Shiny UI Infrastructure for Client-Side React Rendering
+  : shinyreact: 'Shiny' UI Infrastructure for Client-Side 'React'
+  Rendering

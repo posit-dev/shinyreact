@@ -28,3 +28,18 @@ send_message(session, id, data)
 ## Value
 
 Invisibly `NULL`.
+
+## Examples
+
+``` r
+# Paired with useShinyMessageHandler("notify", (msg) => ...) on the client.
+server <- function(input, output, session) {
+  shiny::observeEvent(input$save, {
+    send_message(session, "notify", list(text = "Saved", level = "success"))
+  })
+}
+
+if (interactive()) {
+  shiny::shinyApp(page_react(), server)
+}
+```

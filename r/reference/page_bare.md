@@ -44,3 +44,11 @@ owns styling. Pass a `theme` — e.g. `theme = bslib::bs_theme()`, or
 `bslib::bs_theme(version = 3)` for the classic stack — to get Bootstrap
 back; then `...` is a plain passthrough to
 [`shiny::bootstrapPage()`](https://rdrr.io/pkg/shiny/man/bootstrapPage.html).
+
+## Examples
+
+``` r
+# No Bootstrap: just jQuery, Shiny, and the children you pass.
+page_bare(htmltools::tags$div(id = "root"), title = "My app")
+#> <div id="root"></div>
+```

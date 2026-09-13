@@ -99,3 +99,21 @@ if you need to be independent of it.
 The placeholder must be spelled exactly as above — the check is a
 fixed-string match, so a differently-quoted or reordered `<meta>` tag is
 rejected.
+
+## Examples
+
+``` r
+index <- tempfile(fileext = ".html")
+writeLines(
+  c(
+    "<!doctype html>",
+    "<html><head>",
+    '<meta name="shiny-dependency-placeholder" content="">',
+    '<script type="module" src="ui.js"></script>',
+    "</head><body></body></html>"
+  ),
+  index
+)
+ui <- page_react_html(index)
+unlink(index)
+```

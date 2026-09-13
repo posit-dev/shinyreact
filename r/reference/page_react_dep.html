@@ -123,6 +123,27 @@ that is far cheaper to see at page-build time than in the browser's network
 tab. Matches Python's <code>page_react_dep()</code>, which raises <code>NotADirectoryError</code>.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">www</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples-shiny"</span>, <span class="st">"01-hello"</span>, <span class="st">"www"</span>, package <span class="op">=</span> <span class="st">"shinyreact"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">page_react_dep</span><span class="op">(</span><span class="va">www</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> List of 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ name      : chr "www"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ version   : chr "1789263846"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ src       :List of 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ file: chr "/tmp/RtmpEPRr9i/temp_libpath1fb967aa1be2/shinyreact/examples-shiny/01-hello/www"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ meta      : NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ script    :List of 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ src : chr "ui.js"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ..$ type: chr "module"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ stylesheet: chr "ui.css"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ head      : NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ attachment: NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ package   : NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ all_files : logi TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  - attr(*, "class")= chr "html_dependency"</span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
