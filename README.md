@@ -73,7 +73,9 @@ Run `make help` to see all targets.
 
 React and Shiny have been brought together many times, in several distinct
 shapes. The list below is roughly ordered from "closest to `shinyreact`" to
-"solves a different problem," so you can see where this repo sits.
+"solves a different problem," so you can see where this repo sits. For a
+side-by-side comparison, in particular with the similarly named
+`shiny.react`, see the [comparison article](https://posit-dev.github.io/shinyreact/articles/comparison.html).
 
 * Whole-frontend-in-React approaches (same shape as the `ui.tsx` pattern)
 
@@ -85,7 +87,9 @@ shapes. The list below is roughly ordered from "closest to `shinyreact`" to
 
   - **[react-R/reactR](https://github.com/react-R/reactR)**: (R) Scaffolding (`scaffoldReactWidget()`, `scaffoldReactShinyInput()`, `createReactShinyInput()`) for authoring htmlwidgets and Shiny inputs whose implementation is a React component. `rstudio::conf(2019)` talk [*Integrating React.js and Shiny*](https://posit.co/resources/videos/integrating-react-js-and-shiny/) and the [*Outstanding User Interfaces with Shiny*](https://unleash-shiny.rinterface.com/going-further-reactr) chapter.
 
-  - **[Appsilon/shiny.react](https://github.com/Appsilon/shiny.react)** & **[Appsilon/shiny.fluent](https://github.com/Appsilon/shiny.fluent)**: (R) A generic toolbox for wrapping React component libraries as R functions; `shiny.fluent` is the flagship consumer, exposing Microsoft's Fluent UI to R.
+  - **[glin/reactable](https://github.com/glin/reactable)**: (R) Interactive data tables built on React Table with `reactR`; the best-known `reactR` consumer.
+
+  - **[Appsilon/shiny.react](https://github.com/Appsilon/shiny.react)**: (R) A generic toolbox for wrapping React component libraries as R functions — the UI stays authored in R, the inverse of `shinyreact`. **[shiny.fluent](https://github.com/Appsilon/shiny.fluent)** (Microsoft Fluent UI) and **[shiny.blueprint](https://github.com/Appsilon/shiny.blueprint)** (Palantir Blueprint) are built on it.
 
   - **[posit-dev/shiny-bindings](https://github.com/posit-dev/shiny-bindings)**: (npm, py) `@posit-dev/shiny-bindings-react` and the Shiny for Python [custom components](https://shiny.posit.co/py/docs/custom-components-pkg.html) workflow it backs. Ship a custom React input/output as a Python package. See also [nstrayer/py-shiny-custom-react-component](https://github.com/nstrayer/py-shiny-custom-react-component).
 
