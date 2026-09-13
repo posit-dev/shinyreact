@@ -16,7 +16,7 @@ default_input_handler(value, session = NULL, name = NULL)
 The contract, stated in terms of the JSON the React hook sent:
 
 - **Array of objects** (`[{a: 1}, {b: 2}]`) — kept as a list of records
-  This is the case shiny's default handler gets wrong.
+  This is the case Shiny's default handler gets wrong.
 
 - **Array of scalars** (`[0, 100]`, `["a", "b"]`) — flattened to an
   atomic vector, exactly as shiny does by default.
