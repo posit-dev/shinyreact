@@ -1,5 +1,5 @@
 Package: shinyreact
-Title: Shiny UI Infrastructure for Client-Side React Rendering
+Title: 'Shiny' UI Infrastructure for Client-Side 'React' Rendering
 Version: 0.1.0
 Authors@R: c(
     person("Barret", "Schloerke", , "barret@posit.co", role = c("cre", "aut"),
@@ -11,11 +11,14 @@ Authors@R: c(
     person("Carson", "Sievert", , "carson@posit.co", role = "ctb",
            comment = c(ORCID = "0000-0002-4958-2844")),
     person(, "Posit Software, PBC", role = c("cph", "fnd"),
-           comment = c(ROR = "03wc8by49"))
+           comment = c(ROR = "03wc8by49")),
+    person(, "Meta Platforms, Inc.", role = "cph",
+           comment = "'React' and 'ReactDOM', bundled in inst/lib/shiny/shinyreact.js")
   )
-Description: Server-side plumbing for the 'ui.tsx' pattern in Shiny: the
-    UI is defined in a client React bundle, and the Shiny server contains
-    only reactive computation. Ships no UI components.
+Description: Server-side plumbing for the 'ui.tsx' pattern in 'Shiny': the
+    UI is defined in a client 'React' (<https://react.dev/>) bundle, and the
+    'Shiny' server contains only reactive computation. Ships no UI
+    components.
 License: MIT + file LICENSE
 URL: https://posit-dev.github.io/shinyreact/r/,
     https://github.com/posit-dev/shinyreact

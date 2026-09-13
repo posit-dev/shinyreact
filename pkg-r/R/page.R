@@ -23,6 +23,9 @@ deps_placeholder <- '<meta name="shiny-dependency-placeholder" content="">'
 #' @param title Page title.
 #' @param lang HTML `lang` attribute.
 #' @return A `shiny.tag` page.
+#' @examples
+#' # No Bootstrap: just jQuery, Shiny, and the children you pass.
+#' page_bare(htmltools::tags$div(id = "root"), title = "My app")
 #' @export
 page_bare <- function(..., title = NULL, lang = "en") {
   # `[[` (not `$`) -- `$` on a list partial-matches, so a `themeish = ` argument
@@ -90,6 +93,17 @@ no_bootstrap <- function() {
 #'   version and any bookmark restore payload. Mirrors Python's
 #'   `page_react(shinyreact_js=)`.
 #' @return UI suitable for `shinyApp(ui = ...)`.
+#' @examples
+#' # In an app directory containing www/ui.js, this is the whole UI:
+#' # shinyApp(ui = page_react(), server = server)
+#'
+#' # The shipped hello example, pointed at explicitly:
+#' www <- system.file("examples-shiny", "01-hello", "www", package = "shinyreact")
+#' ui <- page_react(src_dir = www)
+#'
+#' if (interactive()) {
+#'   shiny::runApp(system.file("examples-shiny", "01-hello", package = "shinyreact"))
+#' }
 #' @export
 page_react <- function(
   ...,
@@ -189,6 +203,20 @@ page_react <- function(
 #'   `"server"` (the default) or `"client"` for an npm-tier app whose bundle
 #'   imports `@posit-dev/shinyreact` — see [page_react()].
 #' @return UI suitable for `shinyApp(ui = ...)`.
+#' @examples
+#' index <- tempfile(fileext = ".html")
+#' writeLines(
+#'   c(
+#'     "<!doctype html>",
+#'     "<html><head>",
+#'     '<meta name="shiny-dependency-placeholder" content="">',
+#'     '<script type="module" src="ui.js"></script>',
+#'     "</head><body></body></html>"
+#'   ),
+#'   index
+#' )
+#' ui <- page_react_html(index)
+#' unlink(index)
 #' @export
 page_react_html <- function(
   path = "www/index.html",
@@ -269,6 +297,9 @@ page_react_html <- function(
 #'   matching Python; attached only if the file exists. `NULL` to skip.
 #' @param name Dependency name; defaults to `basename(src_dir)`.
 #' @return An [htmltools::htmlDependency].
+#' @examples
+#' www <- system.file("examples-shiny", "01-hello", "www", package = "shinyreact")
+#' page_react_dep(www)
 #' @export
 page_react_dep <- function(
   src_dir,

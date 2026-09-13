@@ -9,6 +9,17 @@
 #'   `useShinyMessageHandler()` in the React component.
 #' @param data Any JSON-serializable data.
 #' @return Invisibly `NULL`.
+#' @examples
+#' # Paired with useShinyMessageHandler("notify", (msg) => ...) on the client.
+#' server <- function(input, output, session) {
+#'   shiny::observeEvent(input$save, {
+#'     send_message(session, "notify", list(text = "Saved", level = "success"))
+#'   })
+#' }
+#'
+#' if (interactive()) {
+#'   shiny::shinyApp(page_react(), server)
+#' }
 #' @export
 send_message <- function(session, id, data) {
   # Every Shiny session namespaces: `ShinySession$ns()` is `NS(NULL, id)` at

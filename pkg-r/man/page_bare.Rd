@@ -32,3 +32,7 @@ styling. Pass a \code{theme} — e.g. \code{theme = bslib::bs_theme()}, or
 \code{bslib::bs_theme(version = 3)} for the classic stack — to get Bootstrap
 back; then \code{...} is a plain passthrough to \code{\link[shiny:bootstrapPage]{shiny::bootstrapPage()}}.
 }
+\examples{
+# No Bootstrap: just jQuery, Shiny, and the children you pass.
+page_bare(htmltools::tags$div(id = "root"), title = "My app")
+}
