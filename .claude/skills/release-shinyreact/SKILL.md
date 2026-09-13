@@ -12,7 +12,7 @@ does **not** oblige releasing the others.
 |---|---|---|---|
 | `shinyreact` (PyPI) | `pyproject.toml` (repo root) `version` | `py/v1.2.3` | `.github/workflows/release-py.yaml` |
 | `@posit-dev/shinyreact` (npm) | `pkg-js/package.json` `version` | `js/v1.2.3` | `.github/workflows/release-js.yaml` — **stages only, a human approves** |
-| `shinyreact` (R) | `pkg-r/DESCRIPTION` `Version` | `r/v1.2.3` | none — CRAN is a manual submission |
+| `shinyreact` (R) | `pkg-r/DESCRIPTION` `Version` | `r/v1.2.3` | `.github/workflows/release-r-wasm.yaml` attaches wasm assets to the GitHub release — CRAN itself is a manual submission |
 
 The `<lang>/v` prefix is what keeps the three apart; nothing else distinguishes
 them. A bare `v1.2.3` tag triggers nothing.
@@ -147,6 +147,21 @@ Two things the generated checklist does not know about:
 - Run `make r-check` too (it fails on NOTEs), not just `devtools::check()`.
 - Its "tag the release" bullet means `r/v1.2.3` here, not `v1.2.3`. Tag after
   CRAN accepts, then `gh release create r/v1.2.3 --generate-notes`.
+
+Creating that GitHub release also fires `release-r-wasm.yaml`, which builds a
+webR filesystem image of the package plus its dependencies and attaches
+`library.data.gz` + `library.js.metadata` to the release. That is what lets a
+shinylive app install shinyreact from GitHub (#268):
+
+```r
+pak::pak("posit-dev/shinyreact/pkg-r@r/v1.2.3")
+```
+
+shinylive resolves the assets by the ref recorded at install time, so **the
+release tag and the ref users install must be the same string** — `r/v1.2.3`.
+The workflow pins `ghcr.io/r-wasm/webr:v0.6.0` to match the webR that shinylive
+ships; bump it when shinylive's R version moves. Once shinyreact is on CRAN and
+mirrored to repo.r-wasm.org, this matters only for dev installs.
 
 If `use_release_issue()` is unavailable, `open-source:create-release-checklist`
 produces the same tidyverse checklist.
