@@ -13,7 +13,7 @@ Server-side plumbing for the 'ui.tsx' pattern in Shiny: the UI is defined in a c
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://posit-dev.github.io/shinyreact/r}
+  \item \url{https://posit-dev.github.io/shinyreact/r/}
   \item \url{https://github.com/posit-dev/shinyreact}
   \item Report bugs at \url{https://github.com/posit-dev/shinyreact/issues}
 }
@@ -29,6 +29,9 @@ Authors:
 
 Other contributors:
 \itemize{
+  \item Winston Chang \email{winston@posit.co} (\href{https://orcid.org/0000-0002-1576-2126}{ORCID}) [contributor]
+  \item Garrick Aden-Buie \email{garrick@adenbuie.com} (\href{https://orcid.org/0000-0002-7111-0077}{ORCID}) [contributor]
+  \item Carson Sievert \email{carson@posit.co} (\href{https://orcid.org/0000-0002-4958-2844}{ORCID}) [contributor]
   \item  Posit Software, PBC (\href{https://ror.org/03wc8by49}{ROR}) [copyright holder, funder]
 }
 

@@ -870,8 +870,8 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
         error
       - `PageHtmlDocument` is imported from `shiny.ui._page`: py-shiny exports
         `page_html()` but not its class
-    - `shiny.ui.page_html()` arrives with py-shiny#2475, consumed as a git
-      dependency on py-shiny `main` until it releases
+    - `shiny.ui.page_html()` arrived with py-shiny#2475, released in shiny
+      1.8.0 (the pinned minimum)
   - `[r]` used directly as `shinyApp(ui = page_react_html())`, implemented by
     rewriting the placeholder to `{{ headContent() }}` in memory and calling
     `htmltools::htmlTemplate(text_ = ..., document_ = TRUE)`
@@ -1443,9 +1443,8 @@ initial page.
   `page_react`, `page_react_dep`, `page_react_html`, `reactive_output`,
   `send_message`, `set_react_page`
   - `requires-python` is `>=3.10`; the test matrix covers 3.10–3.14
-  - it depends on `shiny` and `htmltools>=0.7.0`
-    - the `shiny` dependency is a **git** reference until py-shiny#2475
-      releases (issue #216)
+  - it depends on `shiny>=1.8.0` (the first release with `ui.page_html()`,
+    py-shiny#2475) and `htmltools>=0.7.0`
 - `[r]` `NAMESPACE` exports are exactly: `page_bare`, `page_react`,
   `page_react_dep`, `page_react_html`, `reactive_output`, `send_message`,
   `wire_tap`
