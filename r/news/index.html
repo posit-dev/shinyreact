@@ -39,11 +39,14 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="shinyreact-010">shinyreact 0.1.0<a class="anchor" aria-label="anchor" href="#shinyreact-010"></a></h2>
-<ul><li><p>Initial CRAN release.</p></li>
-<li><p>Server-side plumbing for the <code>ui.tsx</code> pattern: the UI is a React client you own, and the Shiny server contains only reactive computation. <code><a href="../reference/reactive_output.html">reactive_output()</a></code> sends JSON to <code>useShinyOutputValue()</code> hooks, <code><a href="../reference/send_message.html">send_message()</a></code> reaches <code>useShinyMessageHandler()</code>, and <code><a href="../reference/page_react.html">page_react()</a></code> / <code><a href="../reference/page_react_html.html">page_react_html()</a></code> / <code><a href="../reference/page_bare.html">page_bare()</a></code> / <code><a href="../reference/page_react_dep.html">page_react_dep()</a></code> bootstrap the client.</p></li>
-<li><p>Automatic renderer-dependency discovery: dependencies of traditional Shiny outputs hosted inside a React tree are pushed to the client after each flush, so <code>ShinyOutput</code> works with zero configuration.</p></li>
-<li><p>Bookmark restore is delivered through the <code>#shinyreact-config</code> script tag, and the client asserts the wire-protocol major version at boot.</p></li>
-<li><p><code>shinyreact.default</code> and <code>shinyreact.asis</code> input handlers give R and Python the same view of the JSON a hook sends.</p></li>
+<ul><li><p>Initial CRAN release. shinyreact is the server-side plumbing for the <code>ui.tsx</code> pattern: the UI is a React client you own, and the Shiny server contains only reactive computation. It ships no UI components.</p></li>
+<li><p>Dependencies of traditional Shiny outputs hosted inside a React tree are discovered automatically and pushed to the client after each flush, so the <code>ShinyOutput</code> component works with zero configuration.</p></li>
+<li><p>Bookmark restore values reach the client through the <code>#shinyreact-config</code> script tag, and the client asserts the wire-protocol major version at boot.</p></li>
+<li><p><code><a href="../reference/page_react.html">page_react()</a></code> serves <code>www/ui.js</code> (and <code>www/ui.css</code>, if present) as the whole page, with no HTML file required. <code><a href="../reference/page_react_html.html">page_react_html()</a></code> serves a complete <code>index.html</code> that you own, <code><a href="../reference/page_bare.html">page_bare()</a></code> builds a page with no Bootstrap, and <code><a href="../reference/page_react_dep.html">page_react_dep()</a></code> wraps an app’s own bundle as an <code>htmlDependency()</code> versioned by its mtime.</p></li>
+<li><p><code><a href="../reference/reactive_output.html">reactive_output()</a></code> publishes any JSON-serializable value to the client’s <code>useShinyOutputValue()</code> hook, with no UI placeholder.</p></li>
+<li><p><code><a href="../reference/send_message.html">send_message()</a></code> sends a custom message to the client’s <code>useShinyMessageHandler()</code> hook, namespaced to the current module.</p></li>
+<li><p><code>shinyreact.default</code> and <code>shinyreact.asis</code> input handlers give R and Python the same view of the JSON a <code>useShinyInput()</code> hook sends: records stay lists, <code>[]</code> stays <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code>, and nested arrays keep their shape.</p></li>
+<li><p><code><a href="../reference/wire_tap.html">wire_tap()</a></code> reads the websocket payloads a shinytest2 <code>AppDriver</code> recorded, so tests can assert the exact inputs, outputs, and messages that crossed the wire.</p></li>
 </ul></div>
   </main></div>
 
