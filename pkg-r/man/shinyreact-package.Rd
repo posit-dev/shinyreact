@@ -8,7 +8,7 @@
 \description{
 \if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
 
-Server-side plumbing for the 'ui.tsx' pattern in 'Shiny': the UI is defined in a client 'React' (\url{https://react.dev/}) bundle, and the 'Shiny' server contains only reactive computation. Ships no UI components.
+Server-side plumbing for the 'ui.tsx' pattern in 'Shiny': the user interface (UI) is defined in a client 'React' (\url{https://react.dev/}) bundle, and the 'Shiny' server contains only reactive computation. Provides page builders that discover and serve the client bundle, a renderer that publishes any JSON-serializable value to the client, and custom messages to 'React' components. Ships no UI components, so the app author owns the whole front end. The 'React' runtime and the client hooks are bundled, so no JavaScript build step is required to get started.
 }
 \seealso{
 Useful links:
