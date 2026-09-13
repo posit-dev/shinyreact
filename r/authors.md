@@ -23,7 +23,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/posit-dev/shinyreact/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/posit-dev/shinyreact/blob/r/v0.1.0/DESCRIPTION)
 
 Schloerke B (2026). *shinyreact: Client-Side 'React' Interface for
 'Shiny'*. R package version 0.1.0,

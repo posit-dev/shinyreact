@@ -79,9 +79,9 @@ www <- system.file("examples-shiny", "01-hello", "www", package = "shinyreact")
 page_react_dep(www)
 #> List of 10
 #>  $ name      : chr "www"
-#>  $ version   : chr "1789270890"
+#>  $ version   : chr "1789330737"
 #>  $ src       :List of 1
-#>   ..$ file: chr "/tmp/RtmpMSXnog/temp_libpath2072b789f72/shinyreact/examples-shiny/01-hello/www"
+#>   ..$ file: chr "/tmp/Rtmp5hcvLs/temp_libpath20342e5f75fb/shinyreact/examples-shiny/01-hello/www"
 #>  $ meta      : NULL
 #>  $ script    :List of 2
 #>   ..$ src : chr "ui.js"
