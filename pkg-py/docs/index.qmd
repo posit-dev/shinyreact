@@ -68,6 +68,113 @@ ReactDOM.createRoot(document.body.appendChild(document.createElement("div"))).re
 
 :::
 
+### The power of `reactive_output`
+
+In traditional Shiny applications, the server owns the markup: `renderPlot()`, `renderUI()`, `renderReactable()` each return *a description of UI* that the browser swaps into a placeholder.
+`reactive_output` returns nonregulated, raw **data**.
+To the Shiny server, it is an ordinary Shiny output in every other way, so the reactive graph, `req()`, `reactive.event`, caching, and modules all work unchanged, but what travels the wire is a JSON value, and the client decides what to do with it.
+
+That one change in approach buys several advantages at once:
+
+- **One output, many components.** A single payload can feed a chart, a table, and a caption. There is no `*Output()` placeholder per widget, no per-widget binding JS, and no coupling between the server's return type and a specific renderer.
+- **The server sends facts, the client does presentation.** Sorting, formatting, hover state, tab selection, and "show more" toggles happen in React with no round trip. The server recomputes only when the data actually changes.
+- **No DOM tear-down.** React reconciles the new value into the mounted tree. Pair it with `useShinyOutputStatus` to dim stale data while the server recomputes instead of flashing a skeleton.
+
+One `reactive_output` driving three pieces of UI:
+
+::: {.panel-tabset}
+
+## Python
+
+```python
+from shiny import reactive
+from shiny.express import input
+from shinyreact import reactive_output, set_react_page
+
+set_react_page()
+
+sales = load_sales()  # long-format fact table: date, region, revenue
+
+
+@reactive.calc
+def filtered():
+    return sales[sales.region.isin(input.regions())]
+
+
+@reactive_output
+def summary():
+    df = filtered()
+    by_month = df.groupby(df.date.dt.to_period("M")).revenue.sum()
+    return {
+        "n": int(len(df)),
+        "total": float(df.revenue.sum()),
+        "series": [{"month": str(m), "revenue": float(v)} for m, v in by_month.items()],
+        "rows": df.head(50).to_dict(orient="records"),
+    }
+```
+
+## R
+
+```r
+library(shiny)
+library(shinyreact)
+
+sales <- load_sales() # long-format fact table: date, region, revenue
+
+server <- function(input, output, session) {
+  filtered <- reactive({
+    sales[sales$region %in% input$regions, ]
+  })
+
+  output$summary <- reactive_output({
+    df <- filtered()
+    by_month <- aggregate(revenue ~ format(date, "%Y-%m"), df, sum)
+    names(by_month) <- c("month", "revenue")
+    list(
+      n = nrow(df),
+      total = sum(df$revenue),
+      series = by_month,
+      rows = head(df, 50)
+    )
+  })
+}
+
+shinyApp(page_react(), server)
+```
+
+## JavaScript (`ui.tsx`)
+
+```jsx
+const { useShinyInput, useShinyOutputValue, useShinyOutputStatus } = window.shinyreact;
+
+function Dashboard() {
+  const [regions, setRegions] = useShinyInput("regions", ["East", "West"]);
+  const summary = useShinyOutputValue("summary");
+  const status = useShinyOutputStatus("summary");
+  const [sortKey, setSortKey] = React.useState("date"); // client-only state, no round trip
+
+  if (!summary) return <Skeleton />; // only before the first value arrives
+
+  const rows = [...summary.rows].sort((a, b) => (a[sortKey] > b[sortKey] ? 1 : -1));
+
+  return (
+    <div className={status === "recalculating" ? "stale" : ""}>
+      <RegionPicker value={regions} onChange={setRegions} />
+      <p>
+        {summary.n.toLocaleString()} sales, {formatCurrency(summary.total)}
+      </p>
+      <RevenueChart data={summary.series} />
+      <SalesTable rows={rows} sortKey={sortKey} onSort={setSortKey} />
+    </div>
+  );
+}
+```
+
+:::
+
+The server never learns that a chart exists.
+Swap the chart library, add a third view of the same data, or move the table sort to the server later, and the other side does not change.
+
 ## Installation
 
 `shinyreact` is pre-release.

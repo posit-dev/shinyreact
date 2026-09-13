@@ -41,6 +41,7 @@ website:
           - articles/hooks.qmd
           - articles/testing.qmd
           - articles/agent-skills.qmd
+          - articles/comparison.qmd
       - text: Python
         href: py/index.qmd
       - text: R

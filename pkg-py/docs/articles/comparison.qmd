@@ -1,0 +1,234 @@
+---
+title: "shinyreact vs. shiny.react, reactR, and friends"
+---
+
+Several R packages put React and Shiny in the same sentence, and two of them differ by one dot.
+This page says how `shinyreact` relates to each, so you can pick the right tool and stop searching for the wrong one.
+
+## The short version
+
+Every other package on this page keeps the classic Shiny model: the UI is authored in R (or Python), and React renders *some widgets inside it*.
+`shinyreact` inverts that: the UI is a React app the author owns, and Shiny is the reactive backend that feeds it JSON.
+They are complementary, not competitors.
+
+## shinyreact vs. shiny.react
+
+[shiny.react](https://appsilon.github.io/shiny.react/) by [Appsilon](https://appsilon.com/)... similar name, very different approach.
+`shiny.react` is the foundation under `shiny.fluent` and `shiny.blueprint`, and it solves the opposite problem.
+
+| | **shinyreact** | **shiny.react** |
+|---|---|---|
+| Who defines the UI | The app author, in a JS/TSX client they own | R code. `reactElement(module, name, props)` returns a `shiny.tag` |
+| Where the UI tree lives | Client. The server emits no HTML, only JSON | Server. R builds the element tree, the browser calls `React.createElement` on it |
+| Ships components? | None. It is only the bridge | None itself. It exists so wrapper packages can ship them |
+| Intended user | App authors, and AI agents writing the client | Package authors wrapping an npm component library as R functions |
+| Client to server | `useShinyInput()` / `useSetShinyInput()` hooks | `setInput()`, `triggerEvent()` props; `InputAdapter` in JS; `*.shinyInput` components |
+| Server to client | `reactive_output` publishes JSON to `useShinyOutputValue()`; `send_message()` to `useShinyMessageHandler()` | `renderReact()` / `reactOutput()` re-render an element tree; `updateReactInput()` |
+| Languages | Python and R, one shared JS bundle | R only |
+| Build tooling | Optional. A no-build `www/ui.js` works; Vite for JSX/TSX | Required. webpack + yarn, bundled into the wrapper package's `inst/www/` |
+| Mental model | Keeps Shiny's reactivity, drops "UI code mirrors UI structure in R" | Keeps the classic `ui <- ...` in R, with React widgets |
+
+Use `shiny.react` when you want an R-authored UI built from a React component library.
+Use `shinyreact` when you want to hand the whole UI to a React codebase and keep Shiny for the computation.
+
+## What travels the wire: markup or data
+
+The deepest difference between the packages on this page is the shape of a server output.
+Every other approach sends the browser a *description of UI*.
+`reactive_output` sends a *value*.
+
+Take one task: a filter input, a filtered table, and a caption with the row count.
+
+### shiny.react: the server returns an element tree
+
+```r
+library(shiny)
+library(shiny.fluent)
+
+ui <- fluentPage(
+  Dropdown.shinyInput("region", options = regions, multiSelect = TRUE),
+  reactOutput("caption"),
+  reactOutput("table")
+)
+
+server <- function(input, output, session) {
+  filtered <- reactive(sales[sales$region %in% input$region, ])
+
+  output$caption <- renderReact({
+    Text(variant = "large", sprintf("%d sales", nrow(filtered())))
+  })
+
+  output$table <- renderReact({
+    DetailsList(items = filtered(), columns = cols)
+  })
+}
+```
+
+Each `renderReact()` re-serializes a React element tree (component names, props, and their HTML dependencies) and sends it down.
+Two outputs means two payloads that both embed the same `filtered()` data, and any change to the layout is a change to R code and a redeploy.
+Client-side interactivity that the component does not already provide, such as a sort that should not round-trip, has nowhere to live.
+
+### reactR / reactable: the server returns a widget
+
+```r
+ui <- fluidPage(
+  selectInput("region", "Region", regions, multiple = TRUE),
+  textOutput("caption"),
+  reactableOutput("table")
+)
+
+server <- function(input, output, session) {
+  filtered <- reactive(sales[sales$region %in% input$region, ])
+  output$caption <- renderText(sprintf("%d sales", nrow(filtered())))
+  output$table <- renderReactable(reactable(filtered(), sortable = TRUE))
+}
+```
+
+Better: reactable owns sorting, paging, and selection on the client, and only the data crosses the wire.
+But the contract is still one widget per output, the data shape is whatever `reactable()` wants, and every other piece of UI on the page is a separate output with its own placeholder.
+The caption cannot read the table's data; it needs its own render function and its own trip through the reactive graph.
+
+### shinyreact: the server returns the data, once
+
+::: {.panel-tabset}
+
+## R
+
+```r
+server <- function(input, output, session) {
+  filtered <- reactive(sales[sales$region %in% input$region, ])
+
+  output$sales <- reactive_output({
+    df <- filtered()
+    list(n = nrow(df), rows = df)
+  })
+}
+
+shinyApp(page_react(), server)
+```
+
+## Python
+
+```python
+@reactive.calc
+def filtered():
+    return sales[sales.region.isin(input.region())]
+
+
+@reactive_output
+def sales_out():
+    df = filtered()
+    return {"n": int(len(df)), "rows": df.to_dict(orient="records")}
+```
+
+## JavaScript (`ui.tsx`)
+
+```jsx
+function SalesPanel() {
+  const [region, setRegion] = useShinyInput("region", []);
+  const sales = useShinyOutputValue("sales");
+  const status = useShinyOutputStatus("sales");
+  const [sort, setSort] = React.useState({ key: "date", dir: 1 });
+
+  if (!sales) return <Skeleton />;
+
+  const rows = [...sales.rows].sort((a, b) => (a[sort.key] > b[sort.key] ? sort.dir : -sort.dir));
+
+  return (
+    <section className={status === "recalculating" ? "stale" : ""}>
+      <RegionPicker value={region} onChange={setRegion} />
+      <p>{sales.n} sales</p>
+      <Table rows={rows} sort={sort} onSort={setSort} />
+      <Sparkline values={rows.map((r) => r.revenue)} />
+    </section>
+  );
+}
+```
+
+:::
+
+One output, one payload.
+The caption, the table, and a sparkline all read the same value, so adding the sparkline touched no server code.
+Sorting is React state and never reaches the server.
+The output is still a plain Shiny output, so `req()`, `bindCache()`, `reactive.event`, and module namespacing behave exactly as they do for `renderText()`.
+The same `ui.tsx` runs unchanged against the R and the Python server.
+
+The trade is explicit: `shiny.react` and `reactR` give you a component with zero JavaScript written.
+`reactive_output` gives you a data contract and asks you (or your coding agent) to write the React that renders it.
+For a one-off widget in an existing R UI, take the component.
+For an app whose UI you want to own, take the contract.
+
+## The rest of the ecosystem
+
+Ordered from closest to `shinyreact` to furthest.
+
+### Whole-frontend-in-React (same shape as the `ui.tsx` pattern)
+
+- [glin/shiny-react-example](https://github.com/glin/shiny-react-example) (R): a worked example whose entire UI is a React app (React Bootstrap + Recharts, Vite) served through a Shiny HTML template.
+  Hand-rolled version of what `shinyreact` packages.
+- [filipakkad/react-shiny-template](https://github.com/filipakkad/react-shiny-template) (R): a starter template pairing a React frontend with an R Shiny backend.
+
+### React components inside a traditional Shiny UI
+
+- [reactR](https://react-r.github.io/reactR/) (R): scaffolds an htmlwidget or Shiny input whose implementation is one React component, via `scaffoldReactWidget()` and `scaffoldReactShinyInput()`.
+  One component per package, authored in R as a normal `*Input()` / `*Output()` pair.
+- [reactable](https://glin.github.io/reactable/) (R): interactive data tables built on React Table with `reactR`.
+  The best-known `reactR` consumer, and a good example of the widget shape.
+  Widgets like this render inside a `shinyreact` client through `ShinyOutput`.
+- [shiny.react](https://appsilon.github.io/shiny.react/) (R): see above.
+- [shiny.fluent](https://appsilon.github.io/shiny.fluent/) and [shiny.blueprint](https://appsilon.github.io/shiny.blueprint/) (R): Microsoft Fluent UI and Palantir Blueprint, wrapped as R functions on top of `shiny.react`.
+  Component libraries, not bridges.
+- [shiny-bindings](https://github.com/posit-dev/shiny-bindings) (npm, Python): `@posit-dev/shiny-bindings-react` and the Shiny for Python [custom components](https://shiny.posit.co/py/docs/custom-components-pkg.html) workflow.
+  The Python counterpart to `reactR`: ship one React input or output as a Python package.
+- [shinyReactWidgets](https://github.com/pvictor/shinyReactWidgets) (R): an early collection of React-based input widgets.
+
+### Broader catalogs
+
+- [awesome-shiny-extensions](https://github.com/nanxstats/awesome-shiny-extensions): curated list of R and Python Shiny extensions, including React-backed ones not named here.
+
+## Can they be combined?
+
+Yes.
+A widget from any package above is a traditional Shiny output and can be displayed as expected using ShinyOutput React class.
+Both paths below were verified against an R server with `page_react()`, with inputs flowing back from inside the nested tree.
+
+### A `reactR` widget: `reactable`
+
+`renderReactable()` is a regular Shiny render function, so shinyreact discovers and loads its binding JS automatically.
+The client needs the classes `reactableOutput()` would have emitted, plus the `data-reactable-output` attribute reactable reads to report its state:
+
+```js
+h(ShinyOutput, {
+  id: "tbl",
+  className: "reactable html-widget html-widget-output",
+  "data-reactable-output": "tbl",
+});
+```
+
+Without that attribute the table renders, but `getReactableState()` and `updateReactable()` never see it.
+
+### A `shiny.react` tree: `shiny.fluent`
+
+`renderReact()` is a plain closure, not a `shiny.render.function`, so shinyreact cannot discover its runtime.
+Add `shiny.react`'s two dependencies to the page yourself:
+
+```r
+ui <- page_react(shiny.react::reactDependency(), shiny.react::shinyReactDependency())
+
+server <- function(input, output, session) {
+  output$fluent <- shiny.react::renderReact({
+    shiny.fluent::Stack(
+      shiny.fluent::Text(variant = "xLarge", sprintf("n = %d", input$n)),
+      shiny.fluent::Toggle.shinyInput("tog", value = FALSE, label = "toggle")
+    )
+  })
+}
+```
+
+```js
+h(ShinyOutput, { id: "fluent", className: "react-container" });
+```
+
+The tree re-renders when its reactive inputs change, and `*.shinyInput` components inside it set Shiny inputs normally.
+This puts two copies of React on the page, shinyreact's and shiny.react's own bundled React 18.
+They never share a tree: the `ShinyOutput` element is a leaf of the shinyreact tree and the root of the shiny.react one, so they coexist without warnings.
