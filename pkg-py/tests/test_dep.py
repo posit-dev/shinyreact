@@ -1,31 +1,81 @@
+import json
 import warnings
 from pathlib import Path
+from typing import cast
 
 import pytest
 import shinyreact._dep as _dep_mod
 from htmltools import HTMLDependency
-from shinyreact._dep import _SHINYREACT_JS_PATH, _dep
+from htmltools._core import HTMLDependencySource, ScriptItem, StylesheetItem
+from shinyreact._dep import _SHINYREACT_JS_VERSION, _WWW_DIR, _dep
 from shinyreact._page import page_react_dep
 
+# pkg-js/package.json, when running from the repo checkout.
+JS_PACKAGE_JSON = Path(__file__).parents[2] / "pkg-js" / "package.json"
 
-def test_dep_version_tracks_bundle_mtime():
-    """The shinyreact HTMLDependency version reflects the bundle's mtime.
 
-    Cache-busts the browser whenever ``make update-dist`` rewrites the bundle.
+# `HTMLDependency` normalizes `script=` / `stylesheet=` to a list and `source=`
+# to one of two TypedDicts, but the attributes stay declared as the wider
+# argument types. These narrow once here so the assertions below read as
+# assertions rather than as type gymnastics.
+def dep_source(dep: HTMLDependency) -> HTMLDependencySource:
+    source = dep.source
+    assert source is not None
+    assert "subdir" in source, "a local dep, not an href one"
+    return cast(HTMLDependencySource, source)
+
+
+def first_script(dep: HTMLDependency) -> ScriptItem:
+    script = dep.script
+    assert script is not None
+    return script[0] if isinstance(script, list) else script
+
+
+def first_stylesheet(dep: HTMLDependency) -> StylesheetItem:
+    stylesheet = dep.stylesheet
+    assert stylesheet is not None
+    return stylesheet[0] if isinstance(stylesheet, list) else stylesheet
+
+
+def test_dep_version_is_the_js_package_version(monkeypatch: pytest.MonkeyPatch):
+    """Installed, the shinyreact HTMLDependency version is ``@posit-dev/shinyreact``'s.
+
+    So ``/lib/shinyreact-<version>/`` names the JS release being served.
+    Mirrors R's "shinyreact_dep() versions by the JS package version".
     """
-    assert _SHINYREACT_JS_PATH.exists(), (
-        "shinyreact.js missing — run `make update-dist`"
+    monkeypatch.setattr(_dep_mod, "_JS_PACKAGE_JSON", Path("/nonexistent"))
+    assert str(_dep().version) == _SHINYREACT_JS_VERSION
+
+
+def test_dep_version_adds_bundle_mtime_in_dev_checkout(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """In the repo checkout the version is ``<version>.<mtime>``.
+
+    So ``make update-dist`` still cache-busts during development. Mirrors R's
+    "shinyreact_dep() version adds the bundle mtime in a dev checkout".
+    """
+    monkeypatch.setattr(_dep_mod, "_JS_PACKAGE_JSON", Path(__file__))
+    mtime = int((_WWW_DIR / "shinyreact.js").stat().st_mtime)
+    assert str(_dep().version) == f"{_SHINYREACT_JS_VERSION}.{mtime}"
+
+
+def test_js_version_constant_matches_package_json():
+    """The hardcoded version is bumped in step with ``pkg-js/package.json``.
+
+    Mirrors R's ".shinyreact_js_version matches pkg-js/package.json".
+    """
+    if not JS_PACKAGE_JSON.is_file():
+        pytest.skip("running against an installed package, not the repo")
+    expected = json.loads(JS_PACKAGE_JSON.read_text())["version"]
+    assert _SHINYREACT_JS_VERSION == expected, (
+        f"_SHINYREACT_JS_VERSION is {_SHINYREACT_JS_VERSION!r} but "
+        f"pkg-js/package.json is {expected!r} — bump the constant in _dep.py"
     )
-    expected = str(int(_SHINYREACT_JS_PATH.stat().st_mtime))
-    assert str(_dep().version) == expected
 
 
 def test_dep_script_has_defer():
-    script = _dep().script
-    assert script is not None
-    if isinstance(script, list):
-        script = script[0]
-    assert script.get("defer") == ""
+    assert first_script(_dep()).get("defer") == ""
 
 
 # --- page_react_dep tests ---
@@ -57,7 +107,7 @@ def test_page_react_dep_returns_htmldependency(tmp_path):
 
     dep = _run_page_react_dep(tmp_path)
     assert isinstance(dep, HTMLDependency)
-    assert dep.source["subdir"] == str(tmp_path)
+    assert dep_source(dep)["subdir"] == str(tmp_path)
     assert dep.name == tmp_path.name
 
 
@@ -133,7 +183,7 @@ def test_page_react_dep_attaches_script_when_js_present(tmp_path):
     (tmp_path / "ui.js").write_text("// app")
 
     dep = page_react_dep(src_dir=tmp_path)
-    script = dep.script if isinstance(dep.script, dict) else dep.script[0]
+    script = first_script(dep)
     assert script["src"] == "ui.js"
     assert script.get("type") == "module"
 
@@ -143,10 +193,8 @@ def test_page_react_dep_custom_filenames(tmp_path):
     (tmp_path / "app.css").write_text("/* styles */")
 
     dep = _run_page_react_dep(tmp_path, js_file="app.js", css_file="app.css")
-    script = dep.script if isinstance(dep.script, dict) else dep.script[0]
-    stylesheet = (
-        dep.stylesheet if isinstance(dep.stylesheet, dict) else dep.stylesheet[0]
-    )
+    script = first_script(dep)
+    stylesheet = first_stylesheet(dep)
     assert script["src"] == "app.js"
     assert stylesheet["href"] == "app.css"
 
@@ -156,7 +204,7 @@ def test_page_react_dep_script_type_module(tmp_path):
     (tmp_path / "ui.css").write_text("/* styles */")
 
     dep = _run_page_react_dep(tmp_path)
-    script = dep.script if isinstance(dep.script, dict) else dep.script[0]
+    script = first_script(dep)
     assert script.get("type") == "module"
 
 
@@ -169,8 +217,7 @@ def test_page_react_dep_explicit_src_dir_and_name(tmp_path):
     (tmp_path / "ui.js").write_text("// app")
 
     dep = page_react_dep(src_dir=tmp_path, name="my-app")
-    assert dep.source is not None
-    assert dep.source["subdir"] == str(tmp_path)
+    assert dep_source(dep)["subdir"] == str(tmp_path)
     assert dep.name == "my-app"
     assert str(dep.version) == str(int((tmp_path / "ui.js").stat().st_mtime))
 
@@ -188,9 +235,7 @@ def test_page_react_dep_attaches_stylesheet_when_css_present(tmp_path):
     (tmp_path / "ui.js").write_text("// app")
     (tmp_path / "ui.css").write_text("/* styles */")
 
-    stylesheet = page_react_dep(src_dir=tmp_path).stylesheet
-    assert stylesheet is not None
-    entry = stylesheet if isinstance(stylesheet, dict) else stylesheet[0]
+    entry = first_stylesheet(page_react_dep(src_dir=tmp_path))
     assert entry["href"] == "ui.css"
 
 
@@ -198,13 +243,6 @@ def test_dep_stylesheet_attached_unconditionally() -> None:
     # No existence check on the CSS, unlike page_react_dep()'s. Mirrors R's
     # "shinyreact_dep() attaches the stylesheet unconditionally".
     dep = _dep()
-    assert [s["href"] for s in dep.stylesheet] == ["shinyreact.css"]
-
-
-def test_dep_version_falls_back_when_bundle_missing(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # Deliberate divergence: R falls back to packageVersion("shinyreact").
-    # Mirrors R's "shinyreact_dep() version falls back to the package version".
-    monkeypatch.setattr(_dep_mod, "_SHINYREACT_JS_PATH", Path("/nonexistent/x.js"))
-    assert str(_dep().version) == "0.1.0"
+    assert [s["href"] for s in cast("list[StylesheetItem]", dep.stylesheet)] == [
+        "shinyreact.css"
+    ]

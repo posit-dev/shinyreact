@@ -68,12 +68,40 @@ test_that("shinyreact_dep() attaches the stylesheet unconditionally", {
   expect_identical(unname(unlist(dep$stylesheet)), "shinyreact.css")
 })
 
-test_that("shinyreact_dep() version falls back to the package version", {
-  # Deliberate divergence: Python falls back to the literal "0.1.0".
-  # Mirrors Python's test_dep_version_tracks_bundle_mtime.
-  local_mocked_bindings(.www_dir = function() withr::local_tempdir())
+test_that("shinyreact_dep() versions by the JS package version", {
+  # Installed, `/lib/shinyreact-<version>/` names the @posit-dev/shinyreact
+  # release being served. Mirrors Python's
+  # test_dep_version_is_the_js_package_version.
+  local_mocked_bindings(.dev_checkout = function() FALSE)
   expect_identical(
     shinyreact:::shinyreact_dep()$version,
-    as.character(utils::packageVersion("shinyreact"))
+    shinyreact:::.shinyreact_js_version
   )
+})
+
+test_that("shinyreact_dep() version adds the bundle mtime in a dev checkout", {
+  # So `make update-dist` still cache-busts during development. Mirrors
+  # Python's test_dep_version_adds_bundle_mtime_in_dev_checkout.
+  local_mocked_bindings(.dev_checkout = function() TRUE)
+  js <- file.path(shinyreact:::.www_dir(), "shinyreact.js")
+  expect_identical(
+    shinyreact:::shinyreact_dep()$version,
+    paste0(shinyreact:::.shinyreact_js_version, ".", as.integer(file.mtime(js)))
+  )
+})
+
+test_that(".shinyreact_js_version matches pkg-js/package.json", {
+  # The hardcoded version is bumped in step with the npm package. Mirrors
+  # Python's test_js_version_constant_matches_package_json.
+  package_json <- file.path(
+    testthat::test_path(),
+    "..",
+    "..",
+    "..",
+    "pkg-js",
+    "package.json"
+  )
+  skip_if_not(file.exists(package_json), "not running from the repo")
+  expected <- jsonlite::read_json(package_json)$version
+  expect_identical(shinyreact:::.shinyreact_js_version, expected)
 })

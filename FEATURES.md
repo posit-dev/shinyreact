@@ -201,6 +201,11 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
       never a #184 parity question
   - `[py]` accepted types are whatever `Jsonifiable` admits: `dict`, `list`,
     `tuple`, `str`, `int`, `float`, `bool`, `None`
+    - a `dict` return does not **type-check** against `Jsonifiable`, whose
+      `dict` / `list` arms are invariant in their element types — upstream
+      py-shiny#2497, suppressed per call site with a
+      `# pyright: ignore[reportArgumentType]` naming the issue
+      - runtime behavior is unaffected; it is an annotation bug only
   - `[py]` a `str` return is sent as a JSON string, not a text node
   - `[py]` `auto_output_ui()` returns `None`, inherited from `Renderer` — there
     is no placeholder element to emit
@@ -859,6 +864,12 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
     - it works as `shiny.App(ui=...)`, but only `ReactApp` mounts the
       document's directory — under plain `shiny.App` the sibling `ui.js` is
       not served
+      - the declared return type is py-shiny's `PageHtmlDocument`, which is
+        what `App(ui=)` accepts; its `HTMLTextDocument` base is **not**
+        accepted, so declaring the base would make that documented path a type
+        error
+      - `PageHtmlDocument` is imported from `shiny.ui._page`: py-shiny exports
+        `page_html()` but not its class
     - `shiny.ui.page_html()` arrives with py-shiny#2475, consumed as a git
       dependency on py-shiny `main` until it releases
   - `[r]` used directly as `shinyApp(ui = page_react_html())`, implemented by
@@ -1165,11 +1176,16 @@ initial page.
 ## Asset delivery
 
 - the shinyreact bundle ships as one `HTMLDependency` named `shinyreact`
-  - its version is the bundle file's mtime in whole seconds, so browsers
-    re-fetch after a `make update-dist`
-  - the version fallback when the bundle file is missing differs
-    - `[py]` the literal `"0.1.0"`
-    - `[r]` `packageVersion("shinyreact")`
+  - its version is `@posit-dev/shinyreact`'s own version, a hardcoded constant
+    in each package, so `/lib/shinyreact-0.1.1/` names the JS release being
+    served `(test)`
+    - the constant must equal `pkg-js/package.json`'s `version`; a test in
+      each package fails on drift when run from the repo checkout `(test)`
+    - in a repo checkout (editable install / `load_all()`, detected by the
+      repo's `pkg-js/package.json` being reachable from the package) the
+      version is `<version>.<bundle mtime in whole seconds>`, so
+      `make update-dist` still cache-busts `(test)`
+    - an installed package never carries the mtime suffix `(test)`
   - the script is `shinyreact.js` with a `defer` attribute
   - the stylesheet is `shinyreact.css`, attached unconditionally (no existence
     check)

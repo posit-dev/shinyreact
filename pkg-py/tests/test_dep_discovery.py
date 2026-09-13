@@ -9,11 +9,12 @@ must be pushed after each flush instead.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 from htmltools import HTMLDependency, TagChild, TagList, div
 from shiny.express._stub_session import ExpressStubSession
 from shiny.input_handler import input_handlers
+from shiny.module import ResolvedId
 from shiny.render.renderer import Renderer
 from shiny.session import session_context
 from shinyreact._dep_discovery import install_dep_discovery
@@ -119,6 +120,10 @@ def test_install_is_idempotent_per_session() -> None:
     assert len(session.messages) == 1
 
 
+# The input id a handler is given; none of these handlers look at it.
+ANY_NAME = cast(ResolvedId, "x")
+
+
 def test_install_no_ops_without_a_real_session() -> None:
     assert install_dep_discovery(None) is False
     assert install_dep_discovery(object()) is False  # type: ignore[arg-type]
@@ -126,12 +131,12 @@ def test_install_no_ops_without_a_real_session() -> None:
 
 def test_init_handler_installs_discovery() -> None:
     session = _FakeSession()
-    assert input_handlers["shinyreact.init"](1, "x", session) == 1
+    assert input_handlers["shinyreact.init"](1, ANY_NAME, session) == 1
     assert session.flush_callbacks != []
 
 
 def test_value_handlers_do_not_install_discovery() -> None:
     session = _FakeSession()
-    input_handlers["shinyreact.default"]([], "x", session)
-    input_handlers["shinyreact.asis"](1, "x", session)
+    input_handlers["shinyreact.default"]([], ANY_NAME, session)
+    input_handlers["shinyreact.asis"](1, ANY_NAME, session)
     assert session.flush_callbacks == []

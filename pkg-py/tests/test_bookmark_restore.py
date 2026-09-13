@@ -1,6 +1,7 @@
 import json
 import re
 from pathlib import Path
+from typing import Mapping
 
 import pytest
 from htmltools import HTMLDependency, TagList
@@ -70,7 +71,9 @@ def _extract_restore_payload(head_html: str) -> object:
     return config["restore"]
 
 
-def _config_html(values: dict[str, object]) -> str:
+# `Mapping`, not `dict`: `dict` is invariant in its value type, so a caller's
+# `dict[str, str]` literal would not be assignable.
+def _config_html(values: Mapping[str, object]) -> str:
     ctx = RestoreContext()
     ctx.input = RestoreInputSet(dict(values))
     with restore_context_cm(ctx):

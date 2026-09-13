@@ -74,8 +74,6 @@ def test_empty_message_error_is_not_logged_to_the_console(
 
     # A real error does log, so the assertion above has teeth.
     page.locator("[data-test=input]").fill("0")
-    expect(page.locator("[data-test=error]")).to_have_text(
-        "invalid number of 'breaks'"
-    )
+    expect(page.locator("[data-test=error]")).to_have_text("invalid number of 'breaks'")
     expect(page.locator("[data-test=status]")).to_have_text("error")
     assert [m for m in logged if "Error for answer:" in m] != []
