@@ -30,8 +30,9 @@ cd ../../pkg-js && npm install && npm run build   # dist-npm/ is not committed
 cd ../examples/09-hmr && npm install ../../pkg-js
 ```
 
-Undo with `npm install` after reverting `package.json` — don't commit the
-`file:` dependency.
+That second command rewrites `package.json` to `"file:../../pkg-js"`. Undo
+with `git checkout package.json && npm install` — don't commit the `file:`
+dependency.
 
 ## How it works
 

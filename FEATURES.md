@@ -108,7 +108,7 @@ R has no e2e suite, so no `(e2e)` leaf covers R (issue #194).
     - the reader returns `null` when there is no `document` (non-DOM env)
   - `[js]` a *missing* tag is tolerated by both builds — IIFE and npm ESM
     - a `page_bare()` page legitimately has none, at either tier — see
-      `examples/11-npm-local`, an npm-tier app with no tag on the page
+      `examples/11-npm-bare`, an npm-tier app with no tag on the page
     - the npm build treated absence as fatal until #261, when the opt-in
       strict mode was removed entirely
 - server → client custom message: `shinyReactMessage`, payload `{id, data}`
@@ -1357,6 +1357,12 @@ initial page.
       consumers opt in rather than having it forced on them
   - a missing `#shinyreact-config` tag is tolerated, as in the IIFE bundle, so
     a `page_bare(page_react_dep())` page boots at the npm tier (#261)
+  - the npm-tier examples (`examples/09-hmr`, `examples/11-npm-bare`) depend on
+    the **released** package (`"^0.1.1"` from the registry), not the checkout
+    - a `pkg-js/src` change does not reach them until it is published; a
+      release bumps their `package.json` range (`release-shinyreact` skill)
+    - `npm install ../../pkg-js` (after `npm run build` there) is the local
+      override, documented in `examples/09-hmr/README.md`; it is never committed
 - `window.shinyreact` contains exactly: `useShinyInput`, `useShinyInputValue`,
   `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`,
   `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`,

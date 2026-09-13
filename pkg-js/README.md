@@ -101,7 +101,7 @@ Full signatures and types: [JS API reference](https://posit-dev.github.io/shinyr
 
 ```bash
 git clone https://github.com/posit-dev/shinyreact
-cd shinyreact/examples/11-npm-local
+cd shinyreact/examples/11-npm-bare
 shiny run app.py                 # builds the client bundle on first run
 ```
 

@@ -1,4 +1,4 @@
-# 11-npm-local — the npm tier with nothing else on the page
+# 11-npm-bare — the npm tier with nothing else on the page
 
 The Old Faithful app again ([01-hello](../01-hello/) does it with no build
 step), rebuilt to show the smallest possible npm-tier app: the client imports
@@ -13,11 +13,11 @@ the config tag (it carries the protocol version, and bookmark restore rides on
 it). This app needs neither, so its whole page is:
 
 ```python
-ui = page_bare(page_react_dep(src_dir=_APP_DIR / "www", name="npm-local"))
+ui = page_bare(page_react_dep(src_dir=_APP_DIR / "www", name="npm-bare"))
 ```
 
 ```r
-ui <- page_bare(page_react_dep("www", name = "npm-local"))
+ui <- page_bare(page_react_dep("www", name = "npm-bare"))
 ```
 
 Shiny's own dependencies plus this app's bundle. That means the page has

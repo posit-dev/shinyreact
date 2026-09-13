@@ -41,7 +41,7 @@ def histogram(values: list[float], bins: int) -> dict[str, list[float] | list[in
 # server-side bundle there is also no #shinyreact-config tag and no protocol
 # handshake; page_bare() is the one page entry point that emits neither.
 ui = page_bare(
-    page_react_dep(src_dir=_APP_DIR / "www", name="npm-local"),
+    page_react_dep(src_dir=_APP_DIR / "www", name="npm-bare"),
     title="Old Faithful",
 )
 

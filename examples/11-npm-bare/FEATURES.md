@@ -1,4 +1,4 @@
-# examples/11-npm-local — behavior
+# examples/11-npm-bare — behavior
 
 Old Faithful histogram at the npm tier with nothing else on the page: the
 client imports `@posit-dev/shinyreact`, and the server injects no shinyreact JS and
@@ -20,7 +20,7 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 
 ## Page
 
-- the page carries this app's dependency, named `npm-local`, and no
+- the page carries this app's dependency, named `npm-bare`, and no
   `shinyreact` dependency `(test)`
   - so there is exactly one React and one copy of the hooks on the page
 - the page has no `#shinyreact-config` tag `(test)`

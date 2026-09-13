@@ -1,5 +1,5 @@
 {
-  "name": "npm-local",
+  "name": "npm-bare",
   "private": true,
   "type": "module",
   "scripts": {

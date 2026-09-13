@@ -30,14 +30,14 @@ def ui(tmp_path: Path):
     (tmp_path / "www").mkdir()
     with pytest.warns(UserWarning, match="JS entry point not found"):
         return page_bare(
-            page_react_dep(src_dir=tmp_path / "www", name="npm-local"),
+            page_react_dep(src_dir=tmp_path / "www", name="npm-bare"),
             title="Old Faithful",
         )
 
 
 def test_the_page_carries_only_this_apps_dependency(ui):
     names = {dep.name for dep in ui.get_dependencies()}
-    assert "npm-local" in names
+    assert "npm-bare" in names
     assert "shinyreact" not in names
 
 

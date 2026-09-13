@@ -19,13 +19,13 @@ library(shinyreact)
 # with a different working directory. page_react_dep() requires the directory
 # to exist (#290) but only warns about the missing ui.js inside it.
 app_ui <- function() {
-  dir <- file.path(tempdir(), "npm-local-page-test")
+  dir <- file.path(tempdir(), "npm-bare-page-test")
   dir.create(file.path(dir, "www"), recursive = TRUE, showWarnings = FALSE)
   old <- setwd(dir)
   on.exit(setwd(old), add = TRUE)
 
   suppressWarnings(page_bare(
-    page_react_dep("www", name = "npm-local"),
+    page_react_dep("www", name = "npm-bare"),
     title = "Old Faithful"
   ))
 }
@@ -34,7 +34,7 @@ test_that("the page carries only this app's dependency", {
   ui <- app_ui()
   names <- vapply(htmltools::findDependencies(ui), function(d) d$name, "")
 
-  expect_true("npm-local" %in% names)
+  expect_true("npm-bare" %in% names)
   expect_false("shinyreact" %in% names)
 })
 
