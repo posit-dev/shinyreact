@@ -1,4 +1,4 @@
-# shinyreact <a href="https://posit-dev.github.io/shinyreact/"><img src="docs/logo.svg" align="right" height="138" alt="shinyreact website" /></a>
+# shinyreact <a href="https://posit-dev.github.io/shinyreact/"><img src="https://raw.githubusercontent.com/posit-dev/shinyreact/main/pkg-py/docs/logo.svg" align="right" height="138" alt="shinyreact website" /></a>
 
 <!-- badges: start -->
 [![check-py](https://github.com/posit-dev/shinyreact/actions/workflows/check-py.yaml/badge.svg)](https://github.com/posit-dev/shinyreact/actions/workflows/check-py.yaml)
@@ -8,7 +8,11 @@ shinyreact lets you write the UI of a [Shiny for Python](https://shiny.posit.co/
 
 ## Installation
 
-shinyreact is not yet on PyPI. Install the development version from GitHub:
+```bash
+pip install shinyreact
+```
+
+Or install the development version from GitHub:
 
 ```bash
 pip install "git+https://github.com/posit-dev/shinyreact.git"
