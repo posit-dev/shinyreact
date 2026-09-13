@@ -8,7 +8,7 @@ reactive computation. Ships no UI components.
 
 Useful links:
 
-- <https://posit-dev.github.io/shinyreact/r>
+- <https://posit-dev.github.io/shinyreact/r/>
 
 - <https://github.com/posit-dev/shinyreact>
 
@@ -25,6 +25,15 @@ Authors:
   ([ORCID](https://orcid.org/0000-0001-9986-114X))
 
 Other contributors:
+
+- Winston Chang <winston@posit.co>
+  ([ORCID](https://orcid.org/0000-0002-1576-2126)) \[contributor\]
+
+- Garrick Aden-Buie <garrick@adenbuie.com>
+  ([ORCID](https://orcid.org/0000-0002-7111-0077)) \[contributor\]
+
+- Carson Sievert <carson@posit.co>
+  ([ORCID](https://orcid.org/0000-0002-4958-2844)) \[contributor\]
 
 - Posit Software, PBC ([ROR](https://ror.org/03wc8by49)) \[copyright
   holder, funder\]
