@@ -17,11 +17,9 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 - when `www/ui.js` is absent (the bundle is gitignored, so it is absent in a
   fresh clone), the app prints `www/ui.js not found -- building the client
   bundle...` to stderr and builds before `set_react_page()`
-  - builds `pkg-js` first (`npm install` + `npm run build` there) when
-    `pkg-js/dist-npm` is missing — the `file:../../pkg-js` dep's `exports`
-    point into `dist-npm/`, which is not committed, so this app's own build
-    cannot resolve `@posit-dev/shinyreact` until it exists
-  - then `npm install` + `npm run build` in the app directory
+  - `npm install` + `npm run build` in the app directory, and nothing else —
+    `@posit-dev/shinyreact` comes from the registry, so no part of this repo
+    has to be built first
   - without it, Shiny raises `RuntimeError: Directory '.../www' does not exist`
     at startup — `www/` itself does not exist until a build creates it
   - the check is skipped entirely once `www/ui.js` exists, so `npm run dev`'s
@@ -33,15 +31,14 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
 - the only example that imports `@posit-dev/shinyreact` instead of destructuring
   `window.shinyreact`; the built `www/ui.js` contains no `window.shinyreact`
   reference at all
-- until the first npm publish, the dependency is `file:../../pkg-js`, so
-  `pkg-js` must be built (`npm run build`) before this example installs
+- the dependency is `"@posit-dev/shinyreact": "^0.1.1"` from the registry, so
+  the directory installs and builds anywhere, outside a checkout of this repo
+  - the package declares React as a peer dependency and ships no nested
+    `node_modules`, so `App.tsx` and the hooks resolve one React with no
+    `resolve.dedupe` and no `server.fs.allow` widening
 - React is bundled by this example in **both** modes — a development React in
   dev, which is what Fast Refresh requires and what the production-only React
   inside the IIFE bundle could never provide
-- `resolve.dedupe: ["react", "react-dom"]` keeps `App.tsx` and the hooks on one
-  React copy — the `file:` dep is symlinked and brings its own `node_modules`
-- `server.fs.allow` is widened to the repo root so the symlinked package
-  outside this directory can be served in dev
 
 ## Two modes, one entry
 

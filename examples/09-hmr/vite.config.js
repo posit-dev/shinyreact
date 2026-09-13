@@ -7,8 +7,6 @@ import { defineConfig } from "vite";
 import { shinyreactDevStub } from "./vite-dev-stub.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// examples/09-hmr -> repo root (two levels up).
-const repoRoot = path.resolve(__dirname, "../..");
 const ENTRY = "src/ui.tsx";
 
 export default defineConfig(({ command }) => ({
@@ -20,17 +18,12 @@ export default defineConfig(({ command }) => ({
     // serve only: writes www/ui.js as the dev stub (apply:"serve" inside).
     shinyreactDevStub({ entry: ENTRY, outFile: "www/ui.js" }),
   ],
-  resolve: {
-    // `@posit-dev/shinyreact` is a `file:` dep, so it is symlinked and brings its
-    // own node_modules. Without dedupe, App.tsx and the hooks would each get a
-    // React copy and every hook call would throw.
-    dedupe: ["react", "react-dom"],
-  },
+  // No `resolve.dedupe` and no `server.fs.allow`: `@posit-dev/shinyreact` is an
+  // ordinary registry dependency, so it is not symlinked, brings no nested
+  // `node_modules`, and takes React from this app as a peer.
   server: {
     port: 5173,
     strictPort: true, // keep the stub's hard-coded :5173 honest
-    // `@posit-dev/shinyreact` resolves through a symlink to the repo's pkg-js/.
-    fs: { allow: [repoRoot] },
   },
   build: {
     outDir: "www",

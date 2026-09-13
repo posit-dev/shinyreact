@@ -63,7 +63,11 @@ steps, and the second one is not yours to do.
    --no-git-tag-version` also updates `package-lock.json`), and the matching
    constants `_SHINYREACT_JS_VERSION` in `pkg-py/src/shinyreact/_dep.py` and
    `.shinyreact_js_version` in `pkg-r/R/dep.R` (the shinyreact HTMLDependency
-   version; `test_dep.py` / `test-dep.R` fail on drift). Open a PR, merge it.
+   version; `test_dep.py` / `test-dep.R` fail on drift). In the same PR, bump
+   the `"@posit-dev/shinyreact"` range in `examples/09-hmr/package.json` and
+   `examples/11-npm-bare/package.json` to `^1.2.3` — they depend on the
+   released package, not the checkout, so without this they silently stay on
+   the previous line. Open a PR, merge it.
 2. `git tag js/v1.2.3 && git push origin js/v1.2.3`.
 3. `release-js.yaml` verifies the tag matches `package.json`, lints, tests,
    builds (IIFE + npm ESM + types), and runs `npm stage publish`. Nothing is on
