@@ -1097,6 +1097,17 @@ the shinyreact bundle dependency and the `#shinyreact-config` tag — except
   - dragging the hosted slider to its max pushes `50` to the server `(e2e)`
   - `ui.update_slider()` / `ui.update_selectize()` still target the hosted
     widgets by id, and the new values flow back through `input` `(e2e)`
+    - but only once the holder has rendered: an update sent before that
+      targets an id the client has not bound and is dropped silently — the
+      widget arrives at its own initial value `9`, not the updated `30`
+      `(e2e)`
+      - Shiny's own behavior, not shinyreact's — same drop in a plain
+        `output_ui()` app; the skill documents it in `shiny-outputs.md`
+  - a holder inside a `display: none` container is suspended and its render
+    function never runs, so no widget appears at all;
+    `[py]` `suspend_when_hidden=False` / `[r]` `suspendWhenHidden = FALSE`
+    is the opt-out `(e2e)`
+    - also Shiny's own behavior; documented in `shiny-outputs.md`
   - several holders side by side under one parent share one `bindAll` pass
     (see `ShinyOutput`), so the browser logs no "Duplicate output IDs" warning
     for them (#298) `(e2e)`
