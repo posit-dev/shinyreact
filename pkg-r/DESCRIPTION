@@ -1,5 +1,5 @@
 Package: shinyreact
-Title: Client-Side 'React' Interface for 'Shiny'
+Title: Client-Side 'React' Interface for 'shiny'
 Version: 0.1.0
 Authors@R: c(
     person("Barret", "Schloerke", , "barret@posit.co", role = c("cre", "aut"),
@@ -15,14 +15,14 @@ Authors@R: c(
     person(, "Meta Platforms, Inc.", role = "cph",
            comment = "'React' and 'ReactDOM', bundled in inst/lib/shiny/shinyreact.js")
   )
-Description: Server-side plumbing for the 'ui.tsx' pattern in 'Shiny': the
+Description: Server-side plumbing for the 'ui.tsx' pattern in 'shiny': the
     user interface is defined in a client 'React' (<https://react.dev/>)
-    bundle, and the 'Shiny' server contains only reactive computation.
+    bundle, and the 'shiny' server contains only reactive computation.
     Provides page builders that discover and serve the client bundle, a
     render function that publishes any JSON-serializable value to the
     client, and custom messages to 'React' components. Ships no user
     interface components, so the app author owns the whole front end. The
-    'React' runtime and the client hooks are bundled, so no JavaScript
+    'React' runtime and the client hooks are bundled, so no 'JavaScript'
     build step is required to get started.
 License: MIT + file LICENSE
 URL: https://posit-dev.github.io/shinyreact/r/,
