@@ -2,6 +2,8 @@
 
 ## shinyreact 0.1.0
 
+CRAN release: 2026-09-23
+
 - Initial CRAN release. shinyreact is the server-side plumbing for the
   `ui.tsx` pattern: the UI is a React client you own, and the Shiny
   server contains only reactive computation. It ships no UI components.

@@ -23,14 +23,14 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/posit-dev/shinyreact/blob/r/v0.1.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/posit-dev/shinyreact/blob/main/DESCRIPTION)
 
 Schloerke B (2026). *shinyreact: Client-Side 'React' Interface for
-'Shiny'*. R package version 0.1.0,
+'shiny'*. R package version 0.1.0,
 <https://posit-dev.github.io/shinyreact/r/>.
 
     @Manual{,
-      title = {shinyreact: Client-Side 'React' Interface for 'Shiny'},
+      title = {shinyreact: Client-Side 'React' Interface for 'shiny'},
       author = {Barret Schloerke},
       year = {2026},
       note = {R package version 0.1.0},
