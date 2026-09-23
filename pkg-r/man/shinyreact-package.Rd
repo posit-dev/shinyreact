@@ -4,11 +4,11 @@
 \name{shinyreact-package}
 \alias{shinyreact}
 \alias{shinyreact-package}
-\title{shinyreact: Client-Side 'React' Interface for 'Shiny'}
+\title{shinyreact: Client-Side 'React' Interface for 'shiny'}
 \description{
 \if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
 
-Server-side plumbing for the 'ui.tsx' pattern in 'Shiny': the user interface is defined in a client 'React' (\url{https://react.dev/}) bundle, and the 'Shiny' server contains only reactive computation. Provides page builders that discover and serve the client bundle, a render function that publishes any JSON-serializable value to the client, and custom messages to 'React' components. Ships no user interface components, so the app author owns the whole front end. The 'React' runtime and the client hooks are bundled, so no JavaScript build step is required to get started.
+Server-side plumbing for the 'ui.tsx' pattern in 'shiny': the user interface is defined in a client 'React' (\url{https://react.dev/}) bundle, and the 'shiny' server contains only reactive computation. Provides page builders that discover and serve the client bundle, a render function that publishes any JSON-serializable value to the client, and custom messages to 'React' components. Ships no user interface components, so the app author owns the whole front end. The 'React' runtime and the client hooks are bundled, so no 'JavaScript' build step is required to get started.
 }
 \seealso{
 Useful links:
