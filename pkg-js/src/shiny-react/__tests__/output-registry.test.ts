@@ -181,8 +181,10 @@ describe("OutputRegistry", () => {
         await nextFrame(); // cleanup runs: unbind + detach
         await nextFrame(); // the re-bind the cleanup schedules
       }
-      // A fresh subscribe now holds exactly one binding. With the leak this
-      // was 4: one stale registration per completed cycle plus the live one.
+      // A fresh subscribe now holds exactly one binding. (Without the fix
+      // the test never reaches this point: the in-loop assertion already
+      // fails on the second cycle, where the leaked first registration and
+      // the live one put the count at 2.)
       const dispose = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
       await nextFrame();
       expect(bound.get("out1")).toBe(1);
