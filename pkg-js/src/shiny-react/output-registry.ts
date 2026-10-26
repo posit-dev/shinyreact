@@ -235,6 +235,20 @@ export class OutputRegistry {
       }
 
       this.outputs.delete(outputId);
+      // Unbind BEFORE detaching the div. Shiny's `unbindAll(scope)` finds
+      // bound elements with `$(scope).find(".shiny-bound-output")`, so an
+      // element must still be inside `scope` when the unbind runs. The
+      // container-scoped `unbindAll` in `scheduleBindAll` executes a frame
+      // after the removal below and would never reach a detached div, so its
+      // bindingsRegistry entry (shiny.js adds one per bind, removes one per
+      // unbind) would leak: every subscribe/unsubscribe cycle added one entry
+      // for the id, and Shiny's "Duplicate output IDs were found" warning
+      // counted one more output per visit. The stale binding also kept
+      // receiving server values for the deleted entry, logging "Output
+      // <id> not found" until the next subscribe re-bound the id.
+      if (entry.el) {
+        getShiny()?.unbindAll?.(entry.el, true);
+      }
       entry.el?.remove();
       this.scheduleBindAll();
     });
