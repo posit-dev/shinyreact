@@ -133,6 +133,65 @@ describe("OutputRegistry", () => {
     appNode.remove();
   });
 
+  it("cleanup unbinds the div while it is still attached, so the id does not leak as a duplicate", async () => {
+    // Shiny's bindingsRegistry adds one entry per bind and removes one per
+    // unbind; its duplicate-ID warning counts those entries. `unbindAll`
+    // finds bound elements with `$(scope).find(".shiny-bound-output")`, so a
+    // div detached before the unbind runs is never unregistered — every
+    // subscribe/unsubscribe cycle would leave one stale entry behind and the
+    // warning's count would grow by one per visit. Emulate that bookkeeping
+    // faithfully: bind marks the class and counts, unbind decrements only
+    // elements it can still find.
+    const bound = new Map<string, number>();
+    const fakeShiny = {
+      unbindAll: (scope: HTMLElement, includeSelf = false) => {
+        const els = Array.from(
+          scope.querySelectorAll(".shiny-bound-output"),
+        ) as HTMLElement[];
+        if (includeSelf && scope.classList.contains("shiny-bound-output")) {
+          els.push(scope);
+        }
+        for (const el of els) {
+          el.classList.remove("shiny-bound-output");
+          bound.set(el.id, (bound.get(el.id) ?? 1) - 1);
+        }
+      },
+      bindAll: (scope: HTMLElement) => {
+        for (const el of Array.from(
+          scope.querySelectorAll(".shiny-react-output"),
+        ) as HTMLElement[]) {
+          if (el.classList.contains("shiny-bound-output")) continue;
+          el.classList.add("shiny-bound-output");
+          bound.set(el.id, (bound.get(el.id) ?? 0) + 1);
+        }
+      },
+    };
+    vi.mocked(getShiny).mockReturnValue(fakeShiny as any);
+
+    const nextFrame = () => new Promise((r) => requestAnimationFrame(r));
+    const registry = new OutputRegistry();
+    try {
+      // Three full subscribe/unsubscribe cycles, as a tab strip switching
+      // back and forth produces.
+      for (let i = 0; i < 3; i++) {
+        const dispose = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
+        await nextFrame(); // bindAll lands
+        expect(bound.get("out1")).toBe(1);
+        dispose();
+        await nextFrame(); // cleanup runs: unbind + detach
+        await nextFrame(); // the re-bind the cleanup schedules
+      }
+      // A fresh subscribe now holds exactly one binding. With the leak this
+      // was 4: one stale registration per completed cycle plus the live one.
+      const dispose = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
+      await nextFrame();
+      expect(bound.get("out1")).toBe(1);
+      dispose();
+    } finally {
+      vi.mocked(getShiny).mockReturnValue(undefined);
+    }
+  });
+
   it("scheduleCleanup preserves entry when re-subscribed before RAF", async () => {
     const registry = new OutputRegistry();
     const dispose1 = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
