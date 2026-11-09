@@ -43,7 +43,7 @@ Skip that and the app still works — the registries are page-scoped, so both co
 
 ```jsx
 import { useShinyInput, useShinyOutputValue } from "@posit-dev/shinyreact";
-import "@posit-dev/shinyreact/styles";
+import "@posit-dev/shinyreact/styles.css";
 import { createRoot } from "react-dom/client";
 
 function App() {

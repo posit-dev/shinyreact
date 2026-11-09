@@ -215,7 +215,9 @@ const NOOP_SETTER = () => {};
  * @param options Optional configuration object.
  * @param options.namespace Module namespace to apply (or `null` to suppress
  * the surrounding `ShinyModuleProvider` namespace).
- * @returns The current output value.
+ * @returns The current output value. `null` when the server sent `NULL` /
+ * `None` (or a silent `req()` error), `undefined` (or `defaultValue`) before
+ * the first value arrives.
  * @group Outputs
  */
 export function useShinyOutputValue<T>(
@@ -226,8 +228,8 @@ export function useShinyOutputValue<T>(
   }: {
     namespace?: string | null;
   } = {},
-): T | undefined {
-  const [value, setValue] = useState<T | undefined>(defaultValue);
+): T | null | undefined {
+  const [value, setValue] = useState<T | null | undefined>(defaultValue);
   const shinyInitialized = useShinyInitialized();
 
   ensureShinyReactInitialized();
