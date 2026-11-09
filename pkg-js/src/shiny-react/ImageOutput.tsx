@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MISSING, type MISSING as MISSINGType } from "./missing";
 import {
   useShinyInput,
+  useShinyOutputError,
   useShinyOutputStatus,
   useShinyOutputValue,
 } from "./use-shiny";
@@ -12,6 +13,8 @@ export type ImageData = {
   src: string;
   width: number;
   height: number;
+  /** `renderPlot(alt =)` / `@render.plot(alt=)`; absent for some renderers. */
+  alt?: string;
   coordmap: {
     panels: {
       panel: number;
@@ -89,6 +92,8 @@ export type ImageData = {
  * - Updates Shiny when the image size changes (using ResizeObserver with
  *   debouncing)
  * - Hides the image when Shiny sets the hidden state
+ * - Replaces the image with the error message when the render function
+ *   errors, styled with Shiny's `shiny-output-error` classes
  * - Handles image load events to ensure accurate dimension reporting
  *
  * The server-side renderImage() function receives the client dimensions and can
@@ -182,6 +187,7 @@ export function ImageOutput({
     skipNs,
   );
   const imgStatus = useShinyOutputStatus(namespacedId, skipNs);
+  const imgError = useShinyOutputError(namespacedId, skipNs);
 
   // Create a reference to the img element to access its properties
   const imgRef = useRef<HTMLImageElement>(null);
@@ -297,6 +303,28 @@ export function ImageOutput({
     return null;
   }
 
+  // Match vanilla Shiny: an error hides the last image and shows the message,
+  // with the same classes Shiny's renderError() adds.
+  if (imgError) {
+    const errorClasses = [
+      "shiny-output-error",
+      // concat, like Shiny's asArray(): R unboxes a one-class `type` to a
+      // plain string despite the string[] type.
+      ...([] as string[])
+        .concat(imgError.type ?? [])
+        .map((t) => `shiny-output-error-${t}`),
+      className,
+    ];
+    return (
+      <div
+        className={errorClasses.filter(Boolean).join(" ")}
+        style={{ width: width, height: height }}
+      >
+        {imgError.message}
+      </div>
+    );
+  }
+
   // Show a placeholder while waiting for the first image or during recalculation
   if (!imgData) {
     return (
@@ -339,7 +367,7 @@ export function ImageOutput({
     <img
       ref={imgRef}
       src={imgData.src}
-      alt=""
+      alt={imgData.alt ?? ""}
       className={className}
       style={{
         width: width,

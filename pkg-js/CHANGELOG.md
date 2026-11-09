@@ -8,6 +8,10 @@
   IDs were found" warning grew and the console logged `Output <id> not found`
   (#330).
 
+- `ImageOutput` hides the last image and shows the error message when the
+  render function errors, with Shiny's `shiny-output-error` classes. Its
+  `<img>` now uses the renderer's `alt` text instead of `alt=""` (#327).
+
 - `useShinyOutputValue()` is now typed `T | null | undefined`. A server
   `NULL` / `None` arrives as `null`, which the old `T | undefined` type hid.
   Passing a `defaultValue` narrows it to `T | null` (#329).

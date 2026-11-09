@@ -133,3 +133,104 @@ describe("ImageOutput namespace precedence", () => {
     expect(ids).not.toContain(".clientdata_output_ctx-myimg_width");
   });
 });
+
+// Drive an output the way the real registry would: `outputs.add(id, setValue,
+// setStatus, setError)` hands the hook its setters, so keep the latest ones per
+// id and call them.
+function captureOutputSetters() {
+  const setters = new Map<
+    string,
+    { value: (v: unknown) => void; error: (e: unknown) => void }[]
+  >();
+  const reg = getReactRegistry();
+  (reg.outputs.add as ReturnType<typeof vi.fn>).mockImplementation(
+    (
+      id: string,
+      value: (v: unknown) => void,
+      _status: unknown,
+      error: (e: unknown) => void,
+    ) => {
+      setters.set(id, [...(setters.get(id) ?? []), { value, error }]);
+      return () => {};
+    },
+  );
+  return {
+    sendValue: (id: string, v: unknown) =>
+      act(() => setters.get(id)!.forEach((s) => s.value(v))),
+    sendError: (id: string, e: unknown) =>
+      act(() => setters.get(id)!.forEach((s) => s.error(e))),
+  };
+}
+
+const IMG = { src: "data:image/png;base64,AAAA", width: 4, height: 3 };
+
+describe("ImageOutput image data", () => {
+  it("uses the renderer's alt text", async () => {
+    // #327: alt="" was hardcoded, ignoring renderPlot(alt =).
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendValue("plot", { ...IMG, alt: "A scatterplot" });
+    expect(container.querySelector("img")!.getAttribute("alt")).toBe(
+      "A scatterplot",
+    );
+  });
+
+  it("falls back to an empty alt when the renderer sends none", async () => {
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendValue("plot", IMG);
+    expect(container.querySelector("img")!.getAttribute("alt")).toBe("");
+  });
+});
+
+describe("ImageOutput on error", () => {
+  it("hides the stale image and shows the message with Shiny's classes", async () => {
+    // #327: the last image stayed on screen and the message appeared nowhere.
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" className="mine" />);
+    await flushPromises();
+    out.sendValue("plot", IMG);
+    expect(container.querySelector("img")).not.toBeNull();
+
+    out.sendError("plot", {
+      message: "Nothing to plot",
+      call: null,
+      type: ["shiny.silent.error", "validation"],
+    });
+
+    expect(container.querySelector("img")).toBeNull();
+    const el = container.firstElementChild!;
+    expect(el.textContent).toBe("Nothing to plot");
+    expect([...el.classList]).toEqual([
+      "shiny-output-error",
+      "shiny-output-error-shiny.silent.error",
+      "shiny-output-error-validation",
+      "mine",
+    ]);
+  });
+
+  it("accepts an R one-class type unboxed to a string", async () => {
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendError("plot", { message: "boom", call: null, type: "validation" });
+    expect(container.firstElementChild!.className).toBe(
+      "shiny-output-error shiny-output-error-validation",
+    );
+  });
+
+  it("shows the image again once the error clears", async () => {
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendError("plot", { message: "boom", call: null, type: null });
+    expect(container.querySelector("img")).toBeNull();
+
+    out.sendError("plot", null);
+    out.sendValue("plot", IMG);
+    expect(container.querySelector("img")).not.toBeNull();
+    expect(container.textContent).not.toContain("boom");
+  });
+});
