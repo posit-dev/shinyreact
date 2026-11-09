@@ -235,7 +235,21 @@ export class OutputRegistry {
       }
 
       this.outputs.delete(outputId);
-      entry.el?.remove();
+      // Unbind BEFORE detaching: Shiny's `unbindAll` only finds elements still
+      // inside its scope, so a detached div's binding would leak. Detach even
+      // if the unbind throws, or the next container bindAll re-binds it.
+      const el = entry.el;
+      if (el) {
+        try {
+          getShiny()?.unbindAll?.(el, true);
+        } catch (err) {
+          console.error(
+            `[shinyreact] unbindAll failed for output "${outputId}":`,
+            err,
+          );
+        }
+        el.remove();
+      }
       this.scheduleBindAll();
     });
   }
