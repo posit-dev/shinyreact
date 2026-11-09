@@ -153,7 +153,7 @@ describe("OutputRegistry", () => {
         }
         for (const el of els) {
           el.classList.remove("shiny-bound-output");
-          bound.set(el.id, (bound.get(el.id) ?? 1) - 1);
+          bound.set(el.id, (bound.get(el.id) ?? 0) - 1);
         }
       },
       bindAll: (scope: HTMLElement) => {
@@ -190,6 +190,33 @@ describe("OutputRegistry", () => {
       expect(bound.get("out1")).toBe(1);
       dispose();
     } finally {
+      vi.mocked(getShiny).mockReturnValue(undefined);
+    }
+  });
+
+  it("cleanup still detaches the div when Shiny's unbind throws", async () => {
+    vi.mocked(getShiny).mockReturnValue({
+      bindAll: vi.fn(),
+      unbindAll: vi.fn((_scope: HTMLElement, includeSelf?: boolean) => {
+        if (includeSelf) throw new Error("boom");
+      }),
+    } as any);
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    try {
+      const registry = new OutputRegistry();
+      const dispose = registry.add("out1", vi.fn(), vi.fn(), vi.fn());
+      const div = registry.get("out1")!.el!;
+      dispose();
+      await new Promise((r) => requestAnimationFrame(r));
+      expect(div.isConnected).toBe(false);
+      expect(consoleError).toHaveBeenCalledWith(
+        expect.stringContaining('unbindAll failed for output "out1"'),
+        expect.any(Error),
+      );
+    } finally {
+      consoleError.mockRestore();
       vi.mocked(getShiny).mockReturnValue(undefined);
     }
   });

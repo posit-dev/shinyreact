@@ -1,3 +1,10 @@
+# shinyreact (development version)
+
+* `useShinyOutputValue()` and its sibling hooks no longer leak a Shiny output
+  binding each time a component unmounts. Before, every mount/unmount cycle
+  (e.g. switching tabs) added a stale binding, so Shiny's "Duplicate output
+  IDs were found" warning grew and the console logged `Output <id> not found`.
+
 # shinyreact 0.1.0
 
 * Initial CRAN release. shinyreact is the server-side plumbing for the
