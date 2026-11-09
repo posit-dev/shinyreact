@@ -512,7 +512,7 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     frame runs, so a re-subscribe within the same frame (React remount) keeps
     them
   - repeated subscribe/unsubscribe cycles leave exactly one Shiny binding per
-    id (no growing "Duplicate output IDs were found" count)
+    id (no growing "Duplicate output IDs were found" count) (e2e)
   - the div is detached even if Shiny's unbind throws
   - removal triggers a re-bind
   - the entry holds a reference to the div it created and removes that node, so
