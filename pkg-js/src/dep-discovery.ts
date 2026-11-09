@@ -1,4 +1,5 @@
 import { getShiny } from "./shiny-react/get-shiny";
+import { onShinyEvent } from "./shiny-react/shiny-events";
 
 /**
  * Client half of automatic renderer dependency discovery (issues #146/#203;
@@ -62,11 +63,11 @@ export function installDepDiscovery(): void {
   // Wait for Shiny. NOT `{ once: true }`: `shiny:connected` can fire before
   // `window.Shiny` is readable, and a one-shot listener would consume the
   // event, leave `start()` a no-op, and never install discovery at all. Stay
-  // subscribed until Shiny is actually there, then unsubscribe.
-  const onConnected = (): void => {
+  // subscribed until Shiny is actually there, then unsubscribe. Shiny fires
+  // this through jQuery, so a plain addEventListener() would never see it.
+  const stop = onShinyEvent("shiny:connected", () => {
     if (!getShiny()) return;
-    document.removeEventListener("shiny:connected", onConnected);
+    stop();
     start();
-  };
-  document.addEventListener("shiny:connected", onConnected);
+  });
 }

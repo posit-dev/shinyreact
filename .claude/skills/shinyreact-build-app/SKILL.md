@@ -252,7 +252,8 @@ an npm-tier build).
 | **Status** | | `useShinyOutputStatus(id)` → `"pending" \| "ready" \| "recalculating" \| "error"` | |
 | **Error** | | `useShinyOutputError(id)` → `{message, call, type} \| null` | |
 
-Plus `useShinyInitialized()`, `useShinyBusy()`, `useShinyMessageHandler()`, and
+Plus `useShinyInitialized()`, `useShinyConnected()`, `useShinyBusy()`,
+`useShinyMessageHandler()`, and
 the components `ImageOutput`, `ShinyOutput`, `ShinyModuleProvider`.
 
 **Pick the narrowest hook that fits the call site.** A button that pushes and
@@ -327,6 +328,11 @@ what is safe to show.
 
 **Gate the first paint** on `useShinyInitialized()` (`if (!initialized) return
 null`) so the UI does not flash empty defaults during connection setup.
+
+**Lost connection** — `useShinyInitialized()` stays `true` after the session
+disconnects. To react to a dropped session (a "reconnecting…" banner, disabled
+controls), use `useShinyConnected()`: `false` once the socket closes, `true`
+again if Shiny reconnects.
 
 **App-wide activity** — `useShinyBusy()` is a boolean that tracks Shiny's
 `shiny:busy` / `shiny:idle` events, i.e. whether the server is working on

@@ -15,6 +15,7 @@ import { getShiny } from "./get-shiny";
 import { type InputRegistryEntry } from "./input-registry";
 import {
   getBusySnapshot,
+  getConnectedSnapshot,
   getInitializedSnapshot,
   subscribeLifecycle,
 } from "./lifecycle-store";
@@ -660,6 +661,27 @@ export function useShinyBusy(): boolean {
     subscribeLifecycle,
     getBusySnapshot,
     getBusySnapshot,
+  );
+}
+
+/**
+ * A React hook that tracks whether the Shiny session's websocket is connected.
+ *
+ * `false` until the socket opens, `true` while it is open, and `false` again
+ * once it closes — the moment Shiny greys out the page. If Shiny reconnects,
+ * it flips back to `true`. Unlike `useShinyInitialized()`, which stays `true`
+ * for the life of the page, this one tells you the session is gone.
+ *
+ * Reads from the same shared lifecycle store as `useShinyBusy()`.
+ *
+ * @returns A boolean indicating whether the Shiny session is connected.
+ * @group Session
+ */
+export function useShinyConnected(): boolean {
+  return useSyncExternalStore(
+    subscribeLifecycle,
+    getConnectedSnapshot,
+    getConnectedSnapshot,
   );
 }
 

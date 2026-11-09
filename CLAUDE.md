@@ -89,7 +89,7 @@ Run `make help` to see all targets.
 The JS output (`pkg-js/dist/shinyreact.js`) is a self-contained IIFE that bundles React 19 and vendored `@posit/shiny-react`, and installs the public API at `window.shinyreact`.
 
 **Global API exposed at `window.shinyreact`:**
-- `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyBusy` — re-exported shiny-react hooks
+- `useShinyInput`, `useShinyInputValue`, `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`, `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`, `useShinyConnected`, `useShinyBusy` — re-exported shiny-react hooks
 - `ImageOutput`, `ShinyModuleProvider`, `ShinyOutput`, `MISSING` — components/utilities
 - `ShinyReactComponentElement` (custom-element base class in `src/shiny-react/`) is deliberately **not** exported — it hosts React islands in server-rendered HTML, the inverse of the ui.tsx pattern. Re-export it when partial React app support lands
 - `React`, `ReactDOM` — shared instances (downstream ESM builds should externalize to these to avoid duplicate React)

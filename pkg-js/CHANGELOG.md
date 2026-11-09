@@ -8,6 +8,13 @@
   IDs were found" warning grew and the console logged `Output <id> not found`
   (#330).
 
+- New `useShinyConnected()` hook: `false` once the session disconnects, `true`
+  again if Shiny reconnects (#328).
+
+- `useShinyBusy()` now updates in a real browser. Shiny fires `shiny:busy` /
+  `shiny:idle` through jQuery, which never reached the hook's
+  `addEventListener()` listeners (#328).
+
 - `ImageOutput` hides the last image and shows the error message when the
   render function errors, with Shiny's `shiny-output-error` classes. Its
   `<img>` now uses the renderer's `alt` text instead of `alt=""` (#327).

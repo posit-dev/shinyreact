@@ -87,7 +87,7 @@ The `"./styles"` export is only needed for components that ship CSS (`ImageOutpu
 | **Inputs**     | `useShinyInput` · `useShinyInputValue` · `useSetShinyInput`            |
 | **Outputs**    | `useShinyOutputValue` · `useShinyOutputStatus` · `useShinyOutputError` |
 | **Messaging**  | `useShinyMessageHandler`                                               |
-| **Session**    | `useShinyInitialized` · `useShinyBusy`                                 |
+| **Session**    | `useShinyInitialized` · `useShinyConnected` · `useShinyBusy`           |
 | **Components** | `ShinyOutput` · `ImageOutput` · `ShinyModuleProvider`                  |
 | **Utilities**  | `MISSING` · `PROTOCOL_VERSION`                                         |
 

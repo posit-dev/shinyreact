@@ -20,6 +20,7 @@ describe("installGlobal", () => {
       "ShinyOutput",
       "useSetShinyInput",
       "useShinyBusy",
+      "useShinyConnected",
       "useShinyInitialized",
       "useShinyInput",
       "useShinyInputValue",

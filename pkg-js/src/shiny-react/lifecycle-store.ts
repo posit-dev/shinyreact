@@ -1,8 +1,8 @@
 /**
  * Shared external store for Shiny RUNTIME-GLOBAL lifecycle state
- * (`initialized`, `busy`).
+ * (`initialized`, `busy`, `connected`).
  *
- * Why this exists: `initialized` and `busy` are properties of the surrounding
+ * Why this exists: `initialized`, `busy` and `connected` are properties of the surrounding
  * Shiny runtime, not of any one React component. A single subscription per
  * page avoids N duplicate DOM listeners and N redundant state writes per
  * `shiny:busy` / `shiny:idle` tick when many components use Shiny hooks.
@@ -20,18 +20,18 @@
  */
 
 import { getShiny } from "./get-shiny";
+import { onShinyEvent } from "./shiny-events";
 
 let initialized = false;
 let busy = false;
+let connected = false;
 
 const listeners = new Set<() => void>();
 let started = false;
 
-// Handler refs are kept so `__resetLifecycleStoreForTests` can detach them
-// cleanly between tests. In production these never get removed.
-let onBusyEvent: (() => void) | undefined;
-let onIdleEvent: (() => void) | undefined;
-let onConnectedEvent: (() => void) | undefined;
+// Kept so `__resetLifecycleStoreForTests` can detach the event listeners
+// cleanly between tests. In production they are never removed.
+let stopListening: (() => void)[] = [];
 
 function emit(): void {
   for (const listener of listeners) {
@@ -48,6 +48,12 @@ function markInitialized(): void {
 function setBusy(next: boolean): void {
   if (busy === next) return;
   busy = next;
+  emit();
+}
+
+function setConnected(next: boolean): void {
+  if (connected === next) return;
+  connected = next;
   emit();
 }
 
@@ -69,28 +75,35 @@ function start(): void {
   if (document.documentElement.classList.contains("shiny-busy")) {
     busy = true;
   }
-  onBusyEvent = () => setBusy(true);
-  onIdleEvent = () => setBusy(false);
-  document.addEventListener("shiny:busy", onBusyEvent);
-  document.addEventListener("shiny:idle", onIdleEvent);
-
+  // Seed `connected` the same way, for a consumer mounting after the socket
+  // opened. `shinyapp` is absent before Shiny initializes; `false` is right.
   const shiny = getShiny();
+  connected = shiny?.shinyapp?.isConnected() ?? false;
+
+  // Shiny fires these through jQuery; `onShinyEvent` explains why that
+  // matters. `shiny:connected` fires again after every reconnect.
+  stopListening = [
+    onShinyEvent("shiny:busy", () => setBusy(true)),
+    onShinyEvent("shiny:idle", () => setBusy(false)),
+    onShinyEvent("shiny:connected", () => setConnected(true)),
+    onShinyEvent("shiny:disconnected", () => setConnected(false)),
+  ];
+
   if (shiny) {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     shiny.initializedPromise.then(markInitialized);
     return;
   }
 
-  onConnectedEvent = () => {
-    const s = getShiny();
-    if (s) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      s.initializedPromise.then(markInitialized);
-    }
-  };
-  document.addEventListener("shiny:connected", onConnectedEvent, {
-    once: true,
+  // Shiny loads after the React tree mounted: wait for it to connect. One
+  // shot — the first `shiny:connected` either finds `window.Shiny` or never
+  // will, which is the "stays false" case FEATURES.md pins.
+  const stopWaiting = onShinyEvent("shiny:connected", () => {
+    stopWaiting();
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    getShiny()?.initializedPromise.then(markInitialized);
   });
+  stopListening.push(stopWaiting);
 }
 
 export function subscribeLifecycle(listener: () => void): () => void {
@@ -109,28 +122,20 @@ export function getBusySnapshot(): boolean {
   return busy;
 }
 
+export function getConnectedSnapshot(): boolean {
+  return connected;
+}
+
 /**
  * Test-only: reset module-level state and detach DOM listeners installed
  * by `start()`. Intentionally not re-exported from `index.ts`.
  */
 export function __resetLifecycleStoreForTests(): void {
-  if (typeof document !== "undefined") {
-    if (onBusyEvent) {
-      document.removeEventListener("shiny:busy", onBusyEvent);
-    }
-    if (onIdleEvent) {
-      document.removeEventListener("shiny:idle", onIdleEvent);
-    }
-    if (onConnectedEvent) {
-      // No-op if `shiny:connected` already fired (registered with `once: true`).
-      document.removeEventListener("shiny:connected", onConnectedEvent);
-    }
-  }
-  onBusyEvent = undefined;
-  onIdleEvent = undefined;
-  onConnectedEvent = undefined;
+  stopListening.forEach((stop) => stop());
+  stopListening = [];
   initialized = false;
   busy = false;
+  connected = false;
   listeners.clear();
   started = false;
 }
