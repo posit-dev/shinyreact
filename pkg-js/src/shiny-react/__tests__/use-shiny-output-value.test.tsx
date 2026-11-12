@@ -133,3 +133,18 @@ describe("useShinyOutputValue when the server sends NULL", () => {
     >();
   });
 });
+
+describe("useShinyOutputValue return type", () => {
+  it("drops undefined when a defaultValue is passed", () => {
+    // Type-only: a default means the value is never `undefined`, but a server
+    // NULL can still arrive as `null`.
+    expectTypeOf(
+      renderHook(() => useShinyOutputValue("x", 0)).result.current,
+    ).toEqualTypeOf<number | null>();
+    expectTypeOf(
+      renderHook(() =>
+        useShinyOutputValue<number>("x", undefined, { namespace: null }),
+      ).result.current,
+    ).toEqualTypeOf<number | null | undefined>();
+  });
+});

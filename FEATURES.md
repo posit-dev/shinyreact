@@ -324,6 +324,7 @@ registers a second `shiny.reactOutput` binding.
     defaults to `undefined`
   - a server `NULL` / `None` arrives as `null`, and the return type is
     `T | null | undefined` so TypeScript makes callers handle it (#329)
+    - passing a `defaultValue` narrows it to `T | null` (an overload)
   - it subscribes to the value channel only — status and error changes do not
     re-render it
   - the held value **is** reset when the id or namespace changes, so the

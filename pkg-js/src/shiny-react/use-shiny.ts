@@ -217,9 +217,25 @@ const NOOP_SETTER = () => {};
  * the surrounding `ShinyModuleProvider` namespace).
  * @returns The current output value. `null` when the server sent `NULL` /
  * `None` (or a silent `req()` error), `undefined` (or `defaultValue`) before
- * the first value arrives.
+ * the first value arrives. Passing a `defaultValue` drops `undefined` from the
+ * return type.
  * @group Outputs
  */
+export function useShinyOutputValue<T>(
+  outputId: string,
+  defaultValue?: undefined,
+  options?: { namespace?: string | null },
+): T | null | undefined;
+/**
+ * With a `defaultValue`, the value is never `undefined`: it is `defaultValue`
+ * until the server answers, then the server's value (`null` for `NULL` /
+ * `None`).
+ */
+export function useShinyOutputValue<T>(
+  outputId: string,
+  defaultValue: T,
+  options?: { namespace?: string | null },
+): T | null;
 export function useShinyOutputValue<T>(
   outputId: string,
   defaultValue: T | undefined = undefined,
