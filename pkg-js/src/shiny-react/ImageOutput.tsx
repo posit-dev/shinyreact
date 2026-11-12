@@ -272,8 +272,11 @@ export function ImageOutput({
   // <img> only renders once imgData exists, which only exists once the
   // server has rendered, which only happens once dimensions arrive — a
   // chicken-and-egg loop).
+  //
+  // The error message div takes the placeholder's place (and ref) while an
+  // error shows, so a resize during an error still reaches the server.
   useEffect(() => {
-    if (imgData) return;
+    if (imgData && !imgError) return;
     const placeholder = placeholderRef.current;
     if (!placeholder) return;
 
@@ -297,7 +300,7 @@ export function ImageOutput({
       resizeObserver.disconnect();
       debounced.cancel();
     };
-  }, [imgData, setImgWidth, setImgHeight, debounceMs]);
+  }, [imgData, imgError, setImgWidth, setImgHeight, debounceMs]);
 
   if (imgHidden) {
     return null;
@@ -317,6 +320,7 @@ export function ImageOutput({
     ];
     return (
       <div
+        ref={placeholderRef}
         className={errorClasses.filter(Boolean).join(" ")}
         style={{ width: width, height: height }}
       >

@@ -53,14 +53,23 @@ import { __resetLifecycleStoreForTests } from "../lifecycle-store";
 import { ShinyModuleProvider } from "../ShinyModuleContext";
 import { getReactRegistry } from "../react-registry";
 
+// Elements watched by a live (not yet disconnected) ResizeObserver.
+const observed = new Set<Element>();
+
 beforeAll(() => {
   // ImageOutput attaches a ResizeObserver. jsdom doesn't ship one — stub it
-  // so the component can mount without throwing.
+  // so the component can mount, and record what it watches.
   (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
     class {
-      observe() {}
+      private els: Element[] = [];
+      observe(el: Element) {
+        this.els.push(el);
+        observed.add(el);
+      }
       unobserve() {}
-      disconnect() {}
+      disconnect() {
+        this.els.forEach((el) => observed.delete(el));
+      }
     };
 });
 
@@ -197,7 +206,7 @@ describe("ImageOutput on error", () => {
     out.sendError("plot", {
       message: "Nothing to plot",
       call: null,
-      type: ["shiny.silent.error", "validation"],
+      type: ["validation", "my-error"],
     });
 
     expect(container.querySelector("img")).toBeNull();
@@ -205,8 +214,8 @@ describe("ImageOutput on error", () => {
     expect(el.textContent).toBe("Nothing to plot");
     expect([...el.classList]).toEqual([
       "shiny-output-error",
-      "shiny-output-error-shiny.silent.error",
       "shiny-output-error-validation",
+      "shiny-output-error-my-error",
       "mine",
     ]);
   });
@@ -219,6 +228,17 @@ describe("ImageOutput on error", () => {
     expect(container.firstElementChild!.className).toBe(
       "shiny-output-error shiny-output-error-validation",
     );
+  });
+
+  it("keeps measuring its size while the error shows", async () => {
+    // Without this, a resize during an error never reaches the server.
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendValue("plot", IMG);
+    out.sendError("plot", { message: "boom", call: null, type: null });
+
+    expect(observed.has(container.firstElementChild!)).toBe(true);
   });
 
   it("shows the image again once the error clears", async () => {

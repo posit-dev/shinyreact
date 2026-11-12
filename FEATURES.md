@@ -666,6 +666,8 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     `shiny-output-error-<type>` per error type (an R one-class `type` arrives
     as a plain string and is accepted), then `className`
   - `width` / `height` still apply, so the layout does not jump
+  - the error div is measured like the placeholder, so a resize while the
+    error shows still sends the new size to the server
   - the image comes back once the error clears and a value arrives
   - silent errors (`req()`) carry no message and are not errors here: they
     arrive as a `null` value, so the placeholder shows
