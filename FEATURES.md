@@ -1391,6 +1391,24 @@ initial page.
       already emits it as `"1.0"`
   - keys like `__proto__` and `constructor` are ordinary own properties after
     `JSON.parse`, so emitting them is safe
+- bookmarking needs an app-registered `onBookmarked()` / `on_bookmarked()`
+  callback (#326)
+  - shinyreact registers none; with no callback, Shiny shows the URL in a
+    Bootstrap modal, which a Bootstrap-free page cannot open
+  - the documented callback is `updateQueryString(url)` /
+    `session.bookmark.update_query_string`, which writes the URL to the
+    address bar `(e2e)`
+  - `[js]` without it, the console logs a `[shinyreact]` error naming that fix
+    instead of `$(...).modal is not a function` `(e2e)`
+    - at bundle load, when `window.jQuery` exists and `jQuery.fn.modal` does
+      not, it fills `jQuery.fn.modal` with a function that logs the error and
+      returns its jQuery object
+    - Bootstrap already on the page, or a second bundle copy's fallback, is
+      left alone; a Bootstrap loaded later overwrites the fallback
+    - it covers every Shiny modal: `showModal()` / `modal_show()` log the same
+      error
+    - the modal's HTML is still inserted at the end of `<body>`, unstyled,
+      and its Dismiss button does nothing
 - SECURITY: bookmarked values are visible in the page source
   - in URL mode the values are already in the URL, so the tag adds no exposure
   - in server-stored mode (`?_state_id_=`) the URL hides them but the tag

@@ -184,6 +184,18 @@ Pass `enableBookmarking = "url"` (or `"server"`) to `shinyApp()` as usual.
 Restored input values are embedded in the page, and `useShinyInput()` uses
 them as initial values instead of its default.
 
+You must also register an `onBookmarked()` callback. Without one, Shiny shows
+the bookmark URL in a Bootstrap modal, and `page_react()` loads no Bootstrap,
+so the modal cannot open (the browser console says so). Writing the URL to
+the address bar is the usual choice:
+
+```r
+server <- function(input, output, session) {
+  onBookmarked(function(url) updateQueryString(url))
+  observeEvent(input$bookmark, session$doBookmark())
+}
+```
+
 ## Next steps
 
 - [TSX files and JavaScript build tools](https://posit-dev.github.io/shinyreact/articles/tsx-and-build-tools.html)

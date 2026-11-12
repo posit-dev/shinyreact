@@ -20,6 +20,21 @@ shiny run examples/10-bookmarking/app.py
    string.
 3. Copy the URL into a new tab — the inputs initialise from the URL.
 
+## Register an `on_bookmarked()` callback
+
+```python
+session.bookmark.on_bookmarked(session.bookmark.update_query_string)
+```
+
+When an app has no `on_bookmarked()` callback, Shiny shows the bookmark URL in a
+Bootstrap modal. `page_react()` loads no Bootstrap, so that modal cannot open
+(the browser console says so). Register your own callback: this one writes the
+URL to the address bar. In R:
+
+```r
+onBookmarked(function(url) updateQueryString(url))
+```
+
 ## Bookmark modes
 
 This example uses `bookmark_store="url"`, which encodes inputs into the URL

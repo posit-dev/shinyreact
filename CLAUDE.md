@@ -109,6 +109,8 @@ The two sanctioned cases, both mediated by a single accessor:
 | `getReactRegistry()` | input/output values and their subscribers; two registries would split one input id's producers and consumers across them |
 | `getMessageRegistry()` | Shiny gives **one dispatcher slot per message type**, so a second `addCustomMessageHandler("shinyReactMessage")` either replaces the first or throws — either way one copy's handlers go dead |
 
+Not state, so not a third case: `installModalFallback()` fills an empty `jQuery.fn.modal` so Shiny's Bootstrap modal script logs a `[shinyreact]` error instead of throwing on a Bootstrap-free page (#326). Shiny's inline script calls the page's jQuery, so nothing narrower can answer it; it never overwrites an existing `modal`.
+
 Rules if you find yourself adding a third:
 
 - **Go through an accessor**, never a bare assignment at the point of use. One place attaches (`shiny.x ??= singleton`), everyone reads through it. Scattered assignments are how `window.Shiny.messageRegistry` ended up written from two places and read from none.

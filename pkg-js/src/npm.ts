@@ -30,6 +30,7 @@
 import "./shinyreact.css";
 
 import { installDepDiscovery } from "./dep-discovery";
+import { installModalFallback } from "./modal-fallback";
 
 // Two copies on one page: this app bundles `@posit-dev/shinyreact` AND the server
 // served shinyreact.js, because the page entry point left `shinyreact_js` at its
@@ -66,6 +67,9 @@ if (
 // tests), and with no Shiny yet it only adds one event listener. See
 // dep-discovery.ts.
 installDepDiscovery();
+
+// Same as the IIFE bundle: explain a Shiny modal on a Bootstrap-free page.
+installModalFallback();
 
 export {
   useSetShinyInput,

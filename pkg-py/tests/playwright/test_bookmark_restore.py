@@ -13,6 +13,7 @@ from shiny.pytest import create_app_fixture
 from shiny.run import ShinyAppProc
 
 bookmark_app = create_app_fixture("apps/bookmark/app.py")
+bookmark_modal_app = create_app_fixture("apps/bookmark_modal/app.py")
 
 
 def _wait_for_shiny_initialized(page: Page) -> None:
@@ -61,6 +62,41 @@ def test_no_bookmark_renders_defaults(page: Page, bookmark_app: ShinyAppProc) ->
     # an applied-but-empty state.
     sentinel = page.evaluate("JSON.stringify(window.shinyreact._restore)")
     assert sentinel == '{"-applied":true,"-values":{}}'
+
+
+def test_on_bookmarked_update_query_string_rewrites_the_url(
+    page: Page, bookmark_app: ShinyAppProc
+) -> None:
+    """The documented pattern: `on_bookmarked(update_query_string)` puts the
+    bookmark URL in the address bar, with no modal (#326)."""
+    page.goto(bookmark_app.url)
+    _wait_for_shiny_initialized(page)
+
+    page.get_by_test_id("txt").fill("hi")
+    expect(page.get_by_test_id("echo")).to_contain_text("text='hi'")
+    page.get_by_test_id("bookmark-btn").click()
+
+    page.wait_for_url("**?_inputs_*")
+    assert "txt=%22hi%22" in page.url
+
+
+def test_bookmark_without_a_callback_explains_the_missing_modal(
+    page: Page, bookmark_modal_app: ShinyAppProc
+) -> None:
+    """With no `on_bookmarked()` callback Shiny opens a Bootstrap modal. This
+    page has none, so shinyreact logs what to do instead of letting
+    `$(...).modal is not a function` escape (#326)."""
+    page_errors: list[str] = []
+    page.on("pageerror", lambda e: page_errors.append(str(e)))
+
+    page.goto(bookmark_modal_app.url)
+    _wait_for_shiny_initialized(page)
+    with page.expect_console_message(
+        lambda m: m.type == "error" and "[shinyreact] Shiny tried" in m.text
+    ):
+        page.get_by_test_id("bookmark-btn").click()
+
+    assert [e for e in page_errors if "modal is not a function" in e] == []
 
 
 # Round-trip server-stored bookmarking (set inputs → click bookmark → reload

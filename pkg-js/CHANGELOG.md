@@ -30,6 +30,11 @@
 - The stylesheet is also exported as `@posit-dev/shinyreact/styles.css`, so
   TypeScript resolves the import with no `declare module` (#329).
 
+- On a page with no Bootstrap, a Shiny modal (`showModal()`, or the bookmark
+  URL dialog Shiny falls back to when the app has no `onBookmarked()`
+  callback) now logs a `[shinyreact]` console error naming the fix, instead of
+  throwing `$(...).modal is not a function` (#326).
+
 ## 0.1.1
 
 - First release published through CI with npm trusted publishing
