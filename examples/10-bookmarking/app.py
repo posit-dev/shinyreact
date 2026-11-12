@@ -9,6 +9,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         chk_label = "yes" if input.chk() else "no"
         return f"text={input.txt()!r} num={input.num()} checked={chk_label}"
 
+    # Put the bookmark URL in the address bar. Without a callback, Shiny shows
+    # the URL in a Bootstrap modal, and this page loads no Bootstrap.
+    session.bookmark.on_bookmarked(session.bookmark.update_query_string)
+
     @reactive.effect
     @reactive.event(input.bookmark_clicks, ignore_init=True)
     async def _on_bookmark_click() -> None:

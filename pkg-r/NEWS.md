@@ -6,6 +6,12 @@
   IDs were found" warning grew and the console logged `Output <id> not found`
   (#330).
 
+* Bookmarking on a `page_react()` page needs an app-registered callback such as
+  `onBookmarked(function(url) updateQueryString(url))`. Without one, Shiny shows the bookmark URL in a Bootstrap modal, which
+  a page with no Bootstrap cannot open, so `session$doBookmark()` failed with
+  `$(...).modal is not a function`. The browser console now logs a
+  `[shinyreact]` error naming the fix instead (#326).
+
 # shinyreact 0.1.0
 
 * Initial CRAN release. shinyreact is the server-side plumbing for the

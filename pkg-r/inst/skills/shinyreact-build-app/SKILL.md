@@ -353,6 +353,9 @@ per-card state, because *any* output recomputing makes it `true`: use
 `ReactApp(server, bookmark_store="url")`, `[r]` `enableBookmarking = "url"`
 with a per-request UI function) and the client needs no code at all:
 restored values seed `useShinyInput` initial values before the first paint.
+The server **must** register an `onBookmarked()` / `on_bookmarked()` callback
+(usually `updateQueryString()`): Shiny's default is a Bootstrap modal, which a
+`page_react()` page cannot open.
 See [`references/bookmarking.md`](references/bookmarking.md).
 
 **Typed inputs** — `useShinyInput(id, default, { type: "shiny.datetime" })`

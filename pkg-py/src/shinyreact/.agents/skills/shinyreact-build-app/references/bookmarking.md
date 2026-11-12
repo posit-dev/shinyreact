@@ -12,8 +12,26 @@ app = ReactApp(server, bookmark_store="url")
 shinyApp(ui = function(req) page_react(), server, enableBookmarking = "url")
 ```
 
+**Register an `on_bookmarked()` callback — this is required.** With none,
+Shiny shows the bookmark URL in a Bootstrap modal, and `page_react()` loads no
+Bootstrap, so the modal cannot open (the browser console logs a `[shinyreact]`
+error saying so). Writing the URL to the address bar is the usual choice:
+
+```python
+# [py]
+session.bookmark.on_bookmarked(session.bookmark.update_query_string)
+```
+```r
+# [r] -- inside server()
+onBookmarked(function(url) updateQueryString(url))
+```
+
+Or show the URL your own way — a React dialog fed by `send_message()`, a copy
+button — from the same callback.
+
 Trigger it from an action-button input (`[py]` `await session.bookmark()`,
-`[r]` `session$doBookmark()`), which rewrites the browser URL. On a later visit to that URL the page entry point
+`[r]` `session$doBookmark()`), which runs that callback. On a later visit to
+that URL the page entry point
 embeds the saved values in the page, and the client seeds `useShinyInput`
 initial values from them **before the first paint** — so a bookmarked link
 renders restored state directly, with no flash of the defaults and no

@@ -20,9 +20,13 @@ a unit test; `(verify)` marks a claim not yet checked against the code.
   - `txt` is `repr`'d, so it is quoted `(test)`
   - it renders from the hook defaults (`""` / `0` / `false`), since the client
     does not gate on `useShinyInitialized()` `(test)`
+- `session.bookmark.on_bookmarked(session.bookmark.update_query_string)`
+  writes the bookmark URL to the address bar
+  - required: with no callback Shiny shows the URL in a Bootstrap modal, which
+    this Bootstrap-free page cannot open
 - `@reactive.effect` + `@reactive.event(input.bookmark_clicks,
-  ignore_init=True)` → `await session.bookmark()`, which rewrites the browser
-  URL
+  ignore_init=True)` → `await session.bookmark()`, which runs the
+  `on_bookmarked()` callback above
   - the mount-time `0` does not bookmark; the URL rewrite itself needs a
     browser, so in-memory tests only assert the effect runs cleanly `(test)`
 - `[py]` only — this example has no R server

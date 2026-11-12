@@ -14,6 +14,11 @@ def echo() -> str:
     return f"text={input.txt()!r} num={input.num()} checked={chk}"
 
 
+# Without this, Shiny shows the URL in a Bootstrap modal, which this
+# Bootstrap-free page cannot open (#326).
+session.bookmark.on_bookmarked(session.bookmark.update_query_string)
+
+
 @reactive.effect
 @reactive.event(input.bookmark_clicks, ignore_init=True)
 async def _on_bookmark_click() -> None:
