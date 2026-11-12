@@ -2,10 +2,11 @@
  * Shared external store for Shiny RUNTIME-GLOBAL lifecycle state
  * (`initialized`, `busy`, `connected`).
  *
- * Why this exists: `initialized`, `busy` and `connected` are properties of the surrounding
- * Shiny runtime, not of any one React component. A single subscription per
- * page avoids N duplicate DOM listeners and N redundant state writes per
- * `shiny:busy` / `shiny:idle` tick when many components use Shiny hooks.
+ * Why this exists: `initialized`, `busy` and `connected` are properties of
+ * the surrounding Shiny runtime, not of any one React component. A single
+ * subscription per page avoids N duplicate DOM listeners and N redundant state
+ * writes per `shiny:busy` / `shiny:idle` tick when many components use Shiny
+ * hooks.
  *
  * Scope: this pattern is ONLY appropriate for hooks that derive a single
  * page-global value from runtime events. Per-id hooks

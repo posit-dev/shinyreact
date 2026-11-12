@@ -15,6 +15,10 @@
   `shiny:idle` through jQuery, which never reached the hook's
   `addEventListener()` listeners (#328).
 
+- Renderer dependency discovery now installs when Shiny loads after the
+  bundle. It waited for `shiny:connected` with a native listener, which the
+  jQuery-fired event never reached (#328).
+
 - `ImageOutput` hides the last image and shows the error message when the
   render function errors, with Shiny's `shiny-output-error` classes. Its
   `<img>` now uses the renderer's `alt` text instead of `alt=""` (#327).

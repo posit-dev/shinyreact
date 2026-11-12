@@ -382,6 +382,13 @@ registers a second `shiny.reactOutput` binding.
     - before #328 `useShinyBusy()` never updated in a real browser; only the
       jsdom tests' native events reached it
     - the jQuery check happens once, at first subscribe
+    - if `window.Shiny` is present but `window.jQuery` is not, it logs a
+      `console.warn`: native listeners would never hear Shiny's events
+    - a second jQuery loaded after Shiny's replaces `window.jQuery`, and
+      Shiny's `trigger()` does not reach handlers bound through it (not
+      handled)
+    - (e2e) `useShinyBusy()` follows a slow output; `useShinyConnected()`
+      turns `false` when the server closes the session
   - one set of event listeners per page regardless of consumer count
   - listeners are installed lazily on first subscribe and **never** torn down —
     they belong to the page, which sidesteps mount/unmount races and
@@ -389,9 +396,8 @@ registers a second `shiny.reactOutput` binding.
   - installation is skipped when there is no `document`, and not latched, so a
     later DOM-available render still installs them
   - the `shiny:connected` wait for a late `window.Shiny` is one-shot, so if it
-    fires while
-    `window.Shiny` is still absent, `initialized` never flips and every hook
-    stays gated for the life of the page
+    fires while `window.Shiny` is still absent, `initialized` never flips and
+    every hook stays gated for the life of the page
   - the store is only for page-global runtime state; per-id hooks must keep
     using their own id-keyed registries
 
@@ -619,6 +625,9 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     actually readable, then unsubscribes — it is deliberately **not**
     `{once: true}`, which would consume the event before Shiny existed and
     leave discovery uninstalled
+  - it listens through jQuery like the lifecycle store; before #328 its native
+    listener never heard Shiny's `shiny:connected`, so a Shiny that loaded
+    after the bundle left discovery uninstalled
 - it no-ops when there is no `document`
 - `getShiny()` returns `undefined` rather than throwing when there is no
   `window` at all, not just when Shiny has not loaded

@@ -108,3 +108,24 @@ describe("lifecycle events fired through jQuery (#328)", () => {
     expect($.count("shiny:disconnected")).toBe(0);
   });
 });
+
+describe("Shiny present without jQuery", () => {
+  it("warns, since native listeners never hear Shiny's events", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockShiny = { initializedPromise: new Promise(() => {}) };
+    renderHook(() => useShinyConnected());
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("window.jQuery is not"),
+    );
+    warn.mockRestore();
+  });
+
+  it("stays quiet when jQuery is there", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    installFakeJQuery();
+    mockShiny = { initializedPromise: new Promise(() => {}) };
+    renderHook(() => useShinyConnected());
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
