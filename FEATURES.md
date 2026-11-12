@@ -658,6 +658,19 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     values, so nothing sets it
 - `onRecalculating` is called with whether the output status is
   `"recalculating"`
+- the `<img>` `alt` is the renderer's `alt` (`renderPlot(alt =)` /
+  `@render.plot(alt=)`), or `""` when the value carries none (#327)
+- an output error replaces the image with a div holding the message (#327)
+  - the last image is **not** kept on screen
+  - classes match Shiny's `renderError()`: `shiny-output-error`, one
+    `shiny-output-error-<type>` per error type (an R one-class `type` arrives
+    as a plain string and is accepted), then `className`
+  - `width` / `height` still apply, so the layout does not jump
+  - the error div is measured like the placeholder, so a resize while the
+    error shows still sends the new size to the server
+  - the image comes back once the error clears and a value arrives
+  - silent errors (`req()`) carry no message and are not errors here: they
+    arrive as a `null` value, so the placeholder shows
 - two `ImageOutput`s sharing an id both receive the same image, sized for only
   one of them
 

@@ -53,14 +53,23 @@ import { __resetLifecycleStoreForTests } from "../lifecycle-store";
 import { ShinyModuleProvider } from "../ShinyModuleContext";
 import { getReactRegistry } from "../react-registry";
 
+// Elements watched by a live (not yet disconnected) ResizeObserver.
+const observed = new Set<Element>();
+
 beforeAll(() => {
   // ImageOutput attaches a ResizeObserver. jsdom doesn't ship one — stub it
-  // so the component can mount without throwing.
+  // so the component can mount, and record what it watches.
   (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
     class {
-      observe() {}
+      private els: Element[] = [];
+      observe(el: Element) {
+        this.els.push(el);
+        observed.add(el);
+      }
       unobserve() {}
-      disconnect() {}
+      disconnect() {
+        this.els.forEach((el) => observed.delete(el));
+      }
     };
 });
 
@@ -131,5 +140,117 @@ describe("ImageOutput namespace precedence", () => {
     const ids = registeredIds();
     expect(ids).toContain(".clientdata_output_myimg_width");
     expect(ids).not.toContain(".clientdata_output_ctx-myimg_width");
+  });
+});
+
+// Drive an output the way the real registry would: `outputs.add(id, setValue,
+// setStatus, setError)` hands the hook its setters, so keep the latest ones per
+// id and call them.
+function captureOutputSetters() {
+  const setters = new Map<
+    string,
+    { value: (v: unknown) => void; error: (e: unknown) => void }[]
+  >();
+  const reg = getReactRegistry();
+  (reg.outputs.add as ReturnType<typeof vi.fn>).mockImplementation(
+    (
+      id: string,
+      value: (v: unknown) => void,
+      _status: unknown,
+      error: (e: unknown) => void,
+    ) => {
+      setters.set(id, [...(setters.get(id) ?? []), { value, error }]);
+      return () => {};
+    },
+  );
+  return {
+    sendValue: (id: string, v: unknown) =>
+      act(() => setters.get(id)!.forEach((s) => s.value(v))),
+    sendError: (id: string, e: unknown) =>
+      act(() => setters.get(id)!.forEach((s) => s.error(e))),
+  };
+}
+
+const IMG = { src: "data:image/png;base64,AAAA", width: 4, height: 3 };
+
+describe("ImageOutput image data", () => {
+  it("uses the renderer's alt text", async () => {
+    // #327: alt="" was hardcoded, ignoring renderPlot(alt =).
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendValue("plot", { ...IMG, alt: "A scatterplot" });
+    expect(container.querySelector("img")!.getAttribute("alt")).toBe(
+      "A scatterplot",
+    );
+  });
+
+  it("falls back to an empty alt when the renderer sends none", async () => {
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendValue("plot", IMG);
+    expect(container.querySelector("img")!.getAttribute("alt")).toBe("");
+  });
+});
+
+describe("ImageOutput on error", () => {
+  it("hides the stale image and shows the message with Shiny's classes", async () => {
+    // #327: the last image stayed on screen and the message appeared nowhere.
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" className="mine" />);
+    await flushPromises();
+    out.sendValue("plot", IMG);
+    expect(container.querySelector("img")).not.toBeNull();
+
+    out.sendError("plot", {
+      message: "Nothing to plot",
+      call: null,
+      type: ["validation", "my-error"],
+    });
+
+    expect(container.querySelector("img")).toBeNull();
+    const el = container.firstElementChild!;
+    expect(el.textContent).toBe("Nothing to plot");
+    expect([...el.classList]).toEqual([
+      "shiny-output-error",
+      "shiny-output-error-validation",
+      "shiny-output-error-my-error",
+      "mine",
+    ]);
+  });
+
+  it("accepts an R one-class type unboxed to a string", async () => {
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendError("plot", { message: "boom", call: null, type: "validation" });
+    expect(container.firstElementChild!.className).toBe(
+      "shiny-output-error shiny-output-error-validation",
+    );
+  });
+
+  it("keeps measuring its size while the error shows", async () => {
+    // Without this, a resize during an error never reaches the server.
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendValue("plot", IMG);
+    out.sendError("plot", { message: "boom", call: null, type: null });
+
+    expect(observed.has(container.firstElementChild!)).toBe(true);
+  });
+
+  it("shows the image again once the error clears", async () => {
+    const out = captureOutputSetters();
+    const { container } = render(<ImageOutput id="plot" />);
+    await flushPromises();
+    out.sendError("plot", { message: "boom", call: null, type: null });
+    expect(container.querySelector("img")).toBeNull();
+
+    out.sendError("plot", null);
+    out.sendValue("plot", IMG);
+    expect(container.querySelector("img")).not.toBeNull();
+    expect(container.textContent).not.toContain("boom");
   });
 });
