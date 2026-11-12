@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  vi,
+} from "vitest";
 import {
   _resetReactRegistryForTesting,
   getReactRegistry,
@@ -102,5 +110,41 @@ describe("useShinyOutputValue when the id changes", () => {
     await flush();
 
     expect(result.current).toBe("second value");
+  });
+});
+
+describe("useShinyOutputValue when the server sends NULL", () => {
+  it("returns null, and its type says so", async () => {
+    // #329. A server `NULL` / `None` arrives as `null`. The return type used to
+    // be `T | undefined`, so `x !== undefined` narrowed to `T` and `x.n`
+    // crashed at runtime.
+    const registry = getReactRegistry();
+    const { result } = renderHook(() =>
+      useShinyOutputValue<{ n: number }>("x"),
+    );
+    await flush();
+
+    registry.outputs.get("x")!.setValue(null);
+    await flush();
+
+    expect(result.current).toBeNull();
+    expectTypeOf(result.current).toEqualTypeOf<
+      { n: number } | null | undefined
+    >();
+  });
+});
+
+describe("useShinyOutputValue return type", () => {
+  it("drops undefined when a defaultValue is passed", () => {
+    // Type-only: a default means the value is never `undefined`, but a server
+    // NULL can still arrive as `null`.
+    expectTypeOf(
+      renderHook(() => useShinyOutputValue("x", 0)).result.current,
+    ).toEqualTypeOf<number | null>();
+    expectTypeOf(
+      renderHook(() =>
+        useShinyOutputValue<number>("x", undefined, { namespace: null }),
+      ).result.current,
+    ).toEqualTypeOf<number | null | undefined>();
   });
 });

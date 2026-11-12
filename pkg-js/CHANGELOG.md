@@ -8,6 +8,13 @@
   IDs were found" warning grew and the console logged `Output <id> not found`
   (#330).
 
+- `useShinyOutputValue()` is now typed `T | null | undefined`. A server
+  `NULL` / `None` arrives as `null`, which the old `T | undefined` type hid.
+  Passing a `defaultValue` narrows it to `T | null` (#329).
+
+- The stylesheet is also exported as `@posit-dev/shinyreact/styles.css`, so
+  TypeScript resolves the import with no `declare module` (#329).
+
 ## 0.1.1
 
 - First release published through CI with npm trusted publishing

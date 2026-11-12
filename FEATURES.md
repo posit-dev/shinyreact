@@ -322,6 +322,9 @@ registers a second `shiny.reactOutput` binding.
 - `useShinyOutputValue(id, defaultValue?, options?)` → `value`
   - `defaultValue` is returned until the server delivers the first value, and
     defaults to `undefined`
+  - a server `NULL` / `None` arrives as `null`, and the return type is
+    `T | null | undefined` so TypeScript makes callers handle it (#329)
+    - passing a `defaultValue` narrows it to `T | null` (an overload)
   - it subscribes to the value channel only — status and error changes do not
     re-render it
   - the held value **is** reset when the id or namespace changes, so the
@@ -1381,8 +1384,11 @@ initial page.
   - it exports `PROTOCOL_VERSION`
   - it does **not** re-export React / ReactDOM
   - the stylesheet ships as `dist-npm/style.css`, reachable as
-    `@posit-dev/shinyreact/styles` (#229; the build emitted no CSS at all before,
-    leaving `ImageOutput`'s spinner without its `@keyframes spin`)
+    `@posit-dev/shinyreact/styles.css` and `@posit-dev/shinyreact/styles`
+    - the `.css` name lets TypeScript match a `*.css` module declaration
+      (e.g. `vite/client`) with no hand-written `declare module` (#329)
+    - before #229 the build emitted no CSS at all, leaving `ImageOutput`'s
+      spinner without its `@keyframes spin`
     - Vite does not inject a CSS import into a lib-mode ESM bundle, so
       consumers opt in rather than having it forced on them
   - a missing `#shinyreact-config` tag is tolerated, as in the IIFE bundle, so
