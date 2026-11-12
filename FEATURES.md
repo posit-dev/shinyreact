@@ -366,17 +366,38 @@ registers a second `shiny.reactOutput` binding.
   - it seeds `true` when `<html>` already carries `.shiny-busy` at first mount,
     so a consumer mounting mid-request is not stale
   - it stops responding after unmount
-- both lifecycle hooks read one shared external store through
+- `useShinyConnected()` → boolean (#328)
+  - `false` until `shiny:connected`, `false` again on `shiny:disconnected`,
+    `true` again on the next `shiny:connected` (Shiny's reconnect)
+  - it seeds from `window.Shiny.shinyapp.isConnected()`, so a consumer
+    mounting after the socket opened reads `true`
+  - `useShinyInitialized()` does **not** flip back on disconnect; this hook is
+    the one that does
+- all three lifecycle hooks read one shared external store through
   `useSyncExternalStore`
-  - one pair of DOM listeners per page regardless of consumer count
+  - Shiny fires its lifecycle events with jQuery's `trigger()`, which skips
+    `addEventListener()` listeners, so the store listens through
+    `window.jQuery(document).on()` when jQuery is on the page, and falls back
+    to `addEventListener()` when it is not (#328)
+    - before #328 `useShinyBusy()` never updated in a real browser; only the
+      jsdom tests' native events reached it
+    - the jQuery check happens once, at first subscribe
+    - if `window.Shiny` is present but `window.jQuery` is not, it logs a
+      `console.warn`: native listeners would never hear Shiny's events
+    - a second jQuery loaded after Shiny's replaces `window.jQuery`, and
+      Shiny's `trigger()` does not reach handlers bound through it (not
+      handled)
+    - (e2e) `useShinyBusy()` follows a slow output; `useShinyConnected()`
+      turns `false` when the server closes the session
+  - one set of event listeners per page regardless of consumer count
   - listeners are installed lazily on first subscribe and **never** torn down —
     they belong to the page, which sidesteps mount/unmount races and
     StrictMode re-subscribe churn
   - installation is skipped when there is no `document`, and not latched, so a
     later DOM-available render still installs them
-  - the `shiny:connected` listener is `{once: true}`, so if it fires while
-    `window.Shiny` is still absent, `initialized` never flips and every hook
-    stays gated for the life of the page
+  - the `shiny:connected` wait for a late `window.Shiny` is one-shot, so if it
+    fires while `window.Shiny` is still absent, `initialized` never flips and
+    every hook stays gated for the life of the page
   - the store is only for page-global runtime state; per-id hooks must keep
     using their own id-keyed registries
 
@@ -604,6 +625,9 @@ registries are exposed on `window.Shiny.reactRegistry`; the message registry on
     actually readable, then unsubscribes — it is deliberately **not**
     `{once: true}`, which would consume the event before Shiny existed and
     leave discovery uninstalled
+  - it listens through jQuery like the lifecycle store; before #328 its native
+    listener never heard Shiny's `shiny:connected`, so a Shiny that loaded
+    after the bundle left discovery uninstalled
 - it no-ops when there is no `document`
 - `getShiny()` returns `undefined` rather than throwing when there is no
   `window` at all, not just when Shiny has not loaded
@@ -1415,7 +1439,7 @@ initial page.
 - `window.shinyreact` contains exactly: `useShinyInput`, `useShinyInputValue`,
   `useSetShinyInput`, `useShinyOutputValue`, `useShinyOutputStatus`,
   `useShinyOutputError`, `useShinyMessageHandler`, `useShinyInitialized`,
-  `useShinyBusy`,
+  `useShinyBusy`, `useShinyConnected`,
   `ImageOutput`, `MISSING`, `ShinyModuleProvider`, `ShinyOutput`, `React`,
   `ReactDOM`
   - `ShinyReactComponentElement` is deliberately absent: not exported from the

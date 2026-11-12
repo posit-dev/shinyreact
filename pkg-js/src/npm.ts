@@ -15,7 +15,7 @@
  * @groupDescription Messaging
  * Receive `send_message()` payloads from the server.
  * @groupDescription Session
- * Observe the Shiny session itself — connected yet, busy right now.
+ * Observe the Shiny session itself — initialized yet, connected, busy right now.
  * @groupDescription Components
  * Render traditional Shiny outputs inside a React tree.
  * @groupDescription Utilities
@@ -70,6 +70,7 @@ installDepDiscovery();
 export {
   useSetShinyInput,
   useShinyBusy,
+  useShinyConnected,
   useShinyInput,
   useShinyInputValue,
   useShinyOutputError,

@@ -11,6 +11,7 @@ import { ShinyOutput } from "./shiny-output";
 import {
   useSetShinyInput,
   useShinyBusy,
+  useShinyConnected,
   useShinyInput,
   useShinyInputValue,
   useShinyOutputError,
@@ -31,6 +32,7 @@ declare global {
     shinyreact: {
       useSetShinyInput: typeof useSetShinyInput;
       useShinyBusy: typeof useShinyBusy;
+      useShinyConnected: typeof useShinyConnected;
       useShinyInput: typeof useShinyInput;
       useShinyInputValue: typeof useShinyInputValue;
       useShinyOutputError: typeof useShinyOutputError;
@@ -59,6 +61,7 @@ export function installGlobal(): void {
   window.shinyreact = {
     useSetShinyInput,
     useShinyBusy,
+    useShinyConnected,
     useShinyInput,
     useShinyInputValue,
     useShinyOutputError,

@@ -7,6 +7,7 @@ them before adding `console.log`:
 | Hook | Tells you |
 |---|---|
 | `useShinyInitialized()` | whether the WebSocket handshake finished at all |
+| `useShinyConnected()` | whether the WebSocket is open *now* (`false` after a disconnect) |
 | `useShinyOutputStatus(id)` | `"pending"` / `"ready"` / `"recalculating"` / `"error"` for one output |
 | `useShinyOutputError(id)` | the server's sanitized error message for one output, or `null` |
 | `useShinyBusy()` | whether the server is processing *anything* right now |

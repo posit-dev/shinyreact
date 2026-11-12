@@ -17,6 +17,7 @@ export type { OutputStatus, ErrorsMessageValue } from "./output-registry";
 export {
   useSetShinyInput,
   useShinyBusy,
+  useShinyConnected,
   useShinyInitialized,
   useShinyInput,
   useShinyInputValue,
